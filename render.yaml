@@ -8,7 +8,10 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    branch: main
+    # ⚠️ Doit correspondre à la branche que tu déploies.
+    # Le code se trouve actuellement sur arena/01a00c64-matchly-project ;
+    # si tu la fusionnes dans main, remets "main" ici.
+    branch: arena/01a00c64-matchly-project
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
