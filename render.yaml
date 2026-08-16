@@ -1,0 +1,28 @@
+# Blueprint Render (optionnel).
+# Render > New > Blueprint > sélectionne ce dépôt : le service est créé automatiquement.
+# La variable FB_APPSTATE reste à saisir manuellement (sync: false) : aucun secret dans Git.
+
+services:
+  - type: web
+    name: merdi-bot
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: FB_APPSTATE
+        sync: false # à renseigner dans le dashboard Render (secret)
+      - key: ADMIN_UID
+        value: "100065927401614"
+      - key: PREFIX
+        value: "/"
+      - key: BOT_NAME
+        value: "MERDI BOT"
+      - key: TZ_BOT
+        value: "Africa/Kinshasa"

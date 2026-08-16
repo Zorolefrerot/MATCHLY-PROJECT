@@ -1,0 +1,28 @@
+# Dépendances
+node_modules/
+
+# Secrets — NE JAMAIS COMMITTER
+account.txt
+appstate.json
+*.appstate.json
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Données générées par @dongdev/fca-unofficial
+fca-config.json
+Fca_Database/
+*.sqlite
+*.sqlite3
+*.db
+
+# Divers
+.DS_Store
+Thumbs.db
+coverage/
+tmp/

@@ -1,0 +1,25 @@
+{
+  "name": "merdi-bot",
+  "version": "1.0.0",
+  "description": "Bot Facebook Messenger en Node.js (@dongdev/fca-unofficial) prêt pour un déploiement Render.",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "facebook",
+    "messenger",
+    "bot",
+    "fca",
+    "render"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@dongdev/fca-unofficial": "^4.0.3"
+  }
+}
