@@ -2,7 +2,11 @@
 node_modules/
 
 # Secrets — NE JAMAIS COMMITTER
-account.txt
+# NOTE : account.txt est volontairement versionné (modèle vide, sans secret).
+#        ⚠️ Si tu y colles ton vrai AppState, il partira sur GitHub.
+#        Pour le re-masquer : décommente la ligne ci-dessous puis lance
+#        git rm --cached account.txt
+# account.txt
 appstate.json
 *.appstate.json
 .env

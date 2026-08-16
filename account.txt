@@ -1,0 +1,49 @@
+# ============================================================
+#  account.txt — AppState / c3c Facebook (MODÈLE VERSIONNÉ)
+# ============================================================
+#
+#  ⚠️  CE FICHIER EST VERSIONNÉ (visible sur GitHub).
+#      Tant qu'il ne contient que ces commentaires, aucun risque.
+#      Si tu y colles ton vrai AppState ET que tu fais un git push,
+#      tes cookies Facebook deviennent PUBLICS. Sur un dépôt public,
+#      considère alors le compte comme compromis.
+#
+#  ✅  Méthode sûre en production : ne rien mettre ici et renseigner
+#      la variable d'environnement FB_APPSTATE dans Render.
+#
+#  🔒  Pour re-masquer ce fichier avant d'y mettre un secret :
+#          décommente 'account.txt' dans .gitignore
+#          puis : git rm --cached account.txt
+#
+#  Priorité utilisée par le bot :
+#    1. FB_APPSTATE (variable d'environnement Render)
+#    2. FB_APPSTATE_FILE (chemin d'un Secret File Render)
+#    3. ce fichier account.txt
+#
+#  Comment obtenir l'AppState :
+#    - Connecte-toi à facebook.com dans ton navigateur.
+#    - Utilise une extension d'export de cookies (c3c FBSTATE,
+#      "Get cookies.txt", J2TEAM Cookies…).
+#    - Exporte au format JSON.
+#
+#  Formats acceptés (les lignes commençant par # sont ignorées) :
+#
+#  A) Tableau JSON de cookies (recommandé) :
+#     [
+#       {"key":"datr","value":"...","domain":".facebook.com","path":"/"},
+#       {"key":"sb","value":"...","domain":".facebook.com","path":"/"},
+#       {"key":"c_user","value":"...","domain":".facebook.com","path":"/"},
+#       {"key":"xs","value":"...","domain":".facebook.com","path":"/"}
+#     ]
+#
+#  B) Objet enveloppe : {"appState": [ ... ]}
+#
+#  C) Chaîne de cookies brute :
+#     c_user=xxxxxxxxx; xs=xxxxx; datr=xxxxx; fr=xxxxx;
+#
+#  D) Le même contenu encodé en base64.
+#
+#  Cookies obligatoires : c_user et xs.
+#
+#  👉 Efface ces commentaires (ou laisse-les) et colle ton AppState ci-dessous.
+# ============================================================

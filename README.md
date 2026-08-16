@@ -24,9 +24,9 @@ prêt à être déployé sur **Render** en tant que *Web Service*.
 ├── package.json             # "start": "node index.js"
 ├── render.yaml              # Blueprint Render (optionnel)
 ├── README.md
-├── .gitignore               # ignore node_modules/, account.txt, .env, *.log
+├── .gitignore               # ignore node_modules/, .env, *.log
 ├── .env.example             # modèle de variables d'environnement
-├── account.txt              # AppState local (template, JAMAIS commité)
+├── account.txt              # AppState local (modèle vide, versionné)
 │
 ├── config/
 │   └── config.js            # configuration centrale (surchargée par l'environnement)
@@ -80,8 +80,19 @@ git remote add origin https://github.com/<ton-compte>/merdi-bot.git
 git push -u origin main
 ```
 
-> ✅ `account.txt`, `.env` et `node_modules/` sont dans `.gitignore` : **aucun secret n'est envoyé sur GitHub**.
-> Vérifie avec `git status` que `account.txt` n'apparaît pas dans les fichiers suivis.
+> ⚠️ **Important** : `account.txt` est **versionné** (il est livré comme modèle vide, sans aucun secret).
+> Si tu y colles ton vrai AppState puis fais un `git push`, **tes cookies Facebook se retrouvent sur GitHub**.
+>
+> - En production, laisse-le vide et utilise la variable d'environnement `FB_APPSTATE` (étape 5).
+> - Si tu veux quand même y mettre ton AppState en local, re-masque-le d'abord :
+>
+> ```bash
+> # décommente la ligne "account.txt" dans .gitignore, puis :
+> git rm --cached account.txt
+> git commit -m "Ne plus suivre account.txt"
+> ```
+>
+> `.env` et `node_modules/` restent ignorés dans tous les cas.
 
 ### Étape 3 — Créer un Web Service sur Render
 
@@ -177,7 +188,7 @@ Ordre de priorité appliqué par `utils/auth.js` :
 
 1. **`FB_APPSTATE`** (variable d'environnement Render) ;
 2. **`FB_APPSTATE_FILE`** (chemin d'un Secret File Render) ;
-3. **`account.txt`** (fichier local, développement).
+3. **`account.txt`** (fichier local, développement — versionné et vide par défaut).
 
 Formats acceptés (détection automatique) :
 
@@ -195,7 +206,8 @@ Cookies obligatoires : **`c_user`** et **`xs`** (contrôlés au démarrage, mess
   automatiquement cookies, `fb_dtsg`, `access_token` et la valeur exacte des variables secrètes).
 - Il n'est **jamais** envoyé sur Messenger (aucune commande n'y accède).
 - Aucun cookie n'est écrit en dur dans le code.
-- `account.txt`, `.env` et les bases locales sont dans `.gitignore`.
+- `.env` et les bases locales sont dans `.gitignore`. ⚠️ `account.txt` est versionné (modèle vide) :
+  voir l'avertissement de l'étape 2 avant d'y écrire un vrai AppState.
 - ⚠️ Le disque de Render est **éphémère** : le rafraîchissement de `account.txt` est désactivé
   dès que `FB_APPSTATE` est utilisée. Utilise toujours la variable d'environnement en production.
 
