@@ -1,0 +1,26 @@
+# No paid disk or Render Postgres is provisioned. Data lives in Neon Free.
+services:
+  - type: web
+    name: idrem-zenkai
+    runtime: node
+    repo: https://github.com/Zorolefrerot/MATCHLY-PROJECT
+    branch: arena/01a08158-matchly-project
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: false
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.3
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_NAME
+        value: Hokage

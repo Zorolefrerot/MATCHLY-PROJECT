@@ -13,7 +13,8 @@
     "test": "node --test tests/*.test.js",
     "admin": "node --env-file-if-exists=.env server/create-admin.js",
     "test:browser": "npm run build && playwright test",
-    "format": "prettier --write src server tests *.js *.json *.html"
+    "format": "prettier --write src server tests *.js *.json *.html",
+    "test:postgres": "node --test tests/postgres.integration.js"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",
@@ -21,6 +22,7 @@
     "express": "^5.1.0",
     "lucide-react": "^0.468.0",
     "nodemailer": "^10.0.1",
+    "pg": "^8.23.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.0"
@@ -28,6 +30,7 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "embedded-postgres": "^18.4.0-beta.17",
     "prettier": "^3.9.6",
     "vite": "^6.1.0"
   }

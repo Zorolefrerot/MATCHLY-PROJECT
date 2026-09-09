@@ -1,6 +1,3 @@
-import { DatabaseSync } from "node:sqlite";
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
 import {
   randomInt,
   randomBytes,
@@ -8,6 +5,8 @@ import {
   timingSafeEqual,
   createHash,
 } from "node:crypto";
+import { openPostgres, openSqlite } from "./database.js";
+import { schema } from "./schema.js";
 export const digest = (value) =>
   createHash("sha256").update(value).digest("hex");
 export function hashPassword(password) {
@@ -21,55 +20,60 @@ export function verifyPassword(password, stored) {
     scryptSync(password, salt, 64),
   );
 }
-export function openStore(
-  path = process.env.DATABASE_PATH || "./data/idrem.sqlite",
-) {
-  if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
-  const db = new DatabaseSync(path);
-  db.exec(
-    "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
-  );
-  db.exec(`CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'player', created TEXT DEFAULT CURRENT_TIMESTAMP);
- CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id), expires INTEGER NOT NULL);
- CREATE TABLE IF NOT EXISTS resets(token TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id), expires INTEGER NOT NULL);
- CREATE TABLE IF NOT EXISTS applications(id INTEGER PRIMARY KEY, user_id INTEGER UNIQUE REFERENCES users(id), character TEXT NOT NULL, discovery TEXT NOT NULL, goals TEXT NOT NULL, motivation TEXT NOT NULL, story TEXT NOT NULL, answers TEXT NOT NULL, quiz_snapshot TEXT NOT NULL, score INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', message TEXT NOT NULL DEFAULT '', created TEXT DEFAULT CURRENT_TIMESTAMP, updated TEXT DEFAULT CURRENT_TIMESTAMP);
- CREATE TABLE IF NOT EXISTS allocations(user_id INTEGER PRIMARY KEY REFERENCES users(id), clan TEXT NOT NULL, affinity TEXT NOT NULL, mokuton INTEGER NOT NULL, created TEXT DEFAULT CURRENT_TIMESTAMP);
- CREATE TABLE IF NOT EXISTS mokuton_slots(position INTEGER PRIMARY KEY, potential INTEGER NOT NULL);
- CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, actor INTEGER REFERENCES users(id), action TEXT NOT NULL, target INTEGER, detail TEXT NOT NULL, created TEXT DEFAULT CURRENT_TIMESTAMP);`);
-  if (db.prepare("SELECT COUNT(*) AS n FROM mokuton_slots").get().n === 0) {
-    const slots = Array.from({ length: 20 }, (_, i) => (i < 3 ? 1 : 0));
-    for (let i = 19; i > 0; i--) {
-      const j = randomInt(i + 1);
-      [slots[i], slots[j]] = [slots[j], slots[i]];
-    }
-    db.exec("BEGIN IMMEDIATE");
-    try {
-      slots.forEach((v, i) =>
-        db.prepare("INSERT INTO mokuton_slots VALUES (?,?)").run(i, v),
-      );
-      db.exec("COMMIT");
-    } catch (e) {
-      db.exec("ROLLBACK");
-      throw e;
-    }
+export async function openStore(path) {
+  // An explicit path is for local development/tests. Hosting must not silently
+  // fall back to an ephemeral SQLite file if DATABASE_URL was omitted.
+  if (
+    path === undefined &&
+    process.env.RENDER === "true" &&
+    !process.env.DATABASE_URL
+  )
+    throw new Error(
+      "DATABASE_URL est obligatoire sur Render. Ajoute la connexion Neon dans Environment.",
+    );
+  const db =
+    path === undefined && process.env.DATABASE_URL
+      ? await openPostgres(process.env.DATABASE_URL)
+      : await openSqlite(
+          path || process.env.DATABASE_PATH || "./data/idrem.sqlite",
+        );
+  try {
+    await db.transaction(async () => {
+      await db.exec(schema(db.dialect));
+      if (
+        (await db.prepare("SELECT COUNT(*) AS n FROM mokuton_slots").get())
+          .n === 0
+      ) {
+        const slots = Array.from(
+          {
+            length: 20,
+          },
+          (_, i) => (i < 3 ? 1 : 0),
+        );
+        for (let i = 19; i > 0; i--) {
+          const j = randomInt(i + 1);
+          [slots[i], slots[j]] = [slots[j], slots[i]];
+        }
+        for (const [i, value] of slots.entries())
+          await db
+            .prepare("INSERT INTO mokuton_slots VALUES (?,?)")
+            .run(i, value);
+      }
+    });
+    return db;
+  } catch (error) {
+    await db.close();
+    throw error;
   }
-  return db;
 }
 export function transaction(db, fn) {
-  db.exec("BEGIN IMMEDIATE");
-  try {
-    const result = fn();
-    db.exec("COMMIT");
-    return result;
-  } catch (e) {
-    db.exec("ROLLBACK");
-    throw e;
-  }
+  return db.transaction(fn);
 }
-export function decide(db, actor, id, status, message = "") {
-  return transaction(db, () => {
-    const app = db.prepare("SELECT * FROM applications WHERE id=?").get(id);
+export async function decide(db, actor, id, status, message = "") {
+  return await transaction(db, async () => {
+    const app = await db
+      .prepare("SELECT * FROM applications WHERE id=?")
+      .get(id);
     if (!app) throw new Error("Candidature introuvable.");
     // First cohort only. Replacing admitted players requires explicit rules for rare slots.
     if (app.status === "accepted" && status !== "accepted")
@@ -79,19 +83,36 @@ export function decide(db, actor, id, status, message = "") {
     if (
       status === "accepted" &&
       app.status !== "accepted" &&
-      db
-        .prepare(
-          "SELECT COUNT(*) AS n FROM applications WHERE status='accepted'",
-        )
-        .get().n >= 20
+      (
+        await db
+          .prepare(
+            "SELECT COUNT(*) AS n FROM applications WHERE status='accepted'",
+          )
+          .get()
+      ).n >= 20
     )
       throw new Error("Les 20 places sont déjà attribuées.");
-    db.prepare(
-      "UPDATE applications SET status=?, message=?, updated=CURRENT_TIMESTAMP WHERE id=?",
-    ).run(status, message, id);
-    db.prepare(
-      "INSERT INTO audit(actor,action,target,detail) VALUES (?,?,?,?)",
-    ).run(actor, "decision", id, JSON.stringify({ status, message }));
+    await db
+      .prepare(
+        "UPDATE applications SET status=?, message=?, updated=? WHERE id=?",
+      )
+      .run(
+        status,
+        message,
+        new Date().toISOString().slice(0, 19).replace("T", " "),
+        id,
+      );
+    await db
+      .prepare("INSERT INTO audit(actor,action,target,detail) VALUES (?,?,?,?)")
+      .run(
+        actor,
+        "decision",
+        id,
+        JSON.stringify({
+          status,
+          message,
+        }),
+      );
   });
 }
 export const rare = ["Uchiwa", "Uzumaki", "Senju"];
@@ -108,30 +129,36 @@ export const common = [
   "Yeager",
   "Ackerman",
 ];
-export function allocate(db, userId) {
-  return transaction(db, () => {
+export async function allocate(db, userId) {
+  return await transaction(db, async () => {
     if (
-      db.prepare("SELECT status FROM applications WHERE user_id=?").get(userId)
-        ?.status !== "accepted"
+      (
+        await db
+          .prepare("SELECT status FROM applications WHERE user_id=?")
+          .get(userId)
+      )?.status !== "accepted"
     )
       throw new Error("Ta candidature doit être acceptée.");
-    const existing = db
+    const existing = await db
       .prepare("SELECT * FROM allocations WHERE user_id=?")
       .get(userId);
     if (existing) return existing;
-    const count = db.prepare("SELECT COUNT(*) AS n FROM allocations").get().n;
+    const count = (
+      await db.prepare("SELECT COUNT(*) AS n FROM allocations").get()
+    ).n;
     if (count >= 20) throw new Error("La cohorte est complète.");
+    const counts = await db
+      .prepare("SELECT clan, COUNT(*) AS n FROM allocations GROUP BY clan")
+      .all();
     const choices = [
       ...rare.map((name) => ({
         name,
-        weight:
-          db
-            .prepare("SELECT COUNT(*) AS n FROM allocations WHERE clan=?")
-            .get(name).n >= 3
-            ? 0
-            : 88,
+        weight: (counts.find((row) => row.clan === name)?.n || 0) >= 3 ? 0 : 88,
       })),
-      ...common.map((name) => ({ name, weight: 76 })),
+      ...common.map((name) => ({
+        name,
+        weight: 76,
+      })),
     ];
     // Provisional policy: equal common weights, then normalize available weights.
     let draw = randomInt(choices.reduce((n, x) => n + x.weight, 0));
@@ -154,20 +181,30 @@ export function allocate(db, userId) {
             : n < 79
               ? "Doton"
               : "Suiton";
-    const mokuton = db
-      .prepare("SELECT potential FROM mokuton_slots WHERE position=?")
-      .get(count).potential;
-    db.prepare(
-      "INSERT INTO allocations(user_id,clan,affinity,mokuton) VALUES (?,?,?,?)",
-    ).run(userId, clan, affinity, mokuton);
-    db.prepare(
-      "INSERT INTO audit(actor,action,target,detail) VALUES (?,?,?,?)",
-    ).run(
-      userId,
-      "allocation",
-      userId,
-      JSON.stringify({ clan, affinity, mokuton }),
-    );
-    return db.prepare("SELECT * FROM allocations WHERE user_id=?").get(userId);
+    const mokuton = (
+      await db
+        .prepare("SELECT potential FROM mokuton_slots WHERE position=?")
+        .get(count)
+    ).potential;
+    await db
+      .prepare(
+        "INSERT INTO allocations(user_id,clan,affinity,mokuton) VALUES (?,?,?,?)",
+      )
+      .run(userId, clan, affinity, mokuton);
+    await db
+      .prepare("INSERT INTO audit(actor,action,target,detail) VALUES (?,?,?,?)")
+      .run(
+        userId,
+        "allocation",
+        userId,
+        JSON.stringify({
+          clan,
+          affinity,
+          mokuton,
+        }),
+      );
+    return await db
+      .prepare("SELECT * FROM allocations WHERE user_id=?")
+      .get(userId);
   });
 }

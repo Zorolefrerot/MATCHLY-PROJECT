@@ -1713,9 +1713,11 @@ function Admin() {
                   <strong>
                     {a.action === "decision"
                       ? "Décision de candidature"
-                      : a.action === "quiz_update"
-                        ? "Modification du quiz"
-                        : "Attribution d’héritage"}
+                      : a.action === "owner_created"
+                        ? "Initialisation du propriétaire"
+                        : a.action === "quiz_update"
+                          ? "Modification du quiz"
+                          : "Attribution d’héritage"}
                   </strong>
                   <small>
                     {a.name} · {a.created} UTC
@@ -1922,7 +1924,8 @@ function Legal({ privacy = false }) {
               Un cookie de session essentiel permet de rester connecté pendant
               sept jours. Aucun outil de publicité ou d’analyse d’audience n’est
               intégré. Les données de cette version sont enregistrées dans la
-              base du serveur. Les polices et les images sont servies par ce
+              base du projet (Neon pour le déploiement Render, SQLite pour les
+              essais locaux). Les polices et les images sont servies par ce
               site, sans chargement depuis Google Fonts.
             </p>
             <h2>Avant une ouverture publique</h2>

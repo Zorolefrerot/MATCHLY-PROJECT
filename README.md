@@ -1,25 +1,30 @@
 # IDREM ZENKAI
 
-Première version du site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. L’application Android n’est pas encore réalisée.
+Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. L’application Android n’est pas encore réalisée.
 
-## Déjà fonctionnel
+## Déployer gratuitement depuis un téléphone
 
-- Accueil responsive rouge/noir avec l’illustration fournie par le propriétaire.
-- Présentation de l’univers, filtres des 14 clans et FAQ.
+**[Guide Render Free + Neon Free](docs/DEPLOIEMENT_RENDER_NEON.md)**
+
+Le dépôt inclut `render.yaml`, l’accès PostgreSQL compatible Neon et la création privée du propriétaire au premier démarrage. Rien n’est déployé automatiquement dans les comptes de l’utilisateur. Configurer les secrets dans Render, jamais dans Git ni dans la conversation.
+
+Branche de cette version : **`arena/01a08158-matchly-project`** (pas `main`).
+
+## Fonctionnalités
+
+- Accueil responsive rouge/noir avec l’image fournie, 14 clans filtrables et FAQ.
 - Inscription pseudo/e-mail/mot de passe, connexion et déconnexion.
-- Candidature en quatre étapes et quiz de 10 questions.
-- Espace candidat : dossier, décision, message et héritage après acceptation.
-- Administration privée : recherche et filtres, acceptation/refus/liste d’attente, messages, édition du quiz et historique.
-- Base SQLite persistante, mots de passe hachés avec scrypt et sessions côté serveur.
-- Limite de 20 admissions et tirages atomiques, définitifs et idempotents.
-- Maximum de 3 membres par clan rare ; exactement 3 potentiels Mokuton dans une cohorte complète de 20 attributions.
-- Récupération du mot de passe implémentée, **inactive sans configuration SMTP**.
+- Candidature en quatre étapes avec quiz de 10 questions et conservation du corrigé utilisé.
+- Espace candidat : dossier, décision, message et héritage après admission.
+- Administration privée : recherche, filtres, décisions, messages, édition du quiz et historique.
+- **PostgreSQL sur Neon pour Render**, SQLite conservé pour les essais locaux.
+- Transactions : maximum de 20 admissions, tirages définitifs et idempotents, maximum de trois membres par clan rare et exactement trois potentiels Mokuton dans une cohorte complète de vingt tirages.
+- Mots de passe hachés avec scrypt, cookies de session `HttpOnly`, contrôles d’accès et de provenance.
+- Récupération de compte facultative par HTTPS/Resend ou SMTP hors Render Free ; explicitement indisponible sans configuration d’envoi.
 
-Aucun faux joueur, faux administrateur ou identifiant public de production n’est fourni. Les tests utilisent leur propre base en mémoire.
+## Démarrer localement
 
-## Démarrage
-
-Node.js **22.13 ou supérieur** requis (`node:sqlite`, encore expérimental selon la version).
+Node.js **22.13+**, version de déploiement fixée à **22.22.3**.
 
 ```bash
 npm ci
@@ -27,82 +32,94 @@ cp .env.example .env
 npm run dev
 ```
 
-Le site et son API sont servis sur `0.0.0.0:3000`. Le navigateur appelle `/api` sur le même domaine : pas d’adresse localhost embarquée dans le client. Vite accepte les hôtes d’aperçu Arena.
+Le site et l’API écoutent sur `0.0.0.0:3000`. Le navigateur appelle `/api` sur le même domaine ; aucune URL de base ni clé privée n’est compilée dans React. Les hôtes d’aperçu sont acceptés en développement.
 
-### Créer le compte propriétaire
+- `DATABASE_URL` renseigné : PostgreSQL avec TLS vérifié (URL poolée Neon recommandée).
+- Sans `DATABASE_URL`, en local : SQLite dans `data/idrem.sqlite`, ignoré par Git.
+- Sur Render (`RENDER=true`), `DATABASE_URL` est **obligatoire** : pas de repli silencieux sur un disque éphémère.
 
-Dans un **environnement privé** du serveur, renseigner `ADMIN_EMAIL`, `ADMIN_PASSWORD` (14 caractères minimum) et éventuellement `ADMIN_NAME`, puis :
+### Compte propriétaire
+
+Avant le premier démarrage, renseigner dans l’environnement privé `ADMIN_EMAIL`, `ADMIN_PASSWORD` (14 à 128 caractères), `ADMIN_NAME` (3 à 30 caractères). Le serveur initialise l’unique propriétaire avant d’accepter les connexions. Il ne transforme jamais un compte joueur existant en administrateur et ne remplace jamais un mot de passe au redémarrage.
+
+Après une première connexion réussie, retirer `ADMIN_PASSWORD` et `ADMIN_EMAIL`. Le compte demeure dans la base. Hors Render, la commande suivante utilise le même mécanisme :
 
 ```bash
 npm run admin
 ```
 
-Retirer ensuite `ADMIN_PASSWORD` de l’environnement. Se connecter normalement sur `/connexion`, puis accéder à `/admin`. Il ne peut y avoir qu’un propriétaire et un inscrit ne peut pas s’attribuer ce rôle. Ne jamais envoyer de mot de passe ou de clé en conversation ni les ajouter à Git.
+Aucun compte privilégié ni identifiant public de production n’est fourni. Les tests créent des comptes dans des bases jetables uniquement.
 
-Depuis un téléphone, cette configuration se fera dans l’interface privée de l’hébergeur et sa console en ligne. Elle n’a volontairement pas de route publique de création du propriétaire.
-
-### Base de données
-
-Par défaut : `data/idrem.sqlite`, configurable avec `DATABASE_PATH`. Le dossier `data/` est ignoré par Git. Les données de l’aperçu sont locales à cet environnement : elles ne sont pas un hébergement de production garanti et ne sont pas transférées par un simple clone Git.
-
-En production, utiliser un **volume persistant**, sauvegarder SQLite avec son mécanisme de sauvegarde ou arrêter proprement l’application avant copie, et tester la restauration. Ne pas placer cette base sur un disque éphémère de fonction serverless. Ce prototype est prévu pour **une instance de serveur**, pas plusieurs processus sur des copies de base indépendantes.
-
-### Récupération de compte
-
-Configurer `PUBLIC_ORIGIN` (URL HTTPS publique sans slash final), `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` et, si requis, `SMTP_USER`/`SMTP_PASS`.
-
-Les liens expirent après 30 minutes, sont à usage unique et une modification du mot de passe invalide les anciennes sessions. Sans SMTP, le site affiche explicitement l’indisponibilité ; aucun faux e-mail n’est annoncé comme envoyé. L’envoi réel doit être testé avec le fournisseur choisi.
-
-### Production
+### Version de production
 
 ```bash
+npm ci --include=dev
 npm run build
+npm prune --omit=dev
 npm start
 ```
 
-- Servir derrière un reverse proxy HTTPS, renseigner `PUBLIC_ORIGIN`.
-- Le serveur fait confiance à **un proxy** pour les adresses IP ; ajuster cette politique à l’infrastructure réelle et empêcher le contournement direct du proxy.
-- Les cookies de production sont `Secure`, `HttpOnly`, `SameSite=Lax`.
-- La protection de provenance attend que le proxy conserve l’hôte public ou que `PUBLIC_ORIGIN` corresponde au domaine utilisé.
-- Aucun service payant n’est activé. Le choix d’un hébergeur gratuit reste à faire ; les limites, la persistance, l’e-mail et la disponibilité permanente doivent être vérifiés.
+`npm start` active les cookies `Secure` : utiliser HTTPS derrière un reverse proxy. Render fournit automatiquement le port et l’URL externe. `PUBLIC_ORIGIN` peut les compléter pour un domaine personnalisé.
+
+Le serveur fait confiance à **un proxy** pour les adresses IP. Adapter cette politique et interdire le contournement direct du proxy sur un autre hébergeur. Le point `/healthz` vérifie le processus sans requête PostgreSQL afin de ne pas réveiller Neon à chaque contrôle. Arrêt propre des connexions sur SIGTERM/SIGINT.
+
+### Persistance et transactions
+
+- Le schéma est créé de façon idempotente au démarrage. Le tirage des emplacements Mokuton est initialisé une seule fois.
+- PostgreSQL : pool limité à quatre connexions ; transactions sur un client réservé et verrou consultatif **transactionnel**, compatible avec le pooler Neon. Les admissions/attributions sont sérialisées même entre deux pools.
+- SQLite local : file d’exécution empêchant l’entrelacement des transactions asynchrones.
+- L’identité et les compteurs sont stockés en base, jamais dans la mémoire du serveur web.
+- Les données SQLite de l’aperçu ne sont **pas transférées automatiquement** dans un nouveau projet Neon. Rien ne supprime l’ancien fichier. Préparer un transfert contrôlé si ces données doivent être conservées.
+- Sauvegarder la base et tester la restauration avant ouverture publique. Les quotas et les fonctions de sauvegarde dépendent de l’offre choisie.
+
+### E-mails
+
+Sans fournisseur configuré, la connexion et les candidatures fonctionnent, mais la récupération reste indisponible. Pour Render, utiliser un fournisseur HTTPS : `RESEND_API_KEY`, `MAIL_FROM` (expéditeur autorisé) et l’origine publique. SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_USER`, `SMTP_PASS`) reste supporté **hors Render Free**, qui bloque les ports SMTP habituels.
+
+Les liens expirent en 30 minutes, ne sont utilisables qu’une fois et invalident les sessions lors du changement. Le délai d’envoi est borné. Ne pas annoncer l’envoi réel comme testé avant de configurer et vérifier le fournisseur choisi. Aucune offre payante n’est activée par ce code.
 
 ## Tests
 
 ```bash
-npm test
+npm test                  # SQLite, HTTP, configuration, TLS, bootstrap et e-mails simulés
+npm run test:postgres     # Vrai PostgreSQL local jetable, sans connexion à Neon
 npm run build
 npm audit
 ```
 
-Tests navigateur (Chromium nécessaire) :
+Le test PostgreSQL lance le binaire de développement `embedded-postgres` installé via npm, sur un port local temporaire, puis détruit son cluster de test. Il couvre le schéma, les redémarrages, la concurrence entre deux pools, les plafonds de la cohorte, la confidentialité des dossiers, les snapshots du quiz et les réinitialisations concurrentes. Le processus doit être lancé par un utilisateur non root comme dans un environnement de développement ordinaire.
+
+Tests navigateur :
 
 ```bash
 npx playwright install --with-deps chromium
 npm run test:browser
 ```
 
-Un navigateur déjà installé peut être utilisé via `CHROMIUM_EXECUTABLE`. Les tests navigateur démarrent une application isolée sur un port temporaire et ne modifient jamais la base de l’aperçu.
+Un Chromium déjà installé peut être utilisé via `CHROMIUM_EXECUTABLE`. Le test navigateur démarre un serveur isolé et n’accède pas aux données de l’aperçu.
 
-Couverture : inscription, permissions, confidentialité des dossiers et réponses du quiz, CSRF, admission, plafond de 20 joueurs, trois Mokuton, plafonds des clans rares, double tirage, persistance, navigation mobile, candidature complète, décision administrative et édition du quiz.
+## Limites du produit
 
-## Règles provisoires et limites explicites
+- Probabilités initiales : Uchiwa/Uzumaki/Senju, 8 % chacun. **Proposition technique à valider** : répartir les 76 % restants également entre onze clans et renormaliser les poids disponibles lorsqu’un clan atteint sa limite.
+- Exactement trois Mokuton **sur vingt attributions terminées** ; pas nécessairement parmi les premières admissions.
+- Le retrait d’une admission est bloqué tant que les règles des remplacements et des places rares ne sont pas définies.
+- Une candidature envoyée n’est pas encore modifiable. Le formulaire ne persiste qu’après son envoi final, ce que l’interface indique.
+- Une édition du quiz n’altère pas les dossiers déjà envoyés.
+- Les offres gratuites peuvent se mettre en veille et suspendre le service au dépassement de quotas. Elles ne garantissent pas le futur serveur de jeu 24 h/24.
+- Les mentions de confidentialité, contact du responsable, durées de conservation, suppression, âge des participants et éventuelle vérification d’e-mail restent à finaliser avant collecte publique.
+- Android, serveur de combat, inventaires et quêtes jouables restent hors de cette livraison.
 
-- Poids initiaux : Uchiwa/Uzumaki/Senju à 8 % chacun. **Proposition technique** pour le reste : les 76 % sont répartis également entre les 11 autres clans ; lorsqu’un clan est complet, les poids restants sont renormalisés. À valider avec le propriétaire avant une vraie campagne.
-- Les 20 emplacements Mokuton sont mélangés secrètement côté serveur avec exactement 3 positifs. Les attributions se font sans remise. La garantie porte sur les 20 tirages terminés, pas sur les premières admissions.
-- Retirer une admission est volontairement bloqué dans cette version : définir d’abord les règles des remplacements et des places rares.
-- Une candidature envoyée ne peut pas encore être modifiée. Le formulaire n’est pas sauvegardé avant l’envoi final et le signale.
-- Une modification du quiz ne change pas les dossiers déjà envoyés : chaque dossier conserve les questions et le corrigé utilisés.
-- Avant collecte publique : compléter l’identité/contact du responsable, la politique de conservation, les règles d’âge et la procédure d’exercice des droits. Ajouter la vérification d’e-mail si nécessaire.
-- L’application Android, le serveur de combat, les inventaires, les quêtes jouables et les IA externes ne sont pas livrés dans cette étape.
+## Organisation
 
-## Fichiers
-
-- `src/` : interface React et styles, polices servies localement.
-- `server/` : Express, authentification, SQLite, quiz, attributions.
-- `public/idrem-zenkai.png` : image fournie, récupérée depuis le fichier `file_00000000b7f0820eb34e34f06bba58d8.png` du dépôt principal.
-- `tests/` : tests serveur et navigateur.
-- `docs/CAHIER_DES_CHARGES.md` : synthèse des décisions du projet.
+- `src/` : interface React et styles ; polices servies localement.
+- `server/database.js`, `server/schema.js`, `server/store.js` : accès asynchrone aux données, schéma et règles transactionnelles.
+- `server/bootstrap-admin.js` : initialisation privée du propriétaire.
+- `server/app.js`, `server/mailer.js` : API et récupération de compte.
+- `public/idrem-zenkai.png` : illustration fournie par le propriétaire, issue du fichier `file_00000000b7f0820eb34e34f06bba58d8.png` de la branche principale.
+- `render.yaml` : configuration Free, sans disque ni base Render payants.
+- `docs/CAHIER_DES_CHARGES.md` : décisions du projet.
+- `docs/DEPLOIEMENT_RENDER_NEON.md` : parcours de déploiement depuis un téléphone.
 
 ## Ressources et droits
 
-L’illustration provient du dépôt du propriétaire ; son inclusion ne constitue pas une vérification de licence. Naruto et les autres univers cités restent la propriété de leurs ayants droit. Vérifier les autorisations avant diffusion publique. Polices Barlow Condensed et DM Sans distribuées via Fontsource sous leurs licences ouvertes ; icônes Lucide sous licence ISC.
+L’inclusion de l’image du dépôt ne vérifie pas sa licence. Naruto et les autres univers cités appartiennent à leurs ayants droit : vérifier les autorisations avant diffusion. Barlow Condensed et DM Sans sont distribuées via Fontsource sous licences ouvertes ; icônes Lucide sous licence ISC.
