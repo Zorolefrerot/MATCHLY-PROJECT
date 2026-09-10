@@ -118,7 +118,7 @@ func _build() -> void:
 	title.add_theme_color_override("font_color", CREAM)
 	top_panel.add_child(title)
 	var sub := Label.new()
-	sub.text = "PROTO 0.2  /  SOLO HORS LIGNE"
+	sub.text = "PROTO 0.3  /  SOLO HORS LIGNE"
 	sub.position = Vector2(16, 37)
 	sub.add_theme_font_size_override("font_size", 11)
 	sub.add_theme_color_override("font_color", Color("b4c7bf"))

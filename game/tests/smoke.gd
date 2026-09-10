@@ -58,9 +58,11 @@ func run() -> void:
 	check(game.hud.find_children("*", "TextureRect", true, false).is_empty(), "no logo image exists anywhere in the gameplay HUD")
 	check(not game.audio.active and not game.audio.music.playing, "opening menu is silent")
 	check(game.audio.voices.size() == TrainingAudio.MAX_VOICES, "sound effects use a fixed eight-voice pool")
+	var audio_manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio/manifest.json"))
 	for cue in TrainingAudio.CLIPS:
 		var clip: AudioStream = TrainingAudio.CLIPS[cue]
-		check(clip.get_length() > 0.05 and clip.get_length() < 1.0, "audio resource loaded: " + cue)
+		check(clip.get_length() > 0.05 and absf(clip.get_length() - float(audio_manifest["clips"][cue]["duration_seconds"])) < 0.001, "provided audio resource loaded at its full prepared duration: " + cue)
+	check(absf(game.audio.music.stream.get_length() - float(audio_manifest["clips"]["combat_loop"]["duration_seconds"])) < 0.001, "background player uses the owner-provided track")
 	check(game.audio.music.stream.loop_mode == AudioStreamWAV.LOOP_FORWARD and game.audio.music.stream.loop_end > 0, "combat ambience is a real looping audio stream")
 	var screen := Rect2(Vector2.ZERO, game.hud.size)
 	check(screen.encloses(game.hud.menu_panel.get_global_rect()), "opening menu fits within the virtual landscape viewport")
@@ -114,6 +116,15 @@ func run() -> void:
 	game.hud.ambience_toggle.button_pressed = false
 	check(not game.audio.music.playing, "ambience toggle stops only the background track")
 	check(game.audio.play_sfx("hit"), "effects still play when background ambience is disabled")
+	game.audio.play_sfx("hit")
+	game.audio.play_sfx("hit")
+	await process_frame
+	var hit_voices: int = 0
+	for voice in game.audio.voices:
+		if voice.playing and voice.get_meta("cue", "") == "hit":
+			hit_voices += 1
+	check(hit_voices == 1, "repeated impacts restart one recording instead of stacking long copies")
+	check(not game.audio.play_sfx("missing_cue"), "unknown sound names fail safely")
 	game.hud.ambience_toggle.button_pressed = true
 	check(game.audio.music.playing, "ambience can be enabled again")
 	game.player.strike_remaining = 0

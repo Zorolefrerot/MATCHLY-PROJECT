@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 const read = (file) =>
   readFileSync(new URL("../" + file, import.meta.url), "utf8");
@@ -49,8 +50,11 @@ test("the combat HUD cannot display the oversized logo", () => {
   assert.match(read("game/scripts/vfx.gd"), /MAX_GROUPS: int = 14/);
 });
 
-test("original offline sounds are non-silent bounded PCM, including a smooth music loop", () => {
+test("provided sounds and original warning are bounded offline PCM with traceable sources", () => {
   const dir = new URL("../game/assets/audio/", import.meta.url);
+  const manifest = JSON.parse(read("game/assets/audio/manifest.json"));
+  const sources = JSON.parse(read("game/audio_sources/sources.json"));
+  const sha = (data) => createHash("sha256").update(data).digest("hex");
   const files = readdirSync(dir).filter((name) => name.endsWith(".wav"));
   assert.equal(files.length, 10);
   for (const name of files) {
@@ -62,6 +66,37 @@ test("original offline sounds are non-silent bounded PCM, including a smooth mus
     assert.equal(data.readUInt32LE(24), 22050);
     assert.equal(data.readUInt16LE(34), 16);
     assert.equal(data.readUInt32LE(40), data.length - 44);
+    const cue = name.replace(".wav", "");
+    const record = manifest.clips[cue];
+    assert.equal(
+      sha(data),
+      record.output_sha256,
+      name + " matches prepared recording",
+    );
+    assert.ok(
+      Math.abs((data.length - 44) / 44100 - record.duration_seconds) < 0.0001,
+    );
+    if (cue !== "warning") {
+      const original = readFileSync(
+        new URL("../" + record.source, import.meta.url),
+      );
+      assert.equal(sha(original), record.source_sha256);
+      assert.equal(record.source_sha256, sources.files[cue + ".mp3"].sha256);
+      assert.equal(record.source_commit, sources.commit);
+      assert.equal(record.detected_codec, "aac");
+      assert.ok(
+        Math.abs(
+          record.input_seconds -
+            record.trim_start_seconds -
+            record.trim_end_seconds -
+            record.duration_seconds,
+        ) < 0.0001,
+      );
+      assert.ok(
+        record.gain_db <= 6.001,
+        "do not excessively amplify source noise",
+      );
+    }
     let peak = 0,
       energy = 0;
     for (let pos = 44; pos < data.length; pos += 2) {
@@ -75,7 +110,7 @@ test("original offline sounds are non-silent bounded PCM, including a smooth mus
       name + " is audible PCM",
     );
     if (name === "combat_loop.wav") {
-      assert.ok(data.length > 700000 && data.length < 900000);
+      assert.ok(record.duration_seconds > 40 && record.duration_seconds < 43);
       assert.ok(
         Math.abs(data.readInt16LE(44) - data.readInt16LE(data.length - 2)) <
           800,
@@ -83,4 +118,15 @@ test("original offline sounds are non-silent bounded PCM, including a smooth mus
       );
     }
   }
+});
+
+test("raw uploads stay out of the Godot import/export and the warning generator cannot replace them", () => {
+  assert.ok(read("game/audio_sources/.gdignore").length > 0);
+  const preset = read("game/export_presets.cfg");
+  assert.ok(preset.includes("audio_sources/*"));
+  assert.ok(preset.includes("assets/audio/manifest.json"));
+  const generator = read("game/tools/generate_audio.py");
+  assert.match(generator, /warning\.wav/);
+  assert.doesNotMatch(generator, /katon|raiton|futon|combat_loop/);
+  assert.match(read("game/scripts/audio.gd"), /get_meta\("cue"/);
 });

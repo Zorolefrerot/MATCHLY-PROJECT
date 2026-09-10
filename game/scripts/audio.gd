@@ -1,6 +1,6 @@
 class_name TrainingAudio
 extends Node
-## Small fixed voice pool, original offline PCM files, no microphone/network.
+## Small fixed voice pool, owner-provided offline PCM + original warning, no microphone/network.
 const MAX_VOICES: int = 8
 const BUS := "TrainingMix"
 const CLIPS: Dictionary = {
@@ -89,13 +89,24 @@ func set_suspended(value: bool) -> void:
 func play_sfx(cue: String) -> bool:
 	if not active or suspended or volume == 0 or not CLIPS.has(cue):
 		return false
-	var voice: AudioStreamPlayer = voices[cursor]
+	# Owner recordings are longer than the placeholder bleeps. Restart a cue
+	# already in progress instead of stacking several copies of the same sound.
+	var voice: AudioStreamPlayer = null
 	for candidate in voices:
-		if not candidate.playing:
+		if candidate.playing and candidate.get_meta("cue", "") == cue:
 			voice = candidate
 			break
+	if voice == null:
+		for candidate in voices:
+			if not candidate.playing:
+				voice = candidate
+				break
+	if voice == null:
+		voice = voices[cursor]
 	cursor = (cursor + 1) % MAX_VOICES
 	voice.stop()
+	voice.set_meta("cue", cue)
+	voice.volume_db = -2.0 if cue == "warning" else -5.0
 	voice.stream = CLIPS[cue]
 	voice.pitch_scale = 1.0
 	voice.play()
