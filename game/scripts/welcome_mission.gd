@@ -8,12 +8,15 @@ const EVENTS: Array[String] = ["accept", "read_academy", "read_market", "read_ho
 static func valid_state(value: Variant) -> bool:
 	if not value is Dictionary or value.size() != 5:
 		return false
-	if value.get("schemaVersion") != 1 or value.get("missionId") != "konoha_welcome":
+	var schema_version: Variant = value.get("schemaVersion")
+	if typeof(schema_version) not in [TYPE_INT, TYPE_FLOAT] or schema_version != 1:
+		return false
+	if not value.get("missionId") is String or value["missionId"] != "konoha_welcome":
 		return false
 	var status: Variant = value.get("status")
 	var visited: Variant = value.get("visited")
 	var revision: Variant = value.get("revision")
-	if status not in ["available", "active", "completed"] or not visited is Array:
+	if not status is String or status not in ["available", "active", "completed"] or not visited is Array:
 		return false
 	if typeof(revision) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(revision)):
 		return false

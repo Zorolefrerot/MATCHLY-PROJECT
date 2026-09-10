@@ -48,6 +48,15 @@ func run() -> void:
 		check(not WelcomeMission.valid_state(invalid), "mission rejects malformed field: " + broken)
 	check(not WelcomeMission.valid_state({"schemaVersion":1,"missionId":"konoha_welcome","status":"active","visited":["market","market"],"revision":3}), "duplicate mission checkpoints are rejected")
 	check(not WelcomeMission.valid_state({"schemaVersion":1,"missionId":"konoha_welcome","status":"completed","visited":[],"revision":5}), "completion requires all three checkpoints")
+	var malformed_fields: Dictionary = {"schemaVersion":[true,null,{},[],INF],"missionId":[1,true,null,{},[]],"status":[1,true,null,{},[]],"visited":[1,true,null,{},["unknown"]],"revision":[true,null,{},[],INF,NAN,-1,0.5]}
+	var malformed_rejected: bool = true
+	for key: String in malformed_fields:
+		for raw: Variant in malformed_fields[key]:
+			var invalid: Dictionary = mission_blank.duplicate(true)
+			invalid[key] = raw
+			var rejected: bool = not WelcomeMission.valid_state(invalid)
+			malformed_rejected = malformed_rejected and rejected
+	check(malformed_rejected, "wrong mission primitive types fail closed without GDScript operator errors")
 	var rules := TrainingRules.new()
 	check(rules.try_cast(0), "first jutsu can be cast")
 	check(not rules.try_cast(0), "same jutsu cannot bypass its cooldown")
@@ -437,6 +446,12 @@ func run() -> void:
 	var training_position: Vector3 = game.player.position
 	var training_elapsed: float = game.elapsed
 	var training_casts: int = game.rules.casts
+	var invalid_profile: Dictionary = online.duplicate(true)
+	invalid_profile["protocol"] = "1"
+	check(not CharacterAccountAPI.valid_profile(invalid_profile), "wrong profile version primitive fails closed")
+	invalid_profile = online.duplicate(true)
+	invalid_profile["character"]["rank"] = 1
+	check(not CharacterAccountAPI.valid_profile(invalid_profile), "wrong rank primitive fails closed without operator errors")
 	game.account_panel.village_button.pressed.emit()
 	check(game.village == null and game.village_entry_pending and game.account_api.sent["path"] == "/profile", "village entry waits for a fresh account admission check")
 	game.account_api.respond(200, online)

@@ -78,8 +78,12 @@ func _send(operation: String, method: int, path: String, body: Variant = null) -
 		completed.emit(operation, false, "Impossible de lancer la connexion. Vérifie le réseau et réessaie.")
 
 static func valid_profile(value: Variant) -> bool:
-	if not value is Dictionary or value.get("protocol") != 1 or value.get("schemaVersion") != 1:
+	if not value is Dictionary:
 		return false
+	for key in ["protocol", "schemaVersion"]:
+		var version: Variant = value.get(key)
+		if typeof(version) not in [TYPE_INT, TYPE_FLOAT] or version != 1:
+			return false
 	if value.has("welcomeMission") and not WelcomeMission.valid_state(value["welcomeMission"]):
 		return false
 	var identity: Variant = value.get("character")
@@ -93,7 +97,7 @@ static func valid_profile(value: Variant) -> bool:
 			return false
 	if typeof(identity.get("id")) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(identity["id"])) or identity["id"] <= 0 or identity["id"] != floorf(float(identity["id"])) or not identity.get("mokuton") is bool:
 		return false
-	if identity.get("rank") != "Genin" or identity.get("village") != "Konoha":
+	if not identity.get("rank") is String or not identity.get("village") is String or identity["rank"] != "Genin" or identity["village"] != "Konoha":
 		return false
 	var appearance: Variant = value.get("appearance")
 	if revision == 0:
