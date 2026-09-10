@@ -14,3 +14,7 @@ game/artifacts/
 *.aab
 *.keystore
 *.jks
+
+# Python build helpers
+__pycache__/
+*.py[cod]
