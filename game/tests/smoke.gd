@@ -55,6 +55,13 @@ func run() -> void:
 	root.add_child(game)
 	await process_frame
 	check(paused, "opening menu pauses simulation")
+	check(game.hud.find_children("*", "TextureRect", true, false).is_empty(), "no logo image exists anywhere in the gameplay HUD")
+	check(not game.audio.active and not game.audio.music.playing, "opening menu is silent")
+	check(game.audio.voices.size() == TrainingAudio.MAX_VOICES, "sound effects use a fixed eight-voice pool")
+	for cue in TrainingAudio.CLIPS:
+		var clip: AudioStream = TrainingAudio.CLIPS[cue]
+		check(clip.get_length() > 0.05 and clip.get_length() < 1.0, "audio resource loaded: " + cue)
+	check(game.audio.music.stream.loop_mode == AudioStreamWAV.LOOP_FORWARD and game.audio.music.stream.loop_end > 0, "combat ambience is a real looping audio stream")
 	var screen := Rect2(Vector2.ZERO, game.hud.size)
 	check(screen.encloses(game.hud.menu_panel.get_global_rect()), "opening menu fits within the virtual landscape viewport")
 	var controls_inside: bool = true
@@ -99,6 +106,36 @@ func run() -> void:
 	touch(0, sprint_point, false)
 	check(game.hud.sprinting, "touch toggles sprint once, not twice through mouse emulation")
 	game.hud.reset_input()
+	check(game.audio.active and game.audio.music.playing, "a single ambience track plays in an active round")
+	game.hud.volume_slider.value = 0
+	check(game.audio.volume == 0 and AudioServer.is_bus_mute(AudioServer.get_bus_index(TrainingAudio.BUS)), "menu volume slider mutes all game audio")
+	check(not game.audio.play_sfx("katon"), "muted techniques do not allocate sound playback")
+	game.hud.volume_slider.value = 60
+	game.hud.ambience_toggle.button_pressed = false
+	check(not game.audio.music.playing, "ambience toggle stops only the background track")
+	check(game.audio.play_sfx("hit"), "effects still play when background ambience is disabled")
+	game.hud.ambience_toggle.button_pressed = true
+	check(game.audio.music.playing, "ambience can be enabled again")
+	game.player.strike_remaining = 0
+	game.hud.sprinting = true
+	Input.action_press("move_forward")
+	for i in range(20):
+		await physics_frame
+	check(game.player.left_arm.rotation.x < -0.9 and game.player.right_arm.rotation.x < -0.9, "running trails both arms behind the ninja")
+	check(game.player.visual.rotation.x < -0.1 and is_zero_approx(game.player.forward().y), "running leans the model without tilting the combat direction")
+	game.player.strike_remaining = 0.3
+	for i in range(6):
+		await physics_frame
+	check(game.player.right_arm.rotation.x > 0.5, "attacking while running brings the striking arm forward")
+	Input.action_release("move_forward")
+	game.hud.sprinting = false
+	for i in range(30):
+		await physics_frame
+	check(absf(game.player.visual.rotation.x) < 0.02 and absf(game.player.left_arm.rotation.x) < 0.02, "standing restores an upright idle pose")
+	game.start_round()
+	game.enemy_enabled = false
+	for i in range(30):
+		await physics_frame
 	var previous: Vector3 = game.player.position
 	Input.action_press("move_forward")
 	for i in range(30):
@@ -114,6 +151,8 @@ func run() -> void:
 	game.player.dodge_remaining = 0
 	check(game.player.take_damage(10), "damage applies outside dodge window")
 	game.pause_round()
+	check(game.audio.suspended and game.audio.music.stream_paused, "pause suspends background sound")
+	check(not game.audio.play_sfx("hit"), "pause refuses new technique sounds")
 	var cooldown_before: Array = game.rules.cooldowns.duplicate()
 	var position_before: Vector3 = game.player.position
 	for i in range(5):
@@ -126,7 +165,11 @@ func run() -> void:
 	for i in range(8):
 		await physics_frame
 	var health_before: float = game.enemy.health
+	var sound_count: int = game.audio.play_count
 	check(game.cast_skill(1), "locked lightning casts")
+	check(game.audio.play_count > sound_count and game.vfx.get_child_count() > 0, "a valid technique creates sound and world-space effects")
+	sound_count = game.audio.play_count
+	check(not game.cast_skill(1) and game.audio.play_count == sound_count, "a refused technique does not create a duplicate sound")
 	check(game.enemy.health < health_before, "locked attack damages opponent")
 	game.start_round()
 	game.enemy_enabled = false
@@ -165,6 +208,16 @@ func run() -> void:
 	check(game.enemy.health == health_before - 44 and game.zones.is_empty(), "earth detonates once after the warning")
 	game.start_round()
 	game.enemy_enabled = false
+	for i in range(80):
+		game.vfx.impact(Vector3.ZERO, Color.WHITE)
+	check(game.vfx.get_child_count() <= TrainingVFX.MAX_GROUPS, "effect bursts have a strict simultaneous group budget")
+	for i in range(35):
+		await physics_frame
+	check(game.vfx.get_child_count() == 0, "short-lived effects are cleaned up automatically")
+	game.vfx.earth(Vector3.ZERO)
+	game.start_round()
+	await process_frame
+	check(game.vfx.get_child_count() == 0, "restarting clears remaining visuals and their tweens")
 	game.player.position = Vector3(0, 0.2, 18.8)
 	Input.action_press("move_back")
 	for i in range(60):
@@ -194,6 +247,7 @@ func run() -> void:
 	await physics_frame
 	await physics_frame
 	check(game.round_over and paused, "player defeat also pauses the round")
+	check(not game.audio.active and not game.audio.music.playing, "the result screen stops combat audio")
 	game.start_round()
 	game.hud.move_vector = Vector2.ONE
 	Input.action_press("move_forward")

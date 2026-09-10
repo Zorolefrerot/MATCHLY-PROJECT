@@ -89,7 +89,9 @@ func _limb(point: Vector3, dimensions: Vector3, mat: Material) -> Node3D:
 	return pivot
 
 func forward() -> Vector3:
-	return -visual.global_transform.basis.z
+	var heading: Vector3 = -visual.global_transform.basis.z
+	heading.y = 0
+	return heading.normalized()
 
 func face(direction: Vector3, weight: float = 1.0) -> void:
 	if Vector2(direction.x, direction.z).length() > 0.001:
@@ -128,6 +130,10 @@ func reset_at(point: Vector3) -> void:
 	strike_remaining = 0
 	flash_remaining = 0
 	visual.rotation = Vector3.ZERO
+	left_arm.rotation = Vector3.ZERO
+	right_arm.rotation = Vector3.ZERO
+	left_leg.rotation = Vector3.ZERO
+	right_leg.rotation = Vector3.ZERO
 
 func simulate(delta: float, direction: Vector3, sprint: bool = false) -> void:
 	dodge_cooldown = maxf(0.0, dodge_cooldown - delta)
@@ -152,7 +158,17 @@ func simulate(delta: float, direction: Vector3, sprint: bool = false) -> void:
 	var amplitude: float = minf(horizontal.length() / 5.0, 1.0) * 0.6
 	left_leg.rotation.x = sin(animation_time) * amplitude
 	right_leg.rotation.x = -sin(animation_time) * amplitude
-	left_arm.rotation.x = -sin(animation_time) * amplitude
-	right_arm.rotation.x = -1.8 if strike_remaining > 0.0 else sin(animation_time) * amplitude
+	var ninja_running: bool = sprint and horizontal.length() > 0.5
+	var blend: float = minf(1.0, delta * 15.0)
+	# Characters face -Z. A down-pointing arm rotated around negative X trails +Z.
+	var left_pose: float = -1.15 if ninja_running else -sin(animation_time) * amplitude
+	var right_pose: float = -1.15 if ninja_running else sin(animation_time) * amplitude
+	if strike_remaining > 0.0:
+		right_pose = 1.65 # Punch forward, not backwards, including during a sprint.
+	left_arm.rotation.x = lerpf(left_arm.rotation.x, left_pose, blend)
+	right_arm.rotation.x = lerpf(right_arm.rotation.x, right_pose, blend)
+	left_arm.rotation.z = lerpf(left_arm.rotation.z, -0.12 if ninja_running else 0.0, blend)
+	right_arm.rotation.z = lerpf(right_arm.rotation.z, 0.12 if ninja_running else 0.0, blend)
+	visual.rotation.x = lerpf(visual.rotation.x, -0.18 if ninja_running else 0.0, blend)
 	visual.rotation.z = 0.22 if dodge_remaining > 0.0 else 0.0
 	body_material.albedo_color = Color.WHITE if flash_remaining > 0 else base_color

@@ -41,3 +41,46 @@ test("prototype has four test techniques and a separate main scene", () => {
   assert.match(read("game/tools/check.sh"), /IDREM_SMOKE_FAILURES=0/);
   assert.match(read("game/tools/export_android.sh"), /apksigner.*verify/);
 });
+
+test("the combat HUD cannot display the oversized logo", () => {
+  const hud = read("game/scripts/hud.gd");
+  assert.doesNotMatch(hud, /TextureRect\.new|assets\/icon\.png/);
+  assert.match(hud, /volume_changed/);
+  assert.match(read("game/scripts/vfx.gd"), /MAX_GROUPS: int = 14/);
+});
+
+test("original offline sounds are non-silent bounded PCM, including a smooth music loop", () => {
+  const dir = new URL("../game/assets/audio/", import.meta.url);
+  const files = readdirSync(dir).filter((name) => name.endsWith(".wav"));
+  assert.equal(files.length, 10);
+  for (const name of files) {
+    const data = readFileSync(new URL(name, dir));
+    assert.equal(data.toString("ascii", 0, 4), "RIFF");
+    assert.equal(data.toString("ascii", 8, 12), "WAVE");
+    assert.equal(data.readUInt16LE(20), 1); // PCM
+    assert.equal(data.readUInt16LE(22), 1); // mono
+    assert.equal(data.readUInt32LE(24), 22050);
+    assert.equal(data.readUInt16LE(34), 16);
+    assert.equal(data.readUInt32LE(40), data.length - 44);
+    let peak = 0,
+      energy = 0;
+    for (let pos = 44; pos < data.length; pos += 2) {
+      const value = data.readInt16LE(pos) / 32768;
+      peak = Math.max(peak, Math.abs(value));
+      energy += value * value;
+    }
+    assert.ok(peak > 0.1 && peak < 0.8, name + " has audio headroom");
+    assert.ok(
+      Math.sqrt(energy / ((data.length - 44) / 2)) > 0.01,
+      name + " is audible PCM",
+    );
+    if (name === "combat_loop.wav") {
+      assert.ok(data.length > 700000 && data.length < 900000);
+      assert.ok(
+        Math.abs(data.readInt16LE(44) - data.readInt16LE(data.length - 2)) <
+          800,
+        "no large discontinuity at the loop boundary",
+      );
+    }
+  }
+});

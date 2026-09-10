@@ -11,6 +11,8 @@ var pivot: Node3D
 var arm: SpringArm3D
 var camera: Camera3D
 var effects: Node3D
+var vfx: TrainingVFX
+var audio: TrainingAudio
 var projectiles: Array[Dictionary] = []
 var zones: Array[Dictionary] = []
 var running: bool = false
@@ -29,6 +31,10 @@ var casts_landed: int = 0
 
 func _ready() -> void:
 	_register_inputs()
+	audio = TrainingAudio.new()
+	add_child(audio)
+	vfx = TrainingVFX.new()
+	add_child(vfx)
 	arena = TrainingArena.new()
 	add_child(arena)
 	arena.build()
@@ -66,6 +72,8 @@ func _ready() -> void:
 	hud.resume_requested.connect(_resume)
 	hud.restart_requested.connect(start_round)
 	hud.quality_changed.connect(_quality)
+	hud.volume_changed.connect(audio.set_volume)
+	hud.ambience_changed.connect(audio.set_ambience)
 	hud.opponent_changed.connect(func(active: bool) -> void: enemy_enabled = active)
 	_reset_positions()
 	hud.refresh(player, enemy, rules, target_locked, elapsed)
@@ -105,6 +113,8 @@ func _reset_positions() -> void:
 
 func start_round() -> void:
 	get_tree().paused = false
+	audio.start_round()
+	vfx.clear()
 	for child in effects.get_children():
 		child.queue_free()
 	projectiles.clear()
@@ -124,15 +134,18 @@ func _resume() -> void:
 		start_round()
 	else:
 		get_tree().paused = false
+		audio.set_suspended(false)
 		hud.hide_menu()
 
 func _quality(standard: bool) -> void:
+	vfx.standard = standard
 	arena.sun.shadow_enabled = standard
 	get_viewport().msaa_3d = Viewport.MSAA_2X if standard else Viewport.MSAA_DISABLED
 
 func pause_round() -> void:
 	if not running or round_over:
 		return
+	audio.set_suspended(true)
 	get_tree().paused = true
 	hud.show_menu("Une pause au village.", "Le combat, les recharges et l’adversaire sont en pause.\nTes candidatures et ton compte ne sont pas concernés.", "REPRENDRE", true)
 
@@ -158,6 +171,7 @@ func handle_action(action: String) -> void:
 		player.jump()
 	elif action == "dodge":
 		if player.dodge(_movement()):
+			audio.play_sfx("dodge")
 			hud.notice("Esquive ! Courte fenêtre de protection.")
 	elif action == "lock":
 		target_locked = not target_locked
@@ -234,6 +248,7 @@ func _update_enemy(delta: float) -> void:
 				enemy.strike_remaining = 0.25
 				if distance < 2.6 and _clear_line(enemy, player):
 					if player.take_damage(18, to_player.normalized() * 2.0):
+						audio.play_sfx("hit")
 						rules.enter_combat()
 						_burst(player.position + Vector3.UP, Color("fa9b86"), 0.6)
 						hud.notice("Touché ! Esquive lorsque le cercle rouge apparaît.")
@@ -241,6 +256,7 @@ func _update_enemy(delta: float) -> void:
 				enemy_windup = -1
 		elif distance < 2.0 and enemy_cooldown <= 0:
 			enemy_windup = 0.75
+			audio.play_sfx("warning")
 			telegraph = _disc(enemy.position + Vector3.UP * 0.05, 2.6, Color(0.9, 0.25, 0.22, 0.32))
 			hud.notice("L’adversaire prépare une frappe : éloigne-toi ou esquive !")
 		elif distance < 15 and distance > 1.7:
@@ -291,6 +307,8 @@ func melee() -> void:
 	rules.enter_combat()
 	if target_locked:
 		player.face(enemy.position - player.position)
+	audio.play_sfx("melee")
+	vfx.slash(player.position + Vector3.UP, player.forward())
 	var difference: Vector3 = enemy.position - player.position
 	if difference.length() < 2.2 and player.forward().dot(difference.normalized()) > 0.15 and _clear_line(player, enemy):
 		_hit_enemy(10, difference.normalized() * 0.8)
@@ -306,6 +324,7 @@ func cast_skill(index: int) -> bool:
 		return false
 	if not rules.try_cast(index):
 		return false
+	audio.play_sfx(["katon", "raiton", "futon", "doton"][index])
 	var skill: Dictionary = TrainingRules.SKILLS[index]
 	var color: Color = skill["color"]
 	var direction: Vector3 = _attack_direction()
@@ -313,8 +332,9 @@ func cast_skill(index: int) -> bool:
 	player.strike_remaining = 0.35
 	var origin: Vector3 = player.position + Vector3.UP * 1.15 + direction * 0.7
 	if index == 0:
+		vfx.impact(origin, color, 0.45)
 		var orb: MeshInstance3D = _orb(origin, 0.26, color)
-		projectiles.append({"node": orb, "direction": direction, "remaining": 1.8, "damage": float(skill["damage"]), "speed": 18.0})
+		projectiles.append({"node": orb, "direction": direction, "remaining": 1.8, "damage": float(skill["damage"]), "speed": 18.0, "trail_remaining": 0.0})
 	elif index == 1:
 		var end: Vector3 = origin + direction * 15.0
 		var ray := PhysicsRayQueryParameters3D.create(origin, end, 1 | 4)
@@ -328,7 +348,7 @@ func cast_skill(index: int) -> bool:
 		var flat: Vector3 = Vector3(direction.x, 0, direction.z).normalized()
 		var distance: Vector3 = enemy.position - player.position
 		distance.y = 0
-		_burst(origin + flat * 2, color, 2.0)
+		vfx.wind(origin, flat, color)
 		if distance.length() < 8 and flat.dot(distance.normalized()) > 0.55 and _clear_line(player, enemy):
 			_hit_enemy(float(skill["damage"]), flat * 8)
 	elif index == 3:
@@ -362,6 +382,10 @@ func _update_projectiles(delta: float) -> void:
 			projectiles.remove_at(i)
 		else:
 			node.position = next
+			shot["trail_remaining"] = float(shot["trail_remaining"]) - delta
+			if float(shot["trail_remaining"]) <= 0:
+				vfx.fire_trail(next, shot["direction"])
+				shot["trail_remaining"] = 0.07
 
 func _update_zones(delta: float) -> void:
 	for i in range(zones.size() - 1, -1, -1):
@@ -373,13 +397,15 @@ func _update_zones(delta: float) -> void:
 			distance.y = 0
 			if distance.length() < 3.0 and absf(enemy.position.y - point.y) < 2.0:
 				_hit_enemy(float(zone["damage"]), distance.normalized() * 3)
-			_burst(point + Vector3.UP * 0.4, Color("dcb079"), 3.0)
+			vfx.earth(point)
+			audio.play_sfx("earth_impact")
 			if is_instance_valid(zone["node"]):
 				zone["node"].queue_free()
 			zones.remove_at(i)
 
 func _hit_enemy(damage: float, push: Vector3) -> void:
 	if enemy.take_damage(damage, push):
+		audio.play_sfx("hit")
 		rules.enter_combat()
 		casts_landed += 1
 		_burst(enemy.position + Vector3.UP, Color("ffe2a3"), 0.5)
@@ -399,11 +425,7 @@ func _orb(point: Vector3, radius: float, color: Color) -> MeshInstance3D:
 	return result
 
 func _burst(point: Vector3, color: Color, radius: float) -> void:
-	var orb: MeshInstance3D = _orb(point, 0.2, color)
-	var tween: Tween = create_tween().bind_node(orb)
-	tween.tween_property(orb, "scale", Vector3.ONE * radius * 4.0, 0.10)
-	tween.tween_property(orb, "scale", Vector3.ONE * 0.05, 0.20)
-	tween.tween_callback(orb.queue_free)
+	vfx.impact(point, color, radius)
 
 func _disc(point: Vector3, radius: float, color: Color) -> MeshInstance3D:
 	var result := MeshInstance3D.new()
@@ -422,22 +444,10 @@ func _disc(point: Vector3, radius: float, color: Color) -> MeshInstance3D:
 	return result
 
 func _beam(from: Vector3, to: Vector3, color: Color) -> void:
-	var result := MeshInstance3D.new()
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = 0.09
-	mesh.bottom_radius = 0.16
-	mesh.height = maxf(from.distance_to(to), 0.01)
-	mesh.radial_segments = 8
-	result.mesh = mesh
-	result.position = (from + to) / 2
-	result.quaternion = Quaternion(Vector3.UP, (to - from).normalized())
-	result.material_override = TrainingFighter.material(color, true)
-	effects.add_child(result)
-	var tween: Tween = create_tween().bind_node(result)
-	tween.tween_interval(0.10)
-	tween.tween_callback(result.queue_free)
+	vfx.lightning(from, to, color)
 
 func _finish(victory: bool) -> void:
+	audio.stop_round()
 	round_over = true
 	get_tree().paused = true
 	var title: String = "Premier entraînement réussi." if victory else "Hors de combat, pas hors jeu."

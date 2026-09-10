@@ -7,6 +7,8 @@ signal resume_requested
 signal restart_requested
 signal quality_changed(standard: bool)
 signal opponent_changed(active: bool)
+signal volume_changed(value: float)
+signal ambience_changed(enabled: bool)
 
 var move_vector := Vector2.ZERO
 var look_delta := Vector2.ZERO
@@ -37,6 +39,8 @@ var menu_text: Label
 var help_text: Label
 var primary: Button
 var restart_button: Button
+var volume_slider: HSlider
+var ambience_toggle: CheckButton
 var notice_seconds: float = 0.0
 
 const RED := Color("ed6567")
@@ -106,22 +110,16 @@ func _build() -> void:
 	top_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_panel.add_theme_stylebox_override("panel", panel_style(Color(0.05, 0.10, 0.12, 0.87)))
 	add_child(top_panel)
-	var icon := TextureRect.new()
-	icon.texture = load("res://assets/icon.png")
-	icon.position = Vector2(14, 12)
-	icon.size = Vector2(44, 44)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	top_panel.add_child(icon)
+	# No logo texture in the combat HUD: it must never cover the playfield.
 	var title := Label.new()
 	title.text = "IDREM ZENKAI"
-	title.position = Vector2(72, 10)
+	title.position = Vector2(16, 10)
 	title.add_theme_font_size_override("font_size", 21)
 	title.add_theme_color_override("font_color", CREAM)
 	top_panel.add_child(title)
 	var sub := Label.new()
-	sub.text = "PROTO 0.1  /  SOLO HORS LIGNE"
-	sub.position = Vector2(72, 37)
+	sub.text = "PROTO 0.2  /  SOLO HORS LIGNE"
+	sub.position = Vector2(16, 37)
 	sub.add_theme_font_size_override("font_size", 11)
 	sub.add_theme_color_override("font_color", Color("b4c7bf"))
 	top_panel.add_child(sub)
@@ -168,7 +166,7 @@ func _build_menu() -> void:
 		margin.add_theme_constant_override("margin_" + side, 18)
 	menu_panel.add_child(margin)
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 14)
+	column.add_theme_constant_override("separation", 8)
 	margin.add_child(column)
 	var badge := Label.new()
 	badge.text = "IDREM ZENKAI  /  TERRAIN D’ENTRAÎNEMENT"
@@ -186,7 +184,7 @@ func _build_menu() -> void:
 	menu_text.add_theme_color_override("font_color", Color("bfd0c7"))
 	column.add_child(menu_text)
 	help_text = Label.new()
-	help_text.text = "TÉLÉPHONE : joystick à gauche, glisser à droite pour viser.\nCIBLER verrouille l’ennemi. DOTON vise toujours le sol.\nPC : ZQSD / WASD, clic droit + glisser, F, Ctrl, Espace.\nTouches 1–4 : jutsu · Tab : cible · Maj : course · Échap : pause."
+	help_text.text = "Joystick à gauche · Glisser à droite pour viser · CIBLER : verrouillage.\nPC : ZQSD/WASD · F : frappe · Ctrl : esquive · 1–4 : jutsu."
 	help_text.add_theme_font_size_override("font_size", 14)
 	help_text.add_theme_color_override("font_color", Color("c5bfa9"))
 	column.add_child(help_text)
@@ -203,6 +201,27 @@ func _build_menu() -> void:
 	opponent.add_theme_font_size_override("font_size", 15)
 	opponent.toggled.connect(func(active: bool) -> void: opponent_changed.emit(active))
 	column.add_child(opponent)
+	var sound_row := HBoxContainer.new()
+	var volume_label := Label.new()
+	volume_label.text = "Volume général"
+	volume_label.add_theme_font_size_override("font_size", 15)
+	sound_row.add_child(volume_label)
+	volume_slider = HSlider.new()
+	volume_slider.min_value = 0
+	volume_slider.max_value = 100
+	volume_slider.step = 5
+	volume_slider.value = 60
+	volume_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	volume_slider.custom_minimum_size = Vector2(230, 36)
+	volume_slider.value_changed.connect(func(value: float) -> void: volume_changed.emit(value / 100.0))
+	sound_row.add_child(volume_slider)
+	column.add_child(sound_row)
+	ambience_toggle = CheckButton.new()
+	ambience_toggle.text = "Ambiance de combat"
+	ambience_toggle.button_pressed = true
+	ambience_toggle.custom_minimum_size.y = 36
+	ambience_toggle.toggled.connect(func(enabled: bool) -> void: ambience_changed.emit(enabled))
+	column.add_child(ambience_toggle)
 	primary = Button.new()
 	primary.text = "LANCER L’ENTRAÎNEMENT"
 	primary.custom_minimum_size.y = 52
