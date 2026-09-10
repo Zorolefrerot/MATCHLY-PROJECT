@@ -95,7 +95,7 @@ function Button({ children, to, secondary = false, className = "", ...props }) {
 function Brand() {
   return (
     <Link to="/" className="brand" aria-label="IDREM ZENKAI, accueil">
-      <img src="/favicon.svg" alt="" />
+      <img src="/brand-mark.svg" alt="" />
       <span>
         IDREM <b>ZENKAI</b>
         <small>LA VOLONTÉ D’UNE NOUVELLE ÈRE</small>

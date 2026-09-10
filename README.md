@@ -123,3 +123,12 @@ Un Chromium déjà installé peut être utilisé via `CHROMIUM_EXECUTABLE`. Le t
 ## Ressources et droits
 
 L’inclusion de l’image du dépôt ne vérifie pas sa licence. Naruto et les autres univers cités appartiennent à leurs ayants droit : vérifier les autorisations avant diffusion. Barlow Condensed et DM Sans sont distribuées via Fontsource sous licences ouvertes ; icônes Lucide sous licence ISC.
+
+
+### Favicon et icônes mobiles
+
+L’image fournie est recadrée au format carré pour créer le favicon ICO (16/32/48/64 px), les PNG d’onglet (32/48 px), l’icône Apple (180 px) et les icônes de raccourci mobile (192/512 px). L’illustration d’origine reste intacte. Le monogramme du bandeau est séparé dans `public/brand-mark.svg`.
+
+Les fichiers sont déjà générés et versionnés : aucune dépendance graphique n’est nécessaire sur Render. Pour les régénérer après modification de l’image, installer ImageMagick dans l’environnement de développement puis lancer `bash scripts/generate-icons.sh`. Le manifeste décrit un raccourci web ; il ne fournit ni jeu Android ni mode hors ligne.
+
+Après mise à jour du dépôt, lancer un déploiement manuel Render. Les références d’icônes sont versionnées pour limiter les anciens favicons en cache.
