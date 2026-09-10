@@ -4,21 +4,37 @@
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node du site + isolation/sons du prototype | **20/20 passent** |
+| Tests Node du site + isolation/sons du prototype | **22/22 passent** |
+| Intégration PostgreSQL réel jetable | **7/7 passent**, dont contrat natif complet |
 | Construction Vite du site | Réussie, 1 597 modules |
 | Analyse GDScript | Import et exécution réussis dans Godot officiel 4.5.1 |
-| Exécution Godot de `tests/smoke.gd` | **120 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
+| Exécution Godot de `tests/smoke.gd` | **146 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
 | Erreurs dans le journal de la simulation | Aucune `SCRIPT ERROR`, `ERROR` ou assertion échouée |
 | Import dans l’éditeur officiel complet (CI) | Réussi, contrôle strict passé |
 | Import dans l’ancien éditeur local réduit | Erreurs d’environnement `fontconfig`, historique ci-dessous |
-| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; captures des deux modèles du créateur inspectées, pas un test Android |
-| Export APK / signature / permissions finales | **Réussis** : signature debug vérifiée avec `apksigner`, contrôle `aapt` sans permission réseau/sensible interdite |
-| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé par le propriétaire ; 0.5.0 à tester** |
-| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34451324752 verte** |
+| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; formulaire de compte inspecté, pas un test Android |
+| Export APK / signature / permissions finales | **Réussis** : signature debug vérifiée avec `apksigner`, contrôle `aapt` avec INTERNET requis, sans caméra/micro/contacts/localisation/stockage externe |
+| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé par le propriétaire ; 0.6.0 à tester** |
+| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34454338018 verte** |
 
-Les tests sans affichage ne prouvent pas les performances Android. **Deux captures réelles du créateur (masculin/féminin) ont été récupérées en JPEG via les annotations Checks et inspectées dans Arena** : aperçu du personnage de face, couleurs distinctes, commandes à droite et actions Annuler/Enregistrer à l’écran. Les réglages de tenue complète sont accessibles en faisant défiler la colonne. Les PNG complets sont dans l’artefact Android. Modèles géométriques provisoires, pas des maquettes générées par IA ni un test sur téléphone. Le propriétaire a validé l’étape d’entraînement 0.4 ; cette nouvelle version 0.5 reste à essayer sur son appareil.
+**Aucun essai connecté contre Render/Neon, ni essai Android physique pour 0.6.** La capture réelle du formulaire de compte a été récupérée via les annotations Checks et inspectée : adresse/e-mail/mot de passe, connexion, état déconnecté et retour hors ligne restent à l’écran. Les tests serveur font de vraies requêtes HTTP sur des bases jetables. Les tests Godot de compte emploient des réponses simulées, pas une liaison HTTPS Android de bout en bout. Le déploiement manuel du serveur et cet essai restent nécessaires.
 
-## Mise à jour 0.5.0 — personnalisation locale
+## Mise à jour 0.6.0 — compte natif et apparence persistante
+
+[Exécution n° 13](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34454338018), source **`48704c0b6ae931c741318f76efd250f16bbbe56b`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en **1 min 32 s**.
+
+- **22 tests Node**, **7 tests PostgreSQL** et construction Vite (1 597 modules) réussis. Contrat natif exercé sur SQLite persistant et un PostgreSQL jetable distinct de Neon : admission/attribution préexistante, cookie et jeton séparés, absence d’accès administrateur, identifiants hachés, palettes bornées, conflits concurrents, restauration, expiration, déconnexion et révocation lors du reset de mot de passe.
+- **146 assertions Godot**, dont les régressions antérieures plus ouverture du compte sans réseau au démarrage, origine HTTPS bornée/refus de destinations ambiguës, mot de passe vidé, protocole de profil, sauvegarde avec révision, échec/conflit conservant le brouillon, succès uniquement après accusé serveur et absence d’écrasement des choix hors ligne.
+- L’exécution n° 12 a détecté le rejet de nombres JSON légitimes après une sauvegarde : Godot décode les nombres en flottants, incompatibles avec une égalité stricte de dictionnaires d’entiers. Le validateur contrôle désormais chaque valeur numérique et une assertion vérifie le passage JSON réel. Les deux régressions de retour de menu associées passent également.
+- Import, simulation, export et signature Android réussis. La permission **INTERNET** est maintenant nécessaire et contrôlée ; autres permissions sensibles toujours refusées.
+- Dix captures ordinateur produites (arène, course, quatre techniques, pause, deux créateurs, connexion). Formulaire de connexion inspecté, pas d’image de compte réel ni d’identifiants fournis par le propriétaire.
+- Aucun changement des sons, effets, coûts, dégâts, vitesses ou recharges. Les apparences du compte ne modifient pas le combattant de l’entraînement. Le monde connecté et la progression restent absents.
+- Version **0.6.0**, code **6**, HUD **PROTO 0.6**, paquet `org.idremzenkai.training`, API minimum 24/cible 35, ARM64 et ARMv7.
+- APK : **61 629 445 octets**, SHA-256 `b96606821dea178b9e0b5572405cbe6def6f19dd8ac150c84c027571d2cc06ff`.
+- [ZIP `idrem-zenkai-android-13`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34454338018/artifacts/10142873650) : **63 197 671 octets**, expiration **17 septembre 2026 à 08:19 UTC** ; SHA-256 ZIP GitHub `499dd64e477e35766154e588d30ae119e999adaf954613dcc2be0c1d35bd711d`.
+- Déploiement, modèle de sécurité, limites de session et protocole : [`docs/COMPTE_JEU.md`](../docs/COMPTE_JEU.md). Aucun secret ni service payant supplémentaire nécessaire.
+
+## Historique : mise à jour 0.5.0 — personnalisation locale
 
 [Exécution n° 11](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34451324752), source **`9e834b7fe9beae4da1ee7cb61bdec142ffb66553`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en **1 min 28 s**.
 
@@ -128,4 +144,4 @@ La compilation GitHub prévue emploie, elle, l’éditeur officiel complet et le
 
 ## Éléments de production préservés
 
-Aucun appel à Render/Neon, aucune modification des comptes/candidatures/clans, aucun SDK installé sur Render et aucune migration de la vraie base. Les tests du site utilisent leurs données de test isolées. Le paquet Android prévu est distinct : `org.idremzenkai.training`.
+Pendant ces travaux, aucun appel au service Render/Neon de production, aucune modification des comptes/candidatures/clans réels, aucun SDK installé sur Render et aucune migration de la vraie base. Les tests utilisent des données isolées. Le code 0.6 ajoute des tables de session/apparence et des routes natives : elles seront activées au déploiement manuel du serveur. La branche `main` reste inchangée. Paquet Android : `org.idremzenkai.training`.

@@ -80,7 +80,7 @@ Le propriétaire a validé l’entraînement 0.4 et demandé la personnalisation
 
 Cette personnalisation ne relance aucun tirage et ne donne aucun avantage de combat. Les yeux cosmétiques ne débloquent pas de dōjutsu. Dans le futur jeu connecté, les statistiques et droits d’équipement restent contrôlés par le serveur ; une tenue cosmétique de test ne donne pas accès à un objet de l’inventaire.
 
-**À réaliser séparément** : synchronisation de l’apparence avec le personnage unique du compte, catalogue artistique final et règles de modification après création. La sauvegarde locale de l’APK ne remplace pas l’identité persistante du jeu RP ; une désinstallation peut l’effacer.
+**Incrément 0.6 implémenté, à déployer/tester en production** : connexion native des joueurs admis et sauvegarde d’apparence rattachée au compte unique ([détails](COMPTE_JEU.md)). Le catalogue artistique final et les règles définitives de modification après création restent à préciser. La sauvegarde locale de l’APK ne remplace pas l’identité persistante du jeu RP ; une désinstallation peut l’effacer.
 
 ### Clans retenus
 

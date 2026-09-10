@@ -1,6 +1,6 @@
 # IDREM ZENKAI
 
-Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android solo avec entraînement et créateur de personnage](game/README.md) est disponible ; le jeu RP multijoueur connecté n’est pas encore réalisé.
+Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android avec entraînement, créateur et espace de compte facultatif](game/README.md) est disponible ; le jeu RP multijoueur connecté n’est pas encore réalisé.
 
 ## Déployer gratuitement depuis un téléphone
 
@@ -9,6 +9,10 @@ Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un
 Le dépôt inclut `render.yaml`, l’accès PostgreSQL compatible Neon et la création privée du propriétaire au premier démarrage. Rien n’est déployé automatiquement dans les comptes de l’utilisateur. Configurer les secrets dans Render, jamais dans Git ni dans la conversation.
 
 Branche de cette version : **`arena/01a08158-matchly-project`** (pas `main`).
+
+## Raccordement du compte Android — code prêt
+
+L’API native et la sauvegarde d’apparence du compte sont implémentées, séparément de l’entraînement hors ligne. **Déploiement manuel Render et essai réel encore nécessaires.** [Activation et protections](docs/COMPTE_JEU.md). L’APK 0.6 est compilée ; le monde multijoueur n’est pas encore implémenté.
 
 ## Fonctionnalités
 

@@ -1,18 +1,29 @@
 # IDREM ZENKAI — Prototype d’entraînement Android
 
-Prototype **solo et hors ligne**, séparé du site Render/Neon. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages et décors sont des formes procédurales originales, pas les modèles définitifs du jeu Naruto.
+Prototype avec **entraînement solo hors ligne** et **espace de compte connecté facultatif**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages et décors sont des formes procédurales originales, pas les modèles définitifs du jeu Naruto.
 
 ## État vérifié
 
-**Version 0.5.0 compilée et vérifiée le 10 septembre 2026.** L’entraînement 0.4 a été validé par le propriétaire. La nouvelle étape ajoute un créateur de personnage hors ligne. **120 assertions Godot**, export signé, permissions et captures réussis ; deux captures du créateur inspectées dans Arena. Le rendu et les performances de 0.5 sur téléphone restent à confirmer. Détails : [`VALIDATION.md`](VALIDATION.md).
+**Version 0.6.0 compilée le 10 septembre 2026.** **146 assertions Godot**, 22 tests Node, 7 tests d’intégration PostgreSQL, export signé et permissions vérifiés. Formulaire de compte inspecté sur capture ordinateur. **Le serveur Render doit encore être déployé et l’essai connecté sur téléphone reste à faire.** Détails : [`VALIDATION.md`](VALIDATION.md).
 
-- [Télécharger le ZIP `idrem-zenkai-android-11` (environ 63 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34451324752/artifacts/10141691454) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
-- [Exécution verte et fichiers](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34451324752).
-- Extraire le ZIP et ouvrir **`idrem-zenkai-training-debug.apk`**. Ne pas télécharger `godot-test-logs-11` à la place.
+- [ZIP `idrem-zenkai-android-13` (environ 63 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34454338018/artifacts/10142873650) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
+- [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34454338018).
+- Extraire et ouvrir **`idrem-zenkai-training-debug.apk`**. Le fichier `godot-test-logs-13` n’est pas l’APK.
 
-## Nouveautés 0.5.0 — création du personnage
+## Nouveautés 0.6.0 — compte et apparence sur le serveur
 
-Depuis l’accueil ou la pause, choisir **PERSONNALISER MON PERSONNAGE**. Affichage de version : **PROTO 0.5**.
+- Bouton **MON COMPTE** à l’accueil/pause. Connexion par l’adresse HTTPS exacte du site et les identifiants d’un joueur admis. Le compte administrateur n’est pas un personnage joueur.
+- Nom, clan, affinité et potentiel Mokuton lus depuis les attributions existantes, **sans relancer le tirage**. Genin à Konoha pour cet incrément, sans progression persistante de combat.
+- **MODIFIER L’APPARENCE → ENREGISTRER SUR MON COMPTE** sauvegarde sur le serveur. Retrouver les choix après reconnexion/réinstallation. Un conflit n’écrase pas une version plus récente.
+- Mot de passe et jeton seulement en mémoire ; session 2 h, nouvelle connexion invalidant la précédente. Seule l’origine publique du serveur est mémorisée. Pas de secret Neon dans l’APK.
+- **APPARENCE HORS LIGNE** garde une sauvegarde distincte, sans requête réseau. Les choix du compte ne remplacent pas le combattant local ni ses quatre techniques de test.
+- Une réinstallation efface les choix **locaux** de 0.5, qui ne sont pas automatiquement transférés sur le compte. Les modèles, sons et combats validés sont conservés. Affichage **PROTO 0.6**.
+
+**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Nouveau code serveur prêt sur la branche, mais pas encore appliqué à Render/Neon par l’agent. Pas de monde multijoueur, pas de personnage connecté combattant dans une zone partagée à cette étape.
+
+## Créateur 0.5 conservé — apparence hors ligne
+
+Depuis l’accueil ou la pause, choisir **APPARENCE HORS LIGNE** pour les choix locaux, ou utiliser le créateur depuis **MON COMPTE** pour la sauvegarde distante.
 
 - **2 modèles** : masculin ou féminin, au choix ; mêmes collisions, santé et capacités. Les tenues conviennent aux deux silhouettes.
 - **4 coiffures** (court, pointes, carré, queue de cheval), **8 couleurs de cheveux**, **6 couleurs d’yeux**, **6 teintes de peau**.
@@ -66,11 +77,11 @@ La lecture audio est couverte par les tests du moteur, mais son rendu sur les ha
 - Adversaire à logique programmée : patrouille, poursuite, cercle rouge de préparation, frappe. Peut être désactivé depuis la pause.
 - Écrans d’accueil, pause, victoire/défaite, relance de manche et deux réglages graphiques.
 
-**Ce n’est pas encore le jeu RP multijoueur.** Aucun compte du site n’est utilisé. Aucun clan, rang, inventaire, tirage ou récompense n’est sauvegardé. Le mélange de quatre éléments sert seulement à tester les mécaniques. Il ne remplace pas les règles d’affinité validées pour le jeu final.
+**Ce n’est pas encore le jeu RP multijoueur.** L’espace de compte lit l’identité du site et enregistre uniquement son apparence. L’entraînement n’enregistre aucun clan, rang, inventaire, tirage, récompense ou progression. Le mélange de quatre éléments sert seulement à tester les mécaniques. Il ne remplace pas les règles d’affinité validées pour le jeu final.
 
 ## Téléphone Android
 
-Cible de test conseillée : Android **8+**, CPU ARM64 ou ARMv7, OpenGL ES 3, orientation paysage. Le manifeste compilé fixe le minimum technique à Android **7 (API 24)** et cible Android **15 (API 35)** ; ce sont les valeurs intégrées au modèle standard, pas des garanties de compatibilité matérielle. La compatibilité et les performances réelles doivent être vérifiées sur les téléphones des testeurs. Aucun accès Internet, localisation, caméra, micro ou contacts n’est demandé par le projet.
+Cible de test conseillée : Android **8+**, CPU ARM64 ou ARMv7, OpenGL ES 3, orientation paysage. Le manifeste compilé fixe le minimum technique à Android **7 (API 24)** et cible Android **15 (API 35)** ; ce sont les valeurs intégrées au modèle standard, pas des garanties de compatibilité matérielle. La compatibilité et les performances réelles doivent être vérifiées sur les téléphones des testeurs. La version 0.6 demande la permission **INTERNET** pour le compte. Aucun accès localisation, caméra, micro, contacts ou stockage externe n’est demandé.
 
 La compilation GitHub vérifie la signature de l’APK et ses permissions. Une compilation réussie n’équivaut pas à un essai sur un téléphone physique.
 
@@ -78,7 +89,7 @@ La compilation GitHub vérifie la signature de l’APK et ses permissions. Une c
 
 Le propriétaire a ajouté `.github/workflows/android-prototype.yml` depuis GitHub sur **`arena/01a08158-matchly-project`**, commit `8af7056`. Le modèle reste dans [`ci/android-prototype.yml`](ci/android-prototype.yml). Il ne faut **pas recréer le fichier**.
 
-La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais les changements du jeu sur cette branche déclenchent la compilation existante. Aucun réglage Render ou Neon n’est requis. Le bouton `Run workflow` peut rester absent tant que le workflow n’est pas sur la branche par défaut ; une exécution existante peut être relancée avec **Re-run jobs**.
+La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais les changements du jeu sur cette branche déclenchent la compilation existante. Aucun réglage Render/Neon n’est requis pour compiler. Le compte connecté nécessite le déploiement du nouveau serveur, sans nouvelle variable secrète. Le bouton `Run workflow` peut rester absent tant que le workflow n’est pas sur la branche par défaut ; une exécution existante peut être relancée avec **Re-run jobs**.
 
 ### Récupérer une compilation depuis GitHub, une fois verte
 
@@ -86,7 +97,7 @@ La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais 
 2. Choisir **Android - Prototype IDREM ZENKAI** et une exécution **verte** correspondant à la version du jeu souhaitée sur `arena/01a08158-matchly-project`. Une mise à jour de documentation seule peut ne pas créer de nouvelle APK.
 3. Dans **Artifacts**, télécharger `idrem-zenkai-android-…` (connexion à GitHub nécessaire).
 4. Extraire le ZIP sur le téléphone et ouvrir `idrem-zenkai-training-debug.apk`.
-5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.5.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
+5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.6.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
 6. Garder les graphismes **Économie** pour le premier essai.
 
 L’APK est signé avec une **clé de test temporaire**, pas une clé Play Store. Une nouvelle exécution peut générer une signature différente : Android pourra demander de désinstaller le prototype précédent avant installation. Le paquet `org.idremzenkai.training` est distinct du futur jeu. Aucun compte ni candidature n’est supprimé en désinstallant ce prototype.
