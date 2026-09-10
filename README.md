@@ -1,6 +1,6 @@
 # IDREM ZENKAI
 
-Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. L’application Android n’est pas encore réalisée.
+Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android solo avec entraînement et créateur de personnage](game/README.md) est disponible ; le jeu RP multijoueur connecté n’est pas encore réalisé.
 
 ## Déployer gratuitement depuis un téléphone
 

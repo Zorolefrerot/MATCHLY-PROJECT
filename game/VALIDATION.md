@@ -4,21 +4,36 @@
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node du site + isolation/sons du prototype | **19/19 passent** |
+| Tests Node du site + isolation/sons du prototype | **20/20 passent** |
 | Construction Vite du site | Réussie, 1 597 modules |
 | Analyse GDScript | Import et exécution réussis dans Godot officiel 4.5.1 |
-| Exécution Godot de `tests/smoke.gd` | **90 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
+| Exécution Godot de `tests/smoke.gd` | **120 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
 | Erreurs dans le journal de la simulation | Aucune `SCRIPT ERROR`, `ERROR` ou assertion échouée |
 | Import dans l’éditeur officiel complet (CI) | Réussi, contrôle strict passé |
 | Import dans l’ancien éditeur local réduit | Erreurs d’environnement `fontconfig`, historique ci-dessous |
-| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; recadrages Katon/Raiton inspectés, pas un test Android |
+| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; captures des deux modèles du créateur inspectées, pas un test Android |
 | Export APK / signature / permissions finales | **Réussis** : signature debug vérifiée avec `apksigner`, contrôle `aapt` sans permission réseau/sensible interdite |
-| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4.0 à tester** |
-| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34449560323 verte** |
+| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé par le propriétaire ; 0.5.0 à tester** |
+| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34451324752 verte** |
 
-Les tests sans affichage ne prouvent pas les performances Android. **Deux recadrages JPEG complets des captures réelles Katon/Raiton ont été récupérés via les annotations Checks et inspectés dans Arena** : flammes sans rectangle opaque, projectile à silhouette élargie, éclair blanc ramifié et contour bleuté, pas de logo ou de flash couvrant la vue. Les rendus source PNG sont dans l’artefact Android. Il ne s’agit ni de maquettes générées ni d’un essai sur téléphone. L’animation est couverte par les assertions ; les captures fixes ne prouvent pas sa fluidité. La version 0.4.0 reste à essayer sur l’appareil du propriétaire.
+Les tests sans affichage ne prouvent pas les performances Android. **Deux captures réelles du créateur (masculin/féminin) ont été récupérées en JPEG via les annotations Checks et inspectées dans Arena** : aperçu du personnage de face, couleurs distinctes, commandes à droite et actions Annuler/Enregistrer à l’écran. Les réglages de tenue complète sont accessibles en faisant défiler la colonne. Les PNG complets sont dans l’artefact Android. Modèles géométriques provisoires, pas des maquettes générées par IA ni un test sur téléphone. Le propriétaire a validé l’étape d’entraînement 0.4 ; cette nouvelle version 0.5 reste à essayer sur son appareil.
 
-## Mise à jour 0.4.0 — flammes et foudre
+## Mise à jour 0.5.0 — personnalisation locale
+
+[Exécution n° 11](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34451324752), source **`9e834b7fe9beae4da1ee7cb61bdec142ffb66553`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en **1 min 28 s**.
+
+- **120 assertions Godot**, dont les régressions de combat/audio/effets et les nouvelles vérifications du créateur : neuf choix séparés, aperçu et vue visage, ensemble préservant les traits du personnage, couleurs indépendantes, annulation, validation, relecture disque, remplacement d’une sauvegarde existante, échec d’écriture sans application des choix, récupération après fichier corrompu.
+- Vérification que les changements conservent le même objet de collision et les points de vie ; création impossible en plein combat, pause maintenue même après une demande de reprise, gestion de la perte de focus et du bouton Retour Android. Ce sont des événements synthétiques, pas un essai tactile physique.
+- **20 tests Node** et construction Vite réussis (1 597 modules). Import et exécution officiels Godot 4.5.1 réussis sans erreur. La première tentative n° 10 a détecté une mauvaise qualification de constante dans le test Retour ; elle a été corrigée en `Node.NOTIFICATION_WM_GO_BACK_REQUEST` avant cette compilation réussie.
+- Deux silhouettes habillées, quatre coiffures, palettes bornées, trois hauts et trois bas, quatre ensembles ; géométrie procédurale originale. Un aperçu dans un monde 3D séparé, rendu désactivé à la fermeture du créateur. Pas de mesure FPS Android.
+- Sauvegarde **locale uniquement** : fichier JSON versionné, taille de lecture limitée à 8 192 octets, identifiants validés et champs inconnus ignorés. Remplacement via fichier temporaire. Pas de connexion au site ni de sauvegarde de compte/clan/progression. Désinstallation ou effacement des données = perte de l’apparence locale.
+- Les neuf sons fournis, le warning, Katon/Raiton/Fūton/Doton et les règles de combat sont inchangés. Le site, les comptes et `main` ne sont pas modifiés.
+- Export debug signé, contrôle des permissions, neuf captures ordinateur (sept scènes précédentes + deux créateurs) : **réussis**.
+- Version **0.5.0**, code **5**, HUD **PROTO 0.5**, paquet `org.idremzenkai.training`, API minimum 24/cible 35, ARM64 et ARMv7.
+- APK : **61 612 743 octets**, SHA-256 `111b3ec41e8da7bb4fc4fca380d0179393098c597c330b701e0cd94b5528af00`.
+- [ZIP `idrem-zenkai-android-11`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34451324752/artifacts/10141691454) : **63 110 469 octets**, expiration **17 septembre 2026 à 07:44 UTC** ; SHA-256 ZIP GitHub `b215747edab8bff2b8cdefe3aa09e334a0b708fe27a4b307cb53d80a41d3a33e`.
+
+## Historique : mise à jour 0.4.0 — flammes et foudre
 
 [Exécution n° 9](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34449560323), source **`85a68db91d6b05dd6e3e9adb849d9ab6e83cdb69`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en **1 min 23 s**.
 
