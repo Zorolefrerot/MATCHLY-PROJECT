@@ -4,7 +4,7 @@ Prototype avec **entraînement solo hors ligne** et **espace de compte connecté
 
 ## État vérifié
 
-**Version 0.6.0 compilée le 10 septembre 2026.** **146 assertions Godot**, 22 tests Node, 7 tests d’intégration PostgreSQL, export signé et permissions vérifiés. Formulaire de compte inspecté sur capture ordinateur. **Le serveur Render doit encore être déployé et l’essai connecté sur téléphone reste à faire.** Détails : [`VALIDATION.md`](VALIDATION.md).
+**Version 0.6.0 compilée le 10 septembre 2026.** **146 assertions Godot**, 22 tests Node, 7 tests d’intégration PostgreSQL, export signé et permissions vérifiés. Formulaire de compte inspecté sur capture ordinateur. **Le propriétaire a confirmé le déploiement Render ; l’essai connecté sur téléphone reste à confirmer.** Détails : [`VALIDATION.md`](VALIDATION.md).
 
 - [ZIP `idrem-zenkai-android-13` (environ 63 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34454338018/artifacts/10142873650) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
 - [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34454338018).
@@ -19,7 +19,7 @@ Prototype avec **entraînement solo hors ligne** et **espace de compte connecté
 - **APPARENCE HORS LIGNE** garde une sauvegarde distincte, sans requête réseau. Les choix du compte ne remplacent pas le combattant local ni ses quatre techniques de test.
 - Une réinstallation efface les choix **locaux** de 0.5, qui ne sont pas automatiquement transférés sur le compte. Les modèles, sons et combats validés sont conservés. Affichage **PROTO 0.6**.
 
-**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Nouveau code serveur prêt sur la branche, mais pas encore appliqué à Render/Neon par l’agent. Pas de monde multijoueur, pas de personnage connecté combattant dans une zone partagée à cette étape.
+**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Nouveau code serveur sur la branche ; déploiement Render confirmé par le propriétaire, sans vérification indépendante de la production par l’agent. Pas de monde multijoueur, pas de personnage connecté combattant dans une zone partagée à cette étape.
 
 ## Créateur 0.5 conservé — apparence hors ligne
 

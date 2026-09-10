@@ -17,7 +17,7 @@
 | Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé par le propriétaire ; 0.6.0 à tester** |
 | Workflow GitHub Actions | Activé par le propriétaire ; exécution **34454338018 verte** |
 
-**Aucun essai connecté contre Render/Neon, ni essai Android physique pour 0.6.** La capture réelle du formulaire de compte a été récupérée via les annotations Checks et inspectée : adresse/e-mail/mot de passe, connexion, état déconnecté et retour hors ligne restent à l’écran. Les tests serveur font de vraies requêtes HTTP sur des bases jetables. Les tests Godot de compte emploient des réponses simulées, pas une liaison HTTPS Android de bout en bout. Le déploiement manuel du serveur et cet essai restent nécessaires.
+**Aucun essai connecté contre Render/Neon, ni essai Android physique pour 0.6.** La capture réelle du formulaire de compte a été récupérée via les annotations Checks et inspectée : adresse/e-mail/mot de passe, connexion, état déconnecté et retour hors ligne restent à l’écran. Les tests serveur font de vraies requêtes HTTP sur des bases jetables. Les tests Godot de compte emploient des réponses simulées, pas une liaison HTTPS Android de bout en bout. Le propriétaire a depuis confirmé le déploiement manuel Render. Cet essai connecté reste à confirmer ; aucune vérification indépendante du serveur de production n’a été effectuée par l’agent.
 
 ## Mise à jour 0.6.0 — compte natif et apparence persistante
 

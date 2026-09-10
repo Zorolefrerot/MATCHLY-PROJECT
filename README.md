@@ -12,7 +12,7 @@ Branche de cette version : **`arena/01a08158-matchly-project`** (pas `main`).
 
 ## Raccordement du compte Android — code prêt
 
-L’API native et la sauvegarde d’apparence du compte sont implémentées, séparément de l’entraînement hors ligne. **Déploiement manuel Render et essai réel encore nécessaires.** [Activation et protections](docs/COMPTE_JEU.md). L’APK 0.6 est compilée ; le monde multijoueur n’est pas encore implémenté.
+L’API native et la sauvegarde d’apparence du compte sont implémentées, séparément de l’entraînement hors ligne. **Déploiement Render confirmé par le propriétaire ; essai connecté réel encore à confirmer.** [Activation et protections](docs/COMPTE_JEU.md). L’APK 0.6 est compilée ; le monde multijoueur n’est pas encore implémenté.
 
 ## Fonctionnalités
 

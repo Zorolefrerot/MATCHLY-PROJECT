@@ -4,7 +4,7 @@ Statut : synthèse des choix du propriétaire. Une première version du site a d
 
 ## 1. Vision et périmètre
 
-Jeu RP dans une version alternative de Naruto Shippuden, au début de la série : Tsunade est Hokage, l’Akatsuki est active. L’histoire peut diverger à travers les actions des joueurs et des événements inédits : guerres, nouvelles organisations, alliances et conflits.
+Jeu RP dans une version alternative de Naruto Shippuden, au début de la série : l’Akatsuki est active ; les fonctions initiales de Hokage et de chef de l’Akatsuki sont attribuées au propriétaire administrateur (voir section 6). L’histoire peut diverger à travers les actions des joueurs et des événements inédits : guerres, nouvelles organisations, alliances et conflits.
 
 - Application Android installable, destinée en priorité aux téléphones de milieu de gamme.
 - Monde 3D, rendu anime/cel-shading, commandes tactiles et combats en temps réel.
@@ -167,12 +167,15 @@ Logique locale/serveur programmée, sans modèle de langage : rôles de mêlée,
 - Admission selon des critères de progression explicites, sans recommandation obligatoire du sensei.
 - Promotion : minimum d’épreuves réussies et évaluation de stratégie, coopération et leadership selon des critères visibles.
 - Promotion jōnin : expérience, résultats en mission et évaluation spéciale avant nomination.
-- Dirigeants initialement PNJ ; certains rôles pourront être occupés par des joueurs.
-- Hokage joueur sélectionné au mérite, nomination validée par le propriétaire.
+- **Décision du propriétaire : au début du jeu, l’administrateur sera Hokage et chef de l’Akatsuki.** Cela remplace l’hypothèse initiale de Tsunade Hokage et d’un chef de l’Akatsuki PNJ autonome.
+- Les autres dirigeants restent initialement PNJ ; certains rôles pourront ensuite être occupés par des joueurs.
+- Pour une succession ultérieure par un joueur : Hokage sélectionné au mérite, nomination validée par le propriétaire.
 - Désertion volontaire encadrée ou issue d’événements RP, avec conséquences connues.
-- Akatsuki : candidature d’un déserteur admissible et épreuves de recrutement. Admission validée par l’administrateur tant que son chef est PNJ.
+- Akatsuki : candidature d’un déserteur admissible et épreuves de recrutement. Au lancement, admission validée par le propriétaire qui assure le rôle de chef.
 
-Sans IA externe, le quotidien des dirigeants PNJ reposera sur des dialogues et règles préparés. Leurs décisions importantes nécessitent une validation administrative. Le contrôle direct de leurs dialogues par un administrateur n’a pas été retenu comme mode principal.
+L’accès administrateur dans l’APK reste **à implémenter séparément** : le propriétaire demande de terminer d’abord l’essentiel du parcours joueur (connexion, identité et sauvegarde). La décision sur ses fonctions initiales ne débloque donc pas le compte administrateur dans la version 0.6. Le mode d’incarnation des deux fonctions (personnage(s), changement de rôle) n’est pas encore défini ; aucun second personnage, pouvoir de combat ou mécanisme de faction n’est implicitement créé par cette décision.
+
+Sans IA externe, le quotidien des autres dirigeants PNJ reposera sur des dialogues et règles préparés. Leurs décisions importantes nécessitent une validation administrative. Le contrôle direct de leurs dialogues par un administrateur n’a pas été retenu comme mode principal.
 
 ## 7. Narration, communication et événements
 

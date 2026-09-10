@@ -1,6 +1,6 @@
 # Compte du jeu — incrément 0.6
 
-**Code prêt, tests locaux et compilation Android réussis. Pas encore déployé ni essayé contre le service Render/Neon du propriétaire.** L’entraînement reste hors ligne. Ce premier raccordement est un espace de compte avec apparence sauvegardée, pas un monde multijoueur ni une sauvegarde de progression de combat.
+**Code prêt, tests locaux et compilation Android réussis. Le propriétaire a confirmé le déploiement manuel Render après la livraison 0.6 ; la connexion de bout en bout depuis son téléphone reste à confirmer. Aucun contrôle indépendant du service de production n’a été effectué par l’agent.** L’entraînement reste hors ligne. Ce premier raccordement est un espace de compte avec apparence sauvegardée, pas un monde multijoueur ni une sauvegarde de progression de combat.
 
 ## Activation depuis le téléphone
 
@@ -10,6 +10,10 @@
 Après cela seulement : installer l’APK 0.6 indiquée dans [`game/README.md`](../game/README.md), ouvrir **MON COMPTE**, saisir l’adresse HTTPS exacte du site (origine uniquement, sans chemin), puis les identifiants d’un **compte joueur accepté ayant déjà reçu son attribution sur le site**. Ne jamais envoyer de mot de passe dans la conversation. Le propriétaire administrateur reste séparé des places joueurs ; pas de contournement automatique de l’admission.
 
 L’URL réelle du service n’étant pas enregistrée dans le dépôt, aucune adresse de production n’a été devinée/compilée dans l’APK. Elle se renseigne dans l’application et reste affichée. Seule cette origine publique est mémorisée sur le téléphone. Les redirections sont refusées et les certificats HTTPS restent vérifiés.
+
+## Administrateur — décision pour la suite
+
+Le propriétaire assurera **Hokage et chef de l’Akatsuki au début du jeu**. Il souhaite d’abord terminer le parcours essentiel des joueurs. L’accès administrateur distinct dans l’APK et les modalités d’incarnation de ces deux fonctions restent donc à réaliser ; cette décision ne change pas les restrictions actuelles de la version 0.6 et ne transforme aucun compte existant en joueur admis.
 
 ## Fonctionnement
 
