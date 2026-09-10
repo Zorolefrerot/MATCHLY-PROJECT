@@ -1,25 +1,36 @@
 # IDREM ZENKAI — Prototype d’entraînement Android
 
-Prototype avec **entraînement solo hors ligne** et **espace de compte connecté facultatif**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages et décors sont des formes procédurales originales, pas les modèles définitifs du jeu Naruto.
+Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages et décors sont des formes procédurales originales, pas les modèles définitifs du jeu Naruto.
 
 ## État vérifié
 
-**Version 0.6.0 compilée le 10 septembre 2026.** **146 assertions Godot**, 22 tests Node, 7 tests d’intégration PostgreSQL, export signé et permissions vérifiés. Formulaire de compte inspecté sur capture ordinateur. **Le propriétaire a confirmé le déploiement Render ; l’essai connecté sur téléphone reste à confirmer.** Détails : [`VALIDATION.md`](VALIDATION.md).
+**Version 0.7.0 compilée le 10 septembre 2026.** **178 assertions Godot**, 23 tests Node, 7 tests PostgreSQL, export signé et permissions vérifiés. Arrivée à Konoha et dialogue inspectés sur captures ordinateur. Le propriétaire confirme le fonctionnement du compte 0.6 ; **la nouvelle zone 0.7 reste à essayer sur téléphone**. Détails : [`VALIDATION.md`](VALIDATION.md).
 
-- [ZIP `idrem-zenkai-android-13` (environ 63 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34454338018/artifacts/10142873650) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
-- [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34454338018).
-- Extraire et ouvrir **`idrem-zenkai-training-debug.apk`**. Le fichier `godot-test-logs-13` n’est pas l’APK.
+- [ZIP `idrem-zenkai-android-15` (environ 64 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34459811443/artifacts/10145088287) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
+- [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34459811443).
+- Extraire et ouvrir **`idrem-zenkai-training-debug.apk`**. `godot-test-logs-15` contient seulement les journaux.
 
-## Nouveautés 0.6.0 — compte et apparence sur le serveur
+## Nouveautés 0.7.0 — première zone de Konoha
+
+- **MON COMPTE → connexion → ENTRER À KONOHA · PREMIÈRE ZONE SOLO**. Entrée distincte du retour à l’entraînement, avec nouvelle vérification de la session et chargement de l’apparence du compte.
+- Porte d’arrivée, allée principale, marché, académie, maisons et résidence du Hokage. Scène et monde physique séparés de l’arène ; ne réutilise pas sa carte sous un autre nom.
+- Joystick/caméra tactiles, marche, course et saut. **Aoi**, guide original, accueille les genin ; trois panneaux permettent de repérer les lieux.
+- **Pause → RETOUR À MON COMPTE** pour sortir. Dialogues écrits ; aucun jutsu de test dans ce quartier. L’entraînement reste inchangé et utilisable séparément.
+- Visite **solo**, bâtiments extérieurs seulement. Pas d’autres joueurs, d’achats ou de récompenses. Position et repérage restent temporaires ; apparence du compte toujours sauvegardée par le créateur.
+- **Pas de nouveau déploiement Render nécessaire** : l’API 0.6 déjà fonctionnelle suffit. Affichage **PROTO 0.7**. Modèles et décors encore provisoires.
+
+Détails, contrôles et limites : [première zone de Konoha](../docs/KONOHA_PREMIERE_ZONE.md).
+
+## Compte 0.6 conservé — identité et apparence sur le serveur
 
 - Bouton **MON COMPTE** à l’accueil/pause. Connexion par l’adresse HTTPS exacte du site et les identifiants d’un joueur admis. Le compte administrateur n’est pas un personnage joueur.
 - Nom, clan, affinité et potentiel Mokuton lus depuis les attributions existantes, **sans relancer le tirage**. Genin à Konoha pour cet incrément, sans progression persistante de combat.
 - **MODIFIER L’APPARENCE → ENREGISTRER SUR MON COMPTE** sauvegarde sur le serveur. Retrouver les choix après reconnexion/réinstallation. Un conflit n’écrase pas une version plus récente.
 - Mot de passe et jeton seulement en mémoire ; session 2 h, nouvelle connexion invalidant la précédente. Seule l’origine publique du serveur est mémorisée. Pas de secret Neon dans l’APK.
 - **APPARENCE HORS LIGNE** garde une sauvegarde distincte, sans requête réseau. Les choix du compte ne remplacent pas le combattant local ni ses quatre techniques de test.
-- Une réinstallation efface les choix **locaux** de 0.5, qui ne sont pas automatiquement transférés sur le compte. Les modèles, sons et combats validés sont conservés. Affichage **PROTO 0.6**.
+- Une réinstallation efface les choix **locaux** des versions précédentes, qui ne sont pas automatiquement transférés sur le compte. Les modèles, sons et combats validés sont conservés. Affichage **PROTO 0.6**.
 
-**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Nouveau code serveur sur la branche ; déploiement Render confirmé par le propriétaire, sans vérification indépendante de la production par l’agent. Pas de monde multijoueur, pas de personnage connecté combattant dans une zone partagée à cette étape.
+**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Nouveau code serveur sur la branche ; déploiement Render confirmé par le propriétaire, sans vérification indépendante de la production par l’agent. Le quartier 0.7 est une visite solo avec ce profil, pas un monde multijoueur ou une zone de combat partagée.
 
 ## Créateur 0.5 conservé — apparence hors ligne
 
@@ -97,7 +108,7 @@ La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais 
 2. Choisir **Android - Prototype IDREM ZENKAI** et une exécution **verte** correspondant à la version du jeu souhaitée sur `arena/01a08158-matchly-project`. Une mise à jour de documentation seule peut ne pas créer de nouvelle APK.
 3. Dans **Artifacts**, télécharger `idrem-zenkai-android-…` (connexion à GitHub nécessaire).
 4. Extraire le ZIP sur le téléphone et ouvrir `idrem-zenkai-training-debug.apk`.
-5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.6.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
+5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.7.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
 6. Garder les graphismes **Économie** pour le premier essai.
 
 L’APK est signé avec une **clé de test temporaire**, pas une clé Play Store. Une nouvelle exécution peut générer une signature différente : Android pourra demander de désinstaller le prototype précédent avant installation. Le paquet `org.idremzenkai.training` est distinct du futur jeu. Aucun compte ni candidature n’est supprimé en désinstallant ce prototype.

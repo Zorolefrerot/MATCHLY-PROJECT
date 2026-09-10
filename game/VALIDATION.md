@@ -4,22 +4,37 @@
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node du site + isolation/sons du prototype | **22/22 passent** |
+| Tests Node du site + isolation/sons du prototype | **23/23 passent** |
 | Intégration PostgreSQL réel jetable | **7/7 passent**, dont contrat natif complet |
 | Construction Vite du site | Réussie, 1 597 modules |
 | Analyse GDScript | Import et exécution réussis dans Godot officiel 4.5.1 |
-| Exécution Godot de `tests/smoke.gd` | **146 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
+| Exécution Godot de `tests/smoke.gd` | **178 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
 | Erreurs dans le journal de la simulation | Aucune `SCRIPT ERROR`, `ERROR` ou assertion échouée |
 | Import dans l’éditeur officiel complet (CI) | Réussi, contrôle strict passé |
 | Import dans l’ancien éditeur local réduit | Erreurs d’environnement `fontconfig`, historique ci-dessous |
-| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; formulaire de compte inspecté, pas un test Android |
+| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; arrivée à Konoha et dialogue inspectés, pas un test Android |
 | Export APK / signature / permissions finales | **Réussis** : signature debug vérifiée avec `apksigner`, contrôle `aapt` avec INTERNET requis, sans caméra/micro/contacts/localisation/stockage externe |
-| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé par le propriétaire ; 0.6.0 à tester** |
-| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34454338018 verte** |
+| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé par le propriétaire ; 0.6 confirmé fonctionnel ; zone 0.7.0 à tester** |
+| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34459811443 verte** |
 
-**Aucun essai connecté contre Render/Neon, ni essai Android physique pour 0.6.** La capture réelle du formulaire de compte a été récupérée via les annotations Checks et inspectée : adresse/e-mail/mot de passe, connexion, état déconnecté et retour hors ligne restent à l’écran. Les tests serveur font de vraies requêtes HTTP sur des bases jetables. Les tests Godot de compte emploient des réponses simulées, pas une liaison HTTPS Android de bout en bout. Le propriétaire a depuis confirmé le déploiement manuel Render. Cet essai connecté reste à confirmer ; aucune vérification indépendante du serveur de production n’a été effectuée par l’agent.
+Le propriétaire a confirmé le fonctionnement du parcours de compte 0.6, puis demandé une première zone de Konoha distincte de l’entraînement. **La nouvelle zone 0.7 n’a pas encore été testée sur son téléphone.** Les captures réelles de l’arrivée et du dialogue d’Aoi ont été inspectées dans Arena ; elles utilisent un profil fictif de contrôle, pas un compte réel. Les tests de passage du compte vers Konoha injectent les réponses de profil : ils valident le raccordement et l’expiration simulée, pas une nouvelle connexion HTTPS physique. Le serveur 0.6 reste inchangé.
 
-## Mise à jour 0.6.0 — compte natif et apparence persistante
+## Mise à jour 0.7.0 — premier quartier de Konoha
+
+[Exécution n° 15](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34459811443), source **`4cc94435634f0dee3d3adda9a53143f21aca1319`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en **1 min 41 s**.
+
+- **178 assertions Godot** : les régressions précédentes plus entrée après rafraîchissement du compte, sol/collisions, marche/saut/atterrissage, monde physique distinct, identité/apparence distante, absence de commandes de combat, multitouch indépendant, dialogue borné, trois panneaux, arrêt des mouvements pendant le dialogue, focus/Retour, récupération après chute, entraînement suspendu, destruction de la visite, nouvelle entrée et refus après expiration.
+- **23 tests Node**, **7 tests PostgreSQL** et construction Vite (1 597 modules) réussis. Les fichiers du serveur, son schéma, les règles de combat et les sons ne changent pas dans cet incrément.
+- L’exécution n° 14 a détecté une hauteur excessive du dialogue pendant la mesure initiale du texte replié. La largeur minimale du texte et la taille du panneau ont été fixées avant cette compilation réussie ; l’assertion de bornes est conservée.
+- Import, simulation, export Android signé et permissions **réussis**. INTERNET toujours requis pour le compte ; autres permissions sensibles refusées.
+- Treize captures ordinateur : dix précédentes plus arrivée à Konoha, marché et accueil d’Aoi. **Arrivée et dialogue inspectés** ; pas de benchmark ni d’essai Android physique de 0.7.
+- Monde Konoha séparé (`SubViewport` / `World3D`), entraînement désactivé et son rendu coupé pendant la visite. Aucun appel réseau périodique, aucune écriture de progression/récompense/position ni modification de l’apparence hors ligne.
+- Version **0.7.0**, code **7**, HUD **PROTO 0.7**, paquet `org.idremzenkai.training`, API minimum 24/cible 35, ARM64 et ARMv7.
+- APK : **61 650 600 octets**, SHA-256 `1fcf895f872253c227110315e2685afb5f8c8e90861bbdccc445635cd8f716da`.
+- [ZIP `idrem-zenkai-android-15`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34459811443/artifacts/10145088287) : **63 625 274 octets**, expiration **17 septembre 2026 à 09:19 UTC** ; SHA-256 ZIP GitHub `4621ce6fe770ad6c2d7da396ba61e2edb09c31b73ee3c8a400d6d5af95e5ff75`.
+- Utilisation, limites de la visite solo et statut du nettoyage des artefacts : [`docs/KONOHA_PREMIERE_ZONE.md`](../docs/KONOHA_PREMIERE_ZONE.md).
+
+## Historique : mise à jour 0.6.0 — compte natif et apparence persistante
 
 [Exécution n° 13](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34454338018), source **`48704c0b6ae931c741318f76efd250f16bbbe56b`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en **1 min 32 s**.
 

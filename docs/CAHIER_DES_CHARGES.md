@@ -80,7 +80,7 @@ Le propriétaire a validé l’entraînement 0.4 et demandé la personnalisation
 
 Cette personnalisation ne relance aucun tirage et ne donne aucun avantage de combat. Les yeux cosmétiques ne débloquent pas de dōjutsu. Dans le futur jeu connecté, les statistiques et droits d’équipement restent contrôlés par le serveur ; une tenue cosmétique de test ne donne pas accès à un objet de l’inventaire.
 
-**Incrément 0.6 implémenté, à déployer/tester en production** : connexion native des joueurs admis et sauvegarde d’apparence rattachée au compte unique ([détails](COMPTE_JEU.md)). Le catalogue artistique final et les règles définitives de modification après création restent à préciser. La sauvegarde locale de l’APK ne remplace pas l’identité persistante du jeu RP ; une désinstallation peut l’effacer.
+**Incrément 0.6 implémenté, déploiement et parcours de compte confirmés par le propriétaire** : connexion native des joueurs admis et sauvegarde d’apparence rattachée au compte unique ([détails](COMPTE_JEU.md)). Le catalogue artistique final et les règles définitives de modification après création restent à préciser. La sauvegarde locale de l’APK ne remplace pas l’identité persistante du jeu RP ; une désinstallation peut l’effacer.
 
 ### Clans retenus
 
@@ -243,7 +243,7 @@ Choisir et vérifier les offres gratuites réellement disponibles, configurer se
 
 Godot 4.5.1 et compilation gratuite GitHub Actions mis en place. L’entraînement solo 0.4 (arène, commandes tactiles, combat et effets) a été **validé par le propriétaire le 10 septembre 2026**.
 
-Incrément suivant : création/personnalisation locale du personnage décrite en section 3, en conservant l’entraînement validé. Le raccordement aux comptes, la synchronisation multijoueur et une mission coopérative restent des travaux ultérieurs. Les APK ne doivent pas être annoncés comme disponibles avant compilation et tests réels.
+Personnalisation locale livrée en 0.5 ; compte et apparence distante livrés en 0.6, parcours confirmé par le propriétaire. À sa demande, la version 0.7 ajoute une première zone de Konoha distincte de l’arène : visite solo, bâtiments extérieurs, guide d’accueil et panneaux, sans récompense ni progression sauvegardée. L’APK est compilée et testée dans le moteur ; cette nouvelle zone attend l’essai sur téléphone. La synchronisation multijoueur et une mission coopérative restent des travaux ultérieurs. Les APK ne doivent pas être annoncés comme disponibles avant compilation et tests réels.
 
 ## 12. Contraintes et points encore ouverts
 
