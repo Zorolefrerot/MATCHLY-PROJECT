@@ -1,6 +1,16 @@
 extends SceneTree
 ## Run with Godot --headless --path game --script res://tests/smoke.gd.
 
+# Only this test subclass bypasses transport; production uses verified HTTPS.
+class MockAccountAPI extends CharacterAccountAPI:
+	var sent: Dictionary = {}
+	func _send(operation: String, method: int, path: String, body: Variant = null) -> void:
+		_operation = operation
+		busy = true
+		sent = {"operation": operation, "method": method, "path": path, "body": body}
+	func respond(status: int, value: Dictionary) -> void:
+		_response(HTTPRequest.RESULT_SUCCESS, status, PackedStringArray(), JSON.stringify(value).to_utf8_buffer())
+
 var failures: int = 0
 
 func check(condition: bool, message: String) -> void:
@@ -52,11 +62,14 @@ func run() -> void:
 	check(rules.chakra == 100 and rules.casts == 0, "round reset restores only local test state")
 	var scene: PackedScene = load("res://scenes/training.tscn")
 	var game: Node3D = scene.instantiate()
+	game.account_api = MockAccountAPI.new()
 	game.appearance_path = "user://appearance-smoke.json"
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(game.appearance_path))
 	root.add_child(game)
 	await process_frame
 	check(paused, "opening menu pauses simulation")
+	game.account_panel.origin_config_path = "user://account-panel-smoke.cfg"
+	check(not game.account_api.busy and game.account_api.sent.is_empty(), "launching offline training performs no network request")
 	check(CharacterAppearance.sanitize({"skin": -1, "model": 999, "hair": "path", "eyes": 2.5, "clan": "Uchiwa"}) == CharacterAppearance.DEFAULTS, "cosmetic validation rejects invalid values and ignores gameplay keys")
 	check(CharacterAppearance.load_local(game.appearance_path) == CharacterAppearance.DEFAULTS, "missing appearance save falls back safely")
 	check(game.creator.viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED, "closed preview does not render an extra viewport")
@@ -367,6 +380,57 @@ func run() -> void:
 	check(paused and game.hud.move_vector == Vector2.ZERO and not Input.is_action_pressed("move_forward"), "losing application focus pauses and clears held inputs")
 	game._resume()
 	check(not paused and not game.hud.blocked, "resume leaves controls usable")
+	game.pause_round()
+	game.hud.account_button.pressed.emit()
+	await process_frame
+	await process_frame
+	check(game.account_panel.visible and paused and not game.hud.visible, "account panel opens separately from offline training")
+	var account_bounds := Rect2(Vector2.ZERO, game.account_panel.size)
+	check(account_bounds.encloses(game.account_panel.login_button.get_global_rect()) and account_bounds.encloses(game.account_panel.back_button.get_global_rect()), "account login and return controls fit the landscape viewport")
+	check(CharacterAccountAPI.normalize_origin("https://example.onrender.com/") == "https://example.onrender.com", "valid HTTPS website origin is normalized")
+	for bad_origin in ["http://example.com", "https://user:password@example.com", "https://example.com/api", "https://example.com?x=1", "https://localhost", "https://127.0.0.1", "https://example.com:9999"]:
+		check(CharacterAccountAPI.normalize_origin(bad_origin).is_empty(), "unsafe or ambiguous credential destination is refused")
+	game.account_panel.origin_field.text = "http://example.com"
+	game.account_panel.password_field.text = "not-a-real-password"
+	game.account_panel.login_button.pressed.emit()
+	check(game.account_panel.password_field.text.is_empty() and not game.account_api.busy and game.account_api.sent.is_empty(), "invalid origin is refused before any request and password field is cleared")
+	var online: Dictionary = {"protocol": 1, "schemaVersion": 1, "character": {"id": 123, "name": "Genin Test", "clan": "Hyūga", "affinity": "Raiton", "mokuton": false, "rank": "Genin", "village": "Konoha"}, "appearance": null, "revision": 0}
+	check(CharacterAccountAPI.valid_profile(online), "server profile contract is recognized without fabricating an appearance")
+	var incompatible: Dictionary = online.duplicate(true)
+	incompatible["protocol"] = 99
+	check(not CharacterAccountAPI.valid_profile(incompatible), "incompatible server profile is rejected")
+	game.account_panel.origin_field.text = "https://example.onrender.com"
+	game.account_panel.email_field.text = "fixture@example.test"
+	game.account_panel.password_field.text = "not-a-real-password"
+	game.account_panel.login_button.pressed.emit()
+	check(game.account_api.sent["path"] == "/login" and game.account_panel.password_field.text.is_empty(), "login uses the dedicated game route without retaining the password field")
+	game.account_api.respond(200, {"token": "a".repeat(64), "profile": online})
+	check(game.account_api.profile["character"]["name"] == "Genin Test" and not game.account_panel.edit_button.disabled, "valid login shows the account character and allows cosmetic editing")
+	var offline_before: Dictionary = game.player.appearance.duplicate()
+	var local_before: String = FileAccess.get_file_as_string(CharacterAppearance.SAVE_PATH) if FileAccess.file_exists(CharacterAppearance.SAVE_PATH) else ""
+	game.account_panel.edit_button.pressed.emit()
+	check(game.creator.remote_mode and game.creator.visible and not game.account_panel.visible, "cloud appearance uses a distinct editor save mode")
+	game.creator.set_choice("hair", 3)
+	game.creator.confirm()
+	check(game.creator.remote_busy and game.account_api.sent["path"] == "/appearance" and game.account_api.sent["body"]["expectedRevision"] == 0, "cloud save sends the expected server revision and does not finish before acknowledgement")
+	game.creator.cancel()
+	check(game.creator.visible, "pending cloud save cannot falsely report cancellation")
+	game.account_api.respond(409, {"error": "Une version plus récente existe."})
+	check(game.creator.visible and not game.creator.remote_busy and game.creator.draft["hair"] == 3, "save conflict keeps the draft visible without claiming success")
+	game.creator.confirm()
+	online["appearance"] = game.creator.draft.duplicate()
+	online["revision"] = 1
+	game.account_api.respond(200, online)
+	check(not game.creator.visible and game.account_panel.visible and game.account_api.profile["revision"] == 1, "acknowledged cloud save returns to the updated account profile")
+	check(game.player.appearance == offline_before, "cloud appearance cannot overwrite the offline combat fighter")
+	var local_after: String = FileAccess.get_file_as_string(CharacterAppearance.SAVE_PATH) if FileAccess.file_exists(CharacterAppearance.SAVE_PATH) else ""
+	check(local_before == local_after, "cloud editor never writes the local appearance save")
+	game.account_panel.refresh_button.pressed.emit()
+	game.account_api.respond(401, {"error": "Session expirée."})
+	check(game.account_api.profile.is_empty() and game.account_api._token.is_empty() and game.account_panel.edit_button.disabled, "expired session clears account identity and disables edits")
+	game.handle_action("pause")
+	check(not game.account_panel.visible and game.hud.visible and paused, "back from account returns to the paused offline menu")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(game.account_panel.origin_config_path))
 	game.queue_free()
 	await process_frame
 	print("IDREM_SMOKE_FAILURES=%d" % failures)

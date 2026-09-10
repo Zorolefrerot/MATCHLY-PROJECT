@@ -1,4 +1,5 @@
 import express from "express";
+import { installGameRoutes } from "./game.js";
 import { randomBytes } from "node:crypto";
 import { recoveryAvailable, sendRecovery } from "./mailer.js";
 import { isUniqueViolation } from "./database.js";
@@ -135,6 +136,7 @@ export function createApp(db) {
     email: u.email,
     role: u.role,
   });
+  installGameRoutes(app, db, limit);
   app.get("/api/info", async (req, res) =>
     res.json({
       capacity: 20,
@@ -299,6 +301,9 @@ export function createApp(db) {
           .run(reset.user_id);
         await db
           .prepare("DELETE FROM sessions WHERE user_id=?")
+          .run(reset.user_id);
+        await db
+          .prepare("DELETE FROM game_sessions WHERE user_id=?")
           .run(reset.user_id);
       });
       res.json({

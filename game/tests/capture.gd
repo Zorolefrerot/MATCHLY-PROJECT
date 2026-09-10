@@ -69,16 +69,23 @@ func run() -> void:
 		if rendered.save_png(folder.path_join("character-creator-%d.png" % model)) != OK:
 			quit(1)
 			return
-		# Actual render preview through Checks, no dependency on download hosts.
-		if OS.get_environment("GITHUB_ACTIONS") == "true":
-			rendered.resize(480, 270, Image.INTERPOLATE_LANCZOS)
-			var encoded: String = Marshalls.raw_to_base64(rendered.save_jpg_to_buffer(0.45))
-			if encoded.length() > 14000:
-				encoded = Marshalls.raw_to_base64(rendered.save_jpg_to_buffer(0.25))
-			if encoded.length() <= 14000:
-				var parts: int = ceili(float(encoded.length()) / 3500.0)
-				for part in range(parts):
-					print("::notice title=Creator QA %d JPEG part %d of %d::%s" % [model, part, parts, encoded.substr(part*3500, 3500)])
 	game.creator.cancel()
+	game.open_account()
+	for frame in range(4):
+		await process_frame
+	await RenderingServer.frame_post_draw
+	var account_image: Image = root.get_texture().get_image()
+	if account_image.save_png(folder.path_join("account-login.png")) != OK:
+		quit(1)
+		return
+	if OS.get_environment("GITHUB_ACTIONS") == "true":
+		account_image.resize(480, 270, Image.INTERPOLATE_LANCZOS)
+		var encoded: String = Marshalls.raw_to_base64(account_image.save_jpg_to_buffer(0.4))
+		if encoded.length() > 14000:
+			encoded = Marshalls.raw_to_base64(account_image.save_jpg_to_buffer(0.2))
+		if encoded.length() <= 14000:
+			var parts: int = ceili(float(encoded.length()) / 3500.0)
+			for part in range(parts):
+				print("::notice title=Account QA JPEG part %d of %d::%s" % [part, parts, encoded.substr(part*3500, 3500)])
 	print("IDREM_CAPTURE_SUCCESS")
 	quit(0)

@@ -5,13 +5,13 @@ import { readFileSync, readdirSync } from "node:fs";
 const read = (file) =>
   readFileSync(new URL("../" + file, import.meta.url), "utf8");
 
-test("Android prototype is isolated and does not gain access to live accounts", () => {
+test("offline training stays separate from explicit scoped HTTPS account access", () => {
   const project = read("game/project.godot");
   assert.match(project, /gl_compatibility/);
   assert.match(project, /textures\/vram_compression\/import_etc2_astc=true/);
   assert.match(project, /window\/handheld\/orientation=0/);
   const preset = read("game/export_presets.cfg");
-  assert.match(preset, /permissions\/internet=false/);
+  assert.match(preset, /permissions\/internet=true/);
   assert.match(preset, /package\/unique_name="org.idremzenkai.training"/);
   assert.match(preset, /gradle_build\/use_gradle_build=false/);
   // Standard APK templates have fixed SDK levels; overrides require Gradle.
@@ -23,8 +23,10 @@ test("Android prototype is isolated and does not gain access to live accounts", 
     const script = read("game/scripts/" + name);
     assert.doesNotMatch(
       script,
-      /HTTPRequest\.new|HTTPClient\.new|WebSocketPeer\.new|DATABASE_URL|ADMIN_PASSWORD/,
+      /HTTPClient\.new|WebSocketPeer\.new|DATABASE_URL|ADMIN_PASSWORD/,
     );
+    if (name !== "account_api.gd")
+      assert.doesNotMatch(script, /HTTPRequest\.new/);
   }
   const workflow = read("game/ci/android-prototype.yml");
   assert.match(workflow, /branches: \[arena\/01a08158-matchly-project\]/);
@@ -131,29 +133,41 @@ test("raw uploads stay out of the Godot import/export and the warning generator 
   assert.match(read("game/scripts/audio.gd"), /get_meta\("cue"/);
 });
 
-test('Katon has a real flame atlas and Raiton has bounded batched electrical branches', () => {
-  const atlas = readFileSync(new URL('../game/assets/vfx/flame_atlas.png', import.meta.url));
-  assert.equal(atlas.toString('hex', 0, 8), '89504e470d0a1a0a');
+test("Katon has a real flame atlas and Raiton has bounded batched electrical branches", () => {
+  const atlas = readFileSync(
+    new URL("../game/assets/vfx/flame_atlas.png", import.meta.url),
+  );
+  assert.equal(atlas.toString("hex", 0, 8), "89504e470d0a1a0a");
   assert.equal(atlas.readUInt32BE(16), 1024);
   assert.equal(atlas.readUInt32BE(20), 192);
-  assert.equal(atlas[25], 6, 'RGBA transparency is preserved');
-  const flame = read('game/scripts/flame.gd');
+  assert.equal(atlas[25], 6, "RGBA transparency is preserved");
+  const flame = read("game/scripts/flame.gd");
   assert.match(flame, /sprite\.no_depth_test = false/);
   assert.match(flame, /FRAMES: int = 8/);
   assert.match(flame, /sprite\.frame =/);
-  const bolt = read('game/scripts/bolt.gd');
+  const bolt = read("game/scripts/bolt.gd");
   assert.match(bolt, /redraws < 3/);
   assert.match(bolt, /range\(3\)/);
   assert.match(bolt, /ArrayMesh\.new/);
   assert.match(bolt, /branch_count: int/);
-  assert.match(read('game/scripts/training.gd'), /vfx\.fire_impact/);
-  assert.doesNotMatch(read('game/scripts/training.gd'), /_orb\(/);
+  assert.match(read("game/scripts/training.gd"), /vfx\.fire_impact/);
+  assert.doesNotMatch(read("game/scripts/training.gd"), /_orb\(/);
 });
 
 test("character customization is bounded, cosmetic and saved only on the device", () => {
   const appearance = read("game/scripts/appearance.gd");
   assert.match(appearance, /user:\/\/appearance-v1\.json/);
-  for (const key of ["model", "hair", "hair_color", "eyes", "skin", "top", "top_color", "bottom", "bottom_color"])
+  for (const key of [
+    "model",
+    "hair",
+    "hair_color",
+    "eyes",
+    "skin",
+    "top",
+    "top_color",
+    "bottom",
+    "bottom_color",
+  ])
     assert.ok(appearance.includes(`"${key}"`));
   assert.match(appearance, /Masculin/);
   assert.match(appearance, /Féminin/);

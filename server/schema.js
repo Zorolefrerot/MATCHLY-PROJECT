@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS users(
 CREATE UNIQUE INDEX IF NOT EXISTS users_single_owner ON users(role) WHERE role='admin';
 CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), expires BIGINT NOT NULL);
 CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires);
+CREATE TABLE IF NOT EXISTS game_sessions(token TEXT PRIMARY KEY, user_id INTEGER UNIQUE NOT NULL REFERENCES users(id), expires BIGINT NOT NULL);
+CREATE INDEX IF NOT EXISTS game_sessions_expiry ON game_sessions(expires);
+CREATE TABLE IF NOT EXISTS character_appearances(user_id INTEGER PRIMARY KEY REFERENCES users(id), appearance TEXT NOT NULL, revision INTEGER NOT NULL CHECK(revision>0), updated TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS resets(token TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), expires BIGINT NOT NULL);
 CREATE TABLE IF NOT EXISTS applications(
  id ${id}, user_id INTEGER UNIQUE NOT NULL REFERENCES users(id),

@@ -59,9 +59,10 @@ fi
 "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
 "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > game/artifacts/apk-info.txt
 "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions "$APK" > game/artifacts/apk-permissions.txt
-if grep -Eq 'android.permission.(INTERNET|READ_CONTACTS|ACCESS_FINE_LOCATION|CAMERA|RECORD_AUDIO|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE)' game/artifacts/apk-permissions.txt; then
+if grep -Eq 'android.permission.(READ_CONTACTS|ACCESS_FINE_LOCATION|CAMERA|RECORD_AUDIO|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE)' game/artifacts/apk-permissions.txt; then
   echo '::error::Unexpected network or sensitive Android permission.'; exit 1
 fi
+grep -q "android.permission.INTERNET" game/artifacts/apk-permissions.txt
 (cd game/artifacts && sha256sum idrem-zenkai-training-debug.apk > SHA256SUMS.txt)
 
 # Make basic package evidence readable without downloading a signed artifact URL.

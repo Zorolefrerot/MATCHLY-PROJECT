@@ -2,6 +2,9 @@ class_name CharacterCreator
 extends Control
 ## Local cosmetic draft. Nothing touches the combat fighter before Save succeeds.
 signal saved(appearance: Dictionary)
+signal remote_save_requested(appearance: Dictionary)
+var remote_mode: bool = false
+var remote_busy: bool = false
 signal closed
 var draft: Dictionary = CharacterAppearance.DEFAULTS.duplicate()
 var save_path: String = CharacterAppearance.SAVE_PATH
@@ -174,6 +177,9 @@ func _position_camera() -> void:
 	preview_camera.look_at(Vector3(0, 1.64 if close_up else 1.05, 0))
 
 func open(current: Dictionary, path: String = CharacterAppearance.SAVE_PATH) -> void:
+	remote_mode = false
+	set_remote_busy(false)
+	save_button.text = "ENREGISTRER L’APPARENCE"
 	save_path = path
 	draft = CharacterAppearance.sanitize(current)
 	touch_id = -1
@@ -184,6 +190,29 @@ func open(current: Dictionary, path: String = CharacterAppearance.SAVE_PATH) -> 
 	status_label.text = "Cosmétique uniquement. Les tenues conviennent aux deux modèles."
 	show()
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+
+func open_remote(value: Dictionary) -> void:
+	open(value)
+	remote_mode = true
+	save_button.text = "ENREGISTRER SUR MON COMPTE"
+	status_label.text = "Apparence du compte. Aucun changement de l’entraînement hors ligne."
+
+func set_remote_busy(value: bool) -> void:
+	remote_busy = value
+	if not is_instance_valid(save_button):
+		return
+	save_button.disabled = value
+	cancel_button.disabled = value
+	outfit_select.disabled = value
+	for selector: OptionButton in selectors.values():
+		selector.disabled = value
+
+func remote_result(success: bool, message: String) -> void:
+	set_remote_busy(false)
+	status_label.text = message
+	if success:
+		_finish()
+		closed.emit()
 
 func set_choice(key: String, index: int) -> void:
 	if not CharacterAppearance.DEFAULTS.has(key):
@@ -197,6 +226,8 @@ func apply_outfit(index: int) -> void:
 	_sync()
 
 func reset_draft() -> void:
+	if remote_busy:
+		return
 	draft = CharacterAppearance.DEFAULTS.duplicate()
 	_sync()
 	status_label.text = "Choix par défaut dans l’aperçu. Enregistre pour les conserver."
@@ -208,7 +239,12 @@ func _sync() -> void:
 	preview.apply_appearance(draft)
 
 func confirm() -> void:
-	if not visible:
+	if not visible or remote_busy:
+		return
+	if remote_mode:
+		set_remote_busy(true)
+		status_label.text = "Enregistrement sur le compte en cours…"
+		remote_save_requested.emit(draft.duplicate())
 		return
 	var error: Error = CharacterAppearance.save_local(draft, save_path)
 	if error != OK:
@@ -219,6 +255,8 @@ func confirm() -> void:
 	closed.emit()
 
 func cancel() -> void:
+	if remote_busy:
+		return
 	_finish()
 	closed.emit()
 

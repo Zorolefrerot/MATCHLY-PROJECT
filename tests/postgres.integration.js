@@ -389,3 +389,20 @@ test("production entrypoint restarts against PostgreSQL with no bootstrap secret
     assert.equal(code, 0);
   }
 });
+
+test("native game API contract also holds on PostgreSQL", async () => {
+  const { gameContract } = await import("./helpers/game-contract.js");
+  await cluster.createDatabase("idrem_game_test");
+  const old = process.env.DATABASE_URL;
+  const url = new URL(old);
+  url.pathname = "/idrem_game_test";
+  process.env.DATABASE_URL = url.toString();
+  let gameDb;
+  try {
+    gameDb = await openStore();
+    await gameContract(gameDb);
+  } finally {
+    process.env.DATABASE_URL = old;
+    await gameDb?.close();
+  }
+});

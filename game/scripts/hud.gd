@@ -4,6 +4,7 @@ extends Control
 
 signal action_requested(action: String)
 signal resume_requested
+signal account_requested
 signal creator_requested
 signal restart_requested
 signal quality_changed(standard: bool)
@@ -39,6 +40,7 @@ var menu_title: Label
 var menu_text: Label
 var help_text: Label
 var primary: Button
+var account_button: Button
 var creator_button: Button
 var restart_button: Button
 var volume_slider: HSlider
@@ -120,7 +122,7 @@ func _build() -> void:
 	title.add_theme_color_override("font_color", CREAM)
 	top_panel.add_child(title)
 	var sub := Label.new()
-	sub.text = "PROTO 0.5  /  SOLO HORS LIGNE"
+	sub.text = "PROTO 0.6  /  ENTRAÎNEMENT HORS LIGNE"
 	sub.position = Vector2(16, 37)
 	sub.add_theme_font_size_override("font_size", 11)
 	sub.add_theme_color_override("font_color", Color("b4c7bf"))
@@ -231,11 +233,20 @@ func _build_menu() -> void:
 	primary.add_theme_font_size_override("font_size", 18)
 	primary.pressed.connect(func() -> void: resume_requested.emit())
 	column.add_child(primary)
+	var character_row := HBoxContainer.new()
+	column.add_child(character_row)
 	creator_button = Button.new()
-	creator_button.text = "PERSONNALISER MON PERSONNAGE"
+	creator_button.text = "APPARENCE HORS LIGNE"
+	creator_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	creator_button.custom_minimum_size.y = 44
 	creator_button.pressed.connect(func() -> void: creator_requested.emit())
-	column.add_child(creator_button)
+	character_row.add_child(creator_button)
+	account_button = Button.new()
+	account_button.text = "MON COMPTE"
+	account_button.custom_minimum_size.y = 44
+	account_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	account_button.pressed.connect(func() -> void: account_requested.emit())
+	character_row.add_child(account_button)
 	restart_button = Button.new()
 	restart_button.text = "Recommencer la manche"
 	restart_button.custom_minimum_size.y = 42
@@ -243,7 +254,7 @@ func _build_menu() -> void:
 	column.add_child(restart_button)
 	restart_button.visible = false
 	var disclaimer := Label.new()
-	disclaimer.text = "Aucun accès à Neon, au site ou à tes candidatures.\nCe prototype n’est pas une version complète du jeu RP.\nGodot 4.5.1 (MIT) : godotengine.org/license"
+	disclaimer.text = "Entraînement local. « Mon compte » contacte le site.\nCe prototype n’est pas une version complète du jeu RP.\nGodot 4.5.1 (MIT) : godotengine.org/license"
 	disclaimer.add_theme_font_size_override("font_size", 12)
 	disclaimer.add_theme_color_override("font_color", Color("9aaea5"))
 	column.add_child(disclaimer)

@@ -1,7 +1,8 @@
 extends Node3D
-## The entire prototype is offline: there is deliberately no HTTP, WebSocket,
-## authentication or persistent progression. Only local cosmetic choices are saved.
-
+## Offline training and account cosmetics are separate. Cloud choices never
+## change training statistics, affinity, local saves or allocation rules.
+var account_api: CharacterAccountAPI
+var account_panel: CharacterAccountPanel
 var creator: CharacterCreator
 var appearance_path: String = CharacterAppearance.SAVE_PATH
 var arena: TrainingArena
@@ -33,6 +34,9 @@ var casts_landed: int = 0
 
 func _ready() -> void:
 	_register_inputs()
+	if account_api == null:
+		account_api = CharacterAccountAPI.new()
+	add_child(account_api)
 	audio = TrainingAudio.new()
 	add_child(audio)
 	vfx = TrainingVFX.new()
@@ -78,10 +82,30 @@ func _ready() -> void:
 	add_child(creator_layer)
 	creator = CharacterCreator.new()
 	creator_layer.add_child(creator)
+	account_panel = CharacterAccountPanel.new()
+	account_panel.api = account_api
+	creator_layer.add_child(account_panel)
+	account_panel.closed.connect(func() -> void: hud.show(); hud.reset_input())
+	account_panel.edit_requested.connect(func() -> void:
+		if account_api.busy or account_api.profile.is_empty():
+			return
+		account_panel.hide()
+		var appearance: Variant = account_api.profile.get("appearance")
+		creator.open_remote(appearance if appearance is Dictionary else CharacterAppearance.DEFAULTS)
+	)
+	creator.remote_save_requested.connect(account_api.save_appearance)
+	account_api.completed.connect(func(operation: String, success: bool, message: String) -> void:
+		if operation == "save" and creator.visible and creator.remote_mode:
+			creator.remote_result(success, message)
+	)
+	hud.account_requested.connect(open_account)
 	creator.saved.connect(func(value: Dictionary) -> void: player.apply_appearance(value))
 	creator.closed.connect(func() -> void:
-		hud.show()
-		hud.reset_input()
+		if creator.remote_mode:
+			account_panel.open()
+		else:
+			hud.show()
+			hud.reset_input()
 	)
 	hud.creator_requested.connect(open_creator)
 	hud.restart_requested.connect(start_round)
@@ -126,7 +150,7 @@ func _reset_positions() -> void:
 	telegraph = null
 
 func start_round() -> void:
-	if is_instance_valid(creator) and creator.visible:
+	if is_instance_valid(creator) and (creator.visible or account_panel.visible):
 		return
 	get_tree().paused = false
 	audio.start_round()
@@ -146,7 +170,7 @@ func start_round() -> void:
 	hud.notice("Approche, cible ton adversaire et essaie tes quatre techniques.")
 
 func _resume() -> void:
-	if creator.visible:
+	if creator.visible or account_panel.visible:
 		return
 	if not running or round_over:
 		start_round()
@@ -161,7 +185,7 @@ func _quality(standard: bool) -> void:
 	get_viewport().msaa_3d = Viewport.MSAA_2X if standard else Viewport.MSAA_DISABLED
 
 func pause_round() -> void:
-	if is_instance_valid(creator) and creator.visible:
+	if is_instance_valid(creator) and (creator.visible or account_panel.visible):
 		return
 	if not running or round_over:
 		return
@@ -170,11 +194,18 @@ func pause_round() -> void:
 	hud.show_menu("Une pause au village.", "Le combat, les recharges et l’adversaire sont en pause.\nTes candidatures et ton compte ne sont pas concernés.", "REPRENDRE", true)
 
 func open_creator() -> void:
-	if not get_tree().paused or creator.visible:
+	if not get_tree().paused or creator.visible or account_panel.visible:
 		return
 	hud.reset_input()
 	hud.hide()
 	creator.open(player.appearance, appearance_path)
+
+func open_account() -> void:
+	if not get_tree().paused or creator.visible or account_panel.visible:
+		return
+	hud.reset_input()
+	hud.hide()
+	account_panel.open()
 
 func _notification(what: int) -> void:
 	if is_instance_valid(hud) and (what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_GO_BACK_REQUEST):
@@ -182,12 +213,20 @@ func _notification(what: int) -> void:
 			creator.touch_id = -1
 			if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 				creator.cancel()
+		elif is_instance_valid(account_panel) and account_panel.visible:
+			account_panel.password_field.clear()
+			if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+				account_panel.close()
 		hud.reset_input()
 		for action in ["move_forward", "move_back", "move_left", "move_right", "sprint"]:
 			Input.action_release(action)
 		pause_round()
 
 func handle_action(action: String) -> void:
+	if account_panel.visible:
+		if action == "pause":
+			account_panel.close()
+		return
 	if creator.visible:
 		if action == "pause":
 			creator.cancel()
