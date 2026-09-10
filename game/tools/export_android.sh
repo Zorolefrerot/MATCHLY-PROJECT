@@ -5,7 +5,9 @@ cd "$(dirname "$0")/../.."
 : "${ANDROID_HOME:?Install the Android SDK and set ANDROID_HOME}"
 GODOT="${GODOT_BIN:-godot}"
 WORK="${RUNNER_TEMP:-/tmp}/idrem-android"
-CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/godot"
+# Never replace the developer's own Godot editor preferences.
+export XDG_CONFIG_HOME="$WORK/editor-config"
+CONFIG="$XDG_CONFIG_HOME/godot"
 mkdir -p "$WORK" "$CONFIG" game/artifacts
 # This is a disposable DEBUG identity, not a Play Store signing key.
 # A fresh CI run can require uninstalling the previous debug APK before installing.
@@ -43,4 +45,4 @@ fi
 if grep -Eq 'android.permission.(INTERNET|READ_CONTACTS|ACCESS_FINE_LOCATION|CAMERA|RECORD_AUDIO|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE)' game/artifacts/apk-permissions.txt; then
   echo '::error::Unexpected network or sensitive Android permission.'; exit 1
 fi
-sha256sum "$APK" > game/artifacts/SHA256SUMS.txt
+(cd game/artifacts && sha256sum idrem-zenkai-training-debug.apk > SHA256SUMS.txt)

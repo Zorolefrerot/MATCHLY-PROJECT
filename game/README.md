@@ -2,6 +2,10 @@
 
 Prototype **solo et hors ligne**, séparé du site Render/Neon. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages et décors sont des formes procédurales originales, pas les modèles définitifs du jeu Naruto.
 
+## État vérifié
+
+**47 tests de règles et de simulation passent dans Godot 4.5.1 en mode sans affichage.** L’APK n’est pas encore compilée : le workflow attend son activation. Le rendu graphique, la signature Android et les performances sur téléphone restent à tester. Détails et limites : [`VALIDATION.md`](VALIDATION.md).
+
 ## Contenu
 
 - Petite arène 3D fermée avec collisions, décor de village stylisé et personnages articulés provisoires.
@@ -85,7 +89,7 @@ export ANDROID_HOME=/chemin/vers/android-sdk
 bash game/tools/export_android.sh
 ```
 
-Le script d’export crée des paramètres Godot dans le dossier de configuration de **l’utilisateur de compilation**. En local, utiliser un utilisateur/dossier XDG dédié pour ne pas remplacer ses paramètres d’éditeur personnels. Aucun SDK NDK ni compilation de moteur n’est requis ici : le projet utilise les modèles APK standards, sans Gradle ni plugin natif.
+Le script d’export utilise automatiquement un dossier XDG temporaire dédié : il ne remplace pas les préférences personnelles de l’éditeur Godot. Aucun SDK NDK ni compilation de moteur n’est requis ici : le projet utilise les modèles APK standards, sans Gradle ni plugin natif.
 
 - `tests/smoke.gd` : règles, collisions, mouvement, sauts, esquive, pause, cible, projectile, victoire et réinitialisation.
 - `tests/capture.gd` : captures de rendu ordinateur, pas des preuves d’exécution Android.
@@ -101,4 +105,4 @@ Corriger les retours de prise en main/performance, préparer des vrais modèles 
 
 ## Ressources et licences
 
-Godot : licence MIT (<https://godotengine.org/license/>). Personnages et décor : géométrie originale créée pour ce prototype. Icône : image fournie dans le dépôt par le propriétaire ; les droits sur l’univers et l’illustration restent à vérifier avant diffusion publique. Aucun modèle, musique ou animation extrait d’un jeu commercial n’a été ajouté.
+Godot : licence MIT (<https://godotengine.org/license/>). Les textes de licence du moteur et de ses composants sont inclus dans `THIRD_PARTY_NOTICES.txt`, également embarqué dans l’export. Personnages et décor : géométrie originale créée pour ce prototype. Icône : image fournie dans le dépôt par le propriétaire ; les droits sur l’univers et l’illustration restent à vérifier avant diffusion publique. Aucun modèle, musique ou animation extrait d’un jeu commercial n’a été ajouté.

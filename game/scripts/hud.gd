@@ -217,7 +217,7 @@ func _build_menu() -> void:
 	column.add_child(restart_button)
 	restart_button.visible = false
 	var disclaimer := Label.new()
-	disclaimer.text = "Aucun accès à Neon, au site ou à tes candidatures.\nCe raccourci n’est pas une version complète du jeu RP."
+	disclaimer.text = "Aucun accès à Neon, au site ou à tes candidatures.\nCe prototype n’est pas une version complète du jeu RP.\nGodot 4.5.1 (MIT) : godotengine.org/license"
 	disclaimer.add_theme_font_size_override("font_size", 12)
 	disclaimer.add_theme_color_override("font_color", Color("9aaea5"))
 	column.add_child(disclaimer)

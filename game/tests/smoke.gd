@@ -22,6 +22,7 @@ func emulated_mouse(point: Vector2, pressed: bool) -> void:
 	event.device = InputEvent.DEVICE_ID_EMULATION
 	event.position = point
 	event.button_index = MOUSE_BUTTON_LEFT
+	event.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
 	event.pressed = pressed
 	root.push_input(event, true)
 
@@ -54,6 +55,18 @@ func run() -> void:
 	root.add_child(game)
 	await process_frame
 	check(paused, "opening menu pauses simulation")
+	var screen := Rect2(Vector2.ZERO, game.hud.size)
+	check(screen.encloses(game.hud.menu_panel.get_global_rect()), "opening menu fits within the virtual landscape viewport")
+	var controls_inside: bool = true
+	for button: Button in game.hud.buttons.values():
+		controls_inside = controls_inside and screen.encloses(button.get_global_rect())
+	check(controls_inside, "all touch action buttons fit within the landscape viewport")
+	var start_point: Vector2 = game.hud.primary.get_global_rect().get_center()
+	emulated_mouse(start_point, true)
+	touch(0, start_point, true)
+	emulated_mouse(start_point, false)
+	touch(0, start_point, false)
+	check(game.running and not paused and not game.hud.blocked, "menu start button accepts emulated touch mouse input")
 	game.start_round()
 	game.enemy_enabled = false
 	for i in range(30):
@@ -106,6 +119,7 @@ func run() -> void:
 	for i in range(5):
 		await process_frame
 	check(game.rules.cooldowns == cooldown_before and game.player.position == position_before, "pause freezes movement and cooldowns")
+	check(screen.encloses(game.hud.menu_panel.get_global_rect()), "pause menu including restart fits on screen")
 	game.start_round()
 	game.enemy_enabled = false
 	game.target_locked = true
