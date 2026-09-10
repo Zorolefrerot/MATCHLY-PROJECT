@@ -4,21 +4,36 @@
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node du site + isolation/sons du prototype | **17/17 passent** |
+| Tests Node du site + isolation/sons du prototype | **18/18 passent** |
 | Construction Vite du site | Réussie, 1 597 modules |
-| Analyse GDScript statique | Pas de diagnostic avec les réglages du projet |
-| Exécution Godot de `tests/smoke.gd` | **78 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
+| Analyse GDScript | Import et exécution réussis dans Godot officiel 4.5.1 |
+| Exécution Godot de `tests/smoke.gd` | **81 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
 | Erreurs dans le journal de la simulation | Aucune `SCRIPT ERROR`, `ERROR` ou assertion échouée |
 | Import dans l’éditeur officiel complet (CI) | Réussi, contrôle strict passé |
 | Import dans l’ancien éditeur local réduit | Erreurs d’environnement `fontconfig`, historique ci-dessous |
 | Rendu GL / captures | Étape CI réussie : captures ordinateur produites sous Xvfb/Mesa, pas un test Android |
 | Export APK / signature / permissions finales | **Réussis** : signature debug vérifiée avec `apksigner`, contrôle `aapt` sans permission réseau/sensible interdite |
-| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.2.0 à retester** |
-| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34442311612 verte** |
+| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.3.0 à tester** |
+| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34446543408 verte** |
 
-Ne pas interpréter les tests sans affichage comme une validation du rendu ou des performances Android. La nouvelle APK 0.2.0 est disponible en artefact GitHub, mais n’a pas encore été installée ni testée sur le téléphone du propriétaire. Les captures n’ont pas été inspectées visuellement dans Arena : l’accès aux hôtes de téléchargement des artefacts y est bloqué.
+Ne pas interpréter les tests sans affichage comme une validation du rendu ou des performances Android. La nouvelle APK 0.3.0 est disponible en artefact GitHub, mais n’a pas encore été installée ni testée sur le téléphone du propriétaire. Les captures n’ont pas été inspectées visuellement dans Arena : l’accès aux hôtes de téléchargement des artefacts y est bloqué.
 
-## Mise à jour 0.2.0 — logo, course, effets et audio
+## Mise à jour 0.3.0 — enregistrements du propriétaire
+
+[Exécution n° 6](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34446543408), source **`5a2b800368dcd7885b9540579f18138101bc8811`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en **1 min 28 s**.
+
+- **81 assertions Godot** : ressources chargées à leur durée préparée complète, musique fournie en boucle, un seul exemplaire d’un effet répété, noms inconnus refusés, plus les régressions de combat/commandes/pause/visuels.
+- **18 tests Node**, compilation Vite réussie. Vérification des empreintes sources/sorties, durées, PCM, crêtes, gains bornés et exclusion des sources brutes de l’import/export.
+- Les 10 WAV (9 fichiers fournis + warning) ont été reproduits octet pour octet dans un dossier temporaire avec FFmpeg **7.0.2** et le script de préparation.
+- Les originaux proviennent du commit `e166940b8aff1bfdb9fa9eb4d874fb7a04bfa58b` de `main`. La branche `main` et ses fichiers n’ont pas été modifiés. Fichiers identiques `dodge.mp3`/`melee.mp3` conservés selon l’association demandée.
+- Les fichiers portent `.mp3` mais contiennent de l’AAC/MP4. La conversion conserve les horodatages (silences internes compris), retire seulement les silences extérieurs et applique des fondus/gains limités. Détails par son dans `game/assets/audio/manifest.json`.
+- Le générateur ancien a été limité au warning ; il ne peut plus écraser les neuf fichiers fournis. Aucun changement de dégâts, vitesse, recharge, compte ou candidature.
+- Export debug signé, contrôle des permissions et captures de rendu **réussis**. La CI utilise un pilote audio Dummy : validation technique, **pas une écoute humaine du mix ni un test sur Android physique**.
+- Version **0.3.0**, code **3** ; paquet `org.idremzenkai.training`, API min 24/cible 35, ARM64/ARMv7.
+- APK : **61 530 023 octets** ; SHA-256 `d2b41b3dafaf5cfb462782cc5232d90fbf45ad0f9404a3ae016ddad5678185fa`.
+- [ZIP `idrem-zenkai-android-6`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34446543408/artifacts/10139893231) : **62 880 104 octets**, expiration **17 septembre 2026** ; SHA-256 ZIP fourni par GitHub `ae962096676391520480d721cdba5bd60f7c11cb43284701b3c09b29b92cb4ed`.
+
+## Historique : mise à jour 0.2.0 — logo, course, effets et audio
 
 [Exécution n° 5](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34442311612), source **`21bb0e6e2ff2b8b3ba56b662166f64a6f65c39a4`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en 1 min 42 s.
 

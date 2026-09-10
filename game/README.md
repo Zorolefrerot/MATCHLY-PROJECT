@@ -4,18 +4,29 @@ Prototype **solo et hors ligne**, séparé du site Render/Neon. Godot **4.5.1 St
 
 ## État vérifié
 
-**Version 0.2.0 compilée et vérifiée le 10 septembre 2026.** Les 78 tests Godot, l’export signé de test, le contrôle des permissions et les captures de rendu ordinateur ont réussi dans GitHub Actions. Le propriétaire a testé la version 0.1.0 et apprécié sa fluidité, tout en signalant un logo gênant. La version 0.2.0 attend son nouvel essai sur téléphone. Détails : [`VALIDATION.md`](VALIDATION.md).
+**Version 0.3.0 compilée et vérifiée le 10 septembre 2026.** Les 81 tests Godot, l’export signé de test, le contrôle des permissions et les captures de rendu ordinateur ont réussi dans GitHub Actions. Le propriétaire a testé la version 0.1.0 et apprécié sa fluidité, tout en signalant un logo gênant. La version 0.3.0 attend son nouvel essai sur téléphone. Détails : [`VALIDATION.md`](VALIDATION.md).
 
-- [Télécharger le ZIP `idrem-zenkai-android-5` (environ 61 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34442311612/artifacts/10138409957) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
-- [Exécution verte et fichiers](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34442311612).
-- Extraire le ZIP et ouvrir **`idrem-zenkai-training-debug.apk`**. Ne pas télécharger `godot-test-logs-5` à la place : ce dernier ne contient que les journaux.
+- [Télécharger le ZIP `idrem-zenkai-android-6` (environ 63 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34446543408/artifacts/10139893231) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
+- [Exécution verte et fichiers](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34446543408).
+- Extraire le ZIP et ouvrir **`idrem-zenkai-training-debug.apk`**. Ne pas télécharger `godot-test-logs-6` à la place : ce dernier ne contient que les journaux.
 
-## Nouveautés 0.2.0
+## Nouveautés 0.3.0 — tes enregistrements dans le jeu
+
+- Les **neuf fichiers fournis** dans le dépôt remplacent les sons provisoires : Katon, Raiton, Fūton, Doton, impact de terre, frappe, coup reçu, esquive et musique de combat.
+- Signal **warning original** conservé par l’agent : 0,12 s, légèrement mis en avant pour annoncer l’attaque ennemie.
+- Volumes harmonisés, suppression des silences extérieurs et fondus courts. La durée audible des enregistrements est conservée, sans changement de hauteur. La musique préparée dure environ **41,51 secondes** et boucle en arrière-plan.
+- Un effet identique déjà en cours est redémarré à la nouvelle action : les enregistrements longs ne s’empilent pas à chaque frappe. Les techniques gardent leurs coûts, dégâts et recharges.
+- Les fichiers **melee** et **dodge** fournis sont identiques ; ces deux associations sont conservées.
+- Sources exactes préservées dans `game/audio_sources/`, hors de l’APK. Malgré leur extension `.mp3`, il s’agit d’AAC/MP4 : ils ont été réellement décodés en WAV, pas seulement renommés.
+
+Détails, empreintes et conversion reproductible : [`assets/audio/README.md`](assets/audio/README.md). Les droits des enregistrements fournis n’ont pas été vérifiés ; ils ne sont pas revendiqués comme des créations originales de l’agent.
+
+## Améliorations de la version 0.2.0 conservées
 
 - **Logo retiré de l’interface de combat** : aucun `TextureRect` ni image de logo ne peut couvrir la vue. L’icône Android est conservée.
 - **Course ninja** : bras en arrière, légère inclinaison du personnage, transitions vers l’arrêt ; le bras de frappe revient vers l’avant même en course. Pose visuelle uniquement, sans modification des dégâts ni des vitesses.
 - **Effets plus lisibles** : traînée et étincelles de feu, éclair en zigzag, anneaux de vent, pierres surgissant du sol, arc de frappe et impacts. Effets 3D courts, sans flash plein écran ni secousse de caméra, maximum 14 groupes simultanés ; densité réduite en Économie.
-- **Audio original hors ligne** : un son par technique, coups, impacts, esquive, avertissement ennemi et boucle instrumentale discrète de 17,78 s. Aucun son de l’anime ni service extérieur.
+- **Lecture audio hors ligne** : effets par action, avertissement et ambiance. Les sons provisoires originaux de 0.2.0 sont remplacés par les enregistrements fournis dans 0.3.0, sauf le warning.
 - **Pause → Volume général** (0 = silence) et **Ambiance de combat** (activation indépendante). Limiteur contre la saturation, 8 voix d’effets maximum, une seule piste de fond ; silence à l’accueil, en pause et au résultat. Réglages conservés pour la session, pas après fermeture.
 
 La lecture audio est couverte par les tests du moteur, mais son rendu sur les haut-parleurs du téléphone et l’impact des nouveaux effets sur les FPS restent à confirmer par le propriétaire.
@@ -51,7 +62,7 @@ La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais 
 2. Choisir **Android - Prototype IDREM ZENKAI** et une exécution **verte** correspondant à la version du jeu souhaitée sur `arena/01a08158-matchly-project`. Une mise à jour de documentation seule peut ne pas créer de nouvelle APK.
 3. Dans **Artifacts**, télécharger `idrem-zenkai-android-…` (connexion à GitHub nécessaire).
 4. Extraire le ZIP sur le téléphone et ouvrir `idrem-zenkai-training-debug.apk`.
-5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.2.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
+5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.3.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
 6. Garder les graphismes **Économie** pour le premier essai.
 
 L’APK est signé avec une **clé de test temporaire**, pas une clé Play Store. Une nouvelle exécution peut générer une signature différente : Android pourra demander de désinstaller le prototype précédent avant installation. Le paquet `org.idremzenkai.training` est distinct du futur jeu. Aucun compte ni candidature n’est supprimé en désinstallant ce prototype.
@@ -98,7 +109,8 @@ Le script d’export utilise automatiquement un dossier XDG temporaire dédié :
 
 - `tests/smoke.gd` : règles, collisions, mouvement, sauts, esquive, pause, cible, projectile, victoire et réinitialisation.
 - `tests/capture.gd` : captures de l’arène, de la course ninja, des quatre techniques et du menu ordinateur, pas des preuves d’exécution Android.
-- `tools/generate_audio.py` : génération reproductible des dix WAV originaux (Python standard uniquement). Tests Node des en-têtes PCM, niveaux et jonction de boucle.
+- `tools/prepare_audio.py` : conversion des neuf fichiers fournis (FFmpeg 7.x) avec manifeste des sources, durées et gains.
+- `tools/generate_audio.py` : génération du **warning seulement** (Python standard). Ce script ne remplace plus les enregistrements fournis. Tests Node des empreintes, PCM, niveaux et raccord de boucle.
 - Les logs disponibles sont conservés dans les artefacts GitHub même si une étape échoue. Les captures ne sont produites qu’après les tests et l’export réussis.
 
 ## Essai à réaliser par le propriétaire
@@ -111,4 +123,4 @@ Corriger les retours de prise en main/performance, préparer des vrais modèles 
 
 ## Ressources et licences
 
-Godot : licence MIT (<https://godotengine.org/license/>). Les textes de licence du moteur et de ses composants sont inclus dans `THIRD_PARTY_NOTICES.txt`, également embarqué dans l’export. Personnages et décor : géométrie originale créée pour ce prototype. Icône : image fournie dans le dépôt par le propriétaire ; les droits sur l’univers et l’illustration restent à vérifier avant diffusion publique. Aucun modèle, musique ou animation extrait d’un jeu commercial n’a été ajouté.
+Godot : licence MIT (<https://godotengine.org/license/>). Les textes de licence du moteur et de ses composants sont inclus dans `THIRD_PARTY_NOTICES.txt`, également embarqué dans l’export. Personnages et décor : géométrie originale créée pour ce prototype. Icône : image fournie dans le dépôt par le propriétaire ; les droits sur l’univers et l’illustration restent à vérifier avant diffusion publique. Les modèles et animations restent procéduraux. Les enregistrements de la version 0.3.0 ont été fournis par le propriétaire ; leur provenance artistique et leurs droits sont à vérifier avant diffusion publique.
