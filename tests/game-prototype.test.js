@@ -204,7 +204,9 @@ test("Konoha reference-derived textures are bounded, mipmapped and traceable", (
   assert.equal(manifest.head_count, 4);
   assert.deepEqual(manifest.cliff_crop, [0, 0, 382, 225]);
   for (const source of manifest.sources) {
-    const bytes = readFileSync(new URL("../art_sources/konoha/" + source.file, import.meta.url));
+    const bytes = readFileSync(
+      new URL("../art_sources/konoha/" + source.file, import.meta.url),
+    );
     assert.equal(sha(bytes), source.sha256);
   }
   let total = 0;
@@ -233,14 +235,28 @@ test("Konoha remodels silhouettes and batches facade details without changing co
   assert.match(architecture, /func lathe/);
   assert.match(architecture, /details = _mesh\(detail_vertices/);
   assert.match(architecture, /LINEAR_WITH_MIPMAPS/);
-  assert.doesNotMatch(architecture, /func _process|func _physics_process|Image\.new|HTTPRequest/);
+  assert.doesNotMatch(
+    architecture,
+    /func _process|func _physics_process|Image\.new|HTTPRequest/,
+  );
   assert.match(read("game/scripts/konoha_map.gd"), /architecture\.house/);
-  for (const filename of ["training.gd", "arena.gd", "fighter.gd", "rules.gd", "audio.gd"])
-    assert.doesNotMatch(read("game/scripts/" + filename), /KonohaArchitecture|assets\/konoha/);
+  for (const filename of [
+    "training.gd",
+    "arena.gd",
+    "fighter.gd",
+    "rules.gd",
+    "audio.gd",
+  ])
+    assert.doesNotMatch(
+      read("game/scripts/" + filename),
+      /KonohaArchitecture|assets\/konoha/,
+    );
   assert.match(read("game/tests/capture.gd"), /konoha-house/);
   assert.match(read("game/tests/capture.gd"), /konoha-palace/);
   const version = read("game/VERSION").trim();
-  assert.equal(version, "0.8.0");
-  assert.ok(read("game/export_presets.cfg").includes(`version/name="${version}"`));
-  assert.match(read("game/scripts/konoha_hud.gd"), /PROTO 0\.8/);
+  assert.equal(version, "0.9.0");
+  assert.ok(
+    read("game/export_presets.cfg").includes(`version/name="${version}"`),
+  );
+  assert.match(read("game/scripts/konoha_hud.gd"), /PROTO 0\.9/);
 });

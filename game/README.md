@@ -2,6 +2,12 @@
 
 Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
+## Lot 0.9 en préparation — pas encore d’APK validée
+
+Première mission auprès d’Aoi, trois lectures, compte rendu, journal défilant et progression sauvegardée sur le compte sont implémentés dans les sources. **28 tests Node et 8 tests PostgreSQL passent ; validation Godot et export Android encore à faire.** Les versions `VERSION`/HUD ciblent 0.9, mais le dernier APK vérifié ci-dessous reste 0.8.
+
+Le propriétaire demande des lots de plusieurs tâches avant une seule installation. Aucun téléchargement intermédiaire demandé. Ce lot requiert une mise à jour du serveur Render, contrairement aux seules textures 0.8. [Parcours, contrat, limites et état de validation](../docs/MISSION_ACCUEIL.md).
+
 ## État vérifié
 
 **Version 0.8.0 compilée le 10 septembre 2026.** **186 assertions Godot**, 25 tests Node, 7 tests PostgreSQL, export signé et permissions vérifiés. Captures ordinateur de l’arrivée et du marché inspectées : maisons arrondies, résidence et monument visibles. Le propriétaire a approuvé la zone 0.7 ; **le nouveau rendu 0.8 reste à essayer sur téléphone**. Détails : [`VALIDATION.md`](VALIDATION.md).

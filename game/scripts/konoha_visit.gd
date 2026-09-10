@@ -1,8 +1,14 @@
 class_name KonohaVisit
 extends Control
-## Separate world and avatar. Traversal is local; no combat, rewards or world sync.
+## Separate world/avatar. Only orientation checkpoints sync, never live positions or rewards.
 signal closed
 var account_profile: Dictionary = {}
+var api: CharacterAccountAPI
+var mission: Dictionary = {}
+var menu_event: String = ""
+var request_kind: String = ""
+var sync_error: String = ""
+var journal_open: bool = false
 var viewport: SubViewport
 var world: KonohaMap
 var player: TrainingFighter
@@ -80,6 +86,9 @@ func _ready() -> void:
 		var key := InputEventKey.new()
 		key.physical_keycode = KEY_E
 		InputMap.action_add_event("village_interact", key)
+	if api != null:
+		api.completed.connect(_mission_response)
+	_sync_mission()
 	_update_camera()
 	initialized = true
 
@@ -102,7 +111,11 @@ func _physics_process(delta: float) -> void:
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
 	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
-	hud.objective.text = "Parle à Aoi près de la porte." if not guide_met else "Repérage : %d / 3 lieux · Exploration libre" % visited.size()
+	hud.objective.text = WelcomeMission.objective(mission)
+	if not request_kind.is_empty():
+		hud.objective.text = "Connexion en cours · Ne ferme pas l’application pour confirmer l’étape."
+	elif not sync_error.is_empty():
+		hud.objective.text = "Mission non confirmée · Ouvre le JOURNAL pour actualiser."
 	hud.fps.text = "%d FPS · SOLO" % Engine.get_frames_per_second()
 	if Input.is_action_just_pressed("village_interact"):
 		interact()
@@ -137,20 +150,124 @@ func interact() -> void:
 	if nearest == -1:
 		guide_met = true
 		guide.face(player.position-guide.position)
-		var text: String = "Bienvenue à Konoha, %s ! Voici notre quartier d’accueil.\nRepère le marché à gauche, l’académie à droite et la résidence du Hokage au bout de l’allée. Lis leurs panneaux en t’approchant.\nCette première visite est solo ; les intérieurs, missions et autres joueurs viendront ensuite." % account_profile["character"]["name"]
-		if visited.size() == 3:
-			text = "Tu as repéré les trois lieux du quartier. Bienvenue chez toi !\nTu peux continuer à explorer. Ce repérage reste limité à cette visite : il n’accorde ni objet, ni expérience, ni récompense enregistrée."
-		hud.show_menu("Aoi · Accueil des genin", text, "CONTINUER LA VISITE", true)
+		match mission.get("status", ""):
+			"available":
+				_dialogue("Aoi · Ta première mission", "Bienvenue à Konoha, %s !\nPour t’orienter, lis les panneaux de l’académie à droite, du marché à gauche et de la résidence du Hokage au nord. Reviens ensuite me faire ton rapport.\nLe JOURNAL suit tes étapes enregistrées sur le compte. Cette mission solo n’accorde pas encore de récompense." % account_profile["character"]["name"], "accept")
+			"active":
+				if mission["visited"].size() == 3:
+					_dialogue("Aoi · Ton compte rendu", "Tu as repéré les trois lieux. L’académie sert à apprendre, le marché à rencontrer les habitants, et la résidence à retrouver les responsables du village.\nRemets ton rapport pour terminer cette mission d’accueil sur ton compte.", "report")
+				else:
+					_dialogue("Aoi · Continue ton repérage", "Il te reste %d panneau(x) à lire et valider. Le journal indique lesquels.\nAcadémie à droite, marché à gauche, résidence au bout de l’allée. Reviens ensuite me voir." % (3-mission["visited"].size()))
+			"completed":
+				_dialogue("Aoi · Bienvenue chez toi", "Ta mission d’accueil est terminée et enregistrée sur ton compte. Tu peux continuer à explorer Konoha.\nIl n’y a pas encore de nouvelle mission, d’intérieur accessible ni de récompense à récupérer.")
+			_:
+				_dialogue("Aoi · Accueil des genin", "Bienvenue à Konoha ! Repère le marché à gauche, l’académie à droite et la résidence au bout de l’allée.\nTu peux visiter les extérieurs. La mission sauvegardée nécessite la mise à jour du serveur ; consulte le JOURNAL.")
 	else:
 		var data: Dictionary = KonohaMap.LANDMARKS[nearest]
-		visited[nearest] = true
-		hud.show_menu(data["name"], data["text"], "CONTINUER LA VISITE", true)
+		var event: String = ""
+		var text: String = data["text"]
+		if mission.is_empty():
+			visited[nearest] = true # Legacy server: orientation only, explicitly unsaved.
+		elif mission["status"] == "available":
+			text += "\nMission : parle d’abord à Aoi pour accepter le repérage."
+		elif mission["status"] == "active" and WelcomeMission.PLACES[nearest] not in mission["visited"]:
+			event = "read_" + WelcomeMission.PLACES[nearest]
+			text += "\nValide ta lecture pour enregistrer cette étape sur ton compte."
+		else:
+			text += "\nCette lecture est déjà enregistrée sur ton compte."
+		_dialogue(data["name"], text, event)
+
+func _dialogue(title: String, text: String, event: String = "") -> void:
+	journal_open = false
+	menu_event = event
+	hud.primary.disabled = not request_kind.is_empty()
+	hud.mission_refresh.hide()
+	hud.text_scroll.scroll_vertical = 0
+	var button: String = "ACCEPTER LA MISSION" if event == "accept" else "REMETTRE MON RAPPORT" if event == "report" else "VALIDER LA LECTURE" if not event.is_empty() else "CONTINUER LA VISITE"
+	hud.show_menu(title,text,button,true)
+
+func _sync_mission() -> void:
+	var profile: Dictionary = api.profile if api != null else account_profile
+	mission = {}
+	if profile.get("character", {}).get("id") != account_profile["character"]["id"]:
+		return
+	var value: Variant = profile.get("welcomeMission")
+	if WelcomeMission.valid_state(value):
+		mission = value.duplicate(true)
+		guide_met = mission["status"] != "available"
+		visited.clear()
+		for i in range(WelcomeMission.PLACES.size()):
+			if WelcomeMission.PLACES[i] in mission["visited"]:
+				visited[i] = true
+
+func open_journal() -> void:
+	if not initialized or ending:
+		return
+	_clear_inputs()
+	journal_open = true
+	menu_event = ""
+	var text: String = WelcomeMission.journal(mission)
+	if api != null and api.profile.is_empty():
+		text = "Session expirée ou accès indisponible. Reviens à MON COMPTE pour te reconnecter. Les étapes déjà confirmées restent sur ton compte."
+	if not request_kind.is_empty():
+		text = "Enregistrement / actualisation en cours. Attends la confirmation.\n\n" + text
+	elif not sync_error.is_empty():
+		text = sync_error + "\nActualise avant de valider à nouveau une étape.\n\n" + text
+	hud.show_menu("Journal · Mission d’accueil",text,"CONTINUER LA VISITE",true)
+	hud.primary.disabled = false
+	hud.mission_refresh.show()
+	hud.mission_refresh.disabled = api == null or api.busy or api.profile.is_empty() or not request_kind.is_empty()
+	hud.text_scroll.scroll_vertical = 0
+
+func _confirm_mission() -> void:
+	if menu_event.is_empty():
+		resume_visit()
+		return
+	if api == null or api.busy or not request_kind.is_empty():
+		return
+	if not sync_error.is_empty():
+		open_journal()
+		return
+	# No free checkpoint buttons in the journal: remain at the actual interaction.
+	var nearest: int = nearest_interaction()
+	var expected: int = -1 if menu_event in ["accept", "report"] else WelcomeMission.PLACES.find(menu_event.trim_prefix("read_"))
+	if nearest != expected or mission.is_empty() or api.profile.is_empty():
+		sync_error = "Approche du bon interlocuteur ou panneau avec une session active."
+		open_journal()
+		return
+	request_kind = "mission"
+	sync_error = ""
+	hud.primary.disabled = true
+	hud.primary.text = "ENREGISTREMENT…"
+	api.mission_event(menu_event)
+
+func _refresh_mission() -> void:
+	if api == null or api.busy or api.profile.is_empty():
+		return
+	request_kind = "refresh"
+	open_journal()
+	api.refresh()
+
+func _mission_response(operation: String, success: bool, message: String) -> void:
+	if ending or operation != request_kind:
+		return
+	request_kind = ""
+	_sync_mission()
+	sync_error = "" if success else message
+	menu_event = ""
+	if hud.blocked:
+		open_journal()
+	else:
+		hud.notice("Mission actualisée sur ton compte." if success else "Mission non confirmée : consulte le JOURNAL.")
 
 func _action(action: String) -> void:
 	match action:
 		"pause": toggle_pause()
 		"leave": finish()
 		"interact": interact()
+		"journal": open_journal()
+		"mission_confirm": _confirm_mission()
+		"mission_refresh": _refresh_mission()
 		"jump":
 			if not hud.blocked: player.jump()
 
@@ -166,12 +283,15 @@ func pause_visit() -> void:
 		return
 	_clear_inputs()
 	if not hud.blocked:
-		hud.show_menu("Une pause à Konoha", "Quartier d’accueil · visite solo avec l’apparence de ton compte.\nLe combat de l’entraînement reste dans sa propre zone. Ta position et ton repérage ne sont pas sauvegardés.\nTu peux reprendre la visite ou revenir à ton compte.", "REPRENDRE LA VISITE", true)
+		_dialogue("Une pause à Konoha", "Quartier d’accueil · visite solo avec l’apparence de ton compte.\nLe combat de l’entraînement reste dans sa propre zone. Seules les étapes confirmées dans le journal sont sauvegardées. Ta position ne l’est pas.\nTu peux reprendre la visite ou revenir à ton compte.", "")
 
 func resume_visit() -> void:
 	if not initialized or ending:
 		return
 	_clear_inputs()
+	menu_event = ""
+	journal_open = false
+	hud.primary.disabled = false
 	hud.hide_menu()
 
 func toggle_pause() -> void:

@@ -68,3 +68,10 @@ Les utilisateurs, candidatures, allocations et réserves Mokuton existants ne so
 ### Essai après déploiement
 
 Sur un compte joueur admis : connecter, vérifier l’identité par rapport au site, sauvegarder une apparence, déconnecter/reconnecter et vérifier sa restauration. Vérifier aussi qu’un compte non admis reste bloqué et que l’entraînement reste utilisable sans connexion. Ne pas créer de nouvelles admissions simplement pour remplir un test ; garder la sélection manuelle et les vingt places.
+
+
+## Lot 0.9 en validation — progression d’accueil
+
+Les nouvelles sources ajoutent `welcomeMission` au profil et une route native bornée d’événements. La sauvegarde d’apparence conserve sa révision indépendante. Les anciennes versions Android peuvent ignorer ce champ. Pas de changement des attributions, des places ou des fonctions administrateur.
+
+Ce lot **nécessitera une mise à jour Render** avant de tester la sauvegarde des missions. Le serveur ajoute sa table au démarrage, sans manipulation manuelle de Neon ni nouveau secret. Le mode d’exploration ancien reste disponible si le serveur n’est pas encore à jour. [Contrat, limites et validation](MISSION_ACCUEIL.md).

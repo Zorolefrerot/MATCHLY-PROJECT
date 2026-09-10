@@ -44,6 +44,15 @@ func save_appearance(value: Dictionary) -> void:
 	if not busy:
 		_send("save", HTTPClient.METHOD_PUT, "/appearance", {"schemaVersion": 1, "expectedRevision": profile.get("revision", 0), "appearance": value})
 
+func mission_event(event: String) -> void:
+	if busy:
+		return
+	var state: Variant = profile.get("welcomeMission")
+	if event not in WelcomeMission.EVENTS or not WelcomeMission.valid_state(state):
+		completed.emit("mission", false, "Actualise la mission après la mise à jour du serveur.")
+		return
+	_send("mission", HTTPClient.METHOD_POST, "/missions/welcome/events", {"event": event, "expectedRevision": state["revision"]})
+
 func logout() -> void:
 	if busy:
 		return
@@ -70,6 +79,8 @@ func _send(operation: String, method: int, path: String, body: Variant = null) -
 
 static func valid_profile(value: Variant) -> bool:
 	if not value is Dictionary or value.get("protocol") != 1 or value.get("schemaVersion") != 1:
+		return false
+	if value.has("welcomeMission") and not WelcomeMission.valid_state(value["welcomeMission"]):
 		return false
 	var identity: Variant = value.get("character")
 	var revision: Variant = value.get("revision")
@@ -104,7 +115,7 @@ func _response(result: int, status: int, _headers: PackedStringArray, bytes: Pac
 	busy = false
 	var operation: String = _operation
 	if result != HTTPRequest.RESULT_SUCCESS:
-		completed.emit(operation, false, "Connexion interrompue. Une sauvegarde peut avoir abouti : actualise avant de réessayer." if operation == "save" else "Serveur indisponible ou connexion interrompue. Vérifie le réseau et réessaie.")
+		completed.emit(operation, false, "Connexion interrompue. Une sauvegarde peut avoir abouti : actualise avant de réessayer." if operation in ["save", "mission"] else "Serveur indisponible ou connexion interrompue. Vérifie le réseau et réessaie.")
 		return
 	var parser := JSON.new()
 	if parser.parse(bytes.get_string_from_utf8()) != OK or not parser.data is Dictionary:
@@ -113,7 +124,7 @@ func _response(result: int, status: int, _headers: PackedStringArray, bytes: Pac
 	var data: Dictionary = parser.data
 	if status < 200 or status >= 300:
 		if status == 404:
-			completed.emit(operation, false, "Le serveur n’a pas encore la fonction compte du jeu. Déploie sa mise à jour sur Render.")
+			completed.emit(operation, false, "Cette fonction nécessite la mise à jour du serveur sur Render. Actualise ensuite le compte ou le journal.")
 			return
 		if status == 401 or status == 403:
 			forget()
@@ -126,7 +137,7 @@ func _response(result: int, status: int, _headers: PackedStringArray, bytes: Pac
 		completed.emit(operation, true, "Déconnecté. Aucun mot de passe ni jeton n’est conservé sur le téléphone.")
 		return
 	var value: Variant = data.get("profile") if operation == "login" else data
-	if not valid_profile(value):
+	if not valid_profile(value) or (operation == "mission" and not value.has("welcomeMission")):
 		forget()
 		completed.emit(operation, false, "Profil incompatible. Mets à jour le serveur et l’application.")
 		return
@@ -138,4 +149,4 @@ func _response(result: int, status: int, _headers: PackedStringArray, bytes: Pac
 			return
 		_token = data["token"]
 	profile = value.duplicate(true)
-	completed.emit(operation, true, "Apparence enregistrée sur ton compte." if operation == "save" else "Personnage récupéré depuis le site, sans nouveau tirage.")
+	completed.emit(operation, true, "Étape enregistrée sur ton compte." if operation == "mission" else "Apparence enregistrée sur ton compte." if operation == "save" else "Personnage récupéré depuis le site, sans nouveau tirage.")

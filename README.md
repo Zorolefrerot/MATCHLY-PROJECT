@@ -14,6 +14,10 @@ Branche de cette version : **`arena/01a08158-matchly-project`** (pas `main`).
 
 L’API native et la sauvegarde d’apparence du compte sont implémentées, séparément de l’entraînement hors ligne. **Déploiement et parcours de compte confirmés par le propriétaire.** [Activation et protections](docs/COMPTE_JEU.md). L’APK **0.8** conserve la [première zone de Konoha](docs/KONOHA_PREMIERE_ZONE.md) approuvée en 0.7 et améliore ses maisons, sa résidence et son monument avec les références fournies. Elle reste visitable en solo avec le personnage du compte. Le monde multijoueur n’est pas encore implémenté.
 
+## Lot suivant : première mission et journal
+
+Le propriétaire a validé un lot comprenant l’accueil d’Aoi, une mission de repérage, un journal et la sauvegarde des étapes sur le compte. Les sources 0.9 sont implémentées et les tests serveur passent ; **validation moteur/APK encore en attente**. Une seule installation est prévue à la fin du lot, pas à chaque tâche. [Contrat et suivi](docs/MISSION_ACCUEIL.md).
+
 ## Fonctionnalités
 
 - Accueil responsive rouge/noir avec l’image fournie, 14 clans filtrables et FAQ.

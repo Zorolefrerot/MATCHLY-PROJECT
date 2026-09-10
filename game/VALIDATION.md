@@ -1,5 +1,13 @@
 # Validation du prototype — 10 septembre 2026
 
+## Lot 0.9 en cours — ne pas confondre sources et APK vérifiée
+
+Mission d’accueil, journal et sauvegarde sur compte ajoutés ensemble à la demande du propriétaire. **28 tests Node**, **8 tests PostgreSQL réel jetable** et Vite (1 597 modules) réussissent localement. Contrat mission exercé sur SQLite et sur deux pools PostgreSQL, avec reprise, doublons, ordre, concurrence, contrôle d’accès et absence de récompenses. Aucun appel à Neon de production.
+
+Les tests Godot sont étendus et l’analyse tierce ne signale aucune nouvelle erreur ; **l’import moteur, la simulation, les nouvelles captures et l’export APK 0.9 ne sont pas encore exécutés**. Le stockage des artefacts du dépôt approche 503 Mo ; pas de lancement Android intermédiaire avant nettoyage. Aucun APK 0.9 ni déploiement Render annoncé comme prêt. [Détails du lot](../docs/MISSION_ACCUEIL.md).
+
+Les résultats moteur, captures et téléchargement qui suivent concernent **la dernière version vérifiée 0.8**.
+
 ## Résultats obtenus
 
 | Vérification | Résultat réel |

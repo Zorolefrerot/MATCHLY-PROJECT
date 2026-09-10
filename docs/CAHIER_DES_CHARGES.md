@@ -263,3 +263,10 @@ Personnalisation locale livrée en 0.5 ; compte et apparence distante livrés en
 - Seul un admis peut recevoir ses attributions ; une actualisation ou deux appels simultanés ne donnent pas de relance.
 - Les plafonds des clans rares et les trois attributions Mokuton sur une cohorte complète de vingt sont vérifiés par des tests.
 - Le site fonctionne sur un écran de téléphone et ne présente pas des fonctions Android inexistantes comme disponibles.
+
+
+### Lot validé après Konoha 0.8 : mission d’accueil, journal et persistance
+
+Le propriétaire souhaite désormais grouper plusieurs tâches avant chaque installation. Prochain lot approuvé : accepter auprès d’Aoi une mission de repérage des trois lieux, consulter un journal, remettre un rapport puis retrouver ces étapes sur son compte après reconnexion/réinstallation. Mission solo et dialogues programmés, sans IA externe. Pas de récompense improvisée, de modification des attributions/statistiques ou de multijoueur implicite. Position non persistée.
+
+Implémentation des sources 0.9 et tests serveur en cours de validation moteur ; pas encore d’APK 0.9 annoncée. La base de production devra recevoir la migration additive via le prochain déploiement Render. Détails et limites d’autorité solo : [mission d’accueil](MISSION_ACCUEIL.md).

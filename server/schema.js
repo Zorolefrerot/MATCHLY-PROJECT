@@ -20,6 +20,15 @@ CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires);
 CREATE TABLE IF NOT EXISTS game_sessions(token TEXT PRIMARY KEY, user_id INTEGER UNIQUE NOT NULL REFERENCES users(id), expires BIGINT NOT NULL);
 CREATE INDEX IF NOT EXISTS game_sessions_expiry ON game_sessions(expires);
 CREATE TABLE IF NOT EXISTS character_appearances(user_id INTEGER PRIMARY KEY REFERENCES users(id), appearance TEXT NOT NULL, revision INTEGER NOT NULL CHECK(revision>0), updated TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS welcome_missions(
+ user_id INTEGER PRIMARY KEY REFERENCES users(id),
+ phase TEXT NOT NULL CHECK (phase IN ('active','completed')),
+ visited INTEGER NOT NULL CHECK (visited BETWEEN 0 AND 7),
+ revision INTEGER NOT NULL CHECK (revision BETWEEN 1 AND 5),
+ updated TEXT NOT NULL,
+ CHECK ((phase='active' AND revision=1+(visited & 1)+((visited >> 1) & 1)+((visited >> 2) & 1)) OR
+        (phase='completed' AND visited=7 AND revision=5))
+);
 CREATE TABLE IF NOT EXISTS resets(token TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), expires BIGINT NOT NULL);
 CREATE TABLE IF NOT EXISTS applications(
  id ${id}, user_id INTEGER UNIQUE NOT NULL REFERENCES users(id),

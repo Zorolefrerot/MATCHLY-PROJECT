@@ -80,6 +80,7 @@ func run() -> void:
 		return
 	# Render fixture only: no real account, token or network call in visual QA.
 	game.account_api.profile = {"protocol": 1, "schemaVersion": 1, "character": {"id": 1, "name": "Genin de test", "clan": "Hyūga", "affinity": "Raiton", "mokuton": false, "rank": "Genin", "village": "Konoha"}, "appearance": {"model": 1, "hair": 3, "hair_color": 3, "eyes": 2, "skin": 4, "top": 0, "top_color": 6, "bottom": 0, "bottom_color": 1}, "revision": 1}
+	game.account_api.profile["welcomeMission"] = {"schemaVersion":1,"missionId":"konoha_welcome","status":"available","visited":[],"revision":0}
 	game._open_village()
 	for frame in range(25):
 		await physics_frame
@@ -124,6 +125,30 @@ func run() -> void:
 	if not save_village_image(folder, "konoha-guide", 1):
 		quit(1)
 		return
+	# Render fixtures only, no mission write or real token in screenshots.
+	game.account_api.profile["welcomeMission"] = {"schemaVersion":1,"missionId":"konoha_welcome","status":"active","visited":["academy"],"revision":2}
+	game.village._sync_mission()
+	game.village.open_journal()
+	await process_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder, "konoha-mission-journal", 6):
+		quit(1)
+		return
+	game.account_api.profile["welcomeMission"] = {"schemaVersion":1,"missionId":"konoha_welcome","status":"completed","visited":["academy","market","hokage"],"revision":5}
+	game.village._sync_mission()
+	game.village.open_journal()
+	await process_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder, "konoha-mission-completed", 7):
+		quit(1)
+		return
+	game.village.sync_error = "Connexion interrompue. Une sauvegarde peut avoir abouti : actualise avant de réessayer."
+	game.village.open_journal()
+	await process_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder, "konoha-mission-network-error", 8):
+		quit(1)
+		return
 	game.village.finish()
 	await process_frame
 	print("IDREM_CAPTURE_SUCCESS")
@@ -133,7 +158,8 @@ func save_village_image(folder: String, filename: String, index: int) -> bool:
 	var image: Image = root.get_texture().get_image()
 	if image.save_png(folder.path_join(filename+".png")) != OK:
 		return false
-	if OS.get_environment("GITHUB_ACTIONS") == "true":
+	if OS.get_environment("GITHUB_ACTIONS") == "true" and index in [6,8]:
+		# Two selected views × four parts maximum, below GitHub’s ten-notice step cap.
 		image.resize(480, 270, Image.INTERPOLATE_LANCZOS)
 		var encoded: String = Marshalls.raw_to_base64(image.save_jpg_to_buffer(0.45))
 		if encoded.length() > 14000:

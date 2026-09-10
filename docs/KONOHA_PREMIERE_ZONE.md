@@ -2,6 +2,10 @@
 
 **APK 0.8 compilée, tests moteur et captures vérifiés.** Le propriétaire a confirmé le fonctionnement du compte 0.6 puis approuvé la zone solo 0.7, avant de demander un rendu moins cubique. **Le nouvel aspect 0.8 n’a pas encore été essayé sur son téléphone.**
 
+## Évolution suivante, non encore livrée : lot 0.9
+
+Le propriétaire a approuvé mission d’introduction + journal + sauvegarde des étapes. Ces sources sont ajoutées et testées côté serveur ; le moteur et l’APK restent à vérifier. Les limites « sans mission/progression » ci-dessous décrivent l’APK **0.8 déjà livré**, pas le lot en préparation. [Suivi du lot 0.9](MISSION_ACCUEIL.md).
+
 ## Accès
 
 1. Dans l’APK **0.8**, ouvrir **MON COMPTE** et se connecter avec son compte joueur admis.

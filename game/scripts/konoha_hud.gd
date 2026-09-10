@@ -2,6 +2,8 @@ class_name KonohaHUD
 extends TrainingHUD
 ## Reuse the tested multi-touch controller, but no combat buttons or combat menu.
 var identity: Label
+var mission_refresh: Button
+var text_scroll: ScrollContainer
 
 func _build() -> void:
 	top_panel = Panel.new()
@@ -16,12 +18,13 @@ func _build() -> void:
 	objective.add_theme_constant_override("shadow_offset_y", 2)
 	feedback = label("", 18)
 	feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer = label("PROTO 0.8 · Visite solo · Pas de progression sauvegardée", 13)
+	footer = label("PROTO 0.9 · Mission solo · Position non sauvegardée", 13)
 	footer.add_theme_color_override("font_color", Color("253b36"))
 	identity.clip_text = true
 	identity.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	fps = label("", 12)
 	_button("PAUSE", "pause")
+	_button("JOURNAL", "journal")
 	_button("COURIR", "sprint")
 	_button("SAUT", "jump")
 	_button("PARLER / LIRE", "interact")
@@ -38,16 +41,27 @@ func _build() -> void:
 	menu_title = Label.new()
 	menu_title.add_theme_font_size_override("font_size", 27)
 	column.add_child(menu_title)
+	text_scroll = ScrollContainer.new()
+	text_scroll.custom_minimum_size = Vector2(620,210)
+	text_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(text_scroll)
 	menu_text = Label.new()
 	menu_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	menu_text.custom_minimum_size = Vector2(620, 135)
+	menu_text.custom_minimum_size = Vector2(598, 135)
+	menu_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	menu_text.add_theme_font_size_override("font_size", 19)
-	column.add_child(menu_text)
+	text_scroll.add_child(menu_text)
 	primary = Button.new()
 	primary.text = "CONTINUER"
 	primary.custom_minimum_size.y = 48
-	primary.pressed.connect(func() -> void: resume_requested.emit())
+	primary.pressed.connect(func() -> void: action_requested.emit("mission_confirm"))
 	column.add_child(primary)
+	mission_refresh = Button.new()
+	mission_refresh.text = "ACTUALISER LA MISSION"
+	mission_refresh.custom_minimum_size.y = 44
+	mission_refresh.pressed.connect(func() -> void: action_requested.emit("mission_refresh"))
+	column.add_child(mission_refresh)
+	mission_refresh.hide()
 	restart_button = Button.new()
 	restart_button.text = "RETOUR À MON COMPTE"
 	restart_button.custom_minimum_size.y = 48
@@ -62,6 +76,8 @@ func _layout() -> void:
 	top_panel.size = Vector2(480,78)
 	identity.position = Vector2(34,28)
 	identity.size = Vector2(458,60)
+	buttons["journal"].position = Vector2(w-328,24)
+	buttons["journal"].size = Vector2(148,48)
 	buttons["pause"].position = Vector2(w-160,24)
 	buttons["pause"].size = Vector2(136,48)
 	joystick_center = Vector2(142,h-150)
@@ -77,7 +93,7 @@ func _layout() -> void:
 	feedback.size = Vector2(640,48)
 	footer.position = Vector2(260,h-30)
 	fps.position = Vector2(w-145,82)
-	menu_panel.size = Vector2(660,390)
+	menu_panel.size = Vector2(660,568)
 	menu_panel.position = Vector2((w-660)/2, maxf(20,(h-menu_panel.size.y)/2))
 	queue_redraw()
 

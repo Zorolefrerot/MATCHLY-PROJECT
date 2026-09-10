@@ -1,6 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { digest, hashPassword, verifyPassword, transaction } from "./store.js";
 
+import {
+  welcomeState,
+  welcomeEvents,
+  advanceWelcome,
+} from "./welcome-mission.js";
+
 // Versioned cosmetic IDs from the prototype, never equipment or combat data.
 export const appearanceLimits = Object.freeze({
   model: 2,
@@ -90,6 +96,13 @@ export function installGameRoutes(app, db, limit) {
       schemaVersion: 1,
       appearance: saved ? JSON.parse(saved.appearance) : null,
       revision: saved?.revision || 0,
+      welcomeMission: welcomeState(
+        await db
+          .prepare(
+            "SELECT phase,visited,revision FROM welcome_missions WHERE user_id=?",
+          )
+          .get(userId),
+      ),
     };
   }
   async function authenticate(req) {
@@ -112,12 +125,10 @@ export function installGameRoutes(app, db, limit) {
   }
   app.use("/api/game", (req, res, next) => {
     if (process.env.NODE_ENV === "production" && !req.secure)
-      return res
-        .status(403)
-        .json({
-          code: "HTTPS_REQUIRED",
-          error: "Connexion HTTPS obligatoire.",
-        });
+      return res.status(403).json({
+        code: "HTTPS_REQUIRED",
+        error: "Connexion HTTPS obligatoire.",
+      });
     next();
   });
   app.post(
@@ -214,6 +225,50 @@ export function installGameRoutes(app, db, limit) {
             current.revision + 1,
             new Date().toISOString(),
           );
+        return profile(userId);
+      });
+      res.json(data);
+    }),
+  );
+  app.post(
+    "/api/game/missions/welcome/events",
+    limit,
+    guard(async (req, res) => {
+      const body = req.body || {};
+      if (
+        Object.keys(body).sort().join(",") !== "event,expectedRevision" ||
+        !welcomeEvents.includes(body.event) ||
+        !Number.isSafeInteger(body.expectedRevision) ||
+        body.expectedRevision < 0 ||
+        body.expectedRevision > 5
+      )
+        throw fail(
+          400,
+          "INVALID_MISSION_EVENT",
+          "Étape de mission invalide. Mets à jour l’application.",
+        );
+      const data = await transaction(db, async () => {
+        const userId = await authenticate(req);
+        await profile(userId); // Recheck admission/allocation under the same lock.
+        const row = await db
+          .prepare(
+            "SELECT phase,visited,revision FROM welcome_missions WHERE user_id=?",
+          )
+          .get(userId);
+        const next = advanceWelcome(row, body.event, body.expectedRevision);
+        if (next)
+          await db
+            .prepare(
+              `INSERT INTO welcome_missions(user_id,phase,visited,revision,updated) VALUES (?,?,?,?,?)
+          ON CONFLICT(user_id) DO UPDATE SET phase=excluded.phase,visited=excluded.visited,revision=excluded.revision,updated=excluded.updated`,
+            )
+            .run(
+              userId,
+              next.phase,
+              next.visited,
+              next.revision,
+              new Date().toISOString(),
+            );
         return profile(userId);
       });
       res.json(data);

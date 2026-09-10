@@ -406,3 +406,22 @@ test("native game API contract also holds on PostgreSQL", async () => {
     await gameDb?.close();
   }
 });
+
+test("welcome mission contract holds across two PostgreSQL pools", async () => {
+  const { missionContract } = await import("./helpers/mission-contract.js");
+  await cluster.createDatabase("idrem_mission_test");
+  const old = process.env.DATABASE_URL;
+  const url = new URL(old);
+  url.pathname = "/idrem_mission_test";
+  process.env.DATABASE_URL = url.toString();
+  let first, second;
+  try {
+    first = await openStore();
+    second = await openStore();
+    await missionContract(first, second);
+  } finally {
+    process.env.DATABASE_URL = old;
+    await first?.close();
+    await second?.close();
+  }
+});

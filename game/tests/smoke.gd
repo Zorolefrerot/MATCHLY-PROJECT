@@ -40,6 +40,14 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
+	var mission_blank: Dictionary = {"schemaVersion":1,"missionId":"konoha_welcome","status":"available","visited":[],"revision":0}
+	check(WelcomeMission.valid_state(mission_blank), "new mission validates without invented progress")
+	for broken in ["status", "visited", "revision", "schemaVersion", "missionId"]:
+		var invalid: Dictionary = mission_blank.duplicate(true)
+		invalid[broken] = "invalid"
+		check(not WelcomeMission.valid_state(invalid), "mission rejects malformed field: " + broken)
+	check(not WelcomeMission.valid_state({"schemaVersion":1,"missionId":"konoha_welcome","status":"active","visited":["market","market"],"revision":3}), "duplicate mission checkpoints are rejected")
+	check(not WelcomeMission.valid_state({"schemaVersion":1,"missionId":"konoha_welcome","status":"completed","visited":[],"revision":5}), "completion requires all three checkpoints")
 	var rules := TrainingRules.new()
 	check(rules.try_cast(0), "first jutsu can be cast")
 	check(not rules.try_cast(0), "same jutsu cannot bypass its cooldown")
@@ -549,6 +557,111 @@ func run() -> void:
 	check(game.village != null and game.village.visited.is_empty(), "a fresh village visit has no invented persistent mission progress")
 	game.village.finish()
 	await process_frame
+	# Full mission batch on the same production API parser, with mocked transport only.
+	online["welcomeMission"] = mission_blank.duplicate(true)
+	game.account_panel.village_button.pressed.emit()
+	game.account_api.respond(200, online)
+	visit = game.village
+	for frame in range(5):
+		await physics_frame
+	check(visit.mission["status"] == "available" and not visit.guide_met, "supported server loads the available welcome mission")
+	visit.hud.buttons["journal"].pressed.emit()
+	await process_frame
+	check(visit.hud.blocked and visit.journal_open and visit.hud.menu_text.text.contains("Parler à Aoi"), "journal opens with the first objective before acceptance")
+	check(village_screen.encloses(visit.hud.menu_panel.get_global_rect()), "journal scroll panel fits the landscape viewport")
+	visit.resume_visit()
+	visit.player.reset_at(KonohaMap.LANDMARKS[0]["point"]+Vector3(0,0.2,2))
+	for frame in range(5):
+		await physics_frame
+	visit.interact()
+	check(visit.menu_event.is_empty() and visit.visited.is_empty(), "reading before accepting does not award a checkpoint")
+	visit.resume_visit()
+	visit.player.reset_at(KonohaMap.GUIDE+Vector3(0,0.2,2.2))
+	for frame in range(5):
+		await physics_frame
+	visit.interact()
+	check(visit.menu_event == "accept" and visit.hud.primary.text == "ACCEPTER LA MISSION", "Aoi offers explicit acceptance, not automatic progression")
+	visit.hud.primary.pressed.emit()
+	check(game.account_api.sent["body"]["event"] == "accept" and game.account_api.sent["body"]["expectedRevision"] == 0 and visit.hud.primary.disabled, "acceptance sends only event and mission revision and blocks double submission")
+	check(visit.mission["status"] == "available", "pending acceptance is not optimistically marked saved")
+	online["welcomeMission"] = {"schemaVersion":1,"missionId":"konoha_welcome","status":"active","visited":[],"revision":1}
+	game.account_api.respond(200, online)
+	check(visit.mission["status"] == "active" and visit.journal_open and visit.guide_met, "server acknowledgement alone confirms acceptance and opens the journal")
+	visit.resume_visit()
+	visit.interact()
+	check(visit.menu_event.is_empty() and visit.hud.menu_text.text.contains("3 panneau"), "Aoi requires all three reads before offering a report")
+	visit.resume_visit()
+	for place in range(3):
+		visit.player.reset_at(KonohaMap.LANDMARKS[place]["point"]+Vector3(0,0.2,2))
+		for frame in range(5):
+			await physics_frame
+		visit.interact()
+		check(visit.menu_event == "read_"+WelcomeMission.PLACES[place], "each real sign offers its own checkpoint")
+		visit.hud.primary.pressed.emit()
+		check(game.account_api.sent["body"]["event"] == "read_"+WelcomeMission.PLACES[place] and visit.visited.size() == place, "read remains unconfirmed until server reply")
+		if place == 0:
+			# Simulate an ambiguous network cut, then reconcile with the server.
+			game.account_api._response(HTTPRequest.RESULT_CANT_CONNECT,0,PackedStringArray(),PackedByteArray())
+			check(visit.visited.is_empty() and not visit.sync_error.is_empty(), "network cut never marks the read as saved")
+			await process_frame
+			check(village_screen.encloses(visit.hud.menu_panel.get_global_rect()), "long mission error stays inside scrollable panel")
+			visit.hud.mission_refresh.pressed.emit()
+			check(game.account_api.sent["path"] == "/profile" and visit.hud.mission_refresh.disabled, "uncertain save is reconciled by a read, not an automatic repeated write")
+		online["welcomeMission"]["visited"].append(WelcomeMission.PLACES[place])
+		online["welcomeMission"]["revision"] += 1
+		game.account_api.respond(200, online)
+		check(visit.visited.size() == place+1 and visit.sync_error.is_empty(), "confirmed checkpoint is restored from the account")
+		visit.resume_visit()
+		visit.interact()
+		check(visit.menu_event.is_empty(), "an already confirmed sign cannot create another local write")
+		visit.resume_visit()
+	check(WelcomeMission.objective(visit.mission).contains("rapport à Aoi"), "all three reads direct the genin back to Aoi")
+	visit.finish()
+	await process_frame
+	game.account_panel.village_button.pressed.emit()
+	game.account_api.respond(200, online)
+	visit = game.village
+	for frame in range(5):
+		await physics_frame
+	check(visit.visited.size() == 3 and visit.mission["revision"] == 4 and visit.player.position.distance_to(KonohaMap.SPAWN) < 1, "fresh visit restores checkpoints but never old position")
+	visit.player.reset_at(KonohaMap.GUIDE+Vector3(0,0.2,2.2))
+	for frame in range(5):
+		await physics_frame
+	visit.interact()
+	check(visit.menu_event == "report", "Aoi offers the report only after the three saved reads")
+	visit.hud.primary.pressed.emit()
+	game.account_api.respond(409,{"error":"Une version plus récente existe."})
+	check(visit.mission["status"] == "active" and not visit.sync_error.is_empty(), "conflict leaves completion unconfirmed")
+	visit.hud.mission_refresh.pressed.emit()
+	online["welcomeMission"]["status"] = "completed"
+	online["welcomeMission"]["revision"] = 5
+	game.account_api.respond(200, online)
+	check(visit.mission["status"] == "completed" and visit.hud.menu_text.text.contains("Rapport remis"), "journal restores completed report after reconciliation")
+	visit.resume_visit()
+	visit.interact()
+	check(visit.menu_event.is_empty() and visit.hud.menu_text.text.contains("terminée et enregistrée"), "completed welcome cannot be restarted or claim a reward")
+	check(game.player.appearance == offline_before and game.rules.casts == training_casts and game.player.position == training_position, "mission synchronization never mutates training fighter, combat or appearance")
+	visit.open_journal()
+	visit.hud.mission_refresh.pressed.emit()
+	visit.finish()
+	await process_frame
+	game.account_api.respond(200, online)
+	check(game.village == null and game.account_panel.visible and game.account_api.profile["welcomeMission"]["status"] == "completed", "late response after leaving updates only the account and never reopens the destroyed visit")
+	game.account_panel.village_button.pressed.emit()
+	game.account_api.respond(200, online)
+	visit = game.village
+	for frame in range(5):
+		await physics_frame
+	check(visit.mission["status"] == "completed", "completed welcome persists across a new visit without another reward or write")
+	visit.open_journal()
+	visit.hud.mission_refresh.pressed.emit()
+	game.account_api.respond(401,{"error":"Session expirée. Reconnecte-toi."})
+	check(visit.mission.is_empty() and visit.hud.mission_refresh.disabled and visit.hud.menu_text.text.contains("reconnecter"), "expired session gives a safe return-to-account path, not a fake save")
+	visit.finish()
+	await process_frame
+	# Restore the ordinary fixture to continue the older expiration regression.
+	game.account_api.profile = online.duplicate(true)
+	game.account_panel._update_controls()
 	game.account_panel.village_button.pressed.emit()
 	game.account_api.respond(401, {"error": "Session expirée."})
 	check(game.village == null and not game.village_entry_pending and game.account_panel.village_button.disabled, "an expired session cannot enter the village")
