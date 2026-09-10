@@ -1,24 +1,15 @@
-# Images de référence — amélioration visuelle de Konoha
+# Images fournies — amélioration visuelle de Konoha
 
-Dossier destiné aux images que le propriétaire souhaite fournir. **Aucune image n’a encore été reçue pour cette étape.** Ces sources sont hors du projet `game/` : leur ajout seul ne déclenche pas une compilation Android et elles ne sont pas incluses automatiquement dans l’APK.
+**Trois références reçues et inspectées**, ajoutées par le propriétaire dans le commit `bc6203d36c5ed53ca9795214627482f42ff056c9` sur `arena/01a08158-matchly-project`.
 
-## Premier lot demandé
+| Fichier original conservé | Dimensions | Usage |
+|---|---|---|
+| `images (74).jpeg` | 739 × 415 | Résidence rouge circulaire, toits dorés, emblème, silhouette avec quatre visages derrière. |
+| `which-is-more-iconic-v0-5mbvcs0b35md1.jpg` | 512 × 288 | Maison arrondie à étages, larges toits brun-rouge, murs clairs, fenêtres et conduits. |
+| `which-hokage-stone-face-must-have-been-the-hardest-and-v0-f4iawydex35f1.png` | 640 × 225 | Monument à sept visages ; les quatre premiers sont recadrés pour correspondre à la résidence. |
 
-| Nom conseillé (JPG ou PNG, garder l’extension réelle) | Contenu utile |
-|---|---|
-| `maison-reference.jpg` | Une maison représentative de Konoha, façade ou vue trois quarts ; toit, murs et fenêtres visibles. |
-| `residence-hokage.jpg` | La résidence du Hokage entière, façade ou vue trois quarts ; silhouette du bâtiment et toiture lisibles. |
-| `falaise-hokage.jpg` | La falaise et ses visages, idéalement une vue frontale nette et suffisamment large. |
+Ces images sont petites, pas des textures HD utilisables telles quelles sur chaque façade. Leurs sources et droits ne sont pas vérifiés indépendamment : la gratuité du projet ne donne pas automatiquement des droits sur les œuvres fournies. Aucun autre site ou modèle de génération d’images n’a été utilisé pour cette préparation.
 
-Préférer des images nettes, idéalement d’au moins 1 500 pixels de large, sans interface ni texte superposé. Cette résolution est une recommandation, pas un blocage. Fournir des images personnelles ou des références dont l’utilisation est autorisée ; la gratuité du projet ne donne pas automatiquement de droits sur les œuvres sources.
+Les originaux restent **hors du projet `game/` et de l’APK**. Les sept dérivés allégés, leur traçabilité et la méthode sont documentés dans [`game/assets/konoha/README.md`](../../game/assets/konoha/README.md). Les maisons et la résidence reçoivent de nouveaux volumes et toitures, pas seulement des images sur les cubes existants. La falaise reste un décor texturé, **pas des visages sculptés en 3D**.
 
-## Traitement prévu après réception
-
-- Examiner les images réellement fournies avant de choisir le découpage, les dimensions et l’usage des textures.
-- Conserver les sources et leur provenance. Préparer séparément des textures allégées dans `game/assets/` ; ne pas embarquer les références haute résolution par défaut.
-- Utiliser les vues de bâtiments comme références de forme et de matériaux. Une photo en perspective n’est pas automatiquement une texture de façade directement applicable.
-- Retravailler aussi les silhouettes/volumes et les toitures : des textures seules ne suppriment pas l’aspect cubique des modèles.
-- Étudier une falaise texturée en décor de fond pour ce premier incrément ; ne pas présenter une image plane comme des visages sculptés en 3D.
-- Garder des textures de taille raisonnable, mutualiser les matériaux et vérifier le rendu sur la cible mobile. Aucune nouvelle qualité ni performance n’est annoncée comme validée avant réalisation et tests.
-
-Les scripts, textures et modèles livrés dans l’APK 0.7 restent inchangés à ce stade.
+La version 0.7 a été approuvée par le propriétaire avant cette demande d’amélioration. La validation de la nouvelle compilation est tenue dans [`game/VALIDATION.md`](../../game/VALIDATION.md) ; aucun essai de fluidité Android n’est supposé à partir des références ou des captures ordinateur.

@@ -195,3 +195,52 @@ test("Konoha is a separate account-avatar visit, not a renamed training arena", 
   );
   assert.match(read("game/scripts/account_panel.gd"), /ENTRER À KONOHA/);
 });
+
+test("Konoha reference-derived textures are bounded, mipmapped and traceable", () => {
+  const manifest = JSON.parse(read("game/assets/konoha/manifest.json"));
+  const sha = (data) => createHash("sha256").update(data).digest("hex");
+  assert.equal(manifest.sources.length, 3);
+  assert.equal(manifest.outputs.length, 7);
+  assert.equal(manifest.head_count, 4);
+  assert.deepEqual(manifest.cliff_crop, [0, 0, 382, 225]);
+  for (const source of manifest.sources) {
+    const bytes = readFileSync(new URL("../art_sources/konoha/" + source.file, import.meta.url));
+    assert.equal(sha(bytes), source.sha256);
+  }
+  let total = 0;
+  for (const output of manifest.outputs) {
+    const path = "game/assets/konoha/" + output.file;
+    const bytes = readFileSync(new URL("../" + path, import.meta.url));
+    total += bytes.length;
+    assert.equal(sha(bytes), output.sha256);
+    assert.equal(bytes.toString("hex", 0, 8), "89504e470d0a1a0a");
+    assert.equal(bytes.readUInt32BE(16), output.size[0]);
+    assert.equal(bytes.readUInt32BE(20), output.size[1]);
+    assert.ok(output.size.every((n) => n === 256 || n === 512));
+    if (/atlas|cliff/.test(path)) assert.equal(bytes[25], 6);
+    assert.match(read(path + ".import"), /mipmaps\/generate=true/);
+    assert.match(read(path + ".import"), /compress\/mode=0/);
+  }
+  assert.ok(total < 1600000, "prepared PNG budget stays below 1.6 MB");
+  const preset = read("game/export_presets.cfg");
+  assert.ok(preset.includes("assets/konoha/manifest.json"));
+  assert.ok(preset.includes("assets/konoha/README.md"));
+});
+
+test("Konoha remodels silhouettes and batches facade details without changing combat", () => {
+  const architecture = read("game/scripts/konoha_architecture.gd");
+  assert.match(architecture, /ConvexPolygonShape3D\.new/);
+  assert.match(architecture, /func lathe/);
+  assert.match(architecture, /details = _mesh\(detail_vertices/);
+  assert.match(architecture, /LINEAR_WITH_MIPMAPS/);
+  assert.doesNotMatch(architecture, /func _process|func _physics_process|Image\.new|HTTPRequest/);
+  assert.match(read("game/scripts/konoha_map.gd"), /architecture\.house/);
+  for (const filename of ["training.gd", "arena.gd", "fighter.gd", "rules.gd", "audio.gd"])
+    assert.doesNotMatch(read("game/scripts/" + filename), /KonohaArchitecture|assets\/konoha/);
+  assert.match(read("game/tests/capture.gd"), /konoha-house/);
+  assert.match(read("game/tests/capture.gd"), /konoha-palace/);
+  const version = read("game/VERSION").trim();
+  assert.equal(version, "0.8.0");
+  assert.ok(read("game/export_presets.cfg").includes(`version/name="${version}"`));
+  assert.match(read("game/scripts/konoha_hud.gd"), /PROTO 0\.8/);
+});

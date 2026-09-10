@@ -1,0 +1,15 @@
+[remap]
+importer="texture"
+type="CompressedTexture2D"
+path="res://.godot/imported/roof_gold.png-1295e8e2c7be9e5e6c7c1d9a1a01a688.ctex"
+metadata={"vram_texture": false}
+
+[deps]
+source_file="res://assets/konoha/roof_gold.png"
+dest_files=PackedStringArray("res://.godot/imported/roof_gold.png-1295e8e2c7be9e5e6c7c1d9a1a01a688.ctex")
+
+[params]
+compress/mode=0
+mipmaps/generate=true
+process/fix_alpha_border=true
+detect_3d/compress_to=0

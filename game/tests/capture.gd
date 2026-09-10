@@ -92,9 +92,29 @@ func run() -> void:
 	for frame in range(15):
 		await physics_frame
 	await RenderingServer.frame_post_draw
-	if root.get_texture().get_image().save_png(folder.path_join("konoha-market.png")) != OK:
+	if not save_village_image(folder, "konoha-market", 2):
 		quit(1)
 		return
+	game.village.player.reset_at(Vector3(6,0.2,21))
+	game.village.yaw = -0.92
+	game.village.pitch = 0.04
+	for frame in range(15):
+		await physics_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder, "konoha-house", 3):
+		quit(1)
+		return
+	game.village.player.reset_at(Vector3(0,0.2,-4))
+	game.village.yaw = 0
+	game.village.pitch = 0.08
+	for frame in range(15):
+		await physics_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder, "konoha-palace", 4):
+		quit(1)
+		return
+	game.village.yaw = 0.9
+	game.village.pitch = -0.06
 	game.village.player.reset_at(KonohaMap.GUIDE+Vector3(0,0.2,2.3))
 	for frame in range(6):
 		await physics_frame

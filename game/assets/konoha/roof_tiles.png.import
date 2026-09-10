@@ -1,0 +1,15 @@
+[remap]
+importer="texture"
+type="CompressedTexture2D"
+path="res://.godot/imported/roof_tiles.png-fcede433b1b584306ce198dde8d2b639.ctex"
+metadata={"vram_texture": false}
+
+[deps]
+source_file="res://assets/konoha/roof_tiles.png"
+dest_files=PackedStringArray("res://.godot/imported/roof_tiles.png-fcede433b1b584306ce198dde8d2b639.ctex")
+
+[params]
+compress/mode=0
+mipmaps/generate=true
+process/fix_alpha_border=true
+detect_3d/compress_to=0

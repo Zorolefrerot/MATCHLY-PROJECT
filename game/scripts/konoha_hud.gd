@@ -11,9 +11,15 @@ func _build() -> void:
 	identity = label("KONOHA · QUARTIER D’ACCUEIL", 20)
 	objective = label("Bienvenue. Approche-toi du guide Aoi.", 17)
 	objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	objective.add_theme_color_override("font_shadow_color", Color("172a2b"))
+	objective.add_theme_constant_override("shadow_offset_x", 1)
+	objective.add_theme_constant_override("shadow_offset_y", 2)
 	feedback = label("", 18)
 	feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer = label("PROTO 0.7 · Visite solo · Pas de progression sauvegardée", 13)
+	footer = label("PROTO 0.8 · Visite solo · Pas de progression sauvegardée", 13)
+	footer.add_theme_color_override("font_color", Color("253b36"))
+	identity.clip_text = true
+	identity.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	fps = label("", 12)
 	_button("PAUSE", "pause")
 	_button("COURIR", "sprint")

@@ -441,6 +441,30 @@ func run() -> void:
 	check(root.disable_3d and game.process_mode == Node.PROCESS_MODE_DISABLED and not game.hud.is_processing_input(), "training rendering, simulation and input are suspended during the visit")
 	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("Genin Test"), "Konoha uses the account identity and saved appearance")
 	check(visit.hud.skill_buttons.is_empty() and not visit.hud.buttons.has("melee"), "village does not expose training combat or test jutsu")
+	var architecture: KonohaArchitecture = visit.world.architecture
+	check(architecture.house_count == 4 and architecture.palace_built, "four stepped round houses and the red palace replace the block buildings")
+	check(architecture.curved_meshes > 40, "architecture uses actual curved surface profiles, not textures on cubes")
+	var geometry_ok: bool = true
+	var vertex_count: int = 0
+	for child in architecture.get_children():
+		if child is MeshInstance3D and child.mesh is ArrayMesh:
+			var arrays: Array = child.mesh.surface_get_arrays(0)
+			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			var uv: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+			vertex_count += vertices.size()
+			geometry_ok = geometry_ok and vertices.size() == normals.size() and vertices.size() == uv.size()
+			for i in range(vertices.size()):
+				geometry_ok = geometry_ok and vertices[i].is_finite() and normals[i].is_finite() and uv[i].is_finite() and normals[i].length() > 0.99
+	check(geometry_ok and vertex_count < 50000, "curved architecture has finite UVs/normals and a bounded vertex budget")
+	check(architecture.details.mesh.get_surface_count() == 1 and architecture.details.mesh.surface_get_array_len(0) > 800, "facade windows and doors share one draw surface")
+	var cliff_bounds: AABB = architecture.cliff.get_aabb()
+	check(absf(cliff_bounds.size.x / cliff_bounds.size.y - 382.0/225.0) < 0.001 and cliff_bounds.end.z < -33, "four-head backdrop restores source proportions and stays beyond the playable perimeter")
+	var materials_ok: bool = true
+	for key: String in KonohaArchitecture.TEXTURES:
+		var mat: StandardMaterial3D = architecture.materials[key]
+		materials_ok = materials_ok and mat.albedo_texture != null and mat.texture_filter == BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	check(materials_ok, "all seven prepared textures import into shared mip-filtered materials")
 	var village_screen := Rect2(Vector2.ZERO, visit.hud.size)
 	var visit_buttons_fit: bool = true
 	for button: Button in visit.hud.buttons.values():
@@ -471,6 +495,16 @@ func run() -> void:
 		await physics_frame
 	Input.action_release("move_right")
 	check(visit.player.position.x < 28.5, "village perimeter collision prevents walking out")
+	visit.player.reset_at(Vector3(17,0.1,20))
+	Input.action_press("move_forward")
+	for frame in range(45):
+		await physics_frame
+	Input.action_release("move_forward")
+	check(visit.player.position.z > 18.5, "rounded house convex hull blocks walking through the closed facade")
+	visit.player.reset_at(Vector3(20.7,0.1,18.1))
+	for frame in range(5):
+		await physics_frame
+	check(visit.player.position.distance_to(Vector3(20.7,-0.05,18.1)) < 0.2, "old cube corner outside the rounded footprint is now genuinely free")
 	visit.player.reset_at(KonohaMap.GUIDE+Vector3(0,0.3,2.2))
 	for frame in range(5):
 		await physics_frame

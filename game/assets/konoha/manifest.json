@@ -1,0 +1,104 @@
+{
+  "source_commit": "bc6203d36c5ed53ca9795214627482f42ff056c9",
+  "pillow": "11.3.0",
+  "seed": 83021,
+  "cliff_crop": [
+    0,
+    0,
+    382,
+    225
+  ],
+  "head_count": 4,
+  "sources": [
+    {
+      "file": "images (74).jpeg",
+      "sha256": "667a5d0c5f259303ce0c04f531a2fac68219983e2a39bc5c41dabf08cd3ee4f9",
+      "size": [
+        739,
+        415
+      ]
+    },
+    {
+      "file": "which-hokage-stone-face-must-have-been-the-hardest-and-v0-f4iawydex35f1.png",
+      "sha256": "2c8f5105a82f999ca14759a3d5fb729fb0291267b46d9d38ce421213d97bc454",
+      "size": [
+        640,
+        225
+      ]
+    },
+    {
+      "file": "which-is-more-iconic-v0-5mbvcs0b35md1.jpg",
+      "sha256": "8ac6190fdb63d05f74b1e7a2018f5dfc256deeb88c766c6760ec7b7306832561",
+      "size": [
+        512,
+        288
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "file": "plaster.png",
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "cf5a9c913b0ac73753a39a41eea297bde0ebd85a16cf21da135d873f844c0eed",
+      "description": "Wall palette and subtle surface detail sampled from the provided house; restrained procedural weathering."
+    },
+    {
+      "file": "palace_red.png",
+      "size": [
+        256,
+        256
+      ],
+      "sha256": "7552fcd98d05df7ea40eecc21f0160ff52fbcbff4223f10a4350fbc2b93fb3fb",
+      "description": "Red plaster sampled from the provided Hokage residence."
+    },
+    {
+      "file": "stone.png",
+      "size": [
+        256,
+        256
+      ],
+      "sha256": "5bdc1e97c79586f533856af554b6e91566c52454a3a2fa56e95c8830a41ae541",
+      "description": "Stone palette from the provided cliff; procedural low-frequency grain."
+    },
+    {
+      "file": "roof_tiles.png",
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "ee41f64734bd3958906f7e6c38dd86b2b0eacf4fb1cc9ad9717c01e3f3856ace",
+      "description": "Roof colors sampled from owner reference, with drawn tile grooves and weathering."
+    },
+    {
+      "file": "roof_gold.png",
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "c8d6e12f1c4f3c4a3bcb3944b87f6a86e3b7b8c907d605414926cdaf844817ce",
+      "description": "Roof colors sampled from owner reference, with drawn tile grooves and weathering."
+    },
+    {
+      "file": "details_atlas.png",
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "3ed85ad2830eefc5f11954e85adb0223340fbce11ec86376578cca29bc3749eb",
+      "description": "Procedural windows/door matching the house reference; lower-right crest is a cropped owner-supplied residence detail."
+    },
+    {
+      "file": "hokage_cliff.png",
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "e0d05d629b3f67348b6fa2de4bcba62e179e0df119f55eb9fc823cd359566e1d",
+      "description": "Cropped first four faces from the provided seven-face image, with a warm-stone skyline alpha mask. Textured scenery, not sculpted face geometry."
+    }
+  ],
+  "rights": "Owner-provided references; original rights not independently verified. Derived textures are not claimed as wholly original artwork."
+}

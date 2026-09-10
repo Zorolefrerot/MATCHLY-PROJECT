@@ -1,0 +1,15 @@
+[remap]
+importer="texture"
+type="CompressedTexture2D"
+path="res://.godot/imported/plaster.png-b0e860bf23d4d95a914a96dee404087d.ctex"
+metadata={"vram_texture": false}
+
+[deps]
+source_file="res://assets/konoha/plaster.png"
+dest_files=PackedStringArray("res://.godot/imported/plaster.png-b0e860bf23d4d95a914a96dee404087d.ctex")
+
+[params]
+compress/mode=0
+mipmaps/generate=true
+process/fix_alpha_border=true
+detect_3d/compress_to=0

@@ -1,0 +1,15 @@
+[remap]
+importer="texture"
+type="CompressedTexture2D"
+path="res://.godot/imported/details_atlas.png-a76717ef6d6a10a3a6bd29b5a224b16a.ctex"
+metadata={"vram_texture": false}
+
+[deps]
+source_file="res://assets/konoha/details_atlas.png"
+dest_files=PackedStringArray("res://.godot/imported/details_atlas.png-a76717ef6d6a10a3a6bd29b5a224b16a.ctex")
+
+[params]
+compress/mode=0
+mipmaps/generate=true
+process/fix_alpha_border=true
+detect_3d/compress_to=0

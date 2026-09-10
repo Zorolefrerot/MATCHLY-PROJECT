@@ -11,7 +11,7 @@ var hud: KonohaHUD
 var pivot: Node3D
 var arm: SpringArm3D
 var yaw: float = 0.0
-var pitch: float = -0.24
+var pitch: float = -0.06
 var visited: Dictionary = {}
 var guide_met: bool = false
 var initialized: bool = false
