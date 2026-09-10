@@ -4,21 +4,36 @@
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node du site + isolation du prototype | 15/15 passent |
+| Tests Node du site + isolation/sons du prototype | **17/17 passent** |
 | Construction Vite du site | Réussie, 1 597 modules |
 | Analyse GDScript statique | Pas de diagnostic avec les réglages du projet |
-| Exécution Godot de `tests/smoke.gd` | **47 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
+| Exécution Godot de `tests/smoke.gd` | **78 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
 | Erreurs dans le journal de la simulation | Aucune `SCRIPT ERROR`, `ERROR` ou assertion échouée |
 | Import dans l’éditeur officiel complet (CI) | Réussi, contrôle strict passé |
 | Import dans l’ancien éditeur local réduit | Erreurs d’environnement `fontconfig`, historique ci-dessous |
 | Rendu GL / captures | Étape CI réussie : captures ordinateur produites sous Xvfb/Mesa, pas un test Android |
 | Export APK / signature / permissions finales | **Réussis** : signature debug vérifiée avec `apksigner`, contrôle `aapt` sans permission réseau/sensible interdite |
-| Téléphone Android physique | **Non testé** |
-| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34440928876 verte** |
+| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.2.0 à retester** |
+| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34442311612 verte** |
 
-Ne pas interpréter les tests sans affichage comme une validation du rendu ou des performances Android. L’APK est disponible en artefact GitHub, mais n’a pas encore été installée ni testée sur le téléphone du propriétaire. Les captures n’ont pas été inspectées visuellement dans Arena : l’accès aux hôtes de téléchargement des artefacts y est bloqué.
+Ne pas interpréter les tests sans affichage comme une validation du rendu ou des performances Android. La nouvelle APK 0.2.0 est disponible en artefact GitHub, mais n’a pas encore été installée ni testée sur le téléphone du propriétaire. Les captures n’ont pas été inspectées visuellement dans Arena : l’accès aux hôtes de téléchargement des artefacts y est bloqué.
 
-## Première compilation Android réussie
+## Mise à jour 0.2.0 — logo, course, effets et audio
+
+[Exécution n° 5](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34442311612), source **`21bb0e6e2ff2b8b3ba56b662166f64a6f65c39a4`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en 1 min 42 s.
+
+- **78 assertions Godot** passées avec l’éditeur officiel 4.5.1 : les anciennes règles plus absence d’image dans le HUD, menu et réglages audio, ressources WAV, lecture/boucle, pause/silence, course bras en arrière, frappe vers l’avant, retour au repos, budget et nettoyage des effets, refus de son pour une technique en recharge.
+- **17 tests Node** et compilation Vite réussis. Les 10 fichiers WAV sont des PCM mono 16 bits/22 050 Hz, non silencieux, sous le seuil de saturation et avec une jonction de boucle bornée. Génération originale reproductible, aucun échantillon externe.
+- La CI emploie le pilote audio **Dummy** : elle valide les ressources, états de lecture et branchements, **pas une écoute du mix final**. Les niveaux et timbres réels restent à apprécier sur téléphone.
+- Capture de rendu réussie pour l’arène, la course de profil, les quatre techniques et la pause ; pas d’inspection visuelle locale des artefacts, ni de mesure des FPS Android.
+- Export signé de test, contrôles `apksigner` et permissions réussis.
+- Version `0.2.0`, code **2** ; paquet inchangé `org.idremzenkai.training`. API minimum 24/cible 35, ARM64 et ARMv7.
+- APK : **59 621 287 octets**. SHA-256 : `5c83040b08079cb8917284a161da959498c06d377cc8adbf59a6ec0ea502678f`.
+- [ZIP `idrem-zenkai-android-5`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34442311612/artifacts/10138409957) : **60 953 817 octets**, expiration le 17 septembre 2026. SHA-256 ZIP GitHub : `10e61af872fd99874e0c51057007c7c035034b698d62380f80deb40a23063434`.
+
+Retour utilisateur ayant motivé la correction : bonne fluidité dans 0.1.0, mais image du logo gênant la vue. Le `TextureRect` de logo a été entièrement retiré du HUD plutôt que seulement redimensionné. L’icône du lanceur reste indépendante. Ni dégâts, coûts/recharges, comptes ni données de production n’ont été modifiés.
+
+## Historique : première compilation Android réussie
 
 [Exécution n° 4](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34440928876), source **`472cdf686137806eace06fbedf9050a422b90dcc`**, branche `arena/01a08158-matchly-project`, 10 septembre 2026. Toutes les étapes ont réussi en 1 min 42 s, avec l’éditeur **officiel Godot 4.5.1**.
 

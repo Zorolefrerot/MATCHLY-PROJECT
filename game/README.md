@@ -4,11 +4,21 @@ Prototype **solo et hors ligne**, séparé du site Render/Neon. Godot **4.5.1 St
 
 ## État vérifié
 
-**Première APK compilée et vérifiée le 10 septembre 2026.** Les 47 tests Godot, l’export signé de test, le contrôle des permissions et les captures de rendu ordinateur ont réussi dans GitHub Actions. Les performances et l’installation sur un vrai téléphone restent à tester. Détails : [`VALIDATION.md`](VALIDATION.md).
+**Version 0.2.0 compilée et vérifiée le 10 septembre 2026.** Les 78 tests Godot, l’export signé de test, le contrôle des permissions et les captures de rendu ordinateur ont réussi dans GitHub Actions. Le propriétaire a testé la version 0.1.0 et apprécié sa fluidité, tout en signalant un logo gênant. La version 0.2.0 attend son nouvel essai sur téléphone. Détails : [`VALIDATION.md`](VALIDATION.md).
 
-- [Télécharger le ZIP `idrem-zenkai-android-4` (environ 60 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34440928876/artifacts/10137929188) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
-- [Exécution verte et fichiers](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34440928876).
-- Extraire le ZIP et ouvrir **`idrem-zenkai-training-debug.apk`**. Ne pas télécharger `godot-test-logs-4` à la place : ce dernier ne contient que les journaux.
+- [Télécharger le ZIP `idrem-zenkai-android-5` (environ 61 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34442311612/artifacts/10138409957) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
+- [Exécution verte et fichiers](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34442311612).
+- Extraire le ZIP et ouvrir **`idrem-zenkai-training-debug.apk`**. Ne pas télécharger `godot-test-logs-5` à la place : ce dernier ne contient que les journaux.
+
+## Nouveautés 0.2.0
+
+- **Logo retiré de l’interface de combat** : aucun `TextureRect` ni image de logo ne peut couvrir la vue. L’icône Android est conservée.
+- **Course ninja** : bras en arrière, légère inclinaison du personnage, transitions vers l’arrêt ; le bras de frappe revient vers l’avant même en course. Pose visuelle uniquement, sans modification des dégâts ni des vitesses.
+- **Effets plus lisibles** : traînée et étincelles de feu, éclair en zigzag, anneaux de vent, pierres surgissant du sol, arc de frappe et impacts. Effets 3D courts, sans flash plein écran ni secousse de caméra, maximum 14 groupes simultanés ; densité réduite en Économie.
+- **Audio original hors ligne** : un son par technique, coups, impacts, esquive, avertissement ennemi et boucle instrumentale discrète de 17,78 s. Aucun son de l’anime ni service extérieur.
+- **Pause → Volume général** (0 = silence) et **Ambiance de combat** (activation indépendante). Limiteur contre la saturation, 8 voix d’effets maximum, une seule piste de fond ; silence à l’accueil, en pause et au résultat. Réglages conservés pour la session, pas après fermeture.
+
+La lecture audio est couverte par les tests du moteur, mais son rendu sur les haut-parleurs du téléphone et l’impact des nouveaux effets sur les FPS restent à confirmer par le propriétaire.
 
 ## Contenu
 
@@ -41,7 +51,7 @@ La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais 
 2. Choisir **Android - Prototype IDREM ZENKAI** et une exécution **verte** correspondant à la version du jeu souhaitée sur `arena/01a08158-matchly-project`. Une mise à jour de documentation seule peut ne pas créer de nouvelle APK.
 3. Dans **Artifacts**, télécharger `idrem-zenkai-android-…` (connexion à GitHub nécessaire).
 4. Extraire le ZIP sur le téléphone et ouvrir `idrem-zenkai-training-debug.apk`.
-5. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
+5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.2.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
 6. Garder les graphismes **Économie** pour le premier essai.
 
 L’APK est signé avec une **clé de test temporaire**, pas une clé Play Store. Une nouvelle exécution peut générer une signature différente : Android pourra demander de désinstaller le prototype précédent avant installation. Le paquet `org.idremzenkai.training` est distinct du futur jeu. Aucun compte ni candidature n’est supprimé en désinstallant ce prototype.
@@ -87,7 +97,8 @@ bash game/tools/export_android.sh
 Le script d’export utilise automatiquement un dossier XDG temporaire dédié : il ne remplace pas les préférences personnelles de l’éditeur Godot. Aucun SDK NDK ni compilation de moteur n’est requis ici : le projet utilise les modèles APK standards, sans Gradle ni plugin natif. Les champs `gradle_build/min_sdk` et `target_sdk` doivent rester vides avec ces modèles standards. `rendering/textures/vram_compression/import_etc2_astc=true` est nécessaire pour préparer l’export mobile depuis Linux.
 
 - `tests/smoke.gd` : règles, collisions, mouvement, sauts, esquive, pause, cible, projectile, victoire et réinitialisation.
-- `tests/capture.gd` : captures de rendu ordinateur, pas des preuves d’exécution Android.
+- `tests/capture.gd` : captures de l’arène, de la course ninja, des quatre techniques et du menu ordinateur, pas des preuves d’exécution Android.
+- `tools/generate_audio.py` : génération reproductible des dix WAV originaux (Python standard uniquement). Tests Node des en-têtes PCM, niveaux et jonction de boucle.
 - Les logs disponibles sont conservés dans les artefacts GitHub même si une étape échoue. Les captures ne sont produites qu’après les tests et l’export réussis.
 
 ## Essai à réaliser par le propriétaire
