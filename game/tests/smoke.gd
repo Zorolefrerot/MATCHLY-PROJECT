@@ -477,7 +477,7 @@ func run() -> void:
 	visit.interact()
 	check(visit.guide_met and visit.hud.blocked and visit.hud.menu_title.text.contains("Aoi"), "nearby guide opens an original written welcome dialogue")
 	await process_frame
-	check(village_screen.encloses(visit.hud.menu_panel.get_global_rect()), "village dialogue fits the screen")
+	check(village_screen.encloses(visit.hud.menu_panel.get_global_rect()), "village dialogue fits the screen: %s within %s" % [visit.hud.menu_panel.get_global_rect(), village_screen])
 	var stopped: Vector3 = visit.player.position
 	Input.action_press("move_left")
 	for frame in range(6):

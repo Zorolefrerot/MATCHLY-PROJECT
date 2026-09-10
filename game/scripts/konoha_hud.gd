@@ -34,7 +34,7 @@ func _build() -> void:
 	column.add_child(menu_title)
 	menu_text = Label.new()
 	menu_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	menu_text.custom_minimum_size = Vector2(0, 135)
+	menu_text.custom_minimum_size = Vector2(620, 135)
 	menu_text.add_theme_font_size_override("font_size", 19)
 	column.add_child(menu_text)
 	primary = Button.new()
@@ -71,7 +71,7 @@ func _layout() -> void:
 	feedback.size = Vector2(640,48)
 	footer.position = Vector2(260,h-30)
 	fps.position = Vector2(w-145,82)
-	menu_panel.size = Vector2(660,0)
-	menu_panel.position = Vector2((w-660)/2, maxf(20,(h-menu_panel.get_combined_minimum_size().y)/2))
+	menu_panel.size = Vector2(660,390)
+	menu_panel.position = Vector2((w-660)/2, maxf(20,(h-menu_panel.size.y)/2))
 	queue_redraw()
 
