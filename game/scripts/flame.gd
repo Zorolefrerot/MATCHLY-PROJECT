@@ -24,7 +24,7 @@ func _ready() -> void:
 		sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
 		add_child(sprite)
 		sprites.append(sprite)
-		var base := Vector3(0.95 - i*0.18, 0.68 + i*0.03, 1)
+		var base := Vector3(1.4 - i*0.24, 0.55 + i*0.035, 1)
 		if style == Style.TRAIL:
 			base = Vector3(0.48, 0.46, 1)
 		elif style == Style.IMPACT:
@@ -48,7 +48,8 @@ func _update_visuals() -> void:
 		var opacity: float = 0.95 - i*0.16
 		if style == Style.PROJECTILE:
 			sprite.position = -direction * float(i)*0.27 + Vector3.UP * (0.1 + i*0.035)
-			sprite.position += side * sin(age*14 + i*2.2)*0.08
+			var lobe: float = 0.0 if i == 0 else (-0.15 if i == 1 else 0.15)
+			sprite.position += side * (lobe + sin(age*14 + i*2.2)*0.06)
 		elif style == Style.TRAIL:
 			sprite.position = -direction * age*1.3 + Vector3.UP * age*0.8
 			sprite.scale *= maxf(0.1, 1.0-age*1.6)
