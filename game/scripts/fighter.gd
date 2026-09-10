@@ -19,6 +19,10 @@ var impulse: Vector3 = Vector3.ZERO
 var strike_remaining: float = 0.0
 var flash_remaining: float = 0.0
 var base_color: Color = Color("284852")
+var appearance: Dictionary = CharacterAppearance.DEFAULTS.duplicate()
+var hair_root: Node3D
+var eye_material: StandardMaterial3D
+var skin_material: StandardMaterial3D
 
 func configure(color: Color, layer: int, hit_points: float) -> void:
 	base_color = color
@@ -34,22 +38,7 @@ func configure(color: Color, layer: int, hit_points: float) -> void:
 	collision.shape = capsule
 	collision.position.y = 0.9
 	add_child(collision)
-	visual = Node3D.new()
-	add_child(visual)
-	body_material = material(color)
-	_box(visual, Vector3(0.66, 0.67, 0.36), Vector3(0, 1.03, 0), body_material)
-	_box(visual, Vector3(0.72, 0.12, 0.4), Vector3(0, 0.72, 0), material(Color("bb5153")))
-	_box(visual, Vector3(0.40, 0.40, 0.40), Vector3(0, 1.6, 0), material(Color("d2ac89")))
-	_box(visual, Vector3(0.47, 0.20, 0.44), Vector3(0, 1.81, 0.02), material(Color("252e39")))
-	_box(visual, Vector3(0.44, 0.10, 0.025), Vector3(0, 1.66, -0.215), material(Color("acbfc0")))
-	_box(visual, Vector3(0.09, 0.055, 0.035), Vector3(-0.10, 1.56, -0.22), material(Color("172b30")))
-	_box(visual, Vector3(0.09, 0.055, 0.035), Vector3(0.10, 1.56, -0.22), material(Color("172b30")))
-	left_arm = _limb(Vector3(-0.43, 1.28, 0), Vector3(0.22, 0.60, 0.25), body_material)
-	right_arm = _limb(Vector3(0.43, 1.28, 0), Vector3(0.22, 0.60, 0.25), body_material)
-	left_leg = _limb(Vector3(-0.20, 0.7, 0), Vector3(0.24, 0.68, 0.29), material(Color("27303a")))
-	right_leg = _limb(Vector3(0.20, 0.7, 0), Vector3(0.24, 0.68, 0.29), material(Color("27303a")))
-	# A short scarf makes the two training characters identifiable at a distance.
-	_box(visual, Vector3(0.28, 0.10, 0.8), Vector3(0.19, 1.30, 0.42), material(Color("c55755")))
+	_build_visual(appearance, color)
 	var torus := TorusMesh.new()
 	torus.inner_radius = 0.58
 	torus.outer_radius = 0.64
@@ -61,6 +50,86 @@ func configure(color: Color, layer: int, hit_points: float) -> void:
 	ring.material_override = material(Color("f3c971"), true)
 	add_child(ring)
 	ring.visible = false
+
+func apply_appearance(value: Dictionary) -> void:
+	appearance = CharacterAppearance.sanitize(value)
+	_build_visual(appearance, CharacterAppearance.CLOTH_COLORS[appearance["top_color"]])
+
+func _build_visual(data: Dictionary, color: Color) -> void:
+	var old_rotation := Vector3.ZERO
+	if is_instance_valid(visual):
+		old_rotation = visual.rotation
+		remove_child(visual)
+		visual.queue_free()
+	visual = Node3D.new()
+	visual.rotation = old_rotation
+	add_child(visual)
+	base_color = color
+	body_material = material(color)
+	skin_material = material(CharacterAppearance.SKIN_COLORS[data["skin"]])
+	eye_material = material(CharacterAppearance.EYE_COLORS[data["eyes"]], true)
+	var pants: StandardMaterial3D = material(CharacterAppearance.CLOTH_COLORS[data["bottom_color"]])
+	var dark: StandardMaterial3D = material(Color("202a32"))
+	var female: bool = data["model"] == 1
+	# Modest, fully clothed silhouettes. Both use the exact same gameplay capsule.
+	var width: float = 0.57 if female else 0.66
+	_box(visual, Vector3(width, 0.67, 0.36), Vector3(0, 1.03, 0), body_material)
+	_box(visual, Vector3(0.69, 0.12, 0.4), Vector3(0, 0.72, 0), dark)
+	if data["top"] == 0:
+		_box(visual, Vector3(width*0.38, 0.31, 0.08), Vector3(-width*0.25, 1.1, -0.20), body_material)
+		_box(visual, Vector3(width*0.38, 0.31, 0.08), Vector3(width*0.25, 1.1, -0.20), body_material)
+		_box(visual, Vector3(0.035, 0.55, 0.025), Vector3(0, 1.05, -0.195), dark)
+	elif data["top"] == 1:
+		_box(visual, Vector3(width+0.09, 0.26, 0.4), Vector3(0, 0.65, 0), body_material)
+		_box(visual, Vector3(0.045, 0.5, 0.025), Vector3(-0.1, 1.05, -0.195), dark)
+	_box(visual, Vector3(0.38 if female else 0.40, 0.40, 0.38), Vector3(0, 1.6, 0), skin_material)
+	_box(visual, Vector3(0.42, 0.075, 0.025), Vector3(0, 1.71, -0.20), material(Color("acbfc0")))
+	for x in [-0.095, 0.095]:
+		_box(visual, Vector3(0.12, 0.068, 0.021), Vector3(x, 1.60, -0.20), material(Color("f1ebdc")))
+		_box(visual, Vector3(0.063, 0.064, 0.023), Vector3(x, 1.60, -0.216), eye_material)
+		_box(visual, Vector3(0.022, 0.042, 0.01), Vector3(x, 1.60, -0.232), dark)
+	_box(visual, Vector3(0.055, 0.066, 0.05), Vector3(0, 1.52, -0.205), skin_material)
+	_box(visual, Vector3(0.09, 0.018, 0.015), Vector3(0, 1.455, -0.195), material(Color("81564f")))
+	var shoulder: float = width/2.0 + 0.105
+	left_arm = _limb(Vector3(-shoulder, 1.28, 0), Vector3(0.20, 0.60, 0.25), skin_material if data["top"] == 2 else body_material)
+	right_arm = _limb(Vector3(shoulder, 1.28, 0), Vector3(0.20, 0.60, 0.25), skin_material if data["top"] == 2 else body_material)
+	for limb in [left_arm, right_arm]:
+		if data["top"] == 2:
+			_box(limb, Vector3(0.23, 0.22, 0.27), Vector3(0, -0.10, 0), body_material)
+		_box(limb, Vector3(0.18, 0.14, 0.22), Vector3(0, -0.64, 0), skin_material)
+	var leg_width: float = 0.31 if data["bottom"] == 1 else 0.24
+	left_leg = _limb(Vector3(-0.19, 0.7, 0), Vector3(leg_width, 0.66, 0.29), skin_material if data["bottom"] == 2 else pants)
+	right_leg = _limb(Vector3(0.19, 0.7, 0), Vector3(leg_width, 0.66, 0.29), skin_material if data["bottom"] == 2 else pants)
+	for limb in [left_leg, right_leg]:
+		if data["bottom"] == 2:
+			_box(limb, Vector3(0.28, 0.32, 0.32), Vector3(0, -0.16, 0), pants)
+			_box(limb, Vector3(0.25, 0.23, 0.30), Vector3(0, -0.50, 0), dark)
+		_box(limb, Vector3(0.25, 0.12, 0.38), Vector3(0, -0.64, -0.035), dark)
+	_box(visual, Vector3(0.28, 0.10, 0.8), Vector3(0.19, 1.30, 0.42), material(Color("c55755")))
+	hair_root = Node3D.new()
+	visual.add_child(hair_root)
+	var hair_mat: StandardMaterial3D = material(CharacterAppearance.HAIR_COLORS[data["hair_color"]])
+	_box(hair_root, Vector3(0.44, 0.15, 0.41), Vector3(0, 1.82, 0.015), hair_mat)
+	if data["hair"] == 1:
+		for i in range(5):
+			var spike := MeshInstance3D.new()
+			var cone := CylinderMesh.new()
+			cone.top_radius = 0
+			cone.bottom_radius = 0.09
+			cone.height = 0.24 + float(i%2)*0.08
+			cone.radial_segments = 5
+			spike.mesh = cone
+			spike.material_override = hair_mat
+			spike.position = Vector3(float(i-2)*0.095, 1.95, 0.025)
+			spike.rotation.z = -float(i-2)*0.15
+			hair_root.add_child(spike)
+	elif data["hair"] == 2:
+		for x in [-0.225, 0.225]:
+			_box(hair_root, Vector3(0.095, 0.42, 0.34), Vector3(x, 1.64, 0.055), hair_mat)
+		_box(hair_root, Vector3(0.43, 0.45, 0.12), Vector3(0, 1.61, 0.22), hair_mat)
+	elif data["hair"] == 3:
+		_box(hair_root, Vector3(0.19, 0.18, 0.18), Vector3(0, 1.83, 0.29), dark)
+		_box(hair_root, Vector3(0.21, 0.58, 0.20), Vector3(0, 1.56, 0.36), hair_mat)
 
 static func material(color: Color, unshaded: bool = false) -> StandardMaterial3D:
 	var result := StandardMaterial3D.new()

@@ -149,3 +149,16 @@ test('Katon has a real flame atlas and Raiton has bounded batched electrical bra
   assert.match(read('game/scripts/training.gd'), /vfx\.fire_impact/);
   assert.doesNotMatch(read('game/scripts/training.gd'), /_orb\(/);
 });
+
+test("character customization is bounded, cosmetic and saved only on the device", () => {
+  const appearance = read("game/scripts/appearance.gd");
+  assert.match(appearance, /user:\/\/appearance-v1\.json/);
+  for (const key of ["model", "hair", "hair_color", "eyes", "skin", "top", "top_color", "bottom", "bottom_color"])
+    assert.ok(appearance.includes(`"${key}"`));
+  assert.match(appearance, /Masculin/);
+  assert.match(appearance, /Féminin/);
+  assert.match(appearance, /get_length\(\) > 8192/);
+  assert.match(appearance, /rename_absolute/);
+  assert.match(read("game/scripts/creator.gd"), /SubViewport.UPDATE_DISABLED/);
+  assert.match(read("game/scripts/fighter.gd"), /func apply_appearance/);
+});

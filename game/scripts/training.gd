@@ -1,7 +1,9 @@
 extends Node3D
 ## The entire prototype is offline: there is deliberately no HTTP, WebSocket,
-## authentication or persistent character state in this project.
+## authentication or persistent progression. Only local cosmetic choices are saved.
 
+var creator: CharacterCreator
+var appearance_path: String = CharacterAppearance.SAVE_PATH
 var arena: TrainingArena
 var player: TrainingFighter
 var enemy: TrainingFighter
@@ -44,6 +46,7 @@ func _ready() -> void:
 	player.name = "Player"
 	add_child(player)
 	player.configure(Color("385962"), 2, TrainingRules.MAX_HEALTH)
+	player.apply_appearance(CharacterAppearance.load_local(appearance_path))
 	enemy = TrainingFighter.new()
 	enemy.name = "TrainingOpponent"
 	add_child(enemy)
@@ -70,6 +73,17 @@ func _ready() -> void:
 	layer.add_child(hud)
 	hud.action_requested.connect(handle_action)
 	hud.resume_requested.connect(_resume)
+	var creator_layer := CanvasLayer.new()
+	creator_layer.layer = 20
+	add_child(creator_layer)
+	creator = CharacterCreator.new()
+	creator_layer.add_child(creator)
+	creator.saved.connect(func(value: Dictionary) -> void: player.apply_appearance(value))
+	creator.closed.connect(func() -> void:
+		hud.show()
+		hud.reset_input()
+	)
+	hud.creator_requested.connect(open_creator)
 	hud.restart_requested.connect(start_round)
 	hud.quality_changed.connect(_quality)
 	hud.volume_changed.connect(audio.set_volume)
@@ -112,6 +126,8 @@ func _reset_positions() -> void:
 	telegraph = null
 
 func start_round() -> void:
+	if is_instance_valid(creator) and creator.visible:
+		return
 	get_tree().paused = false
 	audio.start_round()
 	vfx.clear()
@@ -130,6 +146,8 @@ func start_round() -> void:
 	hud.notice("Approche, cible ton adversaire et essaie tes quatre techniques.")
 
 func _resume() -> void:
+	if creator.visible:
+		return
 	if not running or round_over:
 		start_round()
 	else:
@@ -143,20 +161,37 @@ func _quality(standard: bool) -> void:
 	get_viewport().msaa_3d = Viewport.MSAA_2X if standard else Viewport.MSAA_DISABLED
 
 func pause_round() -> void:
+	if is_instance_valid(creator) and creator.visible:
+		return
 	if not running or round_over:
 		return
 	audio.set_suspended(true)
 	get_tree().paused = true
 	hud.show_menu("Une pause au village.", "Le combat, les recharges et l’adversaire sont en pause.\nTes candidatures et ton compte ne sont pas concernés.", "REPRENDRE", true)
 
+func open_creator() -> void:
+	if not get_tree().paused or creator.visible:
+		return
+	hud.reset_input()
+	hud.hide()
+	creator.open(player.appearance, appearance_path)
+
 func _notification(what: int) -> void:
 	if is_instance_valid(hud) and (what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_GO_BACK_REQUEST):
+		if is_instance_valid(creator) and creator.visible:
+			creator.touch_id = -1
+			if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+				creator.cancel()
 		hud.reset_input()
 		for action in ["move_forward", "move_back", "move_left", "move_right", "sprint"]:
 			Input.action_release(action)
 		pause_round()
 
 func handle_action(action: String) -> void:
+	if creator.visible:
+		if action == "pause":
+			creator.cancel()
+		return
 	if action == "pause":
 		if get_tree().paused:
 			_resume()

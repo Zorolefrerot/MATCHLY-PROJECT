@@ -46,19 +46,6 @@ func run() -> void:
 		if rendered.save_png(folder.path_join("training-technique-%d.png" % skill)) != OK:
 			quit(1)
 			return
-		# Small preview through the Checks API when artifact download hosts are
-		# unreachable. These are actual desktop renders, never generated mockups.
-		if skill < 2 and OS.get_environment("GITHUB_ACTIONS") == "true":
-			var crop: Image = rendered.get_region(Rect2i(440, 190, 400, 290))
-			var encoded: String = Marshalls.raw_to_base64(crop.save_jpg_to_buffer(0.60))
-			if encoded.length() > 14000:
-				crop.resize(320, 232, Image.INTERPOLATE_LANCZOS)
-				encoded = Marshalls.raw_to_base64(crop.save_jpg_to_buffer(0.45))
-			# The Checks API truncates individual messages at 4096 characters.
-			if encoded.length() <= 14000:
-				var parts: int = ceili(float(encoded.length()) / 3500.0)
-				for part in range(parts):
-					print("::notice title=Visual QA %d JPEG part %d of %d::%s" % [skill, part, parts, encoded.substr(part*3500, 3500)])
 	game.pause_round()
 	await process_frame
 	await RenderingServer.frame_post_draw
@@ -66,5 +53,32 @@ func run() -> void:
 		push_error("Unable to write menu render evidence")
 		quit(1)
 		return
+	game.open_creator()
+	for model in range(2):
+		game.creator.set_choice("model", model)
+		game.creator.set_choice("hair", 1 if model == 0 else 3)
+		game.creator.set_choice("hair_color", 0 if model == 0 else 3)
+		game.creator.set_choice("skin", 2 if model == 0 else 4)
+		game.creator.set_choice("eyes", 2)
+		game.creator.apply_outfit(0 if model == 0 else 2)
+		game.creator.set_choice("top_color", 0 if model == 0 else 6)
+		for frame in range(8):
+			await process_frame
+		await RenderingServer.frame_post_draw
+		var rendered: Image = root.get_texture().get_image()
+		if rendered.save_png(folder.path_join("character-creator-%d.png" % model)) != OK:
+			quit(1)
+			return
+		# Actual render preview through Checks, no dependency on download hosts.
+		if OS.get_environment("GITHUB_ACTIONS") == "true":
+			rendered.resize(480, 270, Image.INTERPOLATE_LANCZOS)
+			var encoded: String = Marshalls.raw_to_base64(rendered.save_jpg_to_buffer(0.45))
+			if encoded.length() > 14000:
+				encoded = Marshalls.raw_to_base64(rendered.save_jpg_to_buffer(0.25))
+			if encoded.length() <= 14000:
+				var parts: int = ceili(float(encoded.length()) / 3500.0)
+				for part in range(parts):
+					print("::notice title=Creator QA %d JPEG part %d of %d::%s" % [model, part, parts, encoded.substr(part*3500, 3500)])
+	game.creator.cancel()
 	print("IDREM_CAPTURE_SUCCESS")
 	quit(0)

@@ -63,8 +63,24 @@ Les outils d’inventaire, quêtes, boutiques et monde seront ajoutés avec les 
 
 - Un seul personnage par joueur, identité persistante.
 - Départ : genin fraîchement diplômé, à Konoha pour tous.
-- Apparence choisie parmi des modèles prédéfinis ; nom et tenue personnalisables.
+- Apparence personnalisable à partir de modèles prédéfinis et de pièces modulaires ; nom personnalisable.
 - Clan attribué une seule fois, sans relance. Résultat conservé côté serveur.
+
+### Personnalisation — ajout validé le 10 septembre 2026
+
+Le propriétaire a validé l’entraînement 0.4 et demandé la personnalisation suivante pour les personnages :
+
+- Modèle masculin ou féminin, au choix de la personne qui joue ; aucune déduction depuis son identité réelle.
+- Modèle de coiffure et couleur des cheveux.
+- Couleur des yeux et de la peau.
+- Habits du haut et du bas sélectionnables séparément, ainsi que tenues complètes.
+- Vêtements adaptés aux modèles masculins et féminins ; les joueuses sont incluses dès la création du personnage.
+
+**Premier incrément technique** : créateur dans l’APK, aperçu 3D pivotant, palettes prédéfinies, couleurs du haut et du bas indépendantes, ensembles appliqués sans écraser le visage ou les cheveux, validation ou annulation des changements. Choix d’apparence conservés localement sur le téléphone. Modèles procéduraux provisoires, pas des avatars anime définitifs.
+
+Cette personnalisation ne relance aucun tirage et ne donne aucun avantage de combat. Les yeux cosmétiques ne débloquent pas de dōjutsu. Dans le futur jeu connecté, les statistiques et droits d’équipement restent contrôlés par le serveur ; une tenue cosmétique de test ne donne pas accès à un objet de l’inventaire.
+
+**À réaliser séparément** : synchronisation de l’apparence avec le personnage unique du compte, catalogue artistique final et règles de modification après création. La sauvegarde locale de l’APK ne remplace pas l’identité persistante du jeu RP ; une désinstallation peut l’effacer.
 
 ### Clans retenus
 
@@ -222,7 +238,9 @@ Choisir et vérifier les offres gratuites réellement disponibles, configurer se
 
 ### Étape 5 — Prototype Android ultérieur
 
-Choisir un moteur compatible Android et une chaîne de compilation en ligne utilisable sans ordinateur personnel. Petite zone, personnage, commandes tactiles et combat simple, puis synchronisation multijoueur et mission coopérative. Les APK ne doivent pas être annoncés comme disponibles avant compilation et tests réels.
+Godot 4.5.1 et compilation gratuite GitHub Actions mis en place. L’entraînement solo 0.4 (arène, commandes tactiles, combat et effets) a été **validé par le propriétaire le 10 septembre 2026**.
+
+Incrément suivant : création/personnalisation locale du personnage décrite en section 3, en conservant l’entraînement validé. Le raccordement aux comptes, la synchronisation multijoueur et une mission coopérative restent des travaux ultérieurs. Les APK ne doivent pas être annoncés comme disponibles avant compilation et tests réels.
 
 ## 12. Contraintes et points encore ouverts
 
