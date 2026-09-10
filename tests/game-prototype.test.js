@@ -7,6 +7,7 @@ const read = (file) =>
 test("Android prototype is isolated and does not gain access to live accounts", () => {
   const project = read("game/project.godot");
   assert.match(project, /gl_compatibility/);
+  assert.match(project, /textures\/vram_compression\/import_etc2_astc=true/);
   assert.match(project, /window\/handheld\/orientation=0/);
   const preset = read("game/export_presets.cfg");
   assert.match(preset, /permissions\/internet=false/);

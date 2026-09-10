@@ -63,3 +63,15 @@ if grep -Eq 'android.permission.(INTERNET|READ_CONTACTS|ACCESS_FINE_LOCATION|CAM
   echo '::error::Unexpected network or sensitive Android permission.'; exit 1
 fi
 (cd game/artifacts && sha256sum idrem-zenkai-training-debug.apk > SHA256SUMS.txt)
+
+# Make basic package evidence readable without downloading a signed artifact URL.
+python3 - <<'PYCODE'
+from pathlib import Path
+import hashlib
+apk = Path('game/artifacts/idrem-zenkai-training-debug.apk')
+info = Path('game/artifacts/apk-info.txt').read_text()
+lines = [line for line in info.splitlines() if line.startswith(('package:', 'sdkVersion:', 'targetSdkVersion:', 'native-code:'))]
+lines += [f'APK bytes: {apk.stat().st_size}', 'SHA256: ' + hashlib.sha256(apk.read_bytes()).hexdigest()]
+message = '\n'.join(lines).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+print('::notice title=Verified Android APK::' + message)
+PYCODE
