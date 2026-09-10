@@ -4,7 +4,11 @@ Prototype **solo et hors ligne**, séparé du site Render/Neon. Godot **4.5.1 St
 
 ## État vérifié
 
-**47 tests de règles et de simulation passent dans Godot 4.5.1 en mode sans affichage.** L’APK n’est pas encore compilée : le workflow attend son activation. Le rendu graphique, la signature Android et les performances sur téléphone restent à tester. Détails et limites : [`VALIDATION.md`](VALIDATION.md).
+**Première APK compilée et vérifiée le 10 septembre 2026.** Les 47 tests Godot, l’export signé de test, le contrôle des permissions et les captures de rendu ordinateur ont réussi dans GitHub Actions. Les performances et l’installation sur un vrai téléphone restent à tester. Détails : [`VALIDATION.md`](VALIDATION.md).
+
+- [Télécharger le ZIP `idrem-zenkai-android-4` (environ 60 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34440928876/artifacts/10137929188) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
+- [Exécution verte et fichiers](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34440928876).
+- Extraire le ZIP et ouvrir **`idrem-zenkai-training-debug.apk`**. Ne pas télécharger `godot-test-logs-4` à la place : ce dernier ne contient que les journaux.
 
 ## Contenu
 
@@ -21,29 +25,20 @@ Prototype **solo et hors ligne**, séparé du site Render/Neon. Godot **4.5.1 St
 
 ## Téléphone Android
 
-Cible initiale : Android **8+**, CPU ARM64 ou ARMv7, OpenGL ES 3, orientation paysage. La compatibilité et les performances réelles doivent être vérifiées sur les téléphones des testeurs. Aucun accès Internet, localisation, caméra, micro ou contacts n’est demandé par le projet.
+Cible de test conseillée : Android **8+**, CPU ARM64 ou ARMv7, OpenGL ES 3, orientation paysage. Le manifeste compilé fixe le minimum technique à Android **7 (API 24)** et cible Android **15 (API 35)** ; ce sont les valeurs intégrées au modèle standard, pas des garanties de compatibilité matérielle. La compatibilité et les performances réelles doivent être vérifiées sur les téléphones des testeurs. Aucun accès Internet, localisation, caméra, micro ou contacts n’est demandé par le projet.
 
 La compilation GitHub vérifie la signature de l’APK et ses permissions. Une compilation réussie n’équivaut pas à un essai sur un téléphone physique.
 
-### Activation initiale — permission GitHub nécessaire
+### Compilation activée — aucune nouvelle configuration nécessaire
 
-**Le workflow est fourni comme modèle dans [`ci/android-prototype.yml`](ci/android-prototype.yml), pas encore activé.** La connexion GitHub d’Arena a refusé la création de `.github/workflows/android-prototype.yml` faute de permission `workflows`. Il n’existe donc pas encore de compilation ni d’APK à télécharger. Cela ne concerne pas ton site Render qui continue de fonctionner.
+Le propriétaire a ajouté `.github/workflows/android-prototype.yml` depuis GitHub sur **`arena/01a08158-matchly-project`**, commit `8af7056`. Le modèle reste dans [`ci/android-prototype.yml`](ci/android-prototype.yml). Il ne faut **pas recréer le fichier**.
 
-Deux solutions, sans partager de mot de passe ni de jeton : reconnecter GitHub dans Arena avec la permission de gérer les workflows si proposée, ou créer toi-même le fichier depuis le site GitHub :
-
-1. Sélectionner **`arena/01a08158-matchly-project`** dans le sélecteur de branche du dépôt (pas `main`).
-2. Ouvrir `game/ci/android-prototype.yml`, afficher **Raw**, puis copier tout son contenu.
-3. Revenir à la racine du dépôt, **Add file → Create new file**. Sur téléphone, le mode « site pour ordinateur » du navigateur peut faciliter cette opération.
-4. Nommer le fichier **`.github/workflows/android-prototype.yml`** et coller le contenu.
-5. Choisir un commit directement sur **`arena/01a08158-matchly-project`**. La première compilation doit démarrer automatiquement grâce au déclencheur `push`.
-6. Si GitHub affiche une erreur, ne pas supposer que l’APK existe : transmettre le texte de l’erreur, sans secret.
-
-Le modèle inclut `workflow_dispatch`, mais le bouton manuel peut ne pas apparaître tant que le workflow n’est pas sur la branche par défaut. Le premier commit du fichier est le déclencheur prévu.
+La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais les changements du jeu sur cette branche déclenchent la compilation existante. Aucun réglage Render ou Neon n’est requis. Le bouton `Run workflow` peut rester absent tant que le workflow n’est pas sur la branche par défaut ; une exécution existante peut être relancée avec **Re-run jobs**.
 
 ### Récupérer une compilation depuis GitHub, une fois verte
 
 1. Ouvrir le dépôt `Zorolefrerot/MATCHLY-PROJECT` dans GitHub, puis **Actions**.
-2. Choisir **Android - Prototype IDREM ZENKAI** et une exécution **verte**, correspondant au dernier commit de `arena/01a08158-matchly-project`.
+2. Choisir **Android - Prototype IDREM ZENKAI** et une exécution **verte** correspondant à la version du jeu souhaitée sur `arena/01a08158-matchly-project`. Une mise à jour de documentation seule peut ne pas créer de nouvelle APK.
 3. Dans **Artifacts**, télécharger `idrem-zenkai-android-…` (connexion à GitHub nécessaire).
 4. Extraire le ZIP sur le téléphone et ouvrir `idrem-zenkai-training-debug.apk`.
 5. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
@@ -89,7 +84,7 @@ export ANDROID_HOME=/chemin/vers/android-sdk
 bash game/tools/export_android.sh
 ```
 
-Le script d’export utilise automatiquement un dossier XDG temporaire dédié : il ne remplace pas les préférences personnelles de l’éditeur Godot. Aucun SDK NDK ni compilation de moteur n’est requis ici : le projet utilise les modèles APK standards, sans Gradle ni plugin natif.
+Le script d’export utilise automatiquement un dossier XDG temporaire dédié : il ne remplace pas les préférences personnelles de l’éditeur Godot. Aucun SDK NDK ni compilation de moteur n’est requis ici : le projet utilise les modèles APK standards, sans Gradle ni plugin natif. Les champs `gradle_build/min_sdk` et `target_sdk` doivent rester vides avec ces modèles standards. `rendering/textures/vram_compression/import_etc2_astc=true` est nécessaire pour préparer l’export mobile depuis Linux.
 
 - `tests/smoke.gd` : règles, collisions, mouvement, sauts, esquive, pause, cible, projectile, victoire et réinitialisation.
 - `tests/capture.gd` : captures de rendu ordinateur, pas des preuves d’exécution Android.
