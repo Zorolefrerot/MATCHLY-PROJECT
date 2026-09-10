@@ -333,7 +333,8 @@ func cast_skill(index: int) -> bool:
 	var origin: Vector3 = player.position + Vector3.UP * 1.15 + direction * 0.7
 	if index == 0:
 		vfx.impact(origin, color, 0.45)
-		var orb: MeshInstance3D = _orb(origin, 0.26, color)
+		var orb: TrainingFlame = vfx.fireball(origin, direction)
+		effects.add_child(orb)
 		projectiles.append({"node": orb, "direction": direction, "remaining": 1.8, "damage": float(skill["damage"]), "speed": 18.0, "trail_remaining": 0.0})
 	elif index == 1:
 		var end: Vector3 = origin + direction * 15.0
@@ -342,7 +343,7 @@ func cast_skill(index: int) -> bool:
 		if not hit.is_empty():
 			end = hit["position"]
 			if hit["collider"] == enemy:
-				_hit_enemy(float(skill["damage"]), direction * 1.8)
+				_hit_enemy(float(skill["damage"]), direction * 1.8, Color("9eeaff"))
 		_beam(origin, end, color)
 	elif index == 2:
 		var flat: Vector3 = Vector3(direction.x, 0, direction.z).normalized()
@@ -363,7 +364,7 @@ func cast_skill(index: int) -> bool:
 func _update_projectiles(delta: float) -> void:
 	for i in range(projectiles.size() - 1, -1, -1):
 		var shot: Dictionary = projectiles[i]
-		var node: MeshInstance3D = shot["node"]
+		var node: Node3D = shot["node"]
 		if not is_instance_valid(node):
 			projectiles.remove_at(i)
 			continue
@@ -374,7 +375,7 @@ func _update_projectiles(delta: float) -> void:
 		if not hit.is_empty():
 			if hit["collider"] == enemy:
 				_hit_enemy(float(shot["damage"]), Vector3(shot["direction"]) * 1.6)
-			_burst(hit["position"], Color("ff9a56"), 1.0)
+			vfx.fire_impact(hit["position"], shot["direction"])
 			node.queue_free()
 			projectiles.remove_at(i)
 		elif float(shot["remaining"]) <= 0:
@@ -403,26 +404,12 @@ func _update_zones(delta: float) -> void:
 				zone["node"].queue_free()
 			zones.remove_at(i)
 
-func _hit_enemy(damage: float, push: Vector3) -> void:
+func _hit_enemy(damage: float, push: Vector3, impact_color: Color = Color("ffe2a3")) -> void:
 	if enemy.take_damage(damage, push):
 		audio.play_sfx("hit")
 		rules.enter_combat()
 		casts_landed += 1
-		_burst(enemy.position + Vector3.UP, Color("ffe2a3"), 0.5)
-
-func _orb(point: Vector3, radius: float, color: Color) -> MeshInstance3D:
-	var result := MeshInstance3D.new()
-	var mesh := SphereMesh.new()
-	mesh.radius = radius
-	mesh.height = radius * 2
-	mesh.radial_segments = 10
-	mesh.rings = 5
-	result.mesh = mesh
-	result.position = point
-	result.material_override = TrainingFighter.material(color, true)
-	result.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	effects.add_child(result)
-	return result
+		_burst(enemy.position + Vector3.UP, impact_color, 0.5)
 
 func _burst(point: Vector3, color: Color, radius: float) -> void:
 	vfx.impact(point, color, radius)

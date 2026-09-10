@@ -130,3 +130,22 @@ test("raw uploads stay out of the Godot import/export and the warning generator 
   assert.doesNotMatch(generator, /katon|raiton|futon|combat_loop/);
   assert.match(read("game/scripts/audio.gd"), /get_meta\("cue"/);
 });
+
+test('Katon has a real flame atlas and Raiton has bounded batched electrical branches', () => {
+  const atlas = readFileSync(new URL('../game/assets/vfx/flame_atlas.png', import.meta.url));
+  assert.equal(atlas.toString('hex', 0, 8), '89504e470d0a1a0a');
+  assert.equal(atlas.readUInt32BE(16), 1024);
+  assert.equal(atlas.readUInt32BE(20), 192);
+  assert.equal(atlas[25], 6, 'RGBA transparency is preserved');
+  const flame = read('game/scripts/flame.gd');
+  assert.match(flame, /sprite\.no_depth_test = false/);
+  assert.match(flame, /FRAMES: int = 8/);
+  assert.match(flame, /sprite\.frame =/);
+  const bolt = read('game/scripts/bolt.gd');
+  assert.match(bolt, /redraws < 3/);
+  assert.match(bolt, /range\(3\)/);
+  assert.match(bolt, /ArrayMesh\.new/);
+  assert.match(bolt, /branch_count: int/);
+  assert.match(read('game/scripts/training.gd'), /vfx\.fire_impact/);
+  assert.doesNotMatch(read('game/scripts/training.gd'), /_orb\(/);
+});

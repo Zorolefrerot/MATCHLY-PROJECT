@@ -42,9 +42,18 @@ func run() -> void:
 		for i in range(frames):
 			await physics_frame
 		await RenderingServer.frame_post_draw
-		if root.get_texture().get_image().save_png(folder.path_join("training-technique-%d.png" % skill)) != OK:
+		var rendered: Image = root.get_texture().get_image()
+		if rendered.save_png(folder.path_join("training-technique-%d.png" % skill)) != OK:
 			quit(1)
 			return
+		# Small preview through the Checks API when artifact download hosts are
+		# unreachable. These are actual desktop renders, never generated mockups.
+		if skill < 2 and OS.get_environment("GITHUB_ACTIONS") == "true":
+			var crop: Image = rendered.get_region(Rect2i(280, 150, 720, 440))
+			crop.resize(640, 391, Image.INTERPOLATE_LANCZOS)
+			var encoded: String = Marshalls.raw_to_base64(crop.save_jpg_to_buffer(0.72))
+			if encoded.length() < 60000:
+				print("::notice title=Visual QA %d JPEG::%s" % [skill, encoded])
 	game.pause_round()
 	await process_frame
 	await RenderingServer.frame_post_draw

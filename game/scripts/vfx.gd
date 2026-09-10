@@ -65,34 +65,45 @@ func impact(point: Vector3, color: Color, radius: float = 1.0) -> void:
 		motion.tween_property(spark, "position", direction * minf(radius, 1.5), 0.32)
 		motion.tween_property(spark, "scale", Vector3.ONE * 0.02, 0.32)
 
-func fire_trail(point: Vector3, direction: Vector3) -> void:
-	var group := _group(point, 0.23)
-	if group == null:
-		return
-	var shape := SphereMesh.new()
-	shape.radius = 0.14
-	shape.height = 0.28
-	shape.radial_segments = 6
-	shape.rings = 3
-	var ember := _mesh(group, shape, Color("ffba5e"))
-	var motion := create_tween().bind_node(group).set_parallel(true)
-	motion.tween_property(ember, "position", -direction * 0.5 + Vector3.UP * 0.25, 0.20)
-	motion.tween_property(ember, "scale", Vector3.ONE * 0.04, 0.20)
+func fireball(point: Vector3, direction: Vector3) -> TrainingFlame:
+	# Attached to the projectile container by the caller. Its lifetime/collision
+	# remain controlled by the unchanged gameplay projectile, not by this visual.
+	var flame := TrainingFlame.new()
+	flame.position = point
+	flame.direction = direction
+	flame.style = TrainingFlame.Style.PROJECTILE
+	return flame
 
-func lightning(from: Vector3, to: Vector3, color: Color) -> void:
-	var group := _group(from, 0.19)
+func fire_trail(point: Vector3, direction: Vector3) -> void:
+	var group := _group(point, 0.31)
 	if group == null:
 		return
-	var end: Vector3 = to-from
-	var previous := Vector3.ZERO
-	var count: int = 9 if standard else 6
-	for i in range(1, count+1):
-		var point: Vector3 = end * float(i)/float(count)
-		if i < count:
-			point += Vector3(random.randf_range(-0.28,0.28), random.randf_range(-0.3,0.3), 0)
-		_segment(group, previous, point, color, 0.055)
-		previous = point
-	impact(to, Color("e3fbff"), 0.8)
+	var flame := TrainingFlame.new()
+	flame.direction = direction
+	flame.style = TrainingFlame.Style.TRAIL
+	group.add_child(flame)
+
+func fire_impact(point: Vector3, direction: Vector3) -> void:
+	var group := _group(point, 0.60)
+	if group == null:
+		return
+	var flame := TrainingFlame.new()
+	flame.style = TrainingFlame.Style.IMPACT
+	flame.direction = direction
+	group.add_child(flame)
+	impact(point, Color("ffb447"), 1.1)
+
+func lightning(from: Vector3, to: Vector3, _color: Color) -> void:
+	if from.distance_squared_to(to) < 0.0001:
+		return
+	var group := _group(from, TrainingBolt.LIFETIME + 0.02)
+	if group == null:
+		return
+	var bolt := TrainingBolt.new()
+	bolt.endpoint = to-from
+	bolt.standard = standard
+	bolt.seed_value = random.randi()
+	group.add_child(bolt)
 
 func wind(point: Vector3, direction: Vector3, color: Color) -> void:
 	var group := _group(point, 0.45)

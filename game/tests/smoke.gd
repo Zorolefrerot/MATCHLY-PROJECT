@@ -182,6 +182,19 @@ func run() -> void:
 	sound_count = game.audio.play_count
 	check(not game.cast_skill(1) and game.audio.play_count == sound_count, "a refused technique does not create a duplicate sound")
 	check(game.enemy.health < health_before, "locked attack damages opponent")
+	var bolt: TrainingBolt = null
+	for group in game.vfx.get_children():
+		for effect in group.get_children():
+			if effect is TrainingBolt:
+				bolt = effect
+	check(bolt != null, "Raiton creates a dedicated electrical visual")
+	if bolt != null:
+		check(bolt.layers.size() == 3 and bolt.strokes.size() >= 10, "lightning batches its core, channel, halo and branches into three meshes")
+		check(bolt.strokes[0][0] == Vector3.ZERO and bolt.strokes[0][-1] == bolt.endpoint, "main electrical channel preserves the gameplay ray endpoints")
+		var health_after: float = game.enemy.health
+		for i in range(10):
+			await physics_frame
+		check(bolt.redraws == 3 and game.enemy.health == health_after, "electrical flicker rebuilds at most three times without repeating damage")
 	game.start_round()
 	game.enemy_enabled = false
 	game.target_locked = true
@@ -189,6 +202,13 @@ func run() -> void:
 		await physics_frame
 	health_before = game.enemy.health
 	check(game.cast_skill(0), "projectile casts")
+	var fire: TrainingFlame = game.projectiles[0]["node"]
+	check(fire is TrainingFlame and fire.sprites.size() == 3, "Katon projectile uses layered flames rather than an opaque sphere")
+	var first_frame: int = fire.sprites[0].frame
+	for i in range(8):
+		await physics_frame
+	check(fire.sprites[0].frame != first_frame, "fire atlas visibly animates while the projectile travels")
+	check(not fire.sprites[0].no_depth_test and fire.sprites[0].pixel_size < 0.01, "flames remain depth-tested and world-sized instead of covering the screen")
 	for i in range(70):
 		await physics_frame
 	check(game.enemy.health < health_before, "projectile collides with opponent")
@@ -225,6 +245,11 @@ func run() -> void:
 	for i in range(35):
 		await physics_frame
 	check(game.vfx.get_child_count() == 0, "short-lived effects are cleaned up automatically")
+	game.vfx.fire_impact(Vector3.ZERO, Vector3.FORWARD)
+	check(game.vfx.get_child_count() > 0, "fire collision can create a short flame bloom")
+	for i in range(42):
+		await physics_frame
+	check(game.vfx.get_child_count() == 0, "fire impact and embers fully disappear after their short lifetime")
 	game.vfx.earth(Vector3.ZERO)
 	game.start_round()
 	await process_frame
