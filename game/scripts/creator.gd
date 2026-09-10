@@ -7,6 +7,8 @@ var draft: Dictionary = CharacterAppearance.DEFAULTS.duplicate()
 var save_path: String = CharacterAppearance.SAVE_PATH
 var selectors: Dictionary = {}
 var viewport: SubViewport
+var preview_camera: Camera3D
+var close_up: bool = false
 var preview: TrainingFighter
 var preview_container: SubViewportContainer
 var status_label: Label
@@ -66,6 +68,7 @@ func _ready() -> void:
 	preview_column.add_child(rotation_row)
 	rotation_row.add_child(_button("< Tourner", func() -> void: preview.visual.rotation.y -= PI/4))
 	rotation_row.add_child(_button("Face", func() -> void: preview.visual.rotation.y = 0))
+	rotation_row.add_child(_button("Visage / corps", toggle_close_up))
 	rotation_row.add_child(_button("Tourner >", func() -> void: preview.visual.rotation.y += PI/4))
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size.x = 555
@@ -146,12 +149,11 @@ func _build_preview() -> void:
 	viewport.add_child(preview)
 	preview.configure(Color("385962"), 0, 120)
 	preview.collision_mask = 0
-	var camera := Camera3D.new()
-	camera.position = Vector3(0, 1.15, -4.4)
-	camera.fov = 34
-	viewport.add_child(camera)
-	camera.look_at(Vector3(0, 1.05, 0))
-	camera.current = true
+	preview_camera = Camera3D.new()
+	preview_camera.fov = 34
+	viewport.add_child(preview_camera)
+	_position_camera()
+	preview_camera.current = true
 	var base := MeshInstance3D.new()
 	var disc := CylinderMesh.new()
 	disc.top_radius = 0.83
@@ -163,12 +165,22 @@ func _build_preview() -> void:
 	base.material_override = TrainingFighter.material(Color("566974"))
 	viewport.add_child(base)
 
+func toggle_close_up() -> void:
+	close_up = not close_up
+	_position_camera()
+
+func _position_camera() -> void:
+	preview_camera.position = Vector3(0, 1.64, -1.75) if close_up else Vector3(0, 1.15, -4.4)
+	preview_camera.look_at(Vector3(0, 1.64 if close_up else 1.05, 0))
+
 func open(current: Dictionary, path: String = CharacterAppearance.SAVE_PATH) -> void:
 	save_path = path
 	draft = CharacterAppearance.sanitize(current)
 	touch_id = -1
 	_sync()
 	preview.visual.rotation = Vector3.ZERO
+	close_up = false
+	_position_camera()
 	status_label.text = "Cosmétique uniquement. Les tenues conviennent aux deux modèles."
 	show()
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS

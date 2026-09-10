@@ -67,6 +67,9 @@ func run() -> void:
 	await process_frame
 	check(game.creator.visible and paused and not game.hud.visible and not game.audio.active, "creator opens from the menu without combat or audio")
 	check(game.creator.selectors.size() == 9, "all nine requested separate cosmetic choices have controls")
+	game.creator.toggle_close_up()
+	check(game.creator.close_up and game.creator.preview_camera.position.z > -2, "face view makes eye and hair colors easier to inspect")
+	game.creator.toggle_close_up()
 	var creator_screen := Rect2(Vector2.ZERO, game.creator.size)
 	check(creator_screen.encloses(game.creator.save_button.get_global_rect()) and creator_screen.encloses(game.creator.cancel_button.get_global_rect()), "creator footer actions fit the landscape viewport")
 	check(creator_screen.encloses(game.creator.preview_container.get_global_rect()), "3D preview fits beside the scrollable cosmetic choices")
@@ -340,7 +343,7 @@ func run() -> void:
 	check(paused and game.elapsed == creator_time and game.creator.visible, "creator keeps simulation paused even if a resume is requested")
 	game.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	check(game.creator.visible and paused, "losing focus keeps an unsaved creator draft paused")
-	game.notification(MainLoop.NOTIFICATION_WM_GO_BACK_REQUEST)
+	game.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
 	check(not game.creator.visible and paused, "Android back returns from creator to the menu without committing")
 	game.start_round()
 	game.enemy_enabled = true
