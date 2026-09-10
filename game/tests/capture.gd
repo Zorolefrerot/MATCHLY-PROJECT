@@ -49,11 +49,16 @@ func run() -> void:
 		# Small preview through the Checks API when artifact download hosts are
 		# unreachable. These are actual desktop renders, never generated mockups.
 		if skill < 2 and OS.get_environment("GITHUB_ACTIONS") == "true":
-			var crop: Image = rendered.get_region(Rect2i(280, 150, 720, 440))
-			crop.resize(640, 391, Image.INTERPOLATE_LANCZOS)
-			var encoded: String = Marshalls.raw_to_base64(crop.save_jpg_to_buffer(0.72))
-			if encoded.length() < 60000:
-				print("::notice title=Visual QA %d JPEG::%s" % [skill, encoded])
+			var crop: Image = rendered.get_region(Rect2i(440, 190, 400, 290))
+			var encoded: String = Marshalls.raw_to_base64(crop.save_jpg_to_buffer(0.60))
+			if encoded.length() > 14000:
+				crop.resize(320, 232, Image.INTERPOLATE_LANCZOS)
+				encoded = Marshalls.raw_to_base64(crop.save_jpg_to_buffer(0.45))
+			# The Checks API truncates individual messages at 4096 characters.
+			if encoded.length() <= 14000:
+				var parts: int = ceili(float(encoded.length()) / 3500.0)
+				for part in range(parts):
+					print("::notice title=Visual QA %d JPEG part %d of %d::%s" % [skill, part, parts, encoded.substr(part*3500, 3500)])
 	game.pause_round()
 	await process_frame
 	await RenderingServer.frame_post_draw
