@@ -1,0 +1,39 @@
+; IDREM ZENKAI — isolated offline training prototype. Godot 4.5.1.
+config_version=5
+
+[application]
+config/name="IDREM ZENKAI — Entraînement"
+run/main_scene="res://scenes/training.tscn"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+config/icon="res://assets/icon.png"
+config/quit_on_go_back=false
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/handheld/orientation=0
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+textures/default_filters/use_linear_mipmap_filter=false
+environment/defaults/default_clear_color=Color(0.17, 0.24, 0.25, 1)
+anti_aliasing/quality/msaa_3d=0
+lights_and_shadows/directional_shadow/size=1024
+
+[input_devices]
+pointing/emulate_touch_from_mouse=false
+pointing/emulate_mouse_from_touch=true
+
+[physics]
+common/physics_ticks_per_second=60
+
+[audio]
+default_bus_layout=""
+
+[debug]
+gdscript/warnings/treat_warnings_as_errors=false

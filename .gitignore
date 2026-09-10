@@ -6,3 +6,11 @@ data/
 !.env.example
 *.log
 .playwright/
+# Godot/Android generated caches and signing material (never source files)
+game/.godot/
+game/android/
+game/artifacts/
+*.apk
+*.aab
+*.keystore
+*.jks
