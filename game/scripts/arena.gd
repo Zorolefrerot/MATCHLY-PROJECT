@@ -19,7 +19,7 @@ func build() -> void:
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color("eee1c5")
 	environment.ambient_light_energy = 0.55
-	environment.reflected_light_source = Environment.REFLECTED_SOURCE_DISABLED
+	environment.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	world.environment = environment
 	add_child(world)
 	sun = DirectionalLight3D.new()

@@ -17,9 +17,16 @@ func run() -> void:
 	var folder: String = OS.get_environment("IDREM_CAPTURE_DIR")
 	if folder.is_empty():
 		folder = "user://"
-	root.get_texture().get_image().save_png(folder.path_join("training-desktop.png"))
+	if root.get_texture().get_image().save_png(folder.path_join("training-desktop.png")) != OK:
+		push_error("Unable to write gameplay render evidence")
+		quit(1)
+		return
 	game.pause_round()
 	await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png(folder.path_join("training-menu.png"))
+	if root.get_texture().get_image().save_png(folder.path_join("training-menu.png")) != OK:
+		push_error("Unable to write menu render evidence")
+		quit(1)
+		return
+	print("IDREM_CAPTURE_SUCCESS")
 	quit(0)

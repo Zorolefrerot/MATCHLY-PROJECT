@@ -43,11 +43,19 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "build-tools;35.0.0" "platforms;android-35"
       - name: Export and verify debug APK
         run: bash game/tools/export_android.sh
+      - name: Prepare software-rendered desktop capture
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri libgl1
       - name: Desktop render evidence (not a device test)
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           mkdir -p game/artifacts/screenshots
           export IDREM_CAPTURE_DIR="$GITHUB_WORKSPACE/game/artifacts/screenshots"
-          xvfb-run -a -s '-screen 0 1280x720x24' "$GODOT_BIN" --path game --rendering-method gl_compatibility --audio-driver Dummy --script res://tests/capture.gd
+          timeout 120 xvfb-run -a -s '-screen 0 1280x720x24' "$GODOT_BIN" --path game --rendering-method gl_compatibility --audio-driver Dummy --script res://tests/capture.gd 2>&1 | tee "$RUNNER_TEMP/idrem-check/capture.log"
+          ! grep -E 'SCRIPT ERROR:|ERROR:' "$RUNNER_TEMP/idrem-check/capture.log"
+          grep -q IDREM_CAPTURE_SUCCESS "$RUNNER_TEMP/idrem-check/capture.log"
       - name: Save test logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

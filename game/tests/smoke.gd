@@ -101,11 +101,11 @@ func run() -> void:
 	game.player.dodge_remaining = 0
 	check(game.player.take_damage(10), "damage applies outside dodge window")
 	game.pause_round()
-	var cooldown_before: float = game.rules.cooldowns[0]
+	var cooldown_before: Array = game.rules.cooldowns.duplicate()
 	var position_before: Vector3 = game.player.position
 	for i in range(5):
 		await process_frame
-	check(game.rules.cooldowns[0] == cooldown_before and game.player.position == position_before, "pause freezes movement and cooldowns")
+	check(game.rules.cooldowns == cooldown_before and game.player.position == position_before, "pause freezes movement and cooldowns")
 	game.start_round()
 	game.enemy_enabled = false
 	game.target_locked = true
@@ -124,6 +124,33 @@ func run() -> void:
 	for i in range(70):
 		await physics_frame
 	check(game.enemy.health < health_before, "projectile collides with opponent")
+	game.start_round()
+	game.enemy_enabled = false
+	game.target_locked = true
+	game.enemy.position = Vector3(0, 0.2, 1)
+	for i in range(8):
+		await physics_frame
+	health_before = game.enemy.health
+	check(game.cast_skill(2), "wind cone casts at a nearby target")
+	check(game.enemy.health == health_before - 14 and game.enemy.impulse.length() > 7.5, "wind deals damage and adds knockback")
+	game.start_round()
+	game.enemy_enabled = false
+	for i in range(30):
+		await physics_frame
+	game.enemy.position = game._ground_aim()
+	game.enemy.position.y = 0.2
+	for i in range(8):
+		await physics_frame
+	health_before = game.enemy.health
+	check(game.cast_skill(3) and game.zones.size() == 1, "earth creates a manually aimed ground warning")
+	for i in range(20):
+		await physics_frame
+	check(game.enemy.health == health_before, "earth warning does not damage immediately")
+	for i in range(30):
+		await physics_frame
+	check(game.enemy.health == health_before - 44 and game.zones.is_empty(), "earth detonates once after the warning")
+	game.start_round()
+	game.enemy_enabled = false
 	game.player.position = Vector3(0, 0.2, 18.8)
 	Input.action_press("move_back")
 	for i in range(60):
@@ -139,6 +166,27 @@ func run() -> void:
 	check(game.round_over and paused, "defeating opponent opens a paused result screen")
 	game.start_round()
 	check(game.enemy.health == 180 and game.player.health == 120 and not game.round_over, "restart restores both fighters")
+	game.start_round()
+	game.enemy_enabled = true
+	game.enemy.position = Vector3(0, 0.2, 4.5)
+	game.enemy_cooldown = 0
+	for i in range(25):
+		await physics_frame
+	check(game.enemy_windup > 0 and is_instance_valid(game.telegraph) and game.player.health == 120, "enemy gives a visible warning before damage")
+	for i in range(30):
+		await physics_frame
+	check(game.player.health == 102 and game.rules.combat_remaining > 0, "enemy strike damages the player after its warning")
+	game.player.health = 0
+	await physics_frame
+	await physics_frame
+	check(game.round_over and paused, "player defeat also pauses the round")
+	game.start_round()
+	game.hud.move_vector = Vector2.ONE
+	Input.action_press("move_forward")
+	game.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(paused and game.hud.move_vector == Vector2.ZERO and not Input.is_action_pressed("move_forward"), "losing application focus pauses and clears held inputs")
+	game._resume()
+	check(not paused and not game.hud.blocked, "resume leaves controls usable")
 	game.queue_free()
 	await process_frame
 	print("IDREM_SMOKE_FAILURES=%d" % failures)
