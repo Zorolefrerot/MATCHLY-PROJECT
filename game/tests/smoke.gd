@@ -420,6 +420,7 @@ func run() -> void:
 	game.creator.confirm()
 	online["appearance"] = game.creator.draft.duplicate()
 	online["revision"] = 1
+	check(CharacterAccountAPI.valid_profile(JSON.parse_string(JSON.stringify(online))), "saved appearance accepts valid integral JSON floats from the network")
 	game.account_api.respond(200, online)
 	check(not game.creator.visible and game.account_panel.visible and game.account_api.profile["revision"] == 1, "acknowledged cloud save returns to the updated account profile")
 	check(game.player.appearance == offline_before, "cloud appearance cannot overwrite the offline combat fighter")

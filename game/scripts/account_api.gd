@@ -90,9 +90,15 @@ static func valid_profile(value: Variant) -> bool:
 	if not appearance is Dictionary or appearance.size() != CharacterAppearance.DEFAULTS.size():
 		return false
 	for key: String in CharacterAppearance.DEFAULTS:
-		if typeof(appearance.get(key)) not in [TYPE_INT, TYPE_FLOAT]:
+		var raw: Variant = appearance.get(key)
+		if typeof(raw) not in [TYPE_INT, TYPE_FLOAT]:
 			return false
-	return CharacterAppearance.sanitize(appearance) == appearance
+		var number: float = float(raw)
+		if not is_finite(number) or number < 0 or number >= CharacterAppearance.choices(key).size() or number != floorf(number):
+			return false
+	# JSON numbers are floats in Godot; dictionary equality with integer defaults
+	# would reject an otherwise valid saved profile after a real network response.
+	return true
 
 func _response(result: int, status: int, _headers: PackedStringArray, bytes: PackedByteArray) -> void:
 	busy = false
