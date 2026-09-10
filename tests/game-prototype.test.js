@@ -12,6 +12,9 @@ test("Android prototype is isolated and does not gain access to live accounts", 
   assert.match(preset, /permissions\/internet=false/);
   assert.match(preset, /package\/unique_name="org.idremzenkai.training"/);
   assert.match(preset, /gradle_build\/use_gradle_build=false/);
+  // Standard APK templates have fixed SDK levels; overrides require Gradle.
+  assert.match(preset, /gradle_build\/min_sdk=""/);
+  assert.match(preset, /gradle_build\/target_sdk=""/);
   for (const name of readdirSync(
     new URL("../game/scripts/", import.meta.url),
   )) {
