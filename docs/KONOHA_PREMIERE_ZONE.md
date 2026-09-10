@@ -1,17 +1,17 @@
-# Konoha — quartier solo et rendu amélioré, version 0.8
+# Konoha — quartier solo et rendu amélioré, version 0.9
 
-**APK 0.8 compilée, tests moteur et captures vérifiés.** Le propriétaire a confirmé le fonctionnement du compte 0.6 puis approuvé la zone solo 0.7, avant de demander un rendu moins cubique. **Le nouvel aspect 0.8 n’a pas encore été essayé sur son téléphone.**
+**APK 0.9 compilée, tests moteur et captures du journal vérifiés.** Le propriétaire a approuvé le quartier 0.7 puis demandé un décor moins cubique (0.8). Le lot 0.9 regroupe ensuite mission d’accueil, journal et sauvegarde sur compte. **Déploiement Render 0.9 et essai sur son téléphone encore à faire.**
 
-## Évolution suivante, non encore livrée : lot 0.9
+## Mission d’accueil 0.9
 
-Le propriétaire a approuvé mission d’introduction + journal + sauvegarde des étapes. Ces sources sont ajoutées et testées côté serveur ; le moteur et l’APK restent à vérifier. Les limites « sans mission/progression » ci-dessous décrivent l’APK **0.8 déjà livré**, pas le lot en préparation. [Suivi du lot 0.9](MISSION_ACCUEIL.md).
+Parler à Aoi et accepter la mission, lire/valider les panneaux de l’académie, du marché et de la résidence, puis revenir lui remettre son rapport. **JOURNAL** indique les étapes réellement confirmées sur le compte. Coupure ou conflit : actualiser, sans cocher une étape non confirmée. [Contrat, limites et téléchargement du lot](MISSION_ACCUEIL.md).
 
 ## Accès
 
-1. Dans l’APK **0.8**, ouvrir **MON COMPTE** et se connecter avec son compte joueur admis.
+1. Dans l’APK **0.9**, ouvrir **MON COMPTE** et se connecter avec son compte joueur admis.
 2. Appuyer sur **ENTRER À KONOHA · PREMIÈRE ZONE SOLO**. Le serveur est interrogé à nouveau pour vérifier la session/admission et récupérer la dernière apparence sauvegardée.
 
-**Aucun nouveau déploiement Render requis** si le serveur 0.6 fonctionne déjà : même API `/api/game/profile`, même protocole, aucune nouvelle table ni variable privée. Si la session a expiré, reconnecter le compte. Le compte administrateur reste exclu de ce parcours joueur ; ses fonctions initiales de Hokage/chef de l’Akatsuki ne sont pas encore implémentées.
+**Mettre à jour le service Render existant avant de tester la mission** : Manual Deploy → Deploy latest commit, puis attendre Live. Même API de compte avec champ mission additionnel et route d’événements, migration additive automatique, sans nouveau secret. Sur un ancien serveur, seule l’exploration reste disponible. Le compte administrateur demeure distinct ; ses fonctions initiales de Hokage/chef de l’Akatsuki ne sont pas ajoutées à ce lot.
 
 ## Ce qui est jouable
 
@@ -20,7 +20,7 @@ Le propriétaire a approuvé mission d’introduction + journal + sauvegarde des
 - Personnage portant **l’apparence enregistrée sur le compte**, avec son nom et son clan affichés. À défaut d’apparence distante, utilisation du modèle par défaut ; aucun import automatique du personnage d’entraînement.
 - Marche, course, saut, joystick et caméra au doigt ; clavier ZQSD/WASD, Maj, Espace et **E** pour interagir. Pas de frappe/jutsu dans ce quartier pour le moment.
 - **Aoi**, PNJ d’accueil original près de l’arrivée : s’approcher puis **PARLER À AOI**. Dialogue écrit, sans IA externe.
-- Trois panneaux à lire : marché, académie, résidence du Hokage. Le repérage est compté pendant la visite ; Aoi réagit lorsque les trois lieux ont été consultés.
+- Trois panneaux à lire : marché, académie, résidence du Hokage. Les lectures sont sauvegardées après acceptation de la mission et confirmation du serveur ; Aoi reçoit ensuite le rapport.
 - Pause et dialogues arrêtent les déplacements. Perte de focus → pause ; bouton Retour Android → pause/reprise. **RETOUR À MON COMPTE** quitte la visite sans lancer l’entraînement.
 
 ## Remaniement visuel 0.8
@@ -36,8 +36,8 @@ Le monument utilise les **quatre premiers visages** pour correspondre à l’ima
 
 - C’est une **visite solo**, pas encore un village partagé : aucun autre joueur, chat réseau ou synchronisation des positions.
 - Bâtiments visibles de l’extérieur uniquement ; portes fermées, pas d’intérieurs, boutique, inventaire ou mission rémunérée.
-- Le repérage n’accorde aucun objet, ryō, expérience, rang ou pouvoir. Position et repérage ne sont pas sauvegardés : une nouvelle visite repart de l’entrée.
-- L’admission est vérifiée à l’entrée, pas surveillée en continu pendant cette simulation locale. Aucun appel réseau périodique pendant la marche ; nouvelle vérification à la prochaine entrée.
+- Le repérage n’accorde aucun objet, ryō, expérience, rang ou pouvoir. La position n’est pas sauvegardée : une nouvelle visite repart de l’entrée. Les étapes confirmées de la mission, elles, sont rechargées depuis le compte.
+- L’admission est vérifiée à l’entrée, à l’actualisation du journal et lors de chaque écriture de mission, pas surveillée en continu. Aucun appel réseau périodique pendant la marche.
 - Géométrie et personnages procéduraux provisoires, pas une reconstitution complète/définitive de Konoha. Pas de nouvelle musique ; les sons de combat fournis sont conservés dans l’entraînement.
 
 ## Isolation technique et performances
@@ -51,11 +51,13 @@ Le monument utilise les **quatre premiers visages** pour correspondre à l’ima
 
 ## Vérifications
 
-- **186 assertions Godot** passées : régressions 0.7 plus géométrie courbe bornée, UV/normales finies, matériaux, détails regroupés, proportions du monument, collisions et angles de l’ancienne emprise carrée libérés.
-- **25 tests Node**, **7 tests PostgreSQL** et construction Vite réussis. Code serveur, schéma, combat et sons inchangés.
-- Quinze captures ordinateur produites, dont cinq vues du village. **Arrivée et marché inspectés** dans Arena avec bâtiments et monument visibles. Maison rapprochée, résidence rapprochée et dialogue produits dans le ZIP, mais non inspectés séparément ici : les annotations GitHub ont plafonné à dix notices pour cette étape et le téléchargement du journal redirigé a échoué. Aucun second APK lancé uniquement pour récupérer ces vues.
-- Captures avec profil fictif de test, pas un compte réel. Exécution finale **34471313696**, source **3c0d6ab13995e9972d2b3e79942781ec83b22657**, APK **0.8.0/code 8**. Téléchargement et empreintes : [`game/VALIDATION.md`](../game/VALIDATION.md).
+- **231 assertions Godot** passées, régressions de l’architecture/compte/contrôles conservées, plus mission, accusés serveur, journal borné, panne/conflit, reprise, réponse tardive et expiration.
+- **28 tests Node**, **8 tests PostgreSQL** et Vite réussis. Seule la persistance d’accueil est ajoutée côté serveur, sans changement des attributions, de l’apparence, des sons ou du combat.
+- Dix-huit captures ordinateur produites. **Journal et incident réseau inspectés** dans Arena ; profils fictifs, pas les identifiants d’un joueur réel. Les images d’arrivée/marché plus haut sont les preuves de rendu 0.8, dont la géométrie est conservée.
+- Exécution **34474189586**, source **fc8beb91a2fd9d9a9d085575ad614bf05dd4e41f**, APK **0.9.0/code 9**. Empreintes : [`game/VALIDATION.md`](../game/VALIDATION.md).
 
 ## Stockage gratuit de compilation
 
 La suppression de deux APK intermédiaires non livrées (artefacts des exécutions 7 et 8) a été tentée pour libérer du stockage, mais l’intégration GitHub l’a refusée avec **403**. **Aucune suppression par l’agent n’a abouti.** Les deux anciens artefacts ne figurent plus dans la liste consultée après l’apport des images ; leur suppression n’est pas attribuée à l’agent. Les versions livrées n’étaient pas visées. Le stockage restant approche le quota gratuit après cet APK : avant une prochaine compilation, revoir les anciens artefacts ou attendre leur expiration plutôt que multiplier les APK intermédiaires. Pas de modification des budgets ou du moyen de paiement ; rétention des artefacts toujours 7 jours.
+
+Pour le lot 0.9, le propriétaire a confirmé la suppression des anciens artefacts Android **4 et 5**, vérifiée via l’API GitHub. Aucun APK par petite tâche : la première tentative a échoué avant export, puis un seul APK final du lot a été publié.

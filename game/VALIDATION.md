@@ -1,33 +1,43 @@
 # Validation du prototype — 10 septembre 2026
 
-## Lot 0.9 en cours — ne pas confondre sources et APK vérifiée
-
-Mission d’accueil, journal et sauvegarde sur compte ajoutés ensemble à la demande du propriétaire. **28 tests Node**, **8 tests PostgreSQL réel jetable** et Vite (1 597 modules) réussissent localement. Contrat mission exercé sur SQLite et sur deux pools PostgreSQL, avec reprise, doublons, ordre, concurrence, contrôle d’accès et absence de récompenses. Aucun appel à Neon de production.
-
-Les tests Godot sont étendus et l’analyse tierce ne signale aucune nouvelle erreur ; **l’import moteur, la simulation, les nouvelles captures et l’export APK 0.9 ne sont pas encore exécutés**. Le stockage des artefacts du dépôt approche 503 Mo ; pas de lancement Android intermédiaire avant nettoyage. Aucun APK 0.9 ni déploiement Render annoncé comme prêt. [Détails du lot](../docs/MISSION_ACCUEIL.md).
-
-Les résultats moteur, captures et téléchargement qui suivent concernent **la dernière version vérifiée 0.8**.
-
 ## Résultats obtenus
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node du site + isolation/sons du prototype | **25/25 passent** |
-| Intégration PostgreSQL réel jetable | **7/7 passent**, dont contrat natif complet |
+| Tests Node du site + isolation/sons du prototype | **28/28 passent** |
+| Intégration PostgreSQL réel jetable | **8/8 passent**, dont compte et mission sur deux pools |
 | Construction Vite du site | Réussie, 1 597 modules |
 | Analyse GDScript | Import et exécution réussis dans Godot officiel 4.5.1 |
-| Exécution Godot de `tests/smoke.gd` | **186 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
+| Exécution Godot de `tests/smoke.gd` | **231 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
 | Erreurs dans le journal de la simulation | Aucune `SCRIPT ERROR`, `ERROR` ou assertion échouée |
 | Import dans l’éditeur officiel complet (CI) | Réussi, contrôle strict passé |
 | Import dans l’ancien éditeur local réduit | Erreurs d’environnement `fontconfig`, historique ci-dessous |
-| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; arrivée à Konoha et marché inspectés, pas un test Android |
+| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; journal et incident réseau inspectés, pas un test Android |
 | Export APK / signature / permissions finales | **Réussis** : signature debug vérifiée avec `apksigner`, contrôle `aapt` avec INTERNET requis, sans caméra/micro/contacts/localisation/stockage externe |
-| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé ; 0.6 confirmé fonctionnel ; zone 0.7 approuvée par le propriétaire ; rendu 0.8 à tester** |
-| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34471313696 verte** |
+| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé ; 0.6 confirmé fonctionnel ; zone 0.7 approuvée par le propriétaire ; lot 0.9 à tester** |
+| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34474189586 verte** |
 
-Le propriétaire a confirmé le compte 0.6 et approuvé la visite solo 0.7, puis fourni trois images pour rendre Konoha moins cubique. **Le nouveau rendu 0.8 n’a pas encore été essayé sur son téléphone.** Les vues inspectées utilisent un profil fictif de contrôle ; les réponses de compte des tests sont simulées. Cela ne constitue pas une nouvelle connexion HTTPS depuis un appareil réel ni une mesure de FPS Android. Le serveur reste inchangé.
+Le propriétaire a confirmé le compte 0.6 et approuvé le quartier 0.7. Après les décors 0.8, il a demandé des lots de plusieurs tâches avant installation et validé mission d’accueil + journal + persistance. **Le lot 0.9 n’a pas encore été essayé sur son téléphone ni déployé sur son serveur Render.** Les contrôles utilisent des bases jetables et des réponses/profils fictifs ; ils ne constituent pas un essai HTTPS en production ou un benchmark Android.
 
-## Mise à jour 0.8.0 — volumes arrondis et références du propriétaire
+## Mise à jour 0.9.0 — mission d’accueil, journal et sauvegarde
+
+[Exécution n° 18](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34474189586), source **`fc8beb91a2fd9d9a9d085575ad614bf05dd4e41f`**, branche `arena/01a08158-matchly-project`. Lot implémenté en `334d81d85714bc505d09019c06dd87da18e75370`, puis durcissement des types JSON. Job **102860911832**, toutes les étapes réussies en **1 min 40 s**, du 10 septembre 2026 à 11:59:19 à 12:00:59 UTC.
+
+- **231 assertions Godot** : 186 précédentes conservées, plus 45 vérifications de modèle/profil borné, journal, acceptation explicite, lecture avant acceptation refusée, accusés serveur, trois panneaux, panne ambiguë, relecture, doublons locaux, retour auprès d’Aoi, nouvelle visite, conflit, rapport terminé, absence de récompense, réponse tardive après fermeture et expiration sûre. Monde, avatar, caméra/joystick, collisions, retours, règles et apparence hors ligne restent isolés.
+- **28 tests Node**, **8 tests PostgreSQL réel jetable** et Vite (1 597 modules) réussis localement. Le contrat HTTP mission est exercé sur SQLite et deux pools PostgreSQL. Tests d’identité/admission/session/cookie, révisions indépendantes, six ordres de lecture, doublons, concurrence, reprise après redémarrage/reconnexion, aucun changement des attributions ou de l’apparence.
+- L’exécution n° 17 (**34474022876**) a relevé une erreur GDScript `String` contre `int` lors d’un test de données malformées, malgré zéro assertion échouée. Le contrôle strict du journal a correctement refusé l’étape, **avant tout export ou publication d’APK**. Types de version/identifiant/état/rang maintenant contrôlés avant comparaison, tests étendus ; exécution n° 18 sans erreur.
+- Import officiel, simulation, export Android debug signé, permissions et captures réussis. **Un seul APK du lot publié** après le contrôle préalable ; aucun téléchargement intermédiaire demandé au propriétaire.
+- Dix-huit captures ordinateur produites. **Journal et incident réseau inspectés**, images 480×270 récupérées intégralement via huit notices Checks. Texte défilant contenu dans le panneau, boutons visibles. Les autres captures sont dans le ZIP, pas prétendues inspectées individuellement ici. Captures avec profils fictifs, y compris l’incident ; pas de véritable coupure de réseau Android.
+- Serveur modifié uniquement pour l’orientation : table additive `welcome_missions`, champ `welcomeMission` et route de cinq événements bornés. Les sessions et contrôles d’admission existants protègent chaque écriture ; pas de position, outbox local ou récompense. Un client modifié peut déclarer ses lectures : ce n’est pas une validation anti-triche de déplacement.
+- **Déploiement Render nécessaire avant l’essai**, service et branche existants, migration automatique sans nouveau secret. `autoDeploy: false` conservé. Ni Neon de production ni les comptes réels n’ont été modifiés par les tests.
+- Version **0.9.0**, code **9**, HUD **PROTO 0.9**, paquet `org.idremzenkai.training`, API minimum 24/cible 35, ARM64 et ARMv7. INTERNET conservé, aucune nouvelle permission sensible ; signature debug vérifiée.
+- APK : **63 344 041 octets**, SHA-256 `b16b1952cddf81f27a37bd233ec8db2f69679680a7cd0eb8b82d1a5691b50505`.
+- [ZIP `idrem-zenkai-android-18`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34474189586/artifacts/10150821501) : **67 075 079 octets**, expiration **17 septembre 2026 à 12:00:52 UTC** ; SHA-256 GitHub `f46bc83811fb5db5f0f706e94456f5de4f26cfec4c89681a6e44a77e1d53c4e3`.
+- Journaux : `godot-test-logs-18`, artefact **10150819532**, **21 059 octets**, pas l’installateur.
+- Stockage : le propriétaire a confirmé la suppression d’Android 4 (**10137929188**) et 5 (**10138409957**), vérifiée via l’API ; liste du dépôt passée de **503 402 822** à **382 584 984 octets** avant build, puis **449 687 062 octets** après les journaux et l’unique APK réussi. Ce n’est pas le relevé global de facturation. L’agent n’a supprimé aucun artefact et n’a modifié aucun budget, paiement ou workflow.
+- Parcours, API et limites : [`docs/MISSION_ACCUEIL.md`](../docs/MISSION_ACCUEIL.md). Images réellement inspectées : [`journal`](../docs/images/konoha-09-journal.jpg), [`incident réseau`](../docs/images/konoha-09-network-error.jpg).
+
+## Historique : mise à jour 0.8.0 — volumes arrondis et références du propriétaire
 
 [Exécution n° 16](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34471313696), source **`3c0d6ab13995e9972d2b3e79942781ec83b22657`**, branche `arena/01a08158-matchly-project`. Job **102851609557**, toutes les étapes réussies en **1 min 36 s** ; exécution démarrée à 11:26:37 UTC.
 

@@ -12,11 +12,11 @@ Branche de cette version : **`arena/01a08158-matchly-project`** (pas `main`).
 
 ## Raccordement du compte Android — code prêt
 
-L’API native et la sauvegarde d’apparence du compte sont implémentées, séparément de l’entraînement hors ligne. **Déploiement et parcours de compte confirmés par le propriétaire.** [Activation et protections](docs/COMPTE_JEU.md). L’APK **0.8** conserve la [première zone de Konoha](docs/KONOHA_PREMIERE_ZONE.md) approuvée en 0.7 et améliore ses maisons, sa résidence et son monument avec les références fournies. Elle reste visitable en solo avec le personnage du compte. Le monde multijoueur n’est pas encore implémenté.
+L’API native et la sauvegarde d’apparence du compte sont implémentées, séparément de l’entraînement hors ligne. **Déploiement et parcours de compte confirmés par le propriétaire.** [Activation et protections](docs/COMPTE_JEU.md). L’APK **0.9** conserve le [quartier de Konoha](docs/KONOHA_PREMIERE_ZONE.md) et son décor amélioré, puis ajoute la mission d’accueil, le journal et la sauvegarde des étapes sur le compte. **Ce nouvel ajout requiert une mise à jour Render**, pas encore confirmée. Le monde multijoueur n’est pas encore implémenté.
 
-## Lot suivant : première mission et journal
+## Lot 0.9 — première mission et journal
 
-Le propriétaire a validé un lot comprenant l’accueil d’Aoi, une mission de repérage, un journal et la sauvegarde des étapes sur le compte. Les sources 0.9 sont implémentées et les tests serveur passent ; **validation moteur/APK encore en attente**. Une seule installation est prévue à la fin du lot, pas à chaque tâche. [Contrat et suivi](docs/MISSION_ACCUEIL.md).
+Accueil d’Aoi, mission de repérage, journal et sauvegarde des étapes réunis dans **une seule APK**. **231 assertions Godot, 28 tests Node et 8 tests PostgreSQL** passés ; journal et message réseau inspectés sur captures ordinateur. Mettre à jour Render, puis installer le lot complet pour l’essai téléphone. [Parcours, téléchargement et limites](docs/MISSION_ACCUEIL.md).
 
 ## Fonctionnalités
 

@@ -2,27 +2,29 @@
 
 Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
-## Lot 0.9 en préparation — pas encore d’APK validée
+## Lot 0.9 — première mission, journal et sauvegarde
 
-Première mission auprès d’Aoi, trois lectures, compte rendu, journal défilant et progression sauvegardée sur le compte sont implémentés dans les sources. **28 tests Node et 8 tests PostgreSQL passent ; validation Godot et export Android encore à faire.** Les versions `VERSION`/HUD ciblent 0.9, mais le dernier APK vérifié ci-dessous reste 0.8.
+Une seule version réunit le lot demandé : **accepter la mission auprès d’Aoi → lire/valider trois panneaux → remettre son rapport**, avec journal défilant et étapes sauvegardées sur le compte. Les étapes ne sont cochées qu’après confirmation serveur ; coupure/conflit → actualisation, pas de fausse sauvegarde locale. Aucun objet, ryō, expérience ou pouvoir accordé.
 
-Le propriétaire demande des lots de plusieurs tâches avant une seule installation. Aucun téléchargement intermédiaire demandé. Ce lot requiert une mise à jour du serveur Render, contrairement aux seules textures 0.8. [Parcours, contrat, limites et état de validation](../docs/MISSION_ACCUEIL.md).
+**Mettre à jour le service Render existant avant l’essai : Manual Deploy → Deploy latest commit, puis attendre Live.** Même branche, mêmes secrets, migration additive au démarrage. Le mode d’exploration reste utilisable sur un ancien serveur, mais les missions y sont explicitement indisponibles. [Parcours, contrat et limites](../docs/MISSION_ACCUEIL.md).
 
 ## État vérifié
 
-**Version 0.8.0 compilée le 10 septembre 2026.** **186 assertions Godot**, 25 tests Node, 7 tests PostgreSQL, export signé et permissions vérifiés. Captures ordinateur de l’arrivée et du marché inspectées : maisons arrondies, résidence et monument visibles. Le propriétaire a approuvé la zone 0.7 ; **le nouveau rendu 0.8 reste à essayer sur téléphone**. Détails : [`VALIDATION.md`](VALIDATION.md).
+**Version 0.9.0 compilée le 10 septembre 2026.** **231 assertions Godot**, 28 tests Node, 8 tests PostgreSQL, export signé et permissions vérifiés. Journal et incident réseau inspectés sur captures ordinateur ; **le déploiement Render 0.9 et l’essai sur téléphone restent à faire**. Détails : [`VALIDATION.md`](VALIDATION.md).
 
-- [ZIP `idrem-zenkai-android-16` (environ 67 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34471313696/artifacts/10149667934) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
-- [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34471313696).
-- Extraire et ouvrir **`idrem-zenkai-training-debug.apk`**. `godot-test-logs-16` contient seulement les journaux.
+- [ZIP `idrem-zenkai-android-18` (environ 67 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34474189586/artifacts/10150821501) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
+- [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34474189586).
+- Extraire et ouvrir **`idrem-zenkai-training-debug.apk`**. `godot-test-logs-18` contient seulement les journaux.
 
-## Nouveautés 0.8.0 — Konoha moins cubique
+![Journal de mission, capture ordinateur réelle réduite](../docs/images/konoha-09-journal.jpg)
+
+## Décor 0.8.0 conservé — Konoha moins cubique
 
 - Quatre maisons réellement arrondies, étages en retrait, toits courbes débordants, fenêtres et cheminées ; murs fermés avec collisions convexes adaptées.
 - Résidence circulaire rouge et or, ailes basses, corniches, porche et emblème inspirés de l’image fournie.
 - **Quatre premiers visages** de la falaise, pour correspondre à l’image de la résidence ; l’original à sept visages est conservé. Décor texturé fixe derrière des volumes rocheux, **pas des visages sculptés en 3D**.
 - Sept textures légères préparées depuis les trois références, mipmaps, matériaux partagés, fenêtres/portes réunies en un maillage. Pas de promesse de détails HD à partir de ces petites images.
-- Compte, avatar distant, contrôles, Aoi, panneaux, retour sûr et entraînement séparé conservés. Aucun nouveau déploiement Render requis. Affichage **PROTO 0.8**.
+- Compte, avatar distant, contrôles, Aoi, panneaux, retour sûr et entraînement séparé conservés. La retouche 0.8 seule ne demandait pas de déploiement Render ; la mission 0.9 ci-dessus en demande un.
 
 ![Capture ordinateur réelle de Konoha 0.8, réduite et compressée](../docs/images/konoha-08-arrival.jpg)
 
@@ -34,8 +36,8 @@ Sources, méthode et limites : [`assets/konoha/README.md`](assets/konoha/README.
 - Porte d’arrivée, allée principale, marché, académie, maisons et résidence du Hokage. Scène et monde physique séparés de l’arène ; ne réutilise pas sa carte sous un autre nom.
 - Joystick/caméra tactiles, marche, course et saut. **Aoi**, guide original, accueille les genin ; trois panneaux permettent de repérer les lieux.
 - **Pause → RETOUR À MON COMPTE** pour sortir. Dialogues écrits ; aucun jutsu de test dans ce quartier. L’entraînement reste inchangé et utilisable séparément.
-- Visite **solo**, bâtiments extérieurs seulement. Pas d’autres joueurs, d’achats ou de récompenses. Position et repérage restent temporaires ; apparence du compte toujours sauvegardée par le créateur.
-- **Pas de nouveau déploiement Render nécessaire** : l’API 0.6 déjà fonctionnelle suffit. Affichage **PROTO 0.7**. Modèles et décors encore provisoires.
+- Visite **solo**, bâtiments extérieurs seulement. Pas d’autres joueurs, d’achats ou de récompenses. Position temporaire ; étapes de mission désormais sauvegardées par le lot 0.9, apparence sauvegardée par le créateur.
+- Le quartier 0.7 initial utilisait l’API 0.6 ; les nouvelles étapes sauvegardées de 0.9 nécessitent la mise à jour serveur indiquée plus haut. Modèles encore provisoires.
 
 Détails, contrôles et limites : [première zone de Konoha](../docs/KONOHA_PREMIERE_ZONE.md).
 
@@ -48,7 +50,7 @@ Détails, contrôles et limites : [première zone de Konoha](../docs/KONOHA_PREM
 - **APPARENCE HORS LIGNE** garde une sauvegarde distincte, sans requête réseau. Les choix du compte ne remplacent pas le combattant local ni ses quatre techniques de test.
 - Une réinstallation efface les choix **locaux** des versions précédentes, qui ne sont pas automatiquement transférés sur le compte. Les modèles, sons et combats validés sont conservés. Affichage **PROTO 0.6**.
 
-**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Nouveau code serveur sur la branche ; déploiement Render confirmé par le propriétaire, sans vérification indépendante de la production par l’agent. Le quartier 0.7 est une visite solo avec ce profil, pas un monde multijoueur ou une zone de combat partagée.
+**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Serveur 0.6 confirmé par le propriétaire ; déploiement de l’ajout mission 0.9 encore à effectuer, sans vérification indépendante de la production par l’agent. Le quartier 0.7 est une visite solo avec ce profil, pas un monde multijoueur ou une zone de combat partagée.
 
 ## Créateur 0.5 conservé — apparence hors ligne
 
@@ -106,7 +108,7 @@ La lecture audio est couverte par les tests du moteur, mais son rendu sur les ha
 - Adversaire à logique programmée : patrouille, poursuite, cercle rouge de préparation, frappe. Peut être désactivé depuis la pause.
 - Écrans d’accueil, pause, victoire/défaite, relance de manche et deux réglages graphiques.
 
-**Ce n’est pas encore le jeu RP multijoueur.** L’espace de compte lit l’identité du site et enregistre uniquement son apparence. L’entraînement n’enregistre aucun clan, rang, inventaire, tirage, récompense ou progression. Le mélange de quatre éléments sert seulement à tester les mécaniques. Il ne remplace pas les règles d’affinité validées pour le jeu final.
+**Ce n’est pas encore le jeu RP multijoueur.** L’espace de compte lit l’identité du site et enregistre son apparence et les étapes de la mission d’accueil. L’entraînement n’enregistre aucun clan, rang, inventaire, tirage, récompense ou progression. Le mélange de quatre éléments sert seulement à tester les mécaniques. Il ne remplace pas les règles d’affinité validées pour le jeu final.
 
 ## Téléphone Android
 
@@ -126,7 +128,7 @@ La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais 
 2. Choisir **Android - Prototype IDREM ZENKAI** et une exécution **verte** correspondant à la version du jeu souhaitée sur `arena/01a08158-matchly-project`. Une mise à jour de documentation seule peut ne pas créer de nouvelle APK.
 3. Dans **Artifacts**, télécharger `idrem-zenkai-android-…` (connexion à GitHub nécessaire).
 4. Extraire le ZIP sur le téléphone et ouvrir `idrem-zenkai-training-debug.apk`.
-5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.8.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
+5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.9.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
 6. Garder les graphismes **Économie** pour le premier essai.
 
 L’APK est signé avec une **clé de test temporaire**, pas une clé Play Store. Une nouvelle exécution peut générer une signature différente : Android pourra demander de désinstaller le prototype précédent avant installation. Le paquet `org.idremzenkai.training` est distinct du futur jeu. Aucun compte ni candidature n’est supprimé en désinstallant ce prototype.

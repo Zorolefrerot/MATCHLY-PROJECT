@@ -1,6 +1,6 @@
 # Lot 0.9 — première mission, journal et sauvegarde
 
-**Lot approuvé par le propriétaire ; implémentation en cours de validation, pas encore une APK 0.9 livrée.** Le propriétaire demande désormais plusieurs fonctionnalités par lot et une seule installation à la fin, pas une APK pour chaque petite tâche.
+**Lot approuvé par le propriétaire, APK 0.9 compilée et contrôles moteur réussis. Déploiement Render et essai sur téléphone encore à faire.** Le propriétaire demande désormais plusieurs fonctionnalités par lot et une seule installation à la fin, pas une APK pour chaque petite tâche.
 
 ## Parcours prévu dans ce lot
 
@@ -58,9 +58,15 @@ Le protocole de profil existant reste `1`, avec un champ additionnel `welcomeMis
 
 ## État de vérification et sortie du lot
 
-- **28 tests Node, 8 tests PostgreSQL jetable et construction Vite passent** localement. Le contrat PostgreSQL utilise deux pools distincts. Les six ordres de lecture sont couverts.
-- Analyse GDScript tierce : aucune nouvelle erreur ; son avertissement historique sur les points convexes de l’architecture 0.8 reste distinct des changements de mission. Ce n’est pas une compilation moteur.
-- **Import/exécution Godot, captures et APK 0.9 restent à vérifier.** Pas de test sur le téléphone ni de déploiement Render annoncé.
-- Avant le prochain build Android, libérer les anciens artefacts : la liste du dépôt approche 503 Mo. Ne pas multiplier les APK intermédiaires ni modifier les moyens de paiement/budgets.
-- **Ce lot nécessite une mise à jour Render**, contrairement à la seule retouche visuelle 0.8. Le démarrage serveur applique la migration additive sur la base configurée. Pas de secret supplémentaire ni de suppression de données ; `autoDeploy: false` reste inchangé.
-- Conserver la version 0.8 comme repli. Les derniers tests moteur/captures réussis et l’APK déjà disponible restent ceux de 0.8, documentés dans `game/VALIDATION.md`.
+- **231 assertions Godot**, **28 tests Node**, **8 tests PostgreSQL jetable** et construction Vite réussis. Le contrat PostgreSQL utilise deux pools distincts. Les six ordres de lecture sont couverts.
+- Première exécution : le moteur a détecté une comparaison entre chaîne et entier lors du rejet d’un état malformé. Les types primitifs sont maintenant contrôlés avant comparaison, y compris dans les versions/rang du profil. Tests de rejet étendus et deuxième exécution entièrement verte. **Aucun APK intermédiaire publié** lors de l’échec.
+- Exécution finale [34474189586](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34474189586), source `fc8beb91a2fd9d9a9d085575ad614bf05dd4e41f`, version **0.9.0/code 9**.
+- Dix-huit captures ordinateur produites ; **journal et incident réseau inspectés** via deux séries complètes de notices bornées. Les images utilisent des profils fictifs et ne prouvent pas une connexion à Neon de production.
+- [ZIP du lot complet, environ 67 Mo](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34474189586/artifacts/10150821501), `idrem-zenkai-android-18`, disponible jusqu’au 17 septembre 2026. Extraire `idrem-zenkai-training-debug.apk`, pas l’artefact de journaux. Empreintes dans [`game/VALIDATION.md`](../game/VALIDATION.md).
+- Le propriétaire a confirmé avoir supprimé les anciens artefacts Android 4 et 5 ; leur absence a été vérifiée par l’API GitHub. L’espace du dépôt est passé d’environ 503 Mo à 383 Mo avant le build, puis environ 450 Mo avec le lot final. Ce n’est pas un relevé de facturation global. Aucun budget, paiement ou workflow modifié.
+- **Ce lot nécessite une mise à jour Render**, contrairement à la seule retouche visuelle 0.8. Sur le service existant : **Manual Deploy → Deploy latest commit**, puis attendre **Live**. Branche `arena/01a08158-matchly-project`. Le démarrage serveur applique la migration additive sur la base configurée. Pas de secret supplémentaire ni de suppression de données ; `autoDeploy: false` reste inchangé.
+- Installer ensuite cette unique APK et tester le parcours complet, fermeture/reconnexion incluse. Une réinstallation conserve les étapes et l’apparence déjà enregistrées sur le compte mais efface les choix hors ligne.
+- **Aucun déploiement de production ni essai physique Android effectué par l’agent.** Conserver la version 0.8 comme repli ; elle ignore le champ mission sans effacer les étapes enregistrées par 0.9.
+
+![Journal réel dans le rendu ordinateur, réduit à 480×270](images/konoha-09-journal.jpg)
+![Incident réseau simulé : journal défilant et boutons visibles](images/konoha-09-network-error.jpg)

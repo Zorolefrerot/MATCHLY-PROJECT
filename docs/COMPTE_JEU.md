@@ -5,9 +5,9 @@
 ## Activation depuis le téléphone
 
 1. Dans le service existant sur [Render](https://dashboard.render.com/), utiliser **Manual Deploy → Deploy latest commit**. La branche reste `arena/01a08158-matchly-project`. Ne pas créer de second service et ne pas remplacer les variables privées existantes.
-2. Attendre **Live**, puis vérifier que le site s’ouvre toujours et que le compte propriétaire fonctionne. Le déploiement applique automatiquement deux tables supplémentaires ; aucun tirage/admission n’est relancé.
+2. Attendre **Live**, puis vérifier que le site s’ouvre toujours et que le compte propriétaire fonctionne. Le déploiement applique automatiquement les tables supplémentaires du compte et de la mission d’accueil ; aucun tirage/admission n’est relancé.
 
-Après cela seulement : installer l’APK 0.6 indiquée dans [`game/README.md`](../game/README.md), ouvrir **MON COMPTE**, saisir l’adresse HTTPS exacte du site (origine uniquement, sans chemin), puis les identifiants d’un **compte joueur accepté ayant déjà reçu son attribution sur le site**. Ne jamais envoyer de mot de passe dans la conversation. Le propriétaire administrateur reste séparé des places joueurs ; pas de contournement automatique de l’admission.
+Après cela seulement : installer l’APK 0.9 indiquée dans [`game/README.md`](../game/README.md), ouvrir **MON COMPTE**, saisir l’adresse HTTPS exacte du site (origine uniquement, sans chemin), puis les identifiants d’un **compte joueur accepté ayant déjà reçu son attribution sur le site**. Ne jamais envoyer de mot de passe dans la conversation. Le propriétaire administrateur reste séparé des places joueurs ; pas de contournement automatique de l’admission.
 
 L’URL réelle du service n’étant pas enregistrée dans le dépôt, aucune adresse de production n’a été devinée/compilée dans l’APK. Elle se renseigne dans l’application et reste affichée. Seule cette origine publique est mémorisée sur le téléphone. Les redirections sont refusées et les certificats HTTPS restent vérifiés.
 
@@ -15,7 +15,7 @@ L’URL réelle du service n’étant pas enregistrée dans le dépôt, aucune a
 
 La zone 0.7 a été approuvée par le propriétaire. La mise à jour visuelle 0.8 conserve ce parcours et la même API : maisons arrondies, résidence remaniée et monument texturé, sans nouveau déploiement serveur.
 
-Le bouton **ENTRER À KONOHA · PREMIÈRE ZONE SOLO** ouvre maintenant une zone distincte de l’entraînement avec l’apparence du compte. Il vérifie à nouveau le profil via l’API 0.6 existante : **aucune mise à jour du serveur n’est nécessaire pour cet ajout**. Il s’agit de déplacements et dialogues locaux, sans monde partagé ni progression sauvegardée. Voir [première zone de Konoha](KONOHA_PREMIERE_ZONE.md).
+Le bouton **ENTRER À KONOHA · PREMIÈRE ZONE SOLO** ouvre maintenant une zone distincte de l’entraînement avec l’apparence du compte. Il vérifie à nouveau le profil. Les versions 0.7/0.8 n’exigeaient pas de nouvelle API ; **la sauvegarde des étapes du lot 0.9 nécessite maintenant une mise à jour Render**. Les déplacements restent locaux, sans monde partagé ni position persistée. Voir [première zone de Konoha](KONOHA_PREMIERE_ZONE.md).
 
 ## Administrateur — décision pour la suite
 
@@ -25,7 +25,7 @@ Le propriétaire assurera **Hokage et chef de l’Akatsuki au début du jeu**. I
 
 - **Connexion native dédiée**, distincte des cookies du navigateur. Le site conserve son authentification et ses protections actuelles.
 - Admission, rôle joueur et attribution existante vérifiés à la connexion, à la lecture et à chaque sauvegarde. En attente, liste d’attente, refus ou compte administrateur : pas de personnage connecté. Admis sans tirage : retour vers le site, aucun tirage lancé par l’APK.
-- Identité renvoyée depuis la candidature/attribution : identifiant du compte, nom du personnage, clan, affinité, potentiel Mokuton. Genin à Konoha pour cet incrément ; aucune progression/rang gagné n’est encore enregistrée.
+- Identité renvoyée depuis la candidature/attribution : identifiant du compte, nom du personnage, clan, affinité, potentiel Mokuton. Genin à Konoha pour cet incrément ; aucun rang ni progression de combat n’est gagné ; seules les étapes d’accueil sont ajoutées en 0.9.
 - Apparence du compte distincte de l’apparence de l’entraînement. Elle se retrouve en se reconnectant, y compris depuis une réinstallation. Aucun import automatique du fichier local, ni remplacement du combattant hors ligne.
 - **MODIFIER L’APPARENCE → ENREGISTRER SUR MON COMPTE** : confirmation uniquement après réponse positive du serveur. Une erreur laisse le brouillon visible. Après interruption réseau, actualiser pour vérifier si l’écriture a abouti ; une réponse perdue ne signifie pas nécessairement une sauvegarde perdue.
 - Le numéro de révision empêche un écran ancien d’écraser une nouvelle apparence. Sur conflit : fermer le créateur, **ACTUALISER**, puis rouvrir l’éditeur. Pas de fusion automatique silencieuse.
@@ -48,6 +48,7 @@ Le propriétaire assurera **Hokage et chef de l’Akatsuki au début du jeu**. I
 | `POST /api/game/login` `{email,password}` | `{token,expiresAt,profile}` après authentification et admission |
 | `GET /api/game/profile` + Bearer | Identité et apparence du compte authentifié |
 | `PUT /api/game/appearance` + Bearer | Sauvegarde transactionnelle, retour du profil actualisé |
+| `POST /api/game/missions/welcome/events` `{event,expectedRevision}` | Profil actualisé avec `welcomeMission` ; cinq événements bornés, doublons idempotents, aucune récompense |
 | `POST /api/game/logout` + Bearer | Révocation idempotente |
 
 La sauvegarde contient exactement `schemaVersion: 1`, `expectedRevision` et `appearance` (les neuf identifiants cosmétiques). `revision: 0` / `appearance: null` signifie qu’aucune apparence du compte n’a encore été sauvegardée. Les bornes et l’ordre des palettes constituent le schéma v1, contrôlé par un test partagé avec les catalogues Godot.
@@ -70,8 +71,10 @@ Les utilisateurs, candidatures, allocations et réserves Mokuton existants ne so
 Sur un compte joueur admis : connecter, vérifier l’identité par rapport au site, sauvegarder une apparence, déconnecter/reconnecter et vérifier sa restauration. Vérifier aussi qu’un compte non admis reste bloqué et que l’entraînement reste utilisable sans connexion. Ne pas créer de nouvelles admissions simplement pour remplir un test ; garder la sélection manuelle et les vingt places.
 
 
-## Lot 0.9 en validation — progression d’accueil
+## Lot 0.9 compilé — progression d’accueil
 
 Les nouvelles sources ajoutent `welcomeMission` au profil et une route native bornée d’événements. La sauvegarde d’apparence conserve sa révision indépendante. Les anciennes versions Android peuvent ignorer ce champ. Pas de changement des attributions, des places ou des fonctions administrateur.
 
-Ce lot **nécessitera une mise à jour Render** avant de tester la sauvegarde des missions. Le serveur ajoute sa table au démarrage, sans manipulation manuelle de Neon ni nouveau secret. Le mode d’exploration ancien reste disponible si le serveur n’est pas encore à jour. [Contrat, limites et validation](MISSION_ACCUEIL.md).
+Ce lot **nécessite une mise à jour Render** avant de tester la sauvegarde des missions. Le serveur ajoute sa table au démarrage, sans manipulation manuelle de Neon ni nouveau secret. Le mode d’exploration ancien reste disponible si le serveur n’est pas encore à jour. [Contrat, limites et validation](MISSION_ACCUEIL.md).
+
+Validation de 0.9 : **231 assertions Godot, 28 tests Node, 8 tests PostgreSQL**, journal et incident réseau inspectés sur ordinateur. Déploiement Render 0.9 et essai sur appareil réel encore à faire.
