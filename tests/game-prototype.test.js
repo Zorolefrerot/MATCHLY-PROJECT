@@ -176,3 +176,22 @@ test("character customization is bounded, cosmetic and saved only on the device"
   assert.match(read("game/scripts/creator.gd"), /SubViewport.UPDATE_DISABLED/);
   assert.match(read("game/scripts/fighter.gd"), /func apply_appearance/);
 });
+
+test("Konoha is a separate account-avatar visit, not a renamed training arena", () => {
+  const village = read("game/scripts/konoha_visit.gd");
+  assert.match(village, /viewport\.own_world_3d = true/);
+  assert.match(village, /account_profile\.get\("appearance"\)/);
+  assert.doesNotMatch(
+    village,
+    /save_local|HTTPRequest|\.save_appearance|\.try_cast/,
+  );
+  const map = read("game/scripts/konoha_map.gd");
+  for (const name of ["Académie", "Marché", "Résidence du Hokage"])
+    assert.ok(map.includes(name));
+  assert.doesNotMatch(map, /super\.build\(/);
+  assert.match(
+    read("game/scripts/training.gd"),
+    /village_entry_pending = true\s+account_api\.refresh\(\)/,
+  );
+  assert.match(read("game/scripts/account_panel.gd"), /ENTRER À KONOHA/);
+});

@@ -426,6 +426,98 @@ func run() -> void:
 	check(game.player.appearance == offline_before, "cloud appearance cannot overwrite the offline combat fighter")
 	var local_after: String = FileAccess.get_file_as_string(CharacterAppearance.SAVE_PATH) if FileAccess.file_exists(CharacterAppearance.SAVE_PATH) else ""
 	check(local_before == local_after, "cloud editor never writes the local appearance save")
+	var training_position: Vector3 = game.player.position
+	var training_elapsed: float = game.elapsed
+	var training_casts: int = game.rules.casts
+	game.account_panel.village_button.pressed.emit()
+	check(game.village == null and game.village_entry_pending and game.account_api.sent["path"] == "/profile", "village entry waits for a fresh account admission check")
+	game.account_api.respond(200, online)
+	check(game.village != null and not game.account_panel.visible, "successful account check opens the separate Konoha scene")
+	var visit: KonohaVisit = game.village
+	for frame in range(22):
+		await physics_frame
+	check(visit.initialized and visit.player.is_on_floor(), "village avatar arrives on a real colliding floor")
+	check(visit.player.get_world_3d() != game.player.get_world_3d(), "Konoha uses its own physics world, not the training arena")
+	check(root.disable_3d and game.process_mode == Node.PROCESS_MODE_DISABLED and not game.hud.is_processing_input(), "training rendering, simulation and input are suspended during the visit")
+	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("Genin Test"), "Konoha uses the account identity and saved appearance")
+	check(visit.hud.skill_buttons.is_empty() and not visit.hud.buttons.has("melee"), "village does not expose training combat or test jutsu")
+	var village_screen := Rect2(Vector2.ZERO, visit.hud.size)
+	var visit_buttons_fit: bool = true
+	for button: Button in visit.hud.buttons.values():
+		visit_buttons_fit = visit_buttons_fit and village_screen.encloses(button.get_global_rect())
+	check(visit_buttons_fit, "village touch buttons fit the landscape viewport")
+	var arrival: Vector3 = visit.player.position
+	Input.action_press("move_forward")
+	for frame in range(30):
+		await physics_frame
+	Input.action_release("move_forward")
+	check(visit.player.position.z < arrival.z-1.5, "walking moves the account avatar through Konoha")
+	check(visit.player.jump(), "jump works independently in the village")
+	for frame in range(10):
+		await physics_frame
+	check(visit.player.position.y > arrival.y+0.3, "village jump leaves the ground")
+	for frame in range(55):
+		await physics_frame
+	check(visit.player.is_on_floor(), "village jump lands back on the colliding ground")
+	touch(81, visit.hud.joystick_center+Vector2(40,0), true)
+	touch(82, Vector2(700,320), true)
+	check(visit.hud.move_vector.x > 0 and visit.hud.look_finger == 82 and game.hud.move_vector == Vector2.ZERO, "village joystick and camera track separate fingers without controlling training")
+	touch(81, visit.hud.joystick_center, false)
+	touch(82, Vector2(700,320), false)
+	check(visit.hud.move_vector == Vector2.ZERO, "village touch release clears movement")
+	visit.player.reset_at(Vector3(27.5,0.1,0))
+	Input.action_press("move_right")
+	for frame in range(30):
+		await physics_frame
+	Input.action_release("move_right")
+	check(visit.player.position.x < 28.5, "village perimeter collision prevents walking out")
+	visit.player.reset_at(KonohaMap.GUIDE+Vector3(0,0.3,2.2))
+	for frame in range(5):
+		await physics_frame
+	visit.interact()
+	check(visit.guide_met and visit.hud.blocked and visit.hud.menu_title.text.contains("Aoi"), "nearby guide opens an original written welcome dialogue")
+	await process_frame
+	check(village_screen.encloses(visit.hud.menu_panel.get_global_rect()), "village dialogue fits the screen")
+	var stopped: Vector3 = visit.player.position
+	Input.action_press("move_left")
+	for frame in range(6):
+		await physics_frame
+	check(visit.player.position == stopped, "dialogue freezes village movement")
+	visit.resume_visit()
+	check(not Input.is_action_pressed("move_left") and not visit.hud.blocked, "resuming a visit clears held movement")
+	for data in KonohaMap.LANDMARKS:
+		visit.player.reset_at(data["point"]+Vector3(0,0.3,2))
+		for frame in range(5):
+			await physics_frame
+		visit.interact()
+		check(visit.hud.blocked and visit.hud.menu_title.text == data["name"], "each landmark has an approachable readable sign: " + data["name"])
+		visit.resume_visit()
+	check(visit.visited.size() == 3, "local orientation counts each of the three landmarks once")
+	visit.player.reset_at(Vector3(15,0.1,-0.5))
+	await physics_frame
+	check(not visit._reachable(Vector3(15,0,-3)), "walls block interaction rays")
+	game.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(visit.hud.blocked, "losing focus pauses the Konoha visit")
+	game.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	check(not visit.hud.blocked, "Android back resumes from the village pause without returning to training")
+	visit.player.position.y = -8
+	for frame in range(2):
+		await physics_frame
+	check(visit.player.position.distance_to(KonohaMap.SPAWN) < 1, "fall recovery returns to the village entrance")
+	game.handle_action("skill_0")
+	check(game.player.position == training_position and game.elapsed == training_elapsed and game.rules.casts == training_casts, "village movement and interactions never advance the training match")
+	check(game.account_api.sent["path"] == "/profile" and game.player.appearance == offline_before, "visiting Konoha does not write rewards, position or offline appearance")
+	visit.finish()
+	await process_frame
+	check(game.village == null and game.account_panel.visible and paused and not root.disable_3d and game.hud.is_processing_input(), "leaving destroys the visit and restores the paused account screen")
+	game.account_panel.village_button.pressed.emit()
+	game.account_api.respond(200, online)
+	check(game.village != null and game.village.visited.is_empty(), "a fresh village visit has no invented persistent mission progress")
+	game.village.finish()
+	await process_frame
+	game.account_panel.village_button.pressed.emit()
+	game.account_api.respond(401, {"error": "Session expirée."})
+	check(game.village == null and not game.village_entry_pending and game.account_panel.village_button.disabled, "an expired session cannot enter the village")
 	game.account_panel.refresh_button.pressed.emit()
 	game.account_api.respond(401, {"error": "Session expirée."})
 	check(game.account_api.profile.is_empty() and game.account_api._token.is_empty() and game.account_panel.edit_button.disabled, "expired session clears account identity and disables edits")

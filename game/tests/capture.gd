@@ -78,14 +78,48 @@ func run() -> void:
 	if account_image.save_png(folder.path_join("account-login.png")) != OK:
 		quit(1)
 		return
+	# Render fixture only: no real account, token or network call in visual QA.
+	game.account_api.profile = {"protocol": 1, "schemaVersion": 1, "character": {"id": 1, "name": "Genin de test", "clan": "Hyūga", "affinity": "Raiton", "mokuton": false, "rank": "Genin", "village": "Konoha"}, "appearance": {"model": 1, "hair": 3, "hair_color": 3, "eyes": 2, "skin": 4, "top": 0, "top_color": 6, "bottom": 0, "bottom_color": 1}, "revision": 1}
+	game._open_village()
+	for frame in range(25):
+		await physics_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder, "konoha-arrival", 0):
+		quit(1)
+		return
+	game.village.player.reset_at(Vector3(-2,0.2,7))
+	game.village.yaw = 0.9
+	for frame in range(15):
+		await physics_frame
+	await RenderingServer.frame_post_draw
+	if root.get_texture().get_image().save_png(folder.path_join("konoha-market.png")) != OK:
+		quit(1)
+		return
+	game.village.player.reset_at(KonohaMap.GUIDE+Vector3(0,0.2,2.3))
+	for frame in range(6):
+		await physics_frame
+	game.village.interact()
+	await process_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder, "konoha-guide", 1):
+		quit(1)
+		return
+	game.village.finish()
+	await process_frame
+	print("IDREM_CAPTURE_SUCCESS")
+	quit(0)
+
+func save_village_image(folder: String, filename: String, index: int) -> bool:
+	var image: Image = root.get_texture().get_image()
+	if image.save_png(folder.path_join(filename+".png")) != OK:
+		return false
 	if OS.get_environment("GITHUB_ACTIONS") == "true":
-		account_image.resize(480, 270, Image.INTERPOLATE_LANCZOS)
-		var encoded: String = Marshalls.raw_to_base64(account_image.save_jpg_to_buffer(0.4))
+		image.resize(480, 270, Image.INTERPOLATE_LANCZOS)
+		var encoded: String = Marshalls.raw_to_base64(image.save_jpg_to_buffer(0.45))
 		if encoded.length() > 14000:
-			encoded = Marshalls.raw_to_base64(account_image.save_jpg_to_buffer(0.2))
+			encoded = Marshalls.raw_to_base64(image.save_jpg_to_buffer(0.25))
 		if encoded.length() <= 14000:
 			var parts: int = ceili(float(encoded.length()) / 3500.0)
 			for part in range(parts):
-				print("::notice title=Account QA JPEG part %d of %d::%s" % [part, parts, encoded.substr(part*3500, 3500)])
-	print("IDREM_CAPTURE_SUCCESS")
-	quit(0)
+				print("::notice title=Konoha QA %d JPEG part %d of %d::%s" % [index, part, parts, encoded.substr(part*3500, 3500)])
+	return true

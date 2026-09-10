@@ -1,6 +1,11 @@
 extends Node3D
 ## Offline training and account cosmetics are separate. Cloud choices never
 ## change training statistics, affinity, local saves or allocation rules.
+var village: KonohaVisit
+var village_layer: CanvasLayer
+var village_entry_pending: bool = false
+var previous_disable_3d: bool = false
+var previous_process_mode: int = Node.PROCESS_MODE_INHERIT
 var account_api: CharacterAccountAPI
 var account_panel: CharacterAccountPanel
 var creator: CharacterCreator
@@ -98,6 +103,13 @@ func _ready() -> void:
 		if operation == "save" and creator.visible and creator.remote_mode:
 			creator.remote_result(success, message)
 	)
+	account_panel.village_requested.connect(request_village)
+	account_api.completed.connect(func(operation: String, success: bool, _message: String) -> void:
+		if operation == "refresh" and village_entry_pending:
+			village_entry_pending = false
+			if success:
+				_open_village()
+	)
 	hud.account_requested.connect(open_account)
 	creator.saved.connect(func(value: Dictionary) -> void: player.apply_appearance(value))
 	creator.closed.connect(func() -> void:
@@ -150,6 +162,8 @@ func _reset_positions() -> void:
 	telegraph = null
 
 func start_round() -> void:
+	if village != null:
+		return
 	if is_instance_valid(creator) and (creator.visible or account_panel.visible):
 		return
 	get_tree().paused = false
@@ -170,6 +184,8 @@ func start_round() -> void:
 	hud.notice("Approche, cible ton adversaire et essaie tes quatre techniques.")
 
 func _resume() -> void:
+	if village != null:
+		return
 	if creator.visible or account_panel.visible:
 		return
 	if not running or round_over:
@@ -185,6 +201,8 @@ func _quality(standard: bool) -> void:
 	get_viewport().msaa_3d = Viewport.MSAA_2X if standard else Viewport.MSAA_DISABLED
 
 func pause_round() -> void:
+	if village != null:
+		return
 	if is_instance_valid(creator) and (creator.visible or account_panel.visible):
 		return
 	if not running or round_over:
@@ -194,20 +212,69 @@ func pause_round() -> void:
 	hud.show_menu("Une pause au village.", "Le combat, les recharges et l’adversaire sont en pause.\nTes candidatures et ton compte ne sont pas concernés.", "REPRENDRE", true)
 
 func open_creator() -> void:
-	if not get_tree().paused or creator.visible or account_panel.visible:
+	if village != null or not get_tree().paused or creator.visible or account_panel.visible:
 		return
 	hud.reset_input()
 	hud.hide()
 	creator.open(player.appearance, appearance_path)
 
 func open_account() -> void:
-	if not get_tree().paused or creator.visible or account_panel.visible:
+	if village != null or not get_tree().paused or creator.visible or account_panel.visible:
 		return
 	hud.reset_input()
 	hud.hide()
 	account_panel.open()
 
+func request_village() -> void:
+	if village != null or account_api.busy or account_api.profile.is_empty() or not account_panel.visible:
+		account_panel._update_controls()
+		return
+	# Recheck session/admission on the existing server before each new visit.
+	village_entry_pending = true
+	account_api.refresh()
+
+func _open_village() -> void:
+	if village != null or not CharacterAccountAPI.valid_profile(account_api.profile):
+		return
+	get_tree().paused = true
+	audio.set_suspended(true)
+	hud.reset_input()
+	hud.set_process_input(false)
+	hud.hide()
+	account_panel.hide()
+	previous_disable_3d = get_viewport().disable_3d
+	get_viewport().disable_3d = true # Do not render both worlds behind each other.
+	village_layer = CanvasLayer.new()
+	village_layer.layer = 30
+	add_child(village_layer)
+	var scene: PackedScene = load("res://scenes/konoha.tscn")
+	village = scene.instantiate()
+	village.account_profile = account_api.profile.duplicate(true)
+	village.closed.connect(_leave_village)
+	village_layer.add_child(village)
+	# Only the new visit runs. Physics remains active in its separate World3D.
+	previous_process_mode = process_mode
+	process_mode = Node.PROCESS_MODE_DISABLED
+	get_tree().paused = false
+
+func _leave_village() -> void:
+	get_tree().paused = true
+	process_mode = previous_process_mode
+	get_viewport().disable_3d = previous_disable_3d
+	village_layer.queue_free()
+	village = null
+	village_layer = null
+	hud.set_process_input(true)
+	account_panel.open()
+	get_tree().paused = true
+
 func _notification(what: int) -> void:
+	if village != null:
+		if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+			village.pause_visit()
+		elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
+			village.toggle_pause()
+		return
 	if is_instance_valid(hud) and (what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_GO_BACK_REQUEST):
 		if is_instance_valid(creator) and creator.visible:
 			creator.touch_id = -1
@@ -223,6 +290,10 @@ func _notification(what: int) -> void:
 		pause_round()
 
 func handle_action(action: String) -> void:
+	if village != null:
+		if action == "pause":
+			village.toggle_pause()
+		return
 	if account_panel.visible:
 		if action == "pause":
 			account_panel.close()

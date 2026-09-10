@@ -2,6 +2,7 @@ class_name CharacterAccountPanel
 extends Control
 signal closed
 signal edit_requested
+signal village_requested
 var origin_config_path: String = "user://server-origin.cfg"
 var api: CharacterAccountAPI
 var origin_field: LineEdit
@@ -11,6 +12,7 @@ var status_label: Label
 var identity_label: Label
 var login_button: Button
 var edit_button: Button
+var village_button: Button
 var refresh_button: Button
 var logout_button: Button
 var back_button: Button
@@ -34,7 +36,7 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 10)
 	scroll.add_child(column)
 	column.add_child(_label("MON PERSONNAGE · COMPTE DU SITE", 27))
-	column.add_child(_label("Joueur admis uniquement. Le compte propriétaire ne consomme pas de place.\nProfil connecté, pas encore de monde multijoueur. L’entraînement reste séparé.", 16))
+	column.add_child(_label("Joueur admis uniquement. Le compte propriétaire ne consomme pas de place.\nKonoha : première zone solo avec ton personnage. Pas encore de multijoueur.", 16))
 	origin_field = _field("Adresse exacte du site : https://ton-site.onrender.com", column)
 	email_field = _field("E-mail du compte joueur", column)
 	email_field.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_EMAIL_ADDRESS
@@ -48,6 +50,8 @@ func _ready() -> void:
 	login_button = _button("SE CONNECTER", _login, column)
 	identity_label = _label("Aucun personnage connecté.", 19)
 	column.add_child(identity_label)
+	village_button = _button("ENTRER À KONOHA · PREMIÈRE ZONE SOLO", func() -> void: _waiting(); village_requested.emit(), column)
+	village_button.add_theme_stylebox_override("normal", TrainingHUD.panel_style(Color("39776b")))
 	status_label = _label("Le mot de passe et la session restent uniquement en mémoire.", 16)
 	column.add_child(status_label)
 	var actions := HBoxContainer.new()
@@ -105,7 +109,7 @@ func _login() -> void:
 
 func _waiting() -> void:
 	status_label.text = "Connexion en cours… patiente pendant le réveil éventuel du serveur."
-	for button in [login_button, edit_button, refresh_button, logout_button, back_button]:
+	for button in [login_button, edit_button, village_button, refresh_button, logout_button, back_button]:
 		button.disabled = true
 	for field in [origin_field, email_field, password_field]:
 		field.editable = false
@@ -123,6 +127,7 @@ func _update_controls() -> void:
 	var connected: bool = not api.profile.is_empty()
 	login_button.disabled = api.busy or connected
 	edit_button.disabled = api.busy or not connected
+	village_button.disabled = api.busy or not connected
 	refresh_button.disabled = api.busy or not connected
 	logout_button.disabled = api.busy or not connected
 	back_button.disabled = api.busy
