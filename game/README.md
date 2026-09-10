@@ -4,13 +4,23 @@ Prototype **solo et hors ligne**, séparé du site Render/Neon. Godot **4.5.1 St
 
 ## État vérifié
 
-**Version 0.3.0 compilée et vérifiée le 10 septembre 2026.** Les 81 tests Godot, l’export signé de test, le contrôle des permissions et les captures de rendu ordinateur ont réussi dans GitHub Actions. Le propriétaire a testé la version 0.1.0 et apprécié sa fluidité, tout en signalant un logo gênant. La version 0.3.0 attend son nouvel essai sur téléphone. Détails : [`VALIDATION.md`](VALIDATION.md).
+**Version 0.4.0 compilée et vérifiée le 10 septembre 2026.** Les **90 assertions Godot**, l’export signé de test, le contrôle des permissions et les captures de rendu ordinateur ont réussi. Les captures de Katon et Raiton ont également été inspectées dans Arena. Le propriétaire avait apprécié la fluidité de 0.1.0 ; les performances de 0.4.0 sur téléphone restent à confirmer. Détails : [`VALIDATION.md`](VALIDATION.md).
 
-- [Télécharger le ZIP `idrem-zenkai-android-6` (environ 63 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34446543408/artifacts/10139893231) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
-- [Exécution verte et fichiers](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34446543408).
-- Extraire le ZIP et ouvrir **`idrem-zenkai-training-debug.apk`**. Ne pas télécharger `godot-test-logs-6` à la place : ce dernier ne contient que les journaux.
+- [Télécharger le ZIP `idrem-zenkai-android-9` (environ 63 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34449560323/artifacts/10141009252) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
+- [Exécution verte et fichiers](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34449560323).
+- Extraire le ZIP et ouvrir **`idrem-zenkai-training-debug.apk`**. Ne pas télécharger `godot-test-logs-9` à la place.
 
-## Nouveautés 0.3.0 — tes enregistrements dans le jeu
+## Nouveautés 0.4.0 — feu et foudre uniquement
+
+- **Katon** : boule de feu à silhouette plus large, flammes orange/jaune animées, cœur clair, courte traînée de flammes et embrasement à l’impact. La sphère opaque provisoire a été retirée.
+- **Raiton** : cœur blanc, canal cyan et halo bleu ; branches et arcs autour de la main et du point atteint, trois formes successives puis disparition rapide.
+- Texture de feu originale et partagée ; éclair regroupé en trois maillages. Pas de lumière dynamique, d’effet plein écran ou de secousse de caméra ; plafond des groupes secondaires conservé à 14.
+- **Sons fournis, warning, règles de combat, Fūton et Doton inchangés.** Aucune modification du site ni des comptes.
+- Cette mise à jour termine les retouches demandées pour l’étape d’entraînement, sans ouvrir un nouveau chantier de jeu. Affichage de version : **PROTO 0.4**.
+
+Détails et génération reproductible : [`assets/vfx/README.md`](assets/vfx/README.md).
+
+## Enregistrements de la version 0.3.0 conservés
 
 - Les **neuf fichiers fournis** dans le dépôt remplacent les sons provisoires : Katon, Raiton, Fūton, Doton, impact de terre, frappe, coup reçu, esquive et musique de combat.
 - Signal **warning original** conservé par l’agent : 0,12 s, légèrement mis en avant pour annoncer l’attaque ennemie.
@@ -62,7 +72,7 @@ La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais 
 2. Choisir **Android - Prototype IDREM ZENKAI** et une exécution **verte** correspondant à la version du jeu souhaitée sur `arena/01a08158-matchly-project`. Une mise à jour de documentation seule peut ne pas créer de nouvelle APK.
 3. Dans **Artifacts**, télécharger `idrem-zenkai-android-…` (connexion à GitHub nécessaire).
 4. Extraire le ZIP sur le téléphone et ouvrir `idrem-zenkai-training-debug.apk`.
-5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.3.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
+5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.4.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
 6. Garder les graphismes **Économie** pour le premier essai.
 
 L’APK est signé avec une **clé de test temporaire**, pas une clé Play Store. Une nouvelle exécution peut générer une signature différente : Android pourra demander de désinstaller le prototype précédent avant installation. Le paquet `org.idremzenkai.training` est distinct du futur jeu. Aucun compte ni candidature n’est supprimé en désinstallant ce prototype.

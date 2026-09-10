@@ -4,21 +4,35 @@
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node du site + isolation/sons du prototype | **18/18 passent** |
+| Tests Node du site + isolation/sons du prototype | **19/19 passent** |
 | Construction Vite du site | Réussie, 1 597 modules |
 | Analyse GDScript | Import et exécution réussis dans Godot officiel 4.5.1 |
-| Exécution Godot de `tests/smoke.gd` | **81 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
+| Exécution Godot de `tests/smoke.gd` | **90 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
 | Erreurs dans le journal de la simulation | Aucune `SCRIPT ERROR`, `ERROR` ou assertion échouée |
 | Import dans l’éditeur officiel complet (CI) | Réussi, contrôle strict passé |
 | Import dans l’ancien éditeur local réduit | Erreurs d’environnement `fontconfig`, historique ci-dessous |
-| Rendu GL / captures | Étape CI réussie : captures ordinateur produites sous Xvfb/Mesa, pas un test Android |
+| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; recadrages Katon/Raiton inspectés, pas un test Android |
 | Export APK / signature / permissions finales | **Réussis** : signature debug vérifiée avec `apksigner`, contrôle `aapt` sans permission réseau/sensible interdite |
-| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.3.0 à tester** |
-| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34446543408 verte** |
+| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4.0 à tester** |
+| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34449560323 verte** |
 
-Ne pas interpréter les tests sans affichage comme une validation du rendu ou des performances Android. La nouvelle APK 0.3.0 est disponible en artefact GitHub, mais n’a pas encore été installée ni testée sur le téléphone du propriétaire. Les captures n’ont pas été inspectées visuellement dans Arena : l’accès aux hôtes de téléchargement des artefacts y est bloqué.
+Les tests sans affichage ne prouvent pas les performances Android. **Deux recadrages JPEG complets des captures réelles Katon/Raiton ont été récupérés via les annotations Checks et inspectés dans Arena** : flammes sans rectangle opaque, projectile à silhouette élargie, éclair blanc ramifié et contour bleuté, pas de logo ou de flash couvrant la vue. Les rendus source PNG sont dans l’artefact Android. Il ne s’agit ni de maquettes générées ni d’un essai sur téléphone. L’animation est couverte par les assertions ; les captures fixes ne prouvent pas sa fluidité. La version 0.4.0 reste à essayer sur l’appareil du propriétaire.
 
-## Mise à jour 0.3.0 — enregistrements du propriétaire
+## Mise à jour 0.4.0 — flammes et foudre
+
+[Exécution n° 9](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34449560323), source **`85a68db91d6b05dd6e3e9adb849d9ab6e83cdb69`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en **1 min 23 s**.
+
+- **90 assertions Godot** : les 81 précédentes, plus couches de flammes, animation de l’atlas, profondeur/taille dans le monde, embrasement et nettoyage, trois maillages d’éclair ramifiés, extrémités préservées et trois renouvellements visuels sans dégâts supplémentaires.
+- **19 tests Node** et construction Vite réussis ; aucun changement du site. L’analyse GDScript locale a retourné zéro diagnostic ; l’import et l’exécution officiels en CI ont confirmé la validité moteur.
+- Katon : atlas RGBA original de huit images, trois sprites partageant la même texture, flammes de traînée et d’impact. Raiton : halo/canal/cœur regroupés, branches et couronnes électriques, durée de 0,36 s.
+- Aucun éclairage dynamique ni particules GPU, trois renouvellements de géométrie maximum par éclair et 14 groupes secondaires maximum. **Pas de mesure de FPS sur Android** : ces budgets sont des précautions, pas une garantie de fluidité sur tous les appareils.
+- Sons et paramètres de combat inchangés. Le projectile garde sa collision, ses 18 m/s et sa durée de 1,8 s ; Raiton reste un seul rayon de dégâts de 15 m. Fūton, Doton, course et commandes conservés.
+- Export signé, vérification des permissions, captures ordinateur et inspection des deux effets : **réussis**. Les aperçus sont découpés en annotations de moins de 4 096 caractères pour éviter la troncature de l’API Checks.
+- Version **0.4.0**, code **4**, HUD **PROTO 0.4**, paquet `org.idremzenkai.training`, API minimum 24/cible 35, ARM64 et ARMv7.
+- APK : **61 596 055 octets**, SHA-256 `3c409ae7e88ed7f2f30fe1aac775265338a7db9c45e1f6d662466c08290e3794`.
+- [ZIP `idrem-zenkai-android-9`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34449560323/artifacts/10141009252) : **62 950 239 octets**, expiration **17 septembre 2026 à 07:23 UTC** ; SHA-256 ZIP GitHub `5f7db4a075fea02a7cff6cbe748a3c34e5ddd114b2556a85a879d49d2f89c98e`.
+
+## Historique : mise à jour 0.3.0 — enregistrements du propriétaire
 
 [Exécution n° 6](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34446543408), source **`5a2b800368dcd7885b9540579f18138101bc8811`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en **1 min 28 s**.
 
