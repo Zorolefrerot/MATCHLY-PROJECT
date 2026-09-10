@@ -12,7 +12,7 @@ Branche de cette version : **`arena/01a08158-matchly-project`** (pas `main`).
 
 ## Raccordement du compte Android — code prêt
 
-L’API native et la sauvegarde d’apparence du compte sont implémentées, séparément de l’entraînement hors ligne. **Déploiement et parcours de compte confirmés par le propriétaire.** [Activation et protections](docs/COMPTE_JEU.md). L’APK 0.7 ajoute une [première zone de Konoha](docs/KONOHA_PREMIERE_ZONE.md) visitable avec le personnage du compte. Le monde multijoueur n’est pas encore implémenté.
+L’API native et la sauvegarde d’apparence du compte sont implémentées, séparément de l’entraînement hors ligne. **Déploiement et parcours de compte confirmés par le propriétaire.** [Activation et protections](docs/COMPTE_JEU.md). L’APK **0.8** conserve la [première zone de Konoha](docs/KONOHA_PREMIERE_ZONE.md) approuvée en 0.7 et améliore ses maisons, sa résidence et son monument avec les références fournies. Elle reste visitable en solo avec le personnage du compte. Le monde multijoueur n’est pas encore implémenté.
 
 ## Fonctionnalités
 

@@ -13,6 +13,8 @@ L’URL réelle du service n’étant pas enregistrée dans le dépôt, aucune a
 
 ## Depuis la version 0.7 — entrée dans Konoha
 
+La zone 0.7 a été approuvée par le propriétaire. La mise à jour visuelle 0.8 conserve ce parcours et la même API : maisons arrondies, résidence remaniée et monument texturé, sans nouveau déploiement serveur.
+
 Le bouton **ENTRER À KONOHA · PREMIÈRE ZONE SOLO** ouvre maintenant une zone distincte de l’entraînement avec l’apparence du compte. Il vérifie à nouveau le profil via l’API 0.6 existante : **aucune mise à jour du serveur n’est nécessaire pour cet ajout**. Il s’agit de déplacements et dialogues locaux, sans monde partagé ni progression sauvegardée. Voir [première zone de Konoha](KONOHA_PREMIERE_ZONE.md).
 
 ## Administrateur — décision pour la suite

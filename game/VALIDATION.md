@@ -4,22 +4,39 @@
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node du site + isolation/sons du prototype | **23/23 passent** |
+| Tests Node du site + isolation/sons du prototype | **25/25 passent** |
 | Intégration PostgreSQL réel jetable | **7/7 passent**, dont contrat natif complet |
 | Construction Vite du site | Réussie, 1 597 modules |
 | Analyse GDScript | Import et exécution réussis dans Godot officiel 4.5.1 |
-| Exécution Godot de `tests/smoke.gd` | **178 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
+| Exécution Godot de `tests/smoke.gd` | **186 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
 | Erreurs dans le journal de la simulation | Aucune `SCRIPT ERROR`, `ERROR` ou assertion échouée |
 | Import dans l’éditeur officiel complet (CI) | Réussi, contrôle strict passé |
 | Import dans l’ancien éditeur local réduit | Erreurs d’environnement `fontconfig`, historique ci-dessous |
-| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; arrivée à Konoha et dialogue inspectés, pas un test Android |
+| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; arrivée à Konoha et marché inspectés, pas un test Android |
 | Export APK / signature / permissions finales | **Réussis** : signature debug vérifiée avec `apksigner`, contrôle `aapt` avec INTERNET requis, sans caméra/micro/contacts/localisation/stockage externe |
-| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé par le propriétaire ; 0.6 confirmé fonctionnel ; zone 0.7.0 à tester** |
-| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34459811443 verte** |
+| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé ; 0.6 confirmé fonctionnel ; zone 0.7 approuvée par le propriétaire ; rendu 0.8 à tester** |
+| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34471313696 verte** |
 
-Le propriétaire a confirmé le fonctionnement du parcours de compte 0.6, puis demandé une première zone de Konoha distincte de l’entraînement. **La nouvelle zone 0.7 n’a pas encore été testée sur son téléphone.** Les captures réelles de l’arrivée et du dialogue d’Aoi ont été inspectées dans Arena ; elles utilisent un profil fictif de contrôle, pas un compte réel. Les tests de passage du compte vers Konoha injectent les réponses de profil : ils valident le raccordement et l’expiration simulée, pas une nouvelle connexion HTTPS physique. Le serveur 0.6 reste inchangé.
+Le propriétaire a confirmé le compte 0.6 et approuvé la visite solo 0.7, puis fourni trois images pour rendre Konoha moins cubique. **Le nouveau rendu 0.8 n’a pas encore été essayé sur son téléphone.** Les vues inspectées utilisent un profil fictif de contrôle ; les réponses de compte des tests sont simulées. Cela ne constitue pas une nouvelle connexion HTTPS depuis un appareil réel ni une mesure de FPS Android. Le serveur reste inchangé.
 
-## Mise à jour 0.7.0 — premier quartier de Konoha
+## Mise à jour 0.8.0 — volumes arrondis et références du propriétaire
+
+[Exécution n° 16](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34471313696), source **`3c0d6ab13995e9972d2b3e79942781ec83b22657`**, branche `arena/01a08158-matchly-project`. Job **102851609557**, toutes les étapes réussies en **1 min 36 s** ; exécution démarrée à 11:26:37 UTC.
+
+- **186 assertions Godot** : 178 précédentes conservées plus quatre maisons/palais, surfaces courbes, budget de sommets et UV/normales finies, détails regroupés, proportions/emplacement de la falaise, sept matières texturées, collision des murs arrondis et ancien angle carré réellement libre. Les accès aux trois panneaux, le dialogue borné et l’isolation du compte/combat restent testés.
+- **25 tests Node** et **7 tests PostgreSQL réel jetable** passés localement ; construction Vite réussie (1 597 modules). Les nouveaux tests vérifient les trois sources et sept sorties par hachage, les dimensions/formats, le budget PNG, les imports mipmappés, l’exclusion des métadonnées à l’export et l’isolation des nouvelles ressources.
+- Préparation Pillow 11.3.0 relancée sans différence Git : sept PNG, **1 467 280 octets**. Sources conservées hors `game/`, traçabilité et droits non vérifiés dans [`assets/konoha/README.md`](assets/konoha/README.md).
+- Import officiel, simulation, export Android debug signé et contrôle des permissions réussis dès la première exécution de 0.8. L’avertissement d’un analyseur statique tiers sur `ConvexPolygonShape3D.points` n’est pas reproduit par Godot 4.5.1 ; le moteur accepte les points et les tests de collision passent.
+- Quinze captures ordinateur produites sous Xvfb/Mesa, dont arrivée, marché, maison rapprochée, résidence rapprochée et dialogue. **Arrivée et marché inspectés** : nouveaux volumes, toitures et monument visibles. Aperçus 480×270 compressés conservés dans [`docs/images`](../docs/images/). Pas de test physique Android ni de benchmark.
+- Limite d’accès aux preuves : les dix premières notices de l’étape de capture sont accessibles via Checks ; elles contiennent les deux premières vues complètes et une partie de la suivante. Les autres vues existent dans l’artefact selon l’étape réussie, mais n’ont pas été inspectées individuellement. La récupération du journal par `gh run view --log` échoue sur la redirection signée (`EOF`). Pas de compilation supplémentaire uniquement pour ces aperçus ; réduire/prioriser les notices à la prochaine évolution des captures.
+- Résidence et maisons en volume ; **visages en décor texturé fixe**, pas sculptés. Les quatre premiers visages correspondent à la résidence fournie ; l’original à sept est conservé, sans nouvelle époque imposée au scénario. Les sources petites ne sont pas annoncées comme de la HD.
+- Version **0.8.0**, code **8**, HUD **PROTO 0.8**, paquet `org.idremzenkai.training`, API minimum 24/cible 35, ARM64 et ARMv7. INTERNET requis ; aucune nouvelle permission sensible.
+- APK : **63 335 684 octets**, SHA-256 `7aa69ec3a0bc693393b7d5e8792cfdbc46035b3e3a97246b6662459a7ef71422`.
+- [ZIP `idrem-zenkai-android-16`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34471313696/artifacts/10149667934) : **66 640 074 octets**, expiration **17 septembre 2026 à 11:28:10 UTC**, SHA-256 GitHub `2311135762bb1df3f7d63b1ad849b7b2bd45ec6b1728fb72d8dc966f344dc98c`.
+- Journaux : `godot-test-logs-16`, artefact **10149666196**, **44 184 octets**. Ce n’est pas l’installateur.
+- Aucune modification du serveur, des attributions, du combat, des sons fournis ou de l’accès administrateur. Aucun nouveau déploiement Render requis.
+
+## Historique : mise à jour 0.7.0 — premier quartier de Konoha
 
 [Exécution n° 15](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34459811443), source **`4cc94435634f0dee3d3adda9a53143f21aca1319`**, branche `arena/01a08158-matchly-project`. Toutes les étapes ont réussi en **1 min 41 s**.
 

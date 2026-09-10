@@ -1,16 +1,28 @@
 # IDREM ZENKAI — Prototype d’entraînement Android
 
-Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages et décors sont des formes procédurales originales, pas les modèles définitifs du jeu Naruto.
+Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
 ## État vérifié
 
-**Version 0.7.0 compilée le 10 septembre 2026.** **178 assertions Godot**, 23 tests Node, 7 tests PostgreSQL, export signé et permissions vérifiés. Arrivée à Konoha et dialogue inspectés sur captures ordinateur. Le propriétaire confirme le fonctionnement du compte 0.6 ; **la nouvelle zone 0.7 reste à essayer sur téléphone**. Détails : [`VALIDATION.md`](VALIDATION.md).
+**Version 0.8.0 compilée le 10 septembre 2026.** **186 assertions Godot**, 25 tests Node, 7 tests PostgreSQL, export signé et permissions vérifiés. Captures ordinateur de l’arrivée et du marché inspectées : maisons arrondies, résidence et monument visibles. Le propriétaire a approuvé la zone 0.7 ; **le nouveau rendu 0.8 reste à essayer sur téléphone**. Détails : [`VALIDATION.md`](VALIDATION.md).
 
-- [ZIP `idrem-zenkai-android-15` (environ 64 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34459811443/artifacts/10145088287) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
-- [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34459811443).
-- Extraire et ouvrir **`idrem-zenkai-training-debug.apk`**. `godot-test-logs-15` contient seulement les journaux.
+- [ZIP `idrem-zenkai-android-16` (environ 67 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34471313696/artifacts/10149667934) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
+- [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34471313696).
+- Extraire et ouvrir **`idrem-zenkai-training-debug.apk`**. `godot-test-logs-16` contient seulement les journaux.
 
-## Nouveautés 0.7.0 — première zone de Konoha
+## Nouveautés 0.8.0 — Konoha moins cubique
+
+- Quatre maisons réellement arrondies, étages en retrait, toits courbes débordants, fenêtres et cheminées ; murs fermés avec collisions convexes adaptées.
+- Résidence circulaire rouge et or, ailes basses, corniches, porche et emblème inspirés de l’image fournie.
+- **Quatre premiers visages** de la falaise, pour correspondre à l’image de la résidence ; l’original à sept visages est conservé. Décor texturé fixe derrière des volumes rocheux, **pas des visages sculptés en 3D**.
+- Sept textures légères préparées depuis les trois références, mipmaps, matériaux partagés, fenêtres/portes réunies en un maillage. Pas de promesse de détails HD à partir de ces petites images.
+- Compte, avatar distant, contrôles, Aoi, panneaux, retour sûr et entraînement séparé conservés. Aucun nouveau déploiement Render requis. Affichage **PROTO 0.8**.
+
+![Capture ordinateur réelle de Konoha 0.8, réduite et compressée](../docs/images/konoha-08-arrival.jpg)
+
+Sources, méthode et limites : [`assets/konoha/README.md`](assets/konoha/README.md).
+
+## Parcours 0.7.0 conservé — première zone de Konoha
 
 - **MON COMPTE → connexion → ENTRER À KONOHA · PREMIÈRE ZONE SOLO**. Entrée distincte du retour à l’entraînement, avec nouvelle vérification de la session et chargement de l’apparence du compte.
 - Porte d’arrivée, allée principale, marché, académie, maisons et résidence du Hokage. Scène et monde physique séparés de l’arène ; ne réutilise pas sa carte sous un autre nom.
@@ -108,7 +120,7 @@ La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais 
 2. Choisir **Android - Prototype IDREM ZENKAI** et une exécution **verte** correspondant à la version du jeu souhaitée sur `arena/01a08158-matchly-project`. Une mise à jour de documentation seule peut ne pas créer de nouvelle APK.
 3. Dans **Artifacts**, télécharger `idrem-zenkai-android-…` (connexion à GitHub nécessaire).
 4. Extraire le ZIP sur le téléphone et ouvrir `idrem-zenkai-training-debug.apk`.
-5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.7.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
+5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.8.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
 6. Garder les graphismes **Économie** pour le premier essai.
 
 L’APK est signé avec une **clé de test temporaire**, pas une clé Play Store. Une nouvelle exécution peut générer une signature différente : Android pourra demander de désinstaller le prototype précédent avant installation. Le paquet `org.idremzenkai.training` est distinct du futur jeu. Aucun compte ni candidature n’est supprimé en désinstallant ce prototype.

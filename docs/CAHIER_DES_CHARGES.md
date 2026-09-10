@@ -243,7 +243,7 @@ Choisir et vérifier les offres gratuites réellement disponibles, configurer se
 
 Godot 4.5.1 et compilation gratuite GitHub Actions mis en place. L’entraînement solo 0.4 (arène, commandes tactiles, combat et effets) a été **validé par le propriétaire le 10 septembre 2026**.
 
-Personnalisation locale livrée en 0.5 ; compte et apparence distante livrés en 0.6, parcours confirmé par le propriétaire. À sa demande, la version 0.7 ajoute une première zone de Konoha distincte de l’arène : visite solo, bâtiments extérieurs, guide d’accueil et panneaux, sans récompense ni progression sauvegardée. L’APK est compilée et testée dans le moteur ; cette nouvelle zone attend l’essai sur téléphone. La synchronisation multijoueur et une mission coopérative restent des travaux ultérieurs. Les APK ne doivent pas être annoncés comme disponibles avant compilation et tests réels.
+Personnalisation locale livrée en 0.5 ; compte et apparence distante livrés en 0.6, parcours confirmé par le propriétaire. À sa demande, la version 0.7 ajoute une première zone de Konoha distincte de l’arène : visite solo, bâtiments extérieurs, guide d’accueil et panneaux, sans récompense ni progression sauvegardée. La zone 0.7 a été approuvée par le propriétaire. La version 0.8, compilée et testée dans le moteur, améliore maisons, résidence et monument avec ses trois références ; ce nouveau rendu attend l’essai sur téléphone. Les visages restent un décor texturé, pas des sculptures 3D. La synchronisation multijoueur et une mission coopérative restent des travaux ultérieurs. Les APK ne doivent pas être annoncés comme disponibles avant compilation et tests réels.
 
 ## 12. Contraintes et points encore ouverts
 
