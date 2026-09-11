@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import express from "express";
 import { resolve } from "node:path";
 import { createApp } from "../server/app.js";
+import { downloadInfo } from "../server/android-build.js";
 import { openStore, hashPassword } from "../server/store.js";
 // These fixtures exist only inside an isolated, in-memory test server.
 const email = "candidate@example.test";
@@ -54,7 +55,7 @@ test("home, clan filters, FAQ and mobile layout", async ({ page }) => {
     })
     .click();
   await expect(
-    page.getByText("Pas encore. Cette première version", {
+    page.getByText("Un prototype Android est disponible", {
       exact: false,
     }),
   ).toBeVisible();
@@ -261,6 +262,64 @@ test("candidate registration, quiz, admin decision and stable heritage", async (
     })
     .click();
   await expect(owner.locator(".modal")).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const downloadPanel = page.getByRole("region", {
+    name: "Télécharger le jeu",
+  });
+  await expect(downloadPanel).toBeVisible();
+  if (downloadInfo().available) {
+    await expect(downloadPanel).toContainText("GitHub");
+    await expect(
+      downloadPanel.getByRole("link", { name: /Télécharger l’application/ }),
+    ).toHaveAttribute("href", "/api/game-download");
+  } else {
+    await expect(downloadPanel).toContainText("a expiré");
+    await expect(downloadPanel.getByRole("link")).toHaveCount(0);
+  }
+  await downloadPanel.screenshot({ path: ".playwright/download-mobile.png" });
+  await owner.setViewportSize({ width: 390, height: 844 });
+  await owner.locator(".applicant-row").click();
+  await owner
+    .getByText("Supprimer définitivement ce compte accepté", { exact: true })
+    .click();
+  const removeButton = owner.getByRole("button", {
+    name: "Supprimer ce compte et libérer sa place",
+    exact: true,
+  });
+  await expect(removeButton).toBeDisabled();
+  await owner
+    .getByLabel("Recopie le nom du personnage", { exact: false })
+    .fill("Haru Shinobi");
+  await owner
+    .getByLabel("Ton mot de passe administrateur")
+    .fill("wrong-password");
+  await owner
+    .getByRole("checkbox", { name: /Je confirme la suppression/ })
+    .check();
+  await removeButton.click();
+  await expect(owner.locator(".account-danger")).toContainText(
+    "Confirmation administrateur incorrecte",
+  );
+  await expect(owner.getByLabel("Ton mot de passe administrateur")).toHaveValue(
+    "",
+  );
+  await owner
+    .locator(".account-danger")
+    .screenshot({ path: ".playwright/removal-mobile.png" });
+  expect(
+    await owner.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(391);
+  await owner.getByLabel("Ton mot de passe administrateur").fill(password);
+  await removeButton.click();
+  await expect(owner.locator(".modal")).toHaveCount(0);
+  await expect(owner.locator(".applicant-row")).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Se connecter", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Télécharger le jeu" }),
+  ).toHaveCount(0);
   await ownerContext.close();
   await context.close();
 });

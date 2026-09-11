@@ -2945,3 +2945,28 @@ textarea {
     scroll-behavior: auto !important;
   }
 }
+
+.download-panel {
+  margin-top: 24px;
+}
+.download-panel .button {
+  margin: 12px 0;
+}
+.account-danger {
+  margin-top: 28px;
+  border: 1px solid #b34343;
+  border-radius: 12px;
+  padding: 18px;
+}
+.account-danger summary {
+  color: #ffaaa2;
+  cursor: pointer;
+  font-weight: 700;
+}
+.account-danger p {
+  line-height: 1.65;
+}
+.account-danger form {
+  display: grid;
+  gap: 16px;
+}

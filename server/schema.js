@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS applications(
 CREATE INDEX IF NOT EXISTS applications_status ON applications(status);
 CREATE TABLE IF NOT EXISTS allocations(user_id INTEGER PRIMARY KEY REFERENCES users(id), clan TEXT NOT NULL, affinity TEXT NOT NULL, mokuton INTEGER NOT NULL CHECK (mokuton IN (0,1)), created TEXT NOT NULL DEFAULT ${timestamp});
 CREATE TABLE IF NOT EXISTS mokuton_slots(position INTEGER PRIMARY KEY CHECK (position BETWEEN 0 AND 19), potential INTEGER NOT NULL CHECK (potential IN (0,1)));
+CREATE TABLE IF NOT EXISTS allocation_seats(user_id INTEGER PRIMARY KEY REFERENCES allocations(user_id), position INTEGER UNIQUE NOT NULL REFERENCES mokuton_slots(position));
+CREATE TABLE IF NOT EXISTS deleted_accounts(user_id INTEGER PRIMARY KEY REFERENCES users(id), deleted_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS audit(id ${id}, actor INTEGER REFERENCES users(id), action TEXT NOT NULL, target INTEGER, detail TEXT NOT NULL, created TEXT NOT NULL DEFAULT ${timestamp});
 `;
 }

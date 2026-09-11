@@ -59,11 +59,38 @@ export async function openStore(path) {
             .prepare("INSERT INTO mokuton_slots VALUES (?,?)")
             .run(i, value);
       }
+      await mapAllocationSeats(db);
     });
     return db;
   } catch (error) {
     await db.close();
     throw error;
+  }
+}
+// Assign seats to legacy draws by matching their existing potential, never rerolling.
+// Called only under the same SQLite transaction / PostgreSQL advisory lock.
+export async function mapAllocationSeats(db) {
+  const rows = await db
+    .prepare(
+      "SELECT l.user_id,l.mokuton FROM allocations l LEFT JOIN allocation_seats s ON s.user_id=l.user_id WHERE s.user_id IS NULL ORDER BY l.created,l.user_id",
+    )
+    .all();
+  if (!rows.length) return;
+  const free = await db
+    .prepare(
+      "SELECT m.position,m.potential FROM mokuton_slots m LEFT JOIN allocation_seats s ON s.position=m.position WHERE s.position IS NULL ORDER BY m.position",
+    )
+    .all();
+  for (const row of rows) {
+    const index = free.findIndex((seat) => seat.potential === row.mokuton);
+    if (index < 0)
+      throw new Error(
+        "Attributions incohérentes : aucune modification automatique des potentiels.",
+      );
+    const [seat] = free.splice(index, 1);
+    await db
+      .prepare("INSERT INTO allocation_seats(user_id,position) VALUES (?,?)")
+      .run(row.user_id, seat.position);
   }
 }
 export function transaction(db, fn) {
@@ -75,10 +102,10 @@ export async function decide(db, actor, id, status, message = "") {
       .prepare("SELECT * FROM applications WHERE id=?")
       .get(id);
     if (!app) throw new Error("Candidature introuvable.");
-    // First cohort only. Replacing admitted players requires explicit rules for rare slots.
+    // Account removal is a separate, confirmed action; a decision edit cannot erase a player.
     if (app.status === "accepted" && status !== "accepted")
       throw new Error(
-        "Le remplacement d’un joueur admis n’est pas encore activé.",
+        "Le remplacement passe par la suppression protégée du compte pour libérer cette place.",
       );
     if (
       status === "accepted" &&
@@ -139,6 +166,7 @@ export async function allocate(db, userId) {
       )?.status !== "accepted"
     )
       throw new Error("Ta candidature doit être acceptée.");
+    await mapAllocationSeats(db);
     const existing = await db
       .prepare("SELECT * FROM allocations WHERE user_id=?")
       .get(userId);
@@ -181,16 +209,21 @@ export async function allocate(db, userId) {
             : n < 79
               ? "Doton"
               : "Suiton";
-    const mokuton = (
-      await db
-        .prepare("SELECT potential FROM mokuton_slots WHERE position=?")
-        .get(count)
-    ).potential;
+    const seat = await db
+      .prepare(
+        "SELECT m.position,m.potential FROM mokuton_slots m LEFT JOIN allocation_seats s ON s.position=m.position WHERE s.position IS NULL ORDER BY m.position LIMIT 1",
+      )
+      .get();
+    if (!seat) throw new Error("La cohorte est complète.");
+    const mokuton = seat.potential;
     await db
       .prepare(
         "INSERT INTO allocations(user_id,clan,affinity,mokuton) VALUES (?,?,?,?)",
       )
       .run(userId, clan, affinity, mokuton);
+    await db
+      .prepare("INSERT INTO allocation_seats(user_id,position) VALUES (?,?)")
+      .run(userId, seat.position);
     await db
       .prepare("INSERT INTO audit(actor,action,target,detail) VALUES (?,?,?,?)")
       .run(

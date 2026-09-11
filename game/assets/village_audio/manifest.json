@@ -1,0 +1,20 @@
+{
+  "source": "game/audio_sources/village_loop.mp3",
+  "source_repository_path": "1001641947.mp3",
+  "source_commit": "982ec60084c88b8cda263a207c2eb79fa1c289c6",
+  "source_sha256": "b4002405ab547179ddfbbb1f6cf6cff2a6671de3ebb40f2b14635b5741ca2822",
+  "detected_codec": "aac",
+  "input_seconds": 78.15256,
+  "trim_start_seconds": 0.01991,
+  "trim_end_seconds": 0.0,
+  "duration_seconds": 78.13265,
+  "gain_db": 4.797,
+  "peak": 0.58,
+  "rms": 0.08093,
+  "output": "village_loop.ogg",
+  "output_sha256": "0bef4d8e11e2f5ad0d88424726618ed5495f293e8edbdbf4e0f5b3dfd1246c58",
+  "output_bytes": 458803,
+  "codec": "vorbis",
+  "prepared_pcm_sha256": "a33a31d28b3cc3cbd9622d1e3b41b13c92f5099b1e2fa0a088e81486119d22e8",
+  "note": "Complete recording with outer silence trim and short fades; no pitch or tempo changes. Original rights not independently verified."
+}

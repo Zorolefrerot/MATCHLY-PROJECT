@@ -270,3 +270,8 @@ Personnalisation locale livrée en 0.5 ; compte et apparence distante livrés en
 Le propriétaire souhaite désormais grouper plusieurs tâches avant chaque installation. Prochain lot approuvé : accepter auprès d’Aoi une mission de repérage des trois lieux, consulter un journal, remettre un rapport puis retrouver ces étapes sur son compte après reconnexion/réinstallation. Mission solo et dialogues programmés, sans IA externe. Pas de récompense improvisée, de modification des attributions/statistiques ou de multijoueur implicite. Position non persistée.
 
 APK 0.9 compilée : 231 assertions Godot, 28 tests Node et 8 tests PostgreSQL passent ; journal et incident réseau inspectés sur captures ordinateur. Une seule installation proposée pour le lot complet, après mise à jour Render. Essai téléphone encore à faire. La base de production devra recevoir la migration additive via le prochain déploiement Render. Détails et limites d’autorité solo : [mission d’accueil](MISSION_ACCUEIL.md).
+
+
+### Ajouts demandés après validation téléphone de 0.9
+
+Le propriétaire confirme mission et reprise après reconnexion, autorise le début du lot multijoueur (présence de deux comptes admis, déplacements, reconnexion sans doublon, proximité RP/HRP), puis ajoute : suppression administrative d’un compte accepté, accès au téléchargement sur le site pour les admis, musique de fond fournie au dépôt. Les trois ajouts site/audio sont codés ; le multijoueur reste à implémenter. Suppression irréversible avec confirmation de la libération de place, conservation d’un identifiant anonymisé/audit et maintien du paquet de vingt places/trois potentiels. [Contrat, validation et limites](AJOUTS_SITE_MUSIQUE.md).

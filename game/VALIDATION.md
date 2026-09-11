@@ -1,5 +1,13 @@
 # Validation du prototype — 10 septembre 2026
 
+## Ajouts suivants en préparation, sans nouvel APK
+
+Le propriétaire confirme que le lot 0.9 et sa reprise de mission fonctionnent. Suppression des comptes acceptés et téléchargement protégé : **31 tests Node, 9 tests PostgreSQL, 2 parcours Playwright et Vite réussis**, avec données fictives uniquement. Captures mobiles inspectées.
+
+Musique reçue (`1001641947.mp3` sur `main`), décodée, préparée en Vorbis et raccordée au cycle de vie Konoha. Regénération identique, tests natifs ajoutés, analyse statique sans nouvelle erreur ; **import/simulation moteur, écoute Android et nouvelle compilation pas encore exécutés**. Pas de téléchargement par petite tâche. Présence multijoueur et chat non encore implémentés. [État détaillé](../docs/AJOUTS_SITE_MUSIQUE.md).
+
+Les résultats et l’APK suivants restent ceux de **0.9 déjà livré et confirmé fonctionnel par le propriétaire**, pas une validation des nouvelles modifications.
+
 ## Résultats obtenus
 
 | Vérification | Résultat réel |

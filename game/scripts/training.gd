@@ -251,6 +251,7 @@ func _open_village() -> void:
 	village = scene.instantiate()
 	village.account_profile = account_api.profile.duplicate(true)
 	village.api = account_api
+	village.music_enabled = audio.ambience_enabled
 	village.closed.connect(_leave_village)
 	village_layer.add_child(village)
 	# Only the new visit runs. Physics remains active in its separate World3D.

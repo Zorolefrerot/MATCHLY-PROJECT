@@ -565,7 +565,7 @@ function Home() {
             ],
             [
               "Est-ce que je peux déjà jouer sur Android ?",
-              "Pas encore. Cette première version concerne le site et les candidatures. Aucune APK n’est disponible pour le moment ; les joueurs admis retrouveront les instructions ici lorsque les tests Android commenceront.",
+              "Un prototype Android est disponible pour les joueurs acceptés, depuis leur espace personnel : entraînement, quartier de Konoha et mission d’accueil. Il ne s’agit pas encore du jeu multijoueur complet. Le lien de chaque compilation est temporaire.",
             ],
             [
               "Comment sont choisis les 20 joueurs ?",
@@ -1388,6 +1388,58 @@ function Account() {
           </p>
         )}
       </section>
+      {a?.status === "accepted" && (
+        <section
+          className="panel download-panel"
+          aria-label="Télécharger le jeu"
+        >
+          <div className="panel-heading">
+            <Smartphone size={22} />
+            <h2>Installer IDREM ZENKAI</h2>
+          </div>
+          <p>
+            Version Android vérifiée {account.download?.version || "—"} ·
+            entraînement, Konoha et mission d’accueil.
+          </p>
+          {account.download?.available ? (
+            <>
+              <a className="button" href="/api/game-download">
+                Télécharger l’application · ZIP 67 Mo <ArrowUpRight size={18} />
+              </a>
+              <p>
+                Une connexion GitHub gratuite est nécessaire pour ce fichier.
+                Extrais le ZIP, puis ouvre{" "}
+                <strong>idrem-zenkai-training-debug.apk</strong>.
+              </p>
+              <p className="fine-print">
+                Lien valable jusqu’au{" "}
+                {new Date(account.download.expiresAt).toLocaleDateString(
+                  "fr-FR",
+                )}
+                . Android 7 minimum, ARM64/ARMv7. Si une réinstallation est
+                nécessaire, les choix locaux sont effacés, pas l’apparence et
+                les étapes déjà sauvegardées sur ton compte.
+              </p>
+            </>
+          ) : (
+            <p role="status">
+              Le fichier temporaire a expiré ou n’est pas disponible. Une
+              nouvelle compilation doit être publiée par l’administrateur.
+            </p>
+          )}
+          {!allocation && (
+            <p>
+              Avant de te connecter dans le jeu, effectue ton attribution unique
+              ci-dessus.
+            </p>
+          )}
+          <p className="fine-print">
+            APK de test, hors Play Store. N’autorise l’installation que depuis
+            ton gestionnaire de fichiers de confiance ; ne désactive pas les
+            protections générales du téléphone.
+          </p>
+        </section>
+      )}
     </main>
   );
 }
@@ -1403,6 +1455,14 @@ function Admin() {
   const [decision, setDecision] = useState("pending");
   const [audit, setAudit] = useState(null);
   const [quizEditor, setQuizEditor] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [releasePlace, setReleasePlace] = useState(false);
+  useEffect(() => {
+    setDeleteConfirmation("");
+    setDeletePassword("");
+    setReleasePlace(false);
+  }, [selected?.id]);
   const load = async () => {
     try {
       setApps(await api("/admin/applications"));
@@ -1574,7 +1634,12 @@ function Admin() {
         avec le jeu Android.
       </div>
       {selected && (
-        <div className="modal-backdrop" onClick={() => setSelected(null)}>
+        <div
+          className="modal-backdrop"
+          onClick={() => {
+            if (!busy) setSelected(null);
+          }}
+        >
           <section
             className="modal admin-detail"
             role="dialog"
@@ -1585,7 +1650,9 @@ function Admin() {
             <button
               className="modal-close icon-button"
               aria-label="Fermer"
-              onClick={() => setSelected(null)}
+              onClick={() => {
+                if (!busy) setSelected(null);
+              }}
             >
               <X />
             </button>
@@ -1675,8 +1742,9 @@ function Admin() {
               </label>
               {selected.status === "accepted" && (
                 <p className="fine-print">
-                  Le retrait d’un joueur admis n’est pas activé : les règles de
-                  remplacement de cohorte restent à définir.
+                  Pour retirer définitivement ce joueur, utilise la suppression
+                  protégée ci-dessous. Changer simplement sa décision ne
+                  supprime pas son compte.
                 </p>
               )}
               <Button disabled={busy}>
@@ -1684,6 +1752,90 @@ function Admin() {
                 <Check size={17} />
               </Button>
             </form>
+            {selected.status === "accepted" && (
+              <details className="account-danger">
+                <summary>Supprimer définitivement ce compte accepté</summary>
+                <p>
+                  <strong>
+                    Action irréversible pour {selected.character} (
+                    {selected.email}).
+                  </strong>{" "}
+                  Les accès, le dossier, l’apparence et la mission seront
+                  effacés. Un identifiant anonymisé et l’historique
+                  administratif sont conservés. La place sera libérée ; aucun
+                  autre joueur ne sera retiré et aucun de ses tirages ne sera
+                  relancé.
+                </p>
+                <ErrorBox>{error}</ErrorBox>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setBusy(true);
+                    setError("");
+                    const password = deletePassword;
+                    setDeletePassword("");
+                    try {
+                      await post(`/admin/accounts/${selected.user_id}/delete`, {
+                        confirmation: deleteConfirmation,
+                        password,
+                        releasePlace,
+                      });
+                      setSelected(null);
+                      await load();
+                      await refresh();
+                    } catch (e) {
+                      setError(e.message);
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  <label className="field">
+                    Recopie le nom du personnage : {selected.character}
+                    <input
+                      autoComplete="off"
+                      maxLength={50}
+                      value={deleteConfirmation}
+                      onChange={(e) => setDeleteConfirmation(e.target.value)}
+                      disabled={busy}
+                    />
+                  </label>
+                  <label className="field">
+                    Ton mot de passe administrateur
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      maxLength={128}
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      disabled={busy}
+                    />
+                  </label>
+                  <label className="consent">
+                    <input
+                      type="checkbox"
+                      checked={releasePlace}
+                      onChange={(e) => setReleasePlace(e.target.checked)}
+                      disabled={busy}
+                    />{" "}
+                    Je confirme la suppression et la libération d’une place. Les
+                    tirages des autres joueurs restent inchangés.
+                  </label>
+                  <Button
+                    disabled={
+                      busy ||
+                      !releasePlace ||
+                      deleteConfirmation !== selected.character ||
+                      !deletePassword
+                    }
+                  >
+                    {busy
+                      ? "Suppression…"
+                      : "Supprimer ce compte et libérer sa place"}
+                  </Button>
+                </form>
+              </details>
+            )}
           </section>
         </div>
       )}
@@ -1711,13 +1863,15 @@ function Admin() {
               audit.map((a) => (
                 <div className="audit-row" key={a.id}>
                   <strong>
-                    {a.action === "decision"
-                      ? "Décision de candidature"
-                      : a.action === "owner_created"
-                        ? "Initialisation du propriétaire"
-                        : a.action === "quiz_update"
-                          ? "Modification du quiz"
-                          : "Attribution d’héritage"}
+                    {a.action === "account_deleted"
+                      ? "Compte accepté supprimé"
+                      : a.action === "decision"
+                        ? "Décision de candidature"
+                        : a.action === "owner_created"
+                          ? "Initialisation du propriétaire"
+                          : a.action === "quiz_update"
+                            ? "Modification du quiz"
+                            : "Attribution d’héritage"}
                   </strong>
                   <small>
                     {a.name} · {a.created} UTC

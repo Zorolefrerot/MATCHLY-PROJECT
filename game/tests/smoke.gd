@@ -460,6 +460,18 @@ func run() -> void:
 	for frame in range(22):
 		await physics_frame
 	check(visit.initialized and visit.player.is_on_floor(), "village avatar arrives on a real colliding floor")
+	check(is_instance_valid(visit.music) and visit.music.stream is AudioStreamOggVorbis and visit.music.stream.loop, "owner village recording is a loop separate from combat music")
+	check(visit.music.bus == TrainingAudio.BUS and is_equal_approx(visit.music.volume_db,-12.0), "village music respects existing master bus at a quiet background level")
+	visit.music_enabled = true
+	visit._update_music()
+	check(visit.music.playing and game.audio.music.stream_paused, "village music starts without overlapping the suspended combat loop")
+	visit.hud.buttons["music"].pressed.emit()
+	check(not visit.music.playing and not visit.music_enabled, "village music can be muted with its touch button")
+	visit.hud.buttons["music"].pressed.emit()
+	visit.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(visit.music.stream_paused, "village background music pauses on focus loss")
+	visit.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_IN)
+	check(visit.music.playing and not visit.music.stream_paused, "village music resumes when the app regains focus")
 	check(visit.player.get_world_3d() != game.player.get_world_3d(), "Konoha uses its own physics world, not the training arena")
 	check(root.disable_3d and game.process_mode == Node.PROCESS_MODE_DISABLED and not game.hud.is_processing_input(), "training rendering, simulation and input are suspended during the visit")
 	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("Genin Test"), "Konoha uses the account identity and saved appearance")
@@ -565,6 +577,7 @@ func run() -> void:
 	check(game.player.position == training_position and game.elapsed == training_elapsed and game.rules.casts == training_casts, "village movement and interactions never advance the training match")
 	check(game.account_api.sent["path"] == "/profile" and game.player.appearance == offline_before, "visiting Konoha does not write rewards, position or offline appearance")
 	visit.finish()
+	check(not visit.music.playing, "leaving Konoha stops the village loop immediately")
 	await process_frame
 	check(game.village == null and game.account_panel.visible and paused and not root.disable_3d and game.hud.is_processing_input(), "leaving destroys the visit and restores the paused account screen")
 	game.account_panel.village_button.pressed.emit()

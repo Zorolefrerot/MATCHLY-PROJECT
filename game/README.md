@@ -2,6 +2,10 @@
 
 Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
+## Prochain lot en préparation
+
+La mission 0.9 est confirmée fonctionnelle par le propriétaire. Sa musique de village est maintenant préparée et raccordée au code, avec bouton de coupure, pause sur perte de focus et arrêt à la sortie. **Pas encore de nouvel APK ou d’essai moteur de cet ajout.** Le site reçoit suppression protégée et téléchargement pour les admis ; le multijoueur reste à implémenter. [Suivi](../docs/AJOUTS_SITE_MUSIQUE.md).
+
 ## Lot 0.9 — première mission, journal et sauvegarde
 
 Une seule version réunit le lot demandé : **accepter la mission auprès d’Aoi → lire/valider trois panneaux → remettre son rapport**, avec journal défilant et étapes sauvegardées sur le compte. Les étapes ne sont cochées qu’après confirmation serveur ; coupure/conflit → actualisation, pas de fausse sauvegarde locale. Aucun objet, ryō, expérience ou pouvoir accordé.

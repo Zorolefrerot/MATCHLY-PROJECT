@@ -22,6 +22,9 @@ var visited: Dictionary = {}
 var guide_met: bool = false
 var initialized: bool = false
 var ending: bool = false
+var music: AudioStreamPlayer
+var music_enabled: bool = true
+var app_active: bool = true
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -91,6 +94,33 @@ func _ready() -> void:
 	_sync_mission()
 	_update_camera()
 	initialized = true
+	music = AudioStreamPlayer.new()
+	var stream: AudioStreamOggVorbis = preload("res://assets/village_audio/village_loop.ogg").duplicate()
+	stream.loop = true
+	music.stream = stream
+	music.bus = TrainingAudio.BUS if AudioServer.get_bus_index(TrainingAudio.BUS) >= 0 else "Master"
+	music.volume_db = -12.0
+	add_child(music)
+	_update_music()
+
+func _update_music() -> void:
+	if not is_instance_valid(music):
+		return
+	if ending or not music_enabled:
+		music.stop()
+	elif not music.playing:
+		music.play()
+	music.stream_paused = not app_active
+	if is_instance_valid(hud):
+		hud.buttons["music"].text = "MUSIQUE : OUI" if music_enabled else "MUSIQUE : NON"
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		app_active = false
+		_update_music()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		app_active = true
+		_update_music()
 
 func _physics_process(delta: float) -> void:
 	if not initialized or ending or hud.blocked:
@@ -266,6 +296,9 @@ func _action(action: String) -> void:
 		"leave": finish()
 		"interact": interact()
 		"journal": open_journal()
+		"music":
+			music_enabled = not music_enabled
+			_update_music()
 		"mission_confirm": _confirm_mission()
 		"mission_refresh": _refresh_mission()
 		"jump":
@@ -304,6 +337,8 @@ func finish() -> void:
 	if ending:
 		return
 	ending = true
+	if is_instance_valid(music):
+		music.stop()
 	_clear_inputs()
 	if is_instance_valid(viewport):
 		viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED

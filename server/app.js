@@ -1,4 +1,6 @@
 import express from "express";
+import { removeAcceptedAccount } from "./account-removal.js";
+import { androidBuild, downloadInfo } from "./android-build.js";
 import { installGameRoutes } from "./game.js";
 import { randomBytes } from "node:crypto";
 import { recoveryAvailable, sendRecovery } from "./mailer.js";
@@ -84,19 +86,38 @@ export function createApp(db) {
   };
   async function session(req, res, user) {
     const token = randomBytes(32).toString("hex");
-    await db.prepare("DELETE FROM sessions WHERE expires<?").run(Date.now());
-    await db.prepare("DELETE FROM resets WHERE expires<?").run(Date.now());
-    if (req.token)
+    const allowed = await transaction(db, async () => {
+      const current = await db
+        .prepare(
+          "SELECT password FROM users WHERE id=? AND NOT EXISTS(SELECT 1 FROM deleted_accounts d WHERE d.user_id=users.id)",
+        )
+        .get(user.id);
+      if (!current || current.password !== user.password) return false;
+      await db.prepare("DELETE FROM sessions WHERE expires<?").run(Date.now());
+      await db.prepare("DELETE FROM resets WHERE expires<?").run(Date.now());
+      if (req.token)
+        await db
+          .prepare("DELETE FROM sessions WHERE token=?")
+          .run(digest(req.token));
       await db
-        .prepare("DELETE FROM sessions WHERE token=?")
-        .run(digest(req.token));
-    await db
-      .prepare("INSERT INTO sessions VALUES (?,?,?)")
-      .run(digest(token), user.id, Date.now() + 7 * 86400000);
+        .prepare("INSERT INTO sessions VALUES (?,?,?)")
+        .run(digest(token), user.id, Date.now() + 7 * 86400000);
+      return true;
+    });
+    if (!allowed) {
+      res
+        .status(401)
+        .json({
+          error:
+            "Ce compte ou cette session n’est plus disponible. Reconnecte-toi.",
+        });
+      return false;
+    }
     res.cookie("iz_session", token, {
       ...cookieOptions,
       maxAge: 7 * 86400000,
     });
+    return true;
   }
   app.use("/api", async (req, res, next) => {
     req.token = (req.headers.cookie || "")
@@ -107,7 +128,7 @@ export function createApp(db) {
     if (req.token)
       req.user = await db
         .prepare(
-          "SELECT u.id,u.name,u.email,u.role FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token=? AND s.expires>?",
+          "SELECT u.id,u.name,u.email,u.role FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token=? AND s.expires>? AND NOT EXISTS(SELECT 1 FROM deleted_accounts d WHERE d.user_id=u.id)",
         )
         .get(digest(req.token), Date.now());
     next();
@@ -148,7 +169,7 @@ export function createApp(db) {
           .get()
       ).n,
       resetAvailable: recoveryAvailable(),
-      gameAvailable: false,
+      gameAvailable: downloadInfo().available,
     }),
   );
   app.get("/api/quiz", async (req, res) =>
@@ -167,6 +188,7 @@ export function createApp(db) {
         .get(req.user.id)) || null;
     res.json({
       user: req.user,
+      download: application?.status === "accepted" ? downloadInfo() : null,
       application,
       allocation:
         (await db
@@ -176,6 +198,44 @@ export function createApp(db) {
           .get(req.user.id)) || null,
     });
   });
+  app.get("/api/game-download", auth, async (req, res) => {
+    const allowed = await db
+      .prepare(
+        "SELECT a.id FROM applications a JOIN users u ON u.id=a.user_id WHERE a.user_id=? AND a.status='accepted' AND u.role='player' AND NOT EXISTS(SELECT 1 FROM deleted_accounts d WHERE d.user_id=u.id)",
+      )
+      .get(req.user.id);
+    if (!allowed)
+      return res
+        .status(403)
+        .json({ error: "Le téléchargement est réservé aux joueurs acceptés." });
+    if (!downloadInfo().available)
+      return res.status(410).json({
+        error:
+          "Ce fichier a expiré. Une nouvelle compilation doit être publiée.",
+      });
+    res.redirect(302, androidBuild.url);
+  });
+  app.post(
+    "/api/admin/accounts/:id/delete",
+    auth,
+    admin,
+    limit,
+    async (req, res) => {
+      try {
+        res.json(
+          await removeAcceptedAccount(
+            db,
+            req.user.id,
+            req.token,
+            Number(req.params.id),
+            req.body,
+          ),
+        );
+      } catch (error) {
+        res.status(409).json({ error: error.message });
+      }
+    },
+  );
   app.post("/api/auth/register", limit, async (req, res) => {
     const { name, email, password } = req.body;
     if (
@@ -196,7 +256,7 @@ export function createApp(db) {
       const user = await db
         .prepare("SELECT * FROM users WHERE id=?")
         .get(Number(result.lastInsertRowid));
-      await session(req, res, user);
+      if (!(await session(req, res, user))) return;
       res.status(201).json({
         user: publicUser(user),
       });
@@ -229,7 +289,7 @@ export function createApp(db) {
       return res.status(401).json({
         error: "E-mail ou mot de passe incorrect.",
       });
-    await session(req, res, user);
+    if (!(await session(req, res, user))) return;
     res.json({
       user: publicUser(user),
     });
@@ -363,19 +423,27 @@ export function createApp(db) {
         error: "Tu as déjà envoyé une candidature.",
       });
     const score = quiz.filter((q) => answers[q.id] === q.answer).length;
-    await db
-      .prepare(
-        "INSERT INTO applications(user_id,character,discovery,goals,motivation,story,answers,quiz_snapshot,score) VALUES (?,?,?,?,?,?,?,?,?)",
+    await transaction(db, async () => {
+      if (
+        await db
+          .prepare("SELECT user_id FROM deleted_accounts WHERE user_id=?")
+          .get(req.user.id)
       )
-      .run(
-        req.user.id,
-        ...Object.keys(lengths).map((k) => req.body[k].trim()),
-        JSON.stringify(
-          Object.fromEntries(quiz.map((q) => [q.id, answers[q.id]])),
-        ),
-        JSON.stringify(quiz),
-        score,
-      );
+        throw new Error("Ce compte a été supprimé.");
+      await db
+        .prepare(
+          "INSERT INTO applications(user_id,character,discovery,goals,motivation,story,answers,quiz_snapshot,score) VALUES (?,?,?,?,?,?,?,?,?)",
+        )
+        .run(
+          req.user.id,
+          ...Object.keys(lengths).map((k) => req.body[k].trim()),
+          JSON.stringify(
+            Object.fromEntries(quiz.map((q) => [q.id, answers[q.id]])),
+          ),
+          JSON.stringify(quiz),
+          score,
+        );
+    });
     res.status(201).json({
       ok: true,
     });

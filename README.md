@@ -2,6 +2,10 @@
 
 Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android avec entraînement, créateur, compte et première zone solo de Konoha](game/README.md) est disponible ; le jeu RP multijoueur connecté n’est pas encore réalisé.
 
+## Ajouts site et musique — préparation du prochain lot
+
+Le propriétaire confirme que la mission 0.9 fonctionne. Le code ajoute maintenant la suppression protégée d’un compte accepté, le panneau de téléchargement dans l’espace admis et la musique de village fournie. **Site : 31 tests Node, 9 tests PostgreSQL, 2 parcours navigateur et Vite réussis. Musique : moteur et APK encore à vérifier.** Le multijoueur reste à implémenter ; pas de nouvel APK intermédiaire. [Détails et limites](docs/AJOUTS_SITE_MUSIQUE.md).
+
 ## Déployer gratuitement depuis un téléphone
 
 **[Guide Render Free + Neon Free](docs/DEPLOIEMENT_RENDER_NEON.md)**
