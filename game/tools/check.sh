@@ -14,7 +14,7 @@ for name in ['import.log', 'smoke.log', 'network.log']:
     if not path.exists(): continue
     text = re.sub(r'\x1b\[[0-9;]*m', '', path.read_text(errors='replace'))
     lines = text.splitlines()
-    selected = [line for line in lines if any(key in line for key in ['ERROR:', 'Parse Error:', 'TEST FAILED:', 'IDREM_SMOKE'])]
+    selected = [line for line in lines if any(key in line for key in ['ERROR:', 'Parse Error:', 'TEST FAILED:', 'IDREM_SMOKE', 'Leaked instance', 'Resource still in use', 'Orphan StringName'])]
     message = '\n'.join(selected or lines[-15:])[-12000:]
     message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
     print(f'::error title={name}::' + message)
@@ -27,7 +27,7 @@ if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' "$LOG_DIR/import.log"; then
   echo '::error::Godot import or GDScript parsing failed. See import.log.'
   report_check_failure
 fi
-timeout 120 "$GODOT" --headless --audio-driver Dummy --path game --script res://tests/smoke.gd 2>&1 | tee "$LOG_DIR/smoke.log"
+timeout 120 "$GODOT" --headless --verbose --audio-driver Dummy --path game --script res://tests/smoke.gd 2>&1 | tee "$LOG_DIR/smoke.log"
 if grep -E 'SCRIPT ERROR:|TEST FAILED:|ERROR:' "$LOG_DIR/smoke.log" || ! grep -q 'IDREM_SMOKE_FAILURES=0' "$LOG_DIR/smoke.log"; then
   echo '::error::Godot gameplay tests failed. See smoke.log.'
   report_check_failure
