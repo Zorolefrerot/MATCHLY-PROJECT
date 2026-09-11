@@ -275,3 +275,8 @@ APK 0.9 compilée : 231 assertions Godot, 28 tests Node et 8 tests PostgreSQL pa
 ### Ajouts demandés après validation téléphone de 0.9
 
 Le propriétaire confirme mission et reprise après reconnexion, autorise le début du lot multijoueur (présence de deux comptes admis, déplacements, reconnexion sans doublon, proximité RP/HRP), puis ajoute : suppression administrative d’un compte accepté, accès au téléchargement sur le site pour les admis, musique de fond fournie au dépôt. Les trois ajouts site/audio sont réunis dans l’APK 0.10 compilée et testée (238 assertions Godot) ; le site passe 31 tests Node, 9 tests PostgreSQL et 2 parcours navigateur. Le multijoueur reste à implémenter. Suppression irréversible avec confirmation de la libération de place, conservation d’un identifiant anonymisé/audit et maintien du paquet de vingt places/trois potentiels. [Contrat, validation et limites](AJOUTS_SITE_MUSIQUE.md).
+
+
+### Suite après confirmation du lot 0.10
+
+Le propriétaire confirme le fonctionnement de 0.10 sur téléphone et autorise la suite. Sources 0.11 : présence à deux, déplacements/animations, reconnexion et chat de proximité RP/HRP, sans nouvelle admission, combat ou échange. Serveur testé, intégration Godot et captures préparées mais validation moteur/APK encore à effectuer. [Contrat technique, limites et état réel](VILLAGE_PARTAGE.md). Les fonctions de suppression, téléchargement et musique demandées de nouveau sont conservées.

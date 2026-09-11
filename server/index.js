@@ -1,4 +1,5 @@
 import express from "express";
+import { installVillage } from "./village.js";
 import { resolve } from "node:path";
 import { createApp } from "./app.js";
 import { openStore } from "./store.js";
@@ -46,11 +47,13 @@ try {
       `IDREM ZENKAI disponible sur le port ${port} · stockage ${db.dialect}`,
     ),
   );
+  const village = installVillage(server, db);
   let stopping = false;
   const stop = () => {
     if (stopping) return;
     stopping = true;
     app.locals.cleanup();
+    village.close();
     const timeout = setTimeout(() => process.exit(1), 10000);
     timeout.unref();
     server.close(async () => {

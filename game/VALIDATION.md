@@ -1,5 +1,13 @@
 # Validation du prototype — 11 septembre 2026
 
+## Lot suivant 0.11 — sources en validation, aucun nouvel APK
+
+Le propriétaire confirme que **0.10 fonctionne sur son téléphone**, puis autorise la suite. Présence, mouvements, reconnexion et chat de proximité raccordés côté serveur et Godot. **37 tests Node, 10 tests PostgreSQL, 2 parcours Playwright et Vite** réussis localement après installation verrouillée. Analyse GDScript sans nouvelle erreur, faux positif historique de géométrie inchangé.
+
+**Les nouveaux tests moteur, le scénario WSS Node ↔ deux visites Godot, les captures 0.11 et l’export Android ne sont pas encore exécutés.** Ils précèdent la prochaine APK regroupée. Libérer d’abord de la place parmi les anciens artefacts GitHub ; aucun budget, fichier de workflow ou compte réel modifié. [Contrat et plan de validation](../docs/VILLAGE_PARTAGE.md).
+
+Les preuves ci-dessous concernent les APK déjà compilées, pas une validation moteur anticipée du code 0.11.
+
 ## Résultats actuels du lot regroupé 0.10
 
 | Vérification | Résultat réel |
@@ -14,7 +22,7 @@
 | Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; arrivée avec musique et journal inspectés |
 | Musique | Vorbis décodé, boucle et cycle de vie testés avec pilote Dummy ; pas une écoute humaine |
 | Export APK / signature / permissions finales | Réussis : `apksigner`, INTERNET requis ; sans caméra/micro/contacts/localisation/stockage externe |
-| Téléphone Android physique | **0.9 confirmé par le propriétaire**, mission et reprise comprises ; **0.10 à tester** |
+| Téléphone Android physique | **0.9 confirmé par le propriétaire**, mission et reprise comprises ; **0.10 également confirmée par le propriétaire** |
 | GitHub Actions | Exécution **34601493231 verte** |
 | Production Render | **Mise à jour 0.10 non effectuée par l’agent**, Manual Deploy nécessaire |
 
@@ -34,7 +42,7 @@ Les contrôles utilisent des bases jetables et des profils fictifs. Aucun compte
 - Journaux `godot-test-logs-19` : artefact **10264437975**, **24 295 octets**, pas l’installateur.
 - API GitHub après livraison : **27 artefacts non expirés**, total **517 240 603 octets** (environ **493,3 Mio**), contre 449 687 062 avant ce build. Proche du quota gratuit ; ce sous-total du dépôt n’est pas le relevé global de facturation. Aucun artefact supprimé, budget changé ou workflow modifié par l’agent.
 - Serveur : migrations additives, suppression acceptée avec nom exact/mot de passe/accord explicite de libération de place, révocation des accès, anonymisation et audit conservés ; vingt places et exactement trois potentiels préservés lors des remplacements. Téléchargement recontrôlé au clic. Aucun nouveau secret requis.
-- **Déployer le dernier commit sur le service Render existant avant l’essai du site**. Écoute/installation réelles de 0.10 encore à confirmer. [Contrats et limites](../docs/AJOUTS_SITE_MUSIQUE.md).
+- **Déployer le dernier commit sur le service Render existant avant l’essai du site**. Fonctionnement de 0.10 ensuite confirmé par le propriétaire, sans vérification indépendante sur appareil par l’agent. [Contrats et limites](../docs/AJOUTS_SITE_MUSIQUE.md).
 
 ## Historique : mise à jour 0.9.0 — mission d’accueil, journal et sauvegarde
 

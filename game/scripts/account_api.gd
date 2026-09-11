@@ -63,6 +63,11 @@ func forget() -> void:
 	_token = ""
 	profile = {}
 
+func village_session() -> Dictionary:
+	if _token.is_empty() or profile.is_empty() or normalize_origin(_origin).is_empty():
+		return {}
+	return {"url": _origin.replace("https://", "wss://") + "/api/game/village", "headers": PackedStringArray(["Authorization: Bearer " + _token])}
+
 func _send(operation: String, method: int, path: String, body: Variant = null) -> void:
 	if operation != "login" and _token.is_empty():
 		completed.emit(operation, false, "Reconnecte-toi dans l’application.")

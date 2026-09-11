@@ -2,11 +2,17 @@
 
 Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
+## Sources 0.11 — village partagé, validation moteur à faire
+
+Deux comptes admis, avatars avec apparence sauvegardée, marche/course/saut et chat de proximité **RP/HRP** sont raccordés en code via le même serveur HTTPS/WSS. Reconnexion et départ gérés, sans combat ni économie réseau. **37 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite passent.** Les tests natifs de protocole et le scénario à deux clients Godot sont préparés, **pas encore exécutés**. Pas d’APK 0.11 annoncée. [Détails et limites](../docs/VILLAGE_PARTAGE.md).
+
+Le propriétaire confirme **0.10 fonctionnelle sur son téléphone**. Cette version demeure la seule proposée au téléchargement jusqu’à validation complète du lot réseau.
+
 ## Lot 0.10 — musique du village et ajouts au site
 
 La musique fournie joue en fond dans Konoha, avec **MUSIQUE : OUI/NON**, le volume général existant, une pause en arrière-plan et un arrêt à la sortie. Le site reçoit la suppression protégée d’un compte accepté et le téléchargement réservé aux admis. **Mettre à jour le service Render existant** pour afficher ces fonctions et le lien 0.10.
 
-**238 assertions Godot**, 31 tests Node, 9 tests PostgreSQL et 2 parcours Playwright réussis. APK debug exporté, signature et permissions vérifiées ; arrivée et journal inspectés. **Écoute et essai sur téléphone encore à faire.** Le multijoueur n’est pas inclus. [Détails](../docs/AJOUTS_SITE_MUSIQUE.md).
+**238 assertions Godot**, 31 tests Node, 9 tests PostgreSQL et 2 parcours Playwright réussis. APK debug exporté, signature et permissions vérifiées ; arrivée et journal inspectés. **Fonctionnement sur téléphone ensuite confirmé par le propriétaire.** Le multijoueur n’est pas inclus dans 0.10. [Détails](../docs/AJOUTS_SITE_MUSIQUE.md).
 
 - [ZIP `idrem-zenkai-android-19` — environ 68 Mo](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231/artifacts/10264293080), jusqu’au **18 septembre 2026** ; connexion GitHub nécessaire.
 - [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231). Extraire **`idrem-zenkai-training-debug.apk`**, pas les journaux.

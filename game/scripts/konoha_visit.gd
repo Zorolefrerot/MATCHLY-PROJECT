@@ -1,6 +1,6 @@
 class_name KonohaVisit
 extends Control
-## Separate world/avatar. Only orientation checkpoints sync, never live positions or rewards.
+## Separate world and personal mission, with ephemeral shared presence. No network combat.
 signal closed
 var account_profile: Dictionary = {}
 var api: CharacterAccountAPI
@@ -25,6 +25,10 @@ var ending: bool = false
 var music: AudioStreamPlayer
 var music_enabled: bool = true
 var app_active: bool = true
+var village_link: VillageLink
+var chat_panel: VillageChat
+var remote_avatars: Dictionary = {}
+var unread: int = 0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -102,6 +106,20 @@ func _ready() -> void:
 	music.volume_db = -12.0
 	add_child(music)
 	_update_music()
+	chat_panel = VillageChat.new()
+	hud.overlay.add_child(chat_panel)
+	chat_panel.closed.connect(resume_visit)
+	chat_panel.send_requested.connect(_send_chat)
+	if api != null:
+		village_link = create_village_link()
+		village_link.api = api
+		village_link.status_changed.connect(_network_status)
+		village_link.received.connect(_network_event)
+		village_link.disconnected.connect(_clear_remote)
+		add_child(village_link)
+
+func create_village_link() -> VillageLink:
+	return VillageLink.new()
 
 func _update_music() -> void:
 	if not is_instance_valid(music):
@@ -117,13 +135,16 @@ func _update_music() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		app_active = false
+		_clear_inputs()
+		if is_instance_valid(village_link): village_link.set_active(false)
 		_update_music()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		app_active = true
+		if is_instance_valid(village_link): village_link.set_active(true)
 		_update_music()
 
 func _physics_process(delta: float) -> void:
-	if not initialized or ending or hud.blocked:
+	if not initialized or ending or hud.blocked or not app_active:
 		return
 	var look: Vector2 = hud.consume_look()
 	yaw -= look.x*0.004
@@ -136,6 +157,7 @@ func _physics_process(delta: float) -> void:
 	player.simulate(delta, direction, hud.sprinting or Input.is_action_pressed("sprint"))
 	if player.position.y < -5 or absf(player.position.x) > 31 or absf(player.position.z) > 35:
 		player.reset_at(KonohaMap.SPAWN)
+		if is_instance_valid(village_link): village_link.respawn()
 		hud.notice("Retour au point d’arrivée du quartier.")
 	_update_camera()
 	var nearest: int = nearest_interaction()
@@ -146,7 +168,7 @@ func _physics_process(delta: float) -> void:
 		hud.objective.text = "Connexion en cours · Ne ferme pas l’application pour confirmer l’étape."
 	elif not sync_error.is_empty():
 		hud.objective.text = "Mission non confirmée · Ouvre le JOURNAL pour actualiser."
-	hud.fps.text = "%d FPS · SOLO" % Engine.get_frames_per_second()
+	hud.fps.text = "%d FPS · %s" % [Engine.get_frames_per_second(), "EN LIGNE" if is_instance_valid(village_link) and village_link.connected else "LOCAL"]
 	if Input.is_action_just_pressed("village_interact"):
 		interact()
 
@@ -208,6 +230,7 @@ func interact() -> void:
 		_dialogue(data["name"], text, event)
 
 func _dialogue(title: String, text: String, event: String = "") -> void:
+	_close_chat()
 	journal_open = false
 	menu_event = event
 	hud.primary.disabled = not request_kind.is_empty()
@@ -231,6 +254,7 @@ func _sync_mission() -> void:
 				visited[i] = true
 
 func open_journal() -> void:
+	_close_chat()
 	if not initialized or ending:
 		return
 	_clear_inputs()
@@ -296,6 +320,7 @@ func _action(action: String) -> void:
 		"leave": finish()
 		"interact": interact()
 		"journal": open_journal()
+		"chat": open_chat()
 		"music":
 			music_enabled = not music_enabled
 			_update_music()
@@ -316,9 +341,10 @@ func pause_visit() -> void:
 		return
 	_clear_inputs()
 	if not hud.blocked:
-		_dialogue("Une pause à Konoha", "Quartier d’accueil · visite solo avec l’apparence de ton compte.\nLe combat de l’entraînement reste dans sa propre zone. Seules les étapes confirmées dans le journal sont sauvegardées. Ta position ne l’est pas.\nTu peux reprendre la visite ou revenir à ton compte.", "")
+		_dialogue("Une pause à Konoha", "Quartier d’accueil · apparence du compte et présence partagée si connecté.\nLe combat de l’entraînement reste dans sa propre zone. Mission personnelle sauvegardée. Ni position ni chat conservés après la visite. Le chat ne déclenche aucune action de combat.\nTu peux reprendre la visite ou revenir à ton compte.", "")
 
 func resume_visit() -> void:
+	_close_chat()
 	if not initialized or ending:
 		return
 	_clear_inputs()
@@ -337,6 +363,8 @@ func finish() -> void:
 	if ending:
 		return
 	ending = true
+	_close_chat()
+	if is_instance_valid(village_link): village_link.stop()
 	if is_instance_valid(music):
 		music.stop()
 	_clear_inputs()
@@ -346,3 +374,92 @@ func finish() -> void:
 		hud.set_process_input(false)
 	hide()
 	closed.emit()
+
+
+func _process(_delta: float) -> void:
+	if not initialized or ending or not is_instance_valid(village_link):
+		return
+	var motion: String = "idle"
+	if not hud.blocked and app_active:
+		motion = "jump" if not player.is_on_floor() else "run" if player.velocity.length() > 4.5 else "walk" if player.velocity.length() > 0.1 else "idle"
+	village_link.pose = {"p":[player.position.x,player.position.y,player.position.z],"yaw":wrapf(player.visual.rotation.y,-PI,PI),"motion":motion}
+
+func _network_status(message: String) -> void:
+	if ending or not is_instance_valid(chat_panel):
+		return
+	var online: bool = is_instance_valid(village_link) and village_link.connected
+	chat_panel.set_network(online,message)
+	hud.footer.text = "DEV RÉSEAU · Village partagé · Mission personnelle" if online else "DEV RÉSEAU · Visite locale · Ouvre le CHAT pour l’état de connexion"
+
+func _clear_remote() -> void:
+	for avatar: VillageAvatar in remote_avatars.values():
+		avatar.queue_free()
+	remote_avatars.clear()
+	if is_instance_valid(chat_panel):
+		chat_panel.set_network(false,"Hors ligne · Aucun message renvoyé automatiquement.")
+
+func _network_event(event: Dictionary) -> void:
+	if ending:
+		return
+	match event["type"]:
+		"welcome", "correction":
+			var point: Array = event["spawn"] if event["type"] == "welcome" else event["p"]
+			_clear_inputs()
+			player.reset_at(Vector3(float(point[0]),float(point[1]),float(point[2])))
+			var facing: float = float(event.get("yaw",0))
+			player.visual.rotation.y = facing
+			_update_camera()
+			# Send the correction, never the stale position cached before this frame.
+			village_link.pose = {"p":point.duplicate(),"yaw":facing,"motion":"idle"}
+		"roster":
+			var present: Dictionary = {}
+			for data: Dictionary in event["players"]:
+				var id: int = int(data["id"])
+				if id == int(account_profile["character"]["id"]): continue
+				present[id] = true
+				if not remote_avatars.has(id):
+					var avatar := VillageAvatar.new()
+					world.add_child(avatar)
+					remote_avatars[id] = avatar
+				remote_avatars[id].configure(data)
+			for id: int in remote_avatars.keys():
+				if not present.has(id):
+					remote_avatars[id].queue_free()
+					remote_avatars.erase(id)
+		"snapshot":
+			var present: Dictionary = {}
+			for data: Dictionary in event["players"]:
+				var id: int = int(data["id"])
+				present[id] = true
+				if remote_avatars.has(id): remote_avatars[id].update_pose(data)
+			for id: int in remote_avatars.keys():
+				if not present.has(id):
+					remote_avatars[id].queue_free()
+					remote_avatars.erase(id)
+		"chat":
+			chat_panel.add_message(event)
+			if not chat_panel.visible:
+				unread = mini(unread+1,50)
+				hud.buttons["chat"].text = "CHAT RP / HRP (%d)" % unread
+		"chat_ack": chat_panel.acknowledge(int(event["seq"]))
+		"error":
+			chat_panel.uncertain()
+			chat_panel.status.text = event["error"]
+
+func _send_chat(channel: String, text: String) -> void:
+	if is_instance_valid(village_link):
+		chat_panel.mark_pending(village_link.chat(channel,text))
+
+func open_chat() -> void:
+	if ending or not initialized:
+		return
+	_clear_inputs()
+	unread = 0
+	hud.buttons["chat"].text = "CHAT RP / HRP"
+	hud.show_menu("", "", "", false)
+	hud.menu_panel.hide()
+	chat_panel.open()
+
+func _close_chat() -> void:
+	if is_instance_valid(chat_panel): chat_panel.close_panel()
+	if is_instance_valid(hud): hud.menu_panel.show()

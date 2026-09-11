@@ -1,6 +1,6 @@
 # Ajouts demandés : suppression de compte, téléchargement et musique
 
-**Lot 0.10 compilé : site testé localement, musique importée et cycle de lecture contrôlé dans Godot. Déploiement Render et écoute sur téléphone encore à faire.** Le propriétaire confirme le bon fonctionnement du lot 0.9, puis demande ces trois ajouts en parallèle de la préparation du multijoueur. Aucun nouveau téléchargement Android imposé à chaque tâche.
+**Lot 0.10 compilé : site testé localement, musique importée et cycle de lecture contrôlé dans Godot. Le propriétaire confirme ensuite le fonctionnement de 0.10 sur son téléphone.** Le propriétaire confirme le bon fonctionnement du lot 0.9, puis demande ces trois ajouts en parallèle de la préparation du multijoueur. Aucun nouveau téléchargement Android imposé à chaque tâche.
 
 ## Supprimer un compte accepté
 
@@ -38,9 +38,9 @@ Un seul lecteur est rattaché à Konoha. Il respecte le volume général existan
 
 - **31 tests Node**, **9 tests PostgreSQL jetable**, dont suppression/replacement concurrent sur deux pools, et Vite réussis.
 - **2 parcours Playwright Chromium réussis**, incluant les écrans mobiles, téléchargement accepté, confirmation erronée, mot de passe vidé, suppression d’un compte fictif et refus de son ancienne session. Captures mobiles inspectées et conservées ci-dessous. Aucun compte réel supprimé.
-- Tests de musique ajoutés à Godot : boucle distincte, volume général, absence de chevauchement du combat, commande tactile, focus et arrêt à la sortie. Analyse GDScript sans nouvelle erreur (l’avertissement tiers historique de géométrie 0.8 demeure). **238 assertions Godot passent**, dont les sept vérifications musicales. Écoute réelle et essai téléphone encore à faire ; pilote audio Dummy pendant les tests.
+- Tests de musique ajoutés à Godot : boucle distincte, volume général, absence de chevauchement du combat, commande tactile, focus et arrêt à la sortie. Analyse GDScript sans nouvelle erreur (l’avertissement tiers historique de géométrie 0.8 demeure). **238 assertions Godot passent**, dont les sept vérifications musicales. Fonctionnement sur téléphone ensuite confirmé par le propriétaire ; pilote audio Dummy pendant les tests automatisés.
 - **Aucun déploiement Render effectué par l’agent.** Pour activer les ajouts du site : service existant, branche `arena/01a08158-matchly-project`, Manual Deploy → Deploy latest commit. Migrations additives au démarrage, aucun nouveau secret. Les textes de confirmation exposent la libération de place avant toute action.
-- **Présence multijoueur, déplacements synchronisés et chat RP/HRP restent à implémenter.** Ils ne sont pas inclus dans ces trois ajouts et ne sont pas annoncés comme testés. Les trois ajouts sont regroupés dans un seul APK 0.10 ; aucun APK par petite tâche.
+- **Le lot réseau suivant est en validation des sources** ([état détaillé](VILLAGE_PARTAGE.md)). Il n’est pas inclus dans l’APK 0.10, et son exécution moteur n’est pas encore annoncée comme testée. Les trois ajouts sont regroupés dans un seul APK 0.10 ; aucun APK par petite tâche.
 
 ## Version regroupée vérifiée
 

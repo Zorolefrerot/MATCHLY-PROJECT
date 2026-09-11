@@ -21,10 +21,9 @@ test("offline training stays separate from explicit scoped HTTPS account access"
     new URL("../game/scripts/", import.meta.url),
   )) {
     const script = read("game/scripts/" + name);
-    assert.doesNotMatch(
-      script,
-      /HTTPClient\.new|WebSocketPeer\.new|DATABASE_URL|ADMIN_PASSWORD/,
-    );
+    assert.doesNotMatch(script, /HTTPClient\.new|DATABASE_URL|ADMIN_PASSWORD/);
+    if (name !== "village_link.gd")
+      assert.doesNotMatch(script, /WebSocketPeer\.new/);
     if (name !== "account_api.gd")
       assert.doesNotMatch(script, /HTTPRequest\.new/);
   }
@@ -254,9 +253,9 @@ test("Konoha remodels silhouettes and batches facade details without changing co
   assert.match(read("game/tests/capture.gd"), /konoha-house/);
   assert.match(read("game/tests/capture.gd"), /konoha-palace/);
   const version = read("game/VERSION").trim();
-  assert.equal(version, "0.10.0");
+  assert.equal(version, "0.11.0");
   assert.ok(
     read("game/export_presets.cfg").includes(`version/name="${version}"`),
   );
-  assert.match(read("game/scripts/konoha_hud.gd"), /PROTO 0\.10/);
+  assert.match(read("game/scripts/konoha_hud.gd"), /PROTO 0\.11/);
 });

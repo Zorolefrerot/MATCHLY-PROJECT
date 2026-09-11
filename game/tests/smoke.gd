@@ -4,6 +4,8 @@ extends SceneTree
 # Only this test subclass bypasses transport; production uses verified HTTPS.
 class MockAccountAPI extends CharacterAccountAPI:
 	var sent: Dictionary = {}
+	func village_session() -> Dictionary:
+		return {} # Isolated tests never contact a real network service.
 	func _send(operation: String, method: int, path: String, body: Variant = null) -> void:
 		_operation = operation
 		busy = true
@@ -40,6 +42,7 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
+	network_protocol_checks()
 	var mission_blank: Dictionary = {"schemaVersion":1,"missionId":"konoha_welcome","status":"available","visited":[],"revision":0}
 	check(WelcomeMission.valid_state(mission_blank), "new mission validates without invented progress")
 	for broken in ["status", "visited", "revision", "schemaVersion", "missionId"]:
@@ -703,3 +706,26 @@ func run() -> void:
 	await process_frame
 	print("IDREM_SMOKE_FAILURES=%d" % failures)
 	quit(0 if failures == 0 else 1)
+
+func network_protocol_checks() -> void:
+	var pose: Dictionary = {"id":1,"p":[0,0.25,22],"yaw":0,"motion":"idle"}
+	check(VillageLink.state(JSON.parse_string(JSON.stringify(pose))), "network pose accepts finite JSON numbers")
+	for value: Variant in [null,[],{"id":"1"}, {"id":1,"p":[NAN,0,0],"yaw":0,"motion":"idle"}, {"id":1,"p":[0,0,0],"yaw":"0","motion":"idle"}, {"id":1,"p":[0,0,0],"yaw":0,"motion":"attack"}]:
+		check(not VillageLink.state(value), "network rejects malformed pose without unsafe variant comparison")
+	check(not VillageLink.point([32,0,0]) and not VillageLink.point([0,13,0]), "network pose is bounded to the welcome quarter")
+	check(VillageLink.plain("Bonjour [b]ami[/b]",240), "network plaintext can contain literal markup")
+	check(not VillageLink.plain("faux\nnom",240) and not VillageLink.plain("test\u202e",240) and not VillageLink.plain("test\u2028",240), "network rejects newlines and invisible formatting")
+	check(VillageLink.plain("😀".repeat(120),240) and not VillageLink.plain("😀".repeat(121),240), "chat length agrees with server UTF-16 bounds for emoji")
+	check(VillageLink.identity({"id":2,"name":"Genin","appearance":null}) and not VillageLink.identity({"id":2,"name":"Genin","appearance":{"hair":999}}), "remote appearance is either default or a complete bounded account appearance")
+	var account := CharacterAccountAPI.new()
+	account.profile = {"character":{"id":1}}
+	var link := VillageLink.new()
+	link.api = account
+	check(not link._accept({"type":"snapshot","frame":1,"players":[pose]}), "server frames require an authenticated welcome first")
+	check(not link._accept({"type":"welcome","protocol":"1","self":1,"spawn":[0,0.25,22],"radius":12}), "welcome rejects string protocol versions")
+	check(link._accept({"type":"welcome","protocol":1,"self":1,"spawn":[0,0.25,22],"radius":12}), "welcome binds presence to the current account")
+	check(not link._accept({"type":"snapshot","frame":1,"players":[pose,pose]}), "duplicate account IDs in a frame are refused")
+	check(not link._accept({"type":"error","code":123,"error":"test"}), "network error codes are type checked")
+	check(link._accept({"type":"snapshot","frame":5,"players":[pose]}) and link._accept({"type":"snapshot","frame":3,"players":[pose]}) and link.last_frame == 5, "older snapshots cannot rewind interpolation")
+	link.free()
+	account.free()

@@ -444,3 +444,22 @@ test("account removal and replacement keep the 20-seat deck across PostgreSQL po
     await second?.close();
   }
 });
+
+test("village WebSocket revocation and account removal work across PostgreSQL pools", async () => {
+  const { villageContract } = await import("./helpers/village-contract.js");
+  await cluster.createDatabase("idrem_village_test");
+  const old = process.env.DATABASE_URL;
+  const url = new URL(old);
+  url.pathname = "/idrem_village_test";
+  process.env.DATABASE_URL = url.toString();
+  let first, second;
+  try {
+    first = await openStore();
+    second = await openStore();
+    await villageContract(first, second);
+  } finally {
+    process.env.DATABASE_URL = old;
+    await first?.close();
+    await second?.close();
+  }
+});

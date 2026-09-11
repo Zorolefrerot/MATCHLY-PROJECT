@@ -2,9 +2,13 @@
 
 Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android avec entraînement, créateur, compte et première zone solo de Konoha](game/README.md) est disponible ; le jeu RP multijoueur connecté n’est pas encore réalisé.
 
+## Lot suivant — village partagé en validation
+
+Le propriétaire confirme **0.10 sur téléphone**. Les sources suivantes préparent deux joueurs admis visibles ensemble, marche/course/saut, reconnexion sans doublons et chat de proximité RP/HRP. **37 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite** passent ; le raccordement Godot est écrit, mais son exécution moteur et l’APK **0.11** restent à vérifier. Aucun combat réseau ou échange ajouté. Le site propose toujours **0.10**, pas une version non compilée. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
+
 ## Lot 0.10 — administration, téléchargement et musique
 
-Suppression protégée d’un compte accepté, panneau de téléchargement réservé aux admis et musique de village fournie réunis dans un seul lot. **31 tests Node, 9 tests PostgreSQL, 2 parcours navigateur et 238 assertions Godot** passent ; APK 0.10 signé et captures vérifiés. **Mettre à jour Render pour activer les boutons et le nouveau lien**, puis tester sur téléphone. Le multijoueur reste à implémenter. [Détails, téléchargement et limites](docs/AJOUTS_SITE_MUSIQUE.md).
+Suppression protégée d’un compte accepté, panneau de téléchargement réservé aux admis et musique de village fournie réunis dans un seul lot. **31 tests Node, 9 tests PostgreSQL, 2 parcours navigateur et 238 assertions Godot** passent ; APK 0.10 signé et captures vérifiés. **Fonctionnement de 0.10 confirmé par le propriétaire** ; l’agent n’a effectué ni déploiement de production ni suppression de compte réel. Le réseau est développé séparément dans le lot suivant. [Détails, téléchargement et limites](docs/AJOUTS_SITE_MUSIQUE.md).
 
 ## Déployer gratuitement depuis un téléphone
 
@@ -147,4 +151,4 @@ Après mise à jour du dépôt, lancer un déploiement manuel Render. Les réfé
 
 ## Prototype Android séparé
 
-Le projet Godot 4.5.1 dans [`game/`](game/README.md) sépare l’entraînement solo hors ligne du compte HTTPS Render/Neon. Le compte sauvegarde l’apparence et les étapes de la mission ; Konoha reste une visite solo, désormais avec la musique fournie. Le propriétaire a confirmé le fonctionnement de 0.9. **0.10 est compilé et vérifié techniquement, mais reste à essayer sur téléphone.** Le site propose aux joueurs acceptés le dernier installateur vérifié, après déploiement de sa mise à jour. Les détails, limites et liens temporaires sont dans le guide Android.
+Le projet Godot 4.5.1 dans [`game/`](game/README.md) sépare l’entraînement solo hors ligne du compte HTTPS Render/Neon. Le compte sauvegarde l’apparence et les étapes de la mission ; Konoha reste une visite solo, désormais avec la musique fournie. Le propriétaire a confirmé le fonctionnement de 0.9. **0.10 est compilé et confirmé fonctionnel sur téléphone par le propriétaire.** Le site propose aux joueurs acceptés le dernier installateur vérifié, après déploiement de sa mise à jour. Les détails, limites et liens temporaires sont dans le guide Android.

@@ -4,7 +4,7 @@
 
 ## Version 0.10 — musique de fond
 
-La musique fournie est maintenant incluse, en boucle et à volume de fond, avec commande **MUSIQUE : OUI/NON**. Pause en arrière-plan et arrêt en quittant Konoha vérifiés dans le moteur ; écoute sur téléphone encore à faire. Le quartier et la mission 0.9 restent conservés. [APK regroupé 0.10 et ajouts du site](AJOUTS_SITE_MUSIQUE.md).
+La musique fournie est maintenant incluse, en boucle et à volume de fond, avec commande **MUSIQUE : OUI/NON**. Pause en arrière-plan et arrêt en quittant Konoha vérifiés dans le moteur ; fonctionnement de 0.10 ensuite confirmé par le propriétaire sur téléphone. Le quartier et la mission 0.9 restent conservés. [APK regroupé 0.10 et ajouts du site](AJOUTS_SITE_MUSIQUE.md).
 
 ## Mission d’accueil 0.9
 
@@ -65,3 +65,8 @@ Le monument utilise les **quatre premiers visages** pour correspondre à l’ima
 La suppression de deux APK intermédiaires non livrées (artefacts des exécutions 7 et 8) a été tentée pour libérer du stockage, mais l’intégration GitHub l’a refusée avec **403**. **Aucune suppression par l’agent n’a abouti.** Les deux anciens artefacts ne figurent plus dans la liste consultée après l’apport des images ; leur suppression n’est pas attribuée à l’agent. Les versions livrées n’étaient pas visées. Le stockage restant approche le quota gratuit après cet APK : avant une prochaine compilation, revoir les anciens artefacts ou attendre leur expiration plutôt que multiplier les APK intermédiaires. Pas de modification des budgets ou du moyen de paiement ; rétention des artefacts toujours 7 jours.
 
 Pour le lot 0.9, le propriétaire a confirmé la suppression des anciens artefacts Android **4 et 5**, vérifiée via l’API GitHub. Aucun APK par petite tâche : la première tentative a échoué avant export, puis un seul APK final du lot a été publié.
+
+
+## Suite 0.11 en validation
+
+Les sources raccordent maintenant la présence partagée, les animations distantes et le chat RP/HRP. Pas encore d’APK réseau vérifiée ni d’essai à deux téléphones ; l’APK 0.10 conserve la visite locale et la mission personnelle. [État et limites](VILLAGE_PARTAGE.md).

@@ -129,3 +129,10 @@ Documentation des limites :
 | Réponse `403 Origine non autorisée` | Vérifier `PUBLIC_ORIGIN` si défini ; utiliser le domaine actuel du service |
 
 Pour demander de l’aide, copie uniquement l’erreur utile des journaux et masque les secrets et les adresses privées.
+
+
+## Prochain lot réseau 0.11 — ne pas confondre sources et APK vérifiée
+
+Le service Node existant reçoit WSS `/api/game/village` sur **le même port** que le site. Aucun second service, port public ou secret n’est nécessaire. Déploiement manuel sur la branche existante, après validation complète du lot et mise à jour de son lien de téléchargement. La 0.10 reste actuellement l’APK proposée.
+
+La salle est en mémoire dans **un seul processus** ; ne pas multiplier les instances en supposant qu’elles partagent la présence. Redémarrage/déploiement → reconnexion au point d’arrivée, mission personnelle conservée en base. Pas de base de positions ni de chat. Revalidation d’accès uniquement tant qu’il y a des participants, aucun appel Neon à vide. Gratuit ne veut pas dire disponibilité permanente ou trafic illimité. [Protocole, quotas, tests et limites](VILLAGE_PARTAGE.md).

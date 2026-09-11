@@ -9,7 +9,7 @@ report_check_failure() {
   python3 - "$LOG_DIR" <<'PYCODE'
 import pathlib, re, sys
 folder = pathlib.Path(sys.argv[1])
-for name in ['import.log', 'smoke.log']:
+for name in ['import.log', 'smoke.log', 'network.log']:
     path = folder / name
     if not path.exists(): continue
     text = re.sub(r'\x1b\[[0-9;]*m', '', path.read_text(errors='replace'))
@@ -34,3 +34,10 @@ if grep -E 'SCRIPT ERROR:|TEST FAILED:|ERROR:' "$LOG_DIR/smoke.log" || ! grep -q
 fi
 
 printf "::notice title=Godot simulation::%s assertions passed\n" "$(grep -c '^PASS:' "$LOG_DIR/smoke.log")"
+
+# The same-port network integration uses disposable SQLite + a local CA only.
+# No production DATABASE_URL, user credentials, or external multiplayer service.
+node -e 'require("node:sqlite")' # Node >=22.13, as required by the site.
+npm ci --no-audit --no-fund
+node game/tests/run-network.mjs 2>&1 | tee "$LOG_DIR/network.log"
+grep -q IDREM_NATIVE_WSS_SUCCESS "$LOG_DIR/network.log"

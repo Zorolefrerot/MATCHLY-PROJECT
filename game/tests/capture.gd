@@ -149,6 +149,35 @@ func run() -> void:
 	if not save_village_image(folder, "konoha-mission-network-error", 8):
 		quit(1)
 		return
+	# Explicit visual fixtures; real WSS is tested separately in village_network.gd.
+	game.village.resume_visit()
+	game.village.sync_error = ""
+	game.village.player.reset_at(KonohaMap.SPAWN)
+	game.village.yaw = 0
+	game.village.pitch = -0.08
+	var look: Dictionary = game.account_api.profile["appearance"].duplicate()
+	look["model"] = 0
+	look["hair"] = 2
+	look["top_color"] = 2
+	game.village._network_event({"type":"roster","players":[{"id":2,"name":"Ren · Profil de test","appearance":look}]})
+	game.village._network_event({"type":"snapshot","players":[{"id":2,"p":[2,0,18],"yaw":PI,"motion":"idle"}]})
+	game.village.hud.footer.text = "APERÇU VISUEL · Deux profils fictifs · Pas un test téléphone"
+	for frame in range(8):
+		await process_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder,"konoha-shared-fixture",9):
+		quit(1)
+		return
+	game.village.chat_panel.add_message({"id":"fixture-1","channel":"RP","name":"Ren · Profil de test","text":"Bonjour ! Tu viens découvrir Konoha ?"})
+	game.village.chat_panel.add_message({"id":"fixture-2","channel":"HRP","name":"Genin de test","text":"Oui, je teste le chat de proximité."})
+	game.village.chat_panel.set_network(true,"EXEMPLE VISUEL · Profils fictifs · Proximité 12 m")
+	game.village.open_chat()
+	for frame in range(4):
+		await process_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder,"konoha-chat-fixture",10):
+		quit(1)
+		return
 	game.village.finish()
 	await process_frame
 	print("IDREM_CAPTURE_SUCCESS")
@@ -158,7 +187,7 @@ func save_village_image(folder: String, filename: String, index: int) -> bool:
 	var image: Image = root.get_texture().get_image()
 	if image.save_png(folder.path_join(filename+".png")) != OK:
 		return false
-	if OS.get_environment("GITHUB_ACTIONS") == "true" and index in [0,6]:
+	if OS.get_environment("GITHUB_ACTIONS") == "true" and index in [9,10]:
 		# Two selected views × four parts maximum, below GitHub’s ten-notice step cap.
 		image.resize(480, 270, Image.INTERPOLATE_LANCZOS)
 		var encoded: String = Marshalls.raw_to_base64(image.save_jpg_to_buffer(0.45))

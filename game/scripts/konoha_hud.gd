@@ -18,7 +18,7 @@ func _build() -> void:
 	objective.add_theme_constant_override("shadow_offset_y", 2)
 	feedback = label("", 18)
 	feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer = label("PROTO 0.10 · Mission solo · Position non sauvegardée", 13)
+	footer = label("PROTO 0.11 · Mission personnelle · Position temporaire", 13)
 	footer.add_theme_color_override("font_color", Color("253b36"))
 	identity.clip_text = true
 	identity.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -26,6 +26,7 @@ func _build() -> void:
 	_button("PAUSE", "pause")
 	_button("JOURNAL", "journal")
 	_button("MUSIQUE : OUI", "music")
+	_button("CHAT RP / HRP", "chat")
 	_button("COURIR", "sprint")
 	_button("SAUT", "jump")
 	_button("PARLER / LIRE", "interact")
@@ -79,6 +80,8 @@ func _layout() -> void:
 	identity.size = Vector2(458,60)
 	buttons["music"].position = Vector2(20,108)
 	buttons["music"].size = Vector2(192,44)
+	buttons["chat"].position = Vector2(20,164)
+	buttons["chat"].size = Vector2(220,48)
 	buttons["journal"].position = Vector2(w-328,24)
 	buttons["journal"].size = Vector2(148,48)
 	buttons["pause"].position = Vector2(w-160,24)
