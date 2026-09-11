@@ -4,7 +4,7 @@ Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un
 
 ## Lot suivant — village partagé en validation
 
-Le propriétaire confirme **0.10 sur téléphone**. Les sources suivantes préparent deux joueurs admis visibles ensemble, marche/course/saut, reconnexion sans doublons et chat de proximité RP/HRP. **37 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite** passent ; le raccordement Godot est écrit, mais son exécution moteur et l’APK **0.11** restent à vérifier. Aucun combat réseau ou échange ajouté. Le site propose toujours **0.10**, pas une version non compilée. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
+Le propriétaire confirme **0.10 sur téléphone**. Les sources suivantes préparent deux joueurs admis visibles ensemble, marche/course/saut, reconnexion sans doublons et chat de proximité RP/HRP. **39 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite** passent ; le raccordement Godot est écrit, mais son exécution moteur et l’APK **0.11** restent à vérifier. Aucun combat réseau ou échange ajouté. Le site propose toujours **0.10**, pas une version non compilée. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
 
 ## Lot 0.10 — administration, téléchargement et musique
 

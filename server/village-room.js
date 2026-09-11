@@ -55,7 +55,9 @@ export class VillageRoom {
   join(identity, transport) {
     const previous = this.peers.get(identity.id);
     if (!previous && this.peers.size >= VILLAGE.capacity) {
-      transport.close(4003, "Village complet");
+      // Capacity can briefly include a departing/revoked player. Retry without
+      // telling an admitted client to erase its otherwise valid login.
+      transport.close(1013, "Village complet, réessaie bientôt");
       return null;
     }
     const now = this.now();
@@ -99,7 +101,11 @@ export class VillageRoom {
   }
   receive(peer, message) {
     if (!this.active(peer)) {
-      this.leave(peer, 4003, "Session à vérifier");
+      this.leave(
+        peer,
+        this.now() >= peer.expires ? 4003 : 1013,
+        "Session à vérifier",
+      );
       return;
     }
     const now = this.now();

@@ -56,6 +56,14 @@ Le client vide la saisie **après acquittement**. En cas de coupure ou délai, i
 - Client : au plus **50 messages reçus dans la RAM** de cette visite, détruits à la sortie. Pas de stockage sur disque. Les messages déjà vus restent consultables pendant la même visite, même après s’être éloigné.
 - Pas encore d’interface de signalement, de modération de chat ou de bannissement temporaire dédiée. L’administrateur conserve la suppression de compte protégée existante ; aucune suppression automatique pour inactivité ou propos.
 
+## Durcissement des connexions avant compilation
+
+- Les demandes WebSocket sur un chemin inconnu reçoivent 404 et sont fermées, plutôt que laisser des sockets ouverts sans gestionnaire. Le routage HMR éventuel reste délégué à un autre écouteur uniquement en développement.
+- Les en-têtes de session absents ou malformés sont refusés avant toute acquisition de connexion/verrou de base. Test avec un adaptateur interdisant tout accès DB.
+- Une salle momentanément pleine ou un bail non renouvelé utilise le code transitoire **1013**, même si un paquet arrive avant le prochain tick. Le client peut réessayer sans effacer une connexion de compte encore valable. Une véritable expiration reste **4003** ; les révocations vérifiées le restent également.
+- Contrats SQLite et PostgreSQL relancés : chemin inconnu, capacité puis départ, reprise, expiration et suppression restent couverts.
+- Les anciens artefacts Android 6 et 9 sont **toujours présents** lors du nouveau contrôle GitHub (total inchangé : 517 240 603 octets). Aucun effacement ou lancement de compilation effectué. L’essai d’accès à un miroir du binaire Godot a également échoué ; aucune validation native supplémentaire n’est prétendue.
+
 ## Application
 
 `VillageLink` utilise le WSS de l’origine HTTPS du compte, la vérification TLS normale et un jeton en RAM. Aucun mode TLS non sûr dans le code de production. La confiance dans un certificat local n’existe que dans la sous-classe de test, exclue de l’APK.
@@ -70,7 +78,7 @@ Perte de focus → fermeture ; retour → reconnexion. Coupure transitoire → t
 
 ### Effectuée localement
 
-- **37 tests Node** : contrats HTTP précédents conservés, tests déterministes de salle et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
+- **39 tests Node** : contrats HTTP précédents conservés, tests déterministes de salle et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
 - **10 tests PostgreSQL réel jetable**, dont le contrat réseau avec mutations depuis un deuxième pool.
 - **2 parcours Playwright** et Vite réussis après `npm ci` : les fonctions du site et le téléchargement 0.10 sont conservés.
 - Analyse statique GDScript sans nouvelle erreur ; seul le faux positif historique de géométrie `PackedVector3Array` reste inchangé. Ce n’est pas une exécution du moteur.

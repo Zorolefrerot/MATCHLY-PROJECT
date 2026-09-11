@@ -93,6 +93,7 @@ export async function villageContract(db, secondDb = db) {
   const clients = [];
   const connect = (token, headers = {}, suffix = "") => {
     const ws = new WebSocket(url + suffix, {
+      handshakeTimeout: 4000,
       headers: {
         "X-Forwarded-Proto": "https",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -146,6 +147,7 @@ export async function villageContract(db, secondDb = db) {
     await denied(tokens[0], 403, { Origin: "https://foreign.test" });
     await denied(tokens[0], 403, { "X-Forwarded-Proto": "http" });
     await denied(tokens[0], 400, {}, `?token=${tokens[0]}`);
+    await denied(tokens[0], 404, {}, "/unknown");
     const a = connect(tokens[0]),
       b = connect(tokens[1]);
     assert.equal((await a.wait("welcome")).self, ids[0]);

@@ -158,6 +158,10 @@ test("finite/strict packets, flood ceiling, expiry, capacity and shutdown fail c
   for (let i = 0; i < 20; i++) join(i + 10);
   const excess = join(99);
   assert.equal(excess.peer, null);
+  assert.equal(excess.closes[0][0], 1013);
+  room.leave(room.peers.get(10));
+  assert.ok(join(99).peer);
+  assert.equal(room.peers.size, 20);
   room.close();
   assert.equal(room.peers.size, 0);
 });
@@ -192,5 +196,19 @@ test("inactivity idles then removes presence; respawn and UTF-16 text limits rem
   advance(15001);
   room.tick();
   assert.equal(a.closes.at(-1)[0], 4000);
+  assert.equal(room.peers.size, 0);
+});
+
+test("lease loss is retryable even when a packet precedes the next tick; expiry remains terminal", () => {
+  const { room, join, advance } = fixture();
+  const a = join(1),
+    b = join(2);
+  advance(VILLAGE.leaseMs);
+  room.receive(a.peer, move(0, [0, 0.25, 22]));
+  assert.equal(a.closes.at(-1)[0], 1013);
+  assert.equal(room.peers.has(1), false);
+  b.peer.expires = 0;
+  room.receive(b.peer, move(0, [0, 0.25, 22]));
+  assert.equal(b.closes.at(-1)[0], 4003);
   assert.equal(room.peers.size, 0);
 });

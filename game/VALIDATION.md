@@ -2,7 +2,7 @@
 
 ## Lot suivant 0.11 — sources en validation, aucun nouvel APK
 
-Le propriétaire confirme que **0.10 fonctionne sur son téléphone**, puis autorise la suite. Présence, mouvements, reconnexion et chat de proximité raccordés côté serveur et Godot. **37 tests Node, 10 tests PostgreSQL, 2 parcours Playwright et Vite** réussis localement après installation verrouillée. Analyse GDScript sans nouvelle erreur, faux positif historique de géométrie inchangé.
+Le propriétaire confirme que **0.10 fonctionne sur son téléphone**, puis autorise la suite. Présence, mouvements, reconnexion et chat de proximité raccordés côté serveur et Godot. **39 tests Node, 10 tests PostgreSQL, 2 parcours Playwright et Vite** réussis localement après installation verrouillée. Analyse GDScript sans nouvelle erreur, faux positif historique de géométrie inchangé.
 
 **Les nouveaux tests moteur, le scénario WSS Node ↔ deux visites Godot, les captures 0.11 et l’export Android ne sont pas encore exécutés.** Ils précèdent la prochaine APK regroupée. Libérer d’abord de la place parmi les anciens artefacts GitHub ; aucun budget, fichier de workflow ou compte réel modifié. [Contrat et plan de validation](../docs/VILLAGE_PARTAGE.md).
 

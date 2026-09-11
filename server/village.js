@@ -65,8 +65,14 @@ export function installVillage(
       );
   };
   const upgrade = async (req, socket, head) => {
-    if (req.url?.split("?")[0] !== "/api/game/village") return;
     socket.on("error", () => {}); // Never log raw headers, tokens or payloads.
+    if (req.url?.split("?")[0] !== "/api/game/village") {
+      // A registered upgrade listener disables Node's default socket disposal.
+      // Do not leave unknown upgrade paths open indefinitely in production.
+      // Only let another development listener handle its own HMR connection.
+      if (!production && server.listenerCount("upgrade") > 1) return;
+      return reject(socket, "404 Not Found");
+    }
     if (stopped) return reject(socket, "503 Service Unavailable");
     // Match the existing single trusted Render reverse proxy configuration.
     if (
@@ -84,6 +90,9 @@ export function installVillage(
       if (req.headers.origin !== expected)
         return reject(socket, "403 Forbidden");
     }
+    // Missing/malformed native credentials need no database connection or lock.
+    if (!/^Bearer [a-f0-9]{64}$/.test(req.headers.authorization || ""))
+      return reject(socket, "401 Unauthorized");
     const address = socket.remoteAddress || "unknown";
     const now = Date.now();
     for (const [key, entry] of attempts)
