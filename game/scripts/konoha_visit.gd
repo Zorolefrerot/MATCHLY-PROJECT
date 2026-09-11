@@ -367,6 +367,7 @@ func finish() -> void:
 	if is_instance_valid(village_link): village_link.stop()
 	if is_instance_valid(music):
 		music.stop()
+		music.stream = null
 	_clear_inputs()
 	if is_instance_valid(viewport):
 		viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED

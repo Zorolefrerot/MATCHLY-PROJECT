@@ -14,7 +14,7 @@ for name in ['import.log', 'smoke.log', 'network.log']:
     if not path.exists(): continue
     text = re.sub(r'\x1b\[[0-9;]*m', '', path.read_text(errors='replace'))
     lines = text.splitlines()
-    selected = [line for line in lines if any(key in line for key in ['ERROR:', 'Parse Error:', 'TEST FAILED:', 'IDREM_SMOKE', 'Leaked instance', 'Resource still in use', 'Orphan StringName'])]
+    selected = [line for line in lines if any(key in line for key in ['ERROR:', 'Parse Error:', 'TEST FAILED:', 'IDREM_SMOKE', 'IDREM_VILLAGE', 'IDREM_NATIVE', 'Leaked instance', 'Resource still in use', 'Orphan StringName'])]
     message = '\n'.join(selected or lines[-15:])[-12000:]
     message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
     print(f'::error title={name}::' + message)

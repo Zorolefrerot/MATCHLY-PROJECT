@@ -170,6 +170,7 @@ try {
     process.env.GODOT_BIN || "godot",
     [
       "--headless",
+      "--verbose",
       "--audio-driver",
       "Dummy",
       "--path",

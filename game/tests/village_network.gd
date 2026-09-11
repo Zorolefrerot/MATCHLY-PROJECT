@@ -19,6 +19,7 @@ class NetworkVisit extends KonohaVisit:
 		return TrustedFixtureLink.new()
 
 var failures: int = 0
+var finishing: bool = false
 var fixture: Dictionary
 var visits: Array[KonohaVisit] = []
 
@@ -53,8 +54,19 @@ func join_player(index: int) -> KonohaVisit:
 	return visit
 
 func finish() -> void:
+	if finishing: return
+	finishing = true
+	call_deferred("_shutdown")
+
+func _shutdown() -> void:
 	for visit in visits:
 		visit.finish()
+		visit.api.queue_free()
+		visit.queue_free()
+	visits.clear()
+	await process_frame
+	# Let the audio mixer retire the village Ogg playbacks after node disposal.
+	await create_timer(0.15,true).timeout
 	print("IDREM_VILLAGE_NETWORK_FAILURES=%d" % failures)
 	quit(0 if failures == 0 else 1)
 
