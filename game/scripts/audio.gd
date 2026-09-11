@@ -112,3 +112,11 @@ func play_sfx(cue: String) -> bool:
 	voice.play()
 	play_count += 1
 	return true
+
+func _exit_tree() -> void:
+	# Release the pool's stream references as well as stopping playback. The
+	# audio mixer retires stopped playback objects on its following mix cycles.
+	stop_round()
+	for voice in voices:
+		if is_instance_valid(voice): voice.stream = null
+	if is_instance_valid(music): music.stream = null

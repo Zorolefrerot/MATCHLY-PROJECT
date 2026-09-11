@@ -705,6 +705,9 @@ func run() -> void:
 	await preload("res://tests/ultimate_checks.gd").run(game,self,check)
 	game.queue_free()
 	await process_frame
+	# The final ultimate test ends directly after sound playback; allow the
+	# Dummy mixer to retire stopped voices before SceneTree shutdown.
+	await create_timer(0.15,true).timeout
 	print("IDREM_SMOKE_FAILURES=%d" % failures)
 	quit(0 if failures == 0 else 1)
 
