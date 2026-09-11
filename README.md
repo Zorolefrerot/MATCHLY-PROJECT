@@ -1,10 +1,12 @@
 # IDREM ZENKAI
 
+**Ajout au lot regroupé 0.11 :** attaques enrichies d’images/textures et laboratoire de quatorze ultimes monumentales avec niveau simulé, sans changer les comptes. [Détails et limites](docs/ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
+
 Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android avec entraînement, créateur, compte et première zone solo de Konoha](game/README.md) est disponible ; le jeu RP multijoueur connecté n’est pas encore réalisé.
 
 ## Lot suivant — village partagé en validation
 
-Le propriétaire confirme **0.10 sur téléphone**. Les sources suivantes préparent deux joueurs admis visibles ensemble, marche/course/saut, reconnexion sans doublons et chat de proximité RP/HRP. **39 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite** passent ; le raccordement Godot est écrit, mais son exécution moteur et l’APK **0.11** restent à vérifier. Aucun combat réseau ou échange ajouté. Le site propose toujours **0.10**, pas une version non compilée. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
+Le propriétaire confirme **0.10 sur téléphone**. Les sources suivantes préparent deux joueurs admis visibles ensemble, marche/course/saut, reconnexion sans doublons et chat de proximité RP/HRP. **41 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite** passent ; le raccordement Godot est écrit, mais son exécution moteur et l’APK **0.11** restent à vérifier. Aucun combat réseau ou échange ajouté. Le site propose toujours **0.10**, pas une version non compilée. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
 
 ## Lot 0.10 — administration, téléchargement et musique
 

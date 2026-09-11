@@ -1,6 +1,6 @@
 class_name TrainingVFX
 extends Node3D
-## Short world-space meshes: no full-screen flashes, lights, or expensive emitters.
+## Textured world-space attacks; bounded layers, no screen flashes or emitters.
 const MAX_GROUPS: int = 14
 var standard: bool = false
 var random := RandomNumberGenerator.new()
@@ -51,10 +51,21 @@ func _ring(group: Node3D, radius: float, color: Color) -> MeshInstance3D:
 	mesh.ring_segments = 4
 	return _mesh(group, mesh, color)
 
+func textured(group: Node3D, cell: int, color: Color, lifetime: float, scale_factor: float = 1.0) -> void:
+	if group == null: return
+	var effect := TrainingSpectacle.new()
+	effect.motif = cell
+	effect.tint = color
+	effect.accent = color.lightened(0.35)
+	effect.duration = lifetime
+	effect.magnitude = scale_factor
+	group.add_child(effect)
+
 func impact(point: Vector3, color: Color, radius: float = 1.0) -> void:
-	var group := _group(point, 0.38)
+	var group := _group(point, 1.85)
 	if group == null:
 		return
+	textured(group,9,color,1.8,clampf(radius,0.35,1.1))
 	for i in range(7 if standard else 4):
 		var shape := BoxMesh.new()
 		shape.size = Vector3(0.065, 0.065, 0.24)
@@ -84,10 +95,11 @@ func fire_trail(point: Vector3, direction: Vector3) -> void:
 	group.add_child(flame)
 
 func fire_impact(point: Vector3, direction: Vector3) -> void:
-	var group := _group(point, 0.60)
+	var group := _group(point, 2.0)
 	if group == null:
 		return
 	var flame := TrainingFlame.new()
+	textured(group,9,Color("ff7d46"),1.95,1.1)
 	flame.style = TrainingFlame.Style.IMPACT
 	flame.direction = direction
 	group.add_child(flame)
@@ -96,7 +108,7 @@ func fire_impact(point: Vector3, direction: Vector3) -> void:
 func lightning(from: Vector3, to: Vector3, _color: Color) -> void:
 	if from.distance_squared_to(to) < 0.0001:
 		return
-	var group := _group(from, TrainingBolt.LIFETIME + 0.02)
+	var group := _group(from, 1.85)
 	if group == null:
 		return
 	var bolt := TrainingBolt.new()
@@ -104,11 +116,16 @@ func lightning(from: Vector3, to: Vector3, _color: Color) -> void:
 	bolt.standard = standard
 	bolt.seed_value = random.randi()
 	group.add_child(bolt)
+	var endpoint := Node3D.new()
+	endpoint.position = to-from
+	group.add_child(endpoint)
+	textured(endpoint,14,Color("96d9ff"),1.8,0.95)
 
 func wind(point: Vector3, direction: Vector3, color: Color) -> void:
-	var group := _group(point, 0.45)
+	var group := _group(point, 1.95)
 	if group == null:
 		return
+	textured(group,15,color,1.9,1.15)
 	group.quaternion = Quaternion(Vector3.UP, direction.normalized())
 	for i in range(3):
 		var ring := _ring(group, 0.42 + i*0.22, color)
@@ -118,9 +135,10 @@ func wind(point: Vector3, direction: Vector3, color: Color) -> void:
 		motion.tween_property(ring, "scale", Vector3.ONE * 1.8, 0.40)
 
 func earth(point: Vector3) -> void:
-	var group := _group(point, 0.75)
+	var group := _group(point, 2.25)
 	if group == null:
 		return
+	textured(group,2,Color("d2b48a"),2.2,1.35)
 	var ring := _ring(group, 0.6, Color("f2ce88"))
 	ring.position.y = 0.03
 	var expansion := create_tween().bind_node(group)
@@ -142,9 +160,10 @@ func earth(point: Vector3) -> void:
 		motion.tween_property(rock, "scale", Vector3.ONE * 0.02, 0.3)
 
 func slash(point: Vector3, forward: Vector3) -> void:
-	var group := _group(point, 0.18)
+	var group := _group(point, 0.8)
 	if group == null:
 		return
+	textured(group,13,Color("dfecda"),0.75,0.42)
 	var side: Vector3 = forward.cross(Vector3.UP).normalized()
 	var last: Vector3 = forward * 0.35 - side * 0.55
 	for i in range(1, 6):

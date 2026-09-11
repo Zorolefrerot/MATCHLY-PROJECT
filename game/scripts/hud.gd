@@ -150,6 +150,8 @@ func _build() -> void:
 	_button("ESQUIVE\nCtrl", "dodge")
 	_button("SAUT\nEspace", "jump")
 	_button("COURIR", "sprint")
+	_button("ULTIME\nR · 70 chakra", "ultimate")
+	_button("RÉGLER ULTIME", "ultimate_setup")
 	for i in range(4):
 		var data: Dictionary = TrainingRules.SKILLS[i]
 		var button: Button = _button("%s\n%d chakra" % [data["name"], int(data["cost"])], "skill_%d" % i)
@@ -277,6 +279,10 @@ func _layout() -> void:
 	target_text.size = Vector2(260, 24)
 	target_bar.position = Vector2(width / 2.0 - 130, 127)
 	target_bar.size = Vector2(260, 8)
+	buttons["ultimate"].position = Vector2(width-214,height-306)
+	buttons["ultimate"].size = Vector2(182,76)
+	buttons["ultimate_setup"].position = Vector2(width-204,176)
+	buttons["ultimate_setup"].size = Vector2(172,44)
 	buttons["pause"].position = Vector2(width - 152, 28)
 	buttons["pause"].size = Vector2(120, 45)
 	buttons["lock"].position = Vector2(width - 152, 83)
@@ -414,3 +420,14 @@ func hide_menu() -> void:
 	overlay.hide()
 	reset_input()
 	queue_redraw()
+
+
+func refresh_ultimate(ultimate: TrainingUltimateRules) -> void:
+	var data: Dictionary = ultimate.definition()
+	buttons["ultimate"].text = "ULTIME\n%.0f s" % ultimate.cooldown if ultimate.cooldown > 0.001 else "ULTIME\nR · 70 chakra"
+	buttons["ultimate"].add_theme_color_override("font_color",data["color"])
+	footer.text = "SIMULATION · %s · Niveau %d · Aucun pouvoir attribué au compte" % [data["clan"],ultimate.level]
+	if ultimate.remaining > 0:
+		objective.text = "%s\n%s" % [data["name"],"CONCENTRATION" if ultimate.impact_pending else "DÉCHAÎNEMENT" if ultimate.remaining > 2.4 else "DISSIPATION"]
+	else:
+		objective.text = "PREMIERS PAS\nVaincs l’adversaire d’entraînement."

@@ -1,10 +1,12 @@
 # IDREM ZENKAI — Prototype d’entraînement Android
 
+**Ajout au lot regroupé 0.11 :** attaques enrichies d’images/textures et laboratoire de quatorze ultimes monumentales avec niveau simulé, sans changer les comptes. [Détails et limites](../docs/ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
+
 Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
 ## Sources 0.11 — village partagé, validation moteur à faire
 
-Deux comptes admis, avatars avec apparence sauvegardée, marche/course/saut et chat de proximité **RP/HRP** sont raccordés en code via le même serveur HTTPS/WSS. Reconnexion et départ gérés, sans combat ni économie réseau. **39 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite passent.** Les tests natifs de protocole et le scénario à deux clients Godot sont préparés, **pas encore exécutés**. Pas d’APK 0.11 annoncée. [Détails et limites](../docs/VILLAGE_PARTAGE.md).
+Deux comptes admis, avatars avec apparence sauvegardée, marche/course/saut et chat de proximité **RP/HRP** sont raccordés en code via le même serveur HTTPS/WSS. Reconnexion et départ gérés, sans combat ni économie réseau. **41 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite passent.** Les tests natifs de protocole et le scénario à deux clients Godot sont préparés, **pas encore exécutés**. Pas d’APK 0.11 annoncée. [Détails et limites](../docs/VILLAGE_PARTAGE.md).
 
 Le propriétaire confirme **0.10 fonctionnelle sur son téléphone**. Cette version demeure la seule proposée au téléchargement jusqu’à validation complète du lot réseau.
 

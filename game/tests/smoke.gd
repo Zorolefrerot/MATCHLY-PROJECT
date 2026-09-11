@@ -338,14 +338,14 @@ func run() -> void:
 	for i in range(80):
 		game.vfx.impact(Vector3.ZERO, Color.WHITE)
 	check(game.vfx.get_child_count() <= TrainingVFX.MAX_GROUPS, "effect bursts have a strict simultaneous group budget")
-	for i in range(35):
+	for i in range(125):
 		await physics_frame
-	check(game.vfx.get_child_count() == 0, "short-lived effects are cleaned up automatically")
+	check(game.vfx.get_child_count() == 0, "longer textured impacts are cleaned up automatically")
 	game.vfx.fire_impact(Vector3.ZERO, Vector3.FORWARD)
 	check(game.vfx.get_child_count() > 0, "fire collision can create a short flame bloom")
-	for i in range(42):
+	for i in range(135):
 		await physics_frame
-	check(game.vfx.get_child_count() == 0, "fire impact and embers fully disappear after their short lifetime")
+	check(game.vfx.get_child_count() == 0, "fire impact textures and embers fully disappear after their extended lifetime")
 	game.vfx.earth(Vector3.ZERO)
 	game.start_round()
 	await process_frame
@@ -702,6 +702,7 @@ func run() -> void:
 	game.handle_action("pause")
 	check(not game.account_panel.visible and game.hud.visible and paused, "back from account returns to the paused offline menu")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(game.account_panel.origin_config_path))
+	await preload("res://tests/ultimate_checks.gd").run(game,self,check)
 	game.queue_free()
 	await process_frame
 	print("IDREM_SMOKE_FAILURES=%d" % failures)

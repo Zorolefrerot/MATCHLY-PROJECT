@@ -46,6 +46,31 @@ func run() -> void:
 		if rendered.save_png(folder.path_join("training-technique-%d.png" % skill)) != OK:
 			quit(1)
 			return
+	# Gameplay-driven ultimate capture, not a composited image.
+	game.start_round()
+	game.enemy_enabled = false
+	game.player.reset_at(Vector3(0,0.2,6))
+	game.enemy.reset_at(Vector3(0,0.2,-5))
+	game.ultimate.set_demo(12,25)
+	game.target_locked = true
+	for frame in range(8): await physics_frame
+	if not game.cast_ultimate():
+		push_error("Unable to cast ultimate for capture")
+		quit(1)
+		return
+	for frame in range(130): await physics_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder,"ultimate-giant-gameplay",11):
+		quit(1)
+		return
+	game.open_ultimate_lab()
+	await process_frame
+	await RenderingServer.frame_post_draw
+	if not save_village_image(folder,"ultimate-laboratory",12):
+		quit(1)
+		return
+	game.close_ultimate_lab()
+	game.start_round()
 	game.pause_round()
 	await process_frame
 	await RenderingServer.frame_post_draw
@@ -187,13 +212,16 @@ func save_village_image(folder: String, filename: String, index: int) -> bool:
 	var image: Image = root.get_texture().get_image()
 	if image.save_png(folder.path_join(filename+".png")) != OK:
 		return false
-	if OS.get_environment("GITHUB_ACTIONS") == "true" and index in [9,10]:
-		# Two selected views × four parts maximum, below GitHub’s ten-notice step cap.
-		image.resize(480, 270, Image.INTERPOLATE_LANCZOS)
+	if OS.get_environment("GITHUB_ACTIONS") == "true" and index in [9,10,11]:
+		# Three inspected views, at most three chunks each (nine notices).
+		image.resize(400, 225, Image.INTERPOLATE_LANCZOS)
 		var encoded: String = Marshalls.raw_to_base64(image.save_jpg_to_buffer(0.45))
-		if encoded.length() > 14000:
-			encoded = Marshalls.raw_to_base64(image.save_jpg_to_buffer(0.25))
-		if encoded.length() <= 14000:
+		if encoded.length() > 10500:
+			encoded = Marshalls.raw_to_base64(image.save_jpg_to_buffer(0.18))
+		if encoded.length() > 10500:
+			image.resize(320,180,Image.INTERPOLATE_LANCZOS)
+			encoded = Marshalls.raw_to_base64(image.save_jpg_to_buffer(0.20))
+		if encoded.length() <= 10500:
 			var parts: int = ceili(float(encoded.length()) / 3500.0)
 			for part in range(parts):
 				print("::notice title=Konoha QA %d JPEG part %d of %d::%s" % [index, part, parts, encoded.substr(part*3500, 3500)])

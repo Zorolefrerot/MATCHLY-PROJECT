@@ -15,6 +15,12 @@ var player: TrainingFighter
 var enemy: TrainingFighter
 var hud: TrainingHUD
 var rules := TrainingRules.new()
+var ultimate := TrainingUltimateRules.new()
+var ultimate_lab: UltimateLab
+var ultimate_visual: TrainingSpectacle
+var ultimate_marker: MeshInstance3D
+var ultimate_center := Vector3.ZERO
+var ultimate_origin := Vector3.ZERO
 var pivot: Node3D
 var arm: SpringArm3D
 var camera: Camera3D
@@ -81,6 +87,14 @@ func _ready() -> void:
 	hud = TrainingHUD.new()
 	layer.add_child(hud)
 	hud.action_requested.connect(handle_action)
+	ultimate_lab = UltimateLab.new()
+	layer.add_child(ultimate_lab)
+	ultimate_lab.closed.connect(close_ultimate_lab)
+	ultimate_lab.selected.connect(func(index: int, level: int) -> void:
+		if ultimate.set_demo(index,level):
+			close_ultimate_lab()
+			hud.notice("Simulation modifiée. Ton vrai clan et ton compte sont inchangés.")
+	)
 	hud.resume_requested.connect(_resume)
 	var creator_layer := CanvasLayer.new()
 	creator_layer.layer = 20
@@ -135,7 +149,7 @@ func _register_inputs() -> void:
 		"move_forward": [KEY_W, KEY_Z, KEY_UP], "move_back": [KEY_S, KEY_DOWN],
 		"move_left": [KEY_A, KEY_Q, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
 		"jump": [KEY_SPACE], "sprint": [KEY_SHIFT], "dodge": [KEY_CTRL, KEY_X],
-		"melee": [KEY_F], "lock": [KEY_TAB],
+		"melee": [KEY_F], "lock": [KEY_TAB], "ultimate": [KEY_R],
 		"skill_0": [KEY_1], "skill_1": [KEY_2], "skill_2": [KEY_3], "skill_3": [KEY_4]
 	}
 	for action in bindings:
@@ -174,6 +188,10 @@ func start_round() -> void:
 	projectiles.clear()
 	zones.clear()
 	rules.reset()
+	ultimate.reset()
+	ultimate_visual = null
+	ultimate_marker = null
+	camera.fov = 65
 	_reset_positions()
 	elapsed = 0
 	casts_landed = 0
@@ -271,6 +289,9 @@ func _leave_village() -> void:
 	get_tree().paused = true
 
 func _notification(what: int) -> void:
+	if is_instance_valid(ultimate_lab) and ultimate_lab.visible:
+		if what == NOTIFICATION_WM_GO_BACK_REQUEST: close_ultimate_lab()
+		return
 	if village != null:
 		if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 			village.pause_visit()
@@ -292,6 +313,9 @@ func _notification(what: int) -> void:
 		pause_round()
 
 func handle_action(action: String) -> void:
+	if is_instance_valid(ultimate_lab) and ultimate_lab.visible:
+		if action == "pause": close_ultimate_lab()
+		return
 	if village != null:
 		if action == "pause":
 			village.toggle_pause()
@@ -325,6 +349,10 @@ func handle_action(action: String) -> void:
 		hud.notice("Cible verrouillée. DOTON reste en visée au sol." if target_locked else "Visée libre : glisse à droite pour orienter la caméra.")
 	elif action == "melee":
 		melee()
+	elif action == "ultimate":
+		cast_ultimate()
+	elif action == "ultimate_setup":
+		open_ultimate_lab()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -356,7 +384,7 @@ func _physics_process(delta: float) -> void:
 			yaw = lerp_angle(yaw, atan2(-to_enemy.x, -to_enemy.z), minf(1, delta * 5.0))
 	pivot.rotation.y = yaw
 	arm.rotation.x = pitch
-	for action in ["jump", "dodge", "melee", "lock", "skill_0", "skill_1", "skill_2", "skill_3"]:
+	for action in ["jump", "dodge", "melee", "lock", "skill_0", "skill_1", "skill_2", "skill_3", "ultimate"]:
 		if Input.is_action_just_pressed(action):
 			handle_action(action)
 	player.simulate(delta, _movement(), hud.sprinting or Input.is_action_pressed("sprint"))
@@ -364,6 +392,7 @@ func _physics_process(delta: float) -> void:
 	_update_enemy(delta)
 	_update_projectiles(delta)
 	_update_zones(delta)
+	_tick_ultimate(delta)
 	enemy.ring.visible = target_locked
 	if player.position.y < -5:
 		player.position = Vector3(0, 1, 6)
@@ -372,9 +401,11 @@ func _physics_process(delta: float) -> void:
 		enemy.position = Vector3(0, 1, -6)
 		enemy.velocity = Vector3.ZERO
 	hud.refresh(player, enemy, rules, target_locked, elapsed)
+	hud.refresh_ultimate(ultimate)
+	camera.fov = lerpf(camera.fov,75.0 if ultimate.remaining > 0 else 65.0,minf(1,delta*2.0))
 	if player.health <= 0:
 		_finish(false)
-	elif enemy.health <= 0:
+	elif enemy.health <= 0 and ultimate.remaining <= 0:
 		_finish(true)
 
 func _update_enemy(delta: float) -> void:
@@ -581,9 +612,87 @@ func _beam(from: Vector3, to: Vector3, color: Color) -> void:
 	vfx.lightning(from, to, color)
 
 func _finish(victory: bool) -> void:
+	ultimate.cancel()
+	if is_instance_valid(ultimate_marker): ultimate_marker.queue_free()
+	ultimate_marker = null
+	if is_instance_valid(ultimate_visual): ultimate_visual.queue_free()
+	ultimate_visual = null
+	camera.fov = 65
 	audio.stop_round()
 	round_over = true
 	get_tree().paused = true
 	var title: String = "Premier entraînement réussi." if victory else "Hors de combat, pas hors jeu."
 	var text: String = "%d techniques lancées · %d impacts · %d secondes\nAucune récompense en ligne : cette arène sert à tester." % [rules.casts, casts_landed, int(elapsed)]
 	hud.show_menu(title, text, "REJOUER L’ENTRAÎNEMENT", false)
+
+
+func open_ultimate_lab() -> void:
+	if village != null or not running or round_over:
+		return
+	get_tree().paused = true
+	audio.set_suspended(true)
+	hud.blocked = true
+	hud.reset_input()
+	hud.queue_redraw()
+	ultimate_lab.open(ultimate)
+
+func close_ultimate_lab() -> void:
+	ultimate_lab.hide()
+	hud.reset_input()
+	hud.hide_menu()
+	get_tree().paused = false
+	audio.set_suspended(false)
+
+func cast_ultimate() -> bool:
+	if village != null or not running or round_over or get_tree().paused:
+		return false
+	var reason: String = ultimate.refusal(rules.chakra)
+	if not reason.is_empty():
+		hud.notice(reason)
+		return false
+	var point: Vector3 = enemy.position if target_locked and enemy.health > 0 else _ground_aim()
+	point.y = maxf(0.05,point.y)
+	var origin: Vector3 = player.position+Vector3.UP
+	if point.distance_to(player.position) > 20 or not _ultimate_clear(origin,point+Vector3.UP):
+		hud.notice("Ultime : vise une zone visible à moins de 20 mètres.")
+		return false
+	if not ultimate.begin(rules.chakra): return false
+	rules.chakra -= TrainingUltimateRules.COST
+	rules.enter_combat()
+	rules.casts += 1
+	ultimate_center = point
+	ultimate_origin = origin
+	ultimate_visual = TrainingSpectacle.new()
+	var data: Dictionary = ultimate.definition()
+	ultimate_visual.monumental = true
+	ultimate_visual.standard = vfx.standard
+	ultimate_visual.motif = int(data["motif"])
+	ultimate_visual.tint = data["color"]
+	ultimate_visual.accent = data["accent"]
+	ultimate_visual.magnitude = ultimate.magnitude()
+	ultimate_visual.position = point
+	ultimate_marker = _disc(point+Vector3.UP*0.07,ultimate.radius(),Color(data["color"],0.32))
+	effects.add_child(ultimate_visual)
+	player.face(point-player.position)
+	player.strike_remaining = 0.8
+	audio.play_sfx("warning")
+	hud.notice("%s · Niveau de simulation %d" % [data["name"],ultimate.level])
+	return true
+
+func _ultimate_clear(from: Vector3, to: Vector3) -> bool:
+	if from.distance_squared_to(to) < 0.001: return true
+	var ray := PhysicsRayQueryParameters3D.create(from,to,1)
+	return get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
+
+func _tick_ultimate(delta: float) -> void:
+	if not ultimate.tick(delta): return
+	if is_instance_valid(ultimate_marker): ultimate_marker.queue_free()
+	ultimate_marker = null
+	var data: Dictionary = ultimate.definition()
+	audio.play_sfx(data["sound"])
+	var offset: Vector3 = enemy.position-ultimate_center
+	var in_range: bool = Vector2(offset.x,offset.z).length() <= ultimate.radius() and absf(offset.y) < 3
+	if enemy.health > 0 and player.health > 0 and in_range and _ultimate_clear(ultimate_origin,enemy.position+Vector3.UP) and _ultimate_clear(ultimate_center+Vector3.UP,enemy.position+Vector3.UP):
+		_hit_enemy(ultimate.damage(),offset.normalized()*3,data["color"])
+	else:
+		hud.notice("Ultime esquivée ou bloquée : le spectacle n’ajoute aucun dégât fictif.")

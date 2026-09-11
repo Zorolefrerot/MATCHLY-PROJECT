@@ -1,5 +1,7 @@
 # Lot suivant — première présence partagée à Konoha
 
+**Ajout au lot regroupé 0.11 :** attaques enrichies d’images/textures et laboratoire de quatorze ultimes monumentales avec niveau simulé, sans changer les comptes. [Détails et limites](ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
+
 **11 septembre 2026 : sources 0.11 en validation, pas d’APK 0.11 livrée.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**, puis demande de poursuivre le lot réseau déjà convenu. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés.
 
 ## Périmètre
@@ -78,7 +80,7 @@ Perte de focus → fermeture ; retour → reconnexion. Coupure transitoire → t
 
 ### Effectuée localement
 
-- **39 tests Node** : contrats HTTP précédents conservés, tests déterministes de salle et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
+- **41 tests Node** : contrats HTTP précédents conservés, tests déterministes de salle et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
 - **10 tests PostgreSQL réel jetable**, dont le contrat réseau avec mutations depuis un deuxième pool.
 - **2 parcours Playwright** et Vite réussis après `npm ci` : les fonctions du site et le téléchargement 0.10 sont conservés.
 - Analyse statique GDScript sans nouvelle erreur ; seul le faux positif historique de géométrie `PackedVector3Array` reste inchangé. Ce n’est pas une exécution du moteur.

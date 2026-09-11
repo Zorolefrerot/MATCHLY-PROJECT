@@ -7,3 +7,7 @@
 - Tout est placé dans le monde 3D, soumis à la profondeur et sans ombre. Pas d’éclaircissement plein écran ni de secousse de caméra. Les groupes secondaires restent plafonnés à 14.
 
 Les sons, les dégâts, les coûts, les recharges et les collisions ne sont pas pilotés par ces visuels. `training.gd` conserve la durée et la vitesse du projectile, ainsi que le rayon instantané du Raiton. Une animation d’éclair ne frappe donc jamais plusieurs fois.
+
+## Ajout 0.11
+
+Les effets historiques ci-dessus sont enrichis par les images de [`combat/`](combat/README.md). Leur disparition est moins brève : impacts de 1,8 à 2,2 s et éclair prolongé à 0,85 s avec résidu texturé. Les collisions et dégâts des quatre jutsu sont inchangés. Le laboratoire d’ultimes séparé ajoute une séquence de 5,8 s, décrite dans [`docs/ULTIMES_ET_TEXTURES.md`](../../../docs/ULTIMES_ET_TEXTURES.md).

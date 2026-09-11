@@ -2,7 +2,7 @@ class_name TrainingBolt
 extends Node3D
 ## Three batched ribbon meshes: blue halo, cyan channel, white-hot core.
 ## All branching is cosmetic; the gameplay ray determines the real endpoint.
-const LIFETIME: float = 0.36
+const LIFETIME: float = 0.85
 var endpoint: Vector3 = Vector3.FORWARD
 var standard: bool = false
 var seed_value: int = 1

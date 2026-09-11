@@ -280,3 +280,8 @@ Le propriétaire confirme mission et reprise après reconnexion, autorise le dé
 ### Suite après confirmation du lot 0.10
 
 Le propriétaire confirme le fonctionnement de 0.10 sur téléphone et autorise la suite. Sources 0.11 : présence à deux, déplacements/animations, reconnexion et chat de proximité RP/HRP, sans nouvelle admission, combat ou échange. Serveur testé, intégration Godot et captures préparées mais validation moteur/APK encore à effectuer. [Contrat technique, limites et état réel](VILLAGE_PARTAGE.md). Les fonctions de suppression, téléchargement et musique demandées de nouveau sont conservées.
+
+
+### Demande suivante : attaques et ultimes
+
+Le propriétaire demande des images/textures plus réalistes, des attaques moins brèves et un bouton d’ultime monumental propre à chaque clan, avec puissance liée au niveau. Première implémentation dans le laboratoire d’entraînement, avec niveau **simulé** ; pas de niveau réel ni de pouvoir avancé attribué au compte. Catalogue et réglages proposés, raccordement à la progression et au combat du personnage encore à faire. [Contrat et limites](ULTIMES_ET_TEXTURES.md).
