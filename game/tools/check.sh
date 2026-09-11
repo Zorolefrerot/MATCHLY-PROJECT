@@ -9,7 +9,7 @@ report_check_failure() {
   python3 - "$LOG_DIR" <<'PYCODE'
 import pathlib, re, sys
 folder = pathlib.Path(sys.argv[1])
-for name in ['import.log', 'smoke.log', 'network.log']:
+for name in ['import.log', 'smoke.log', 'network.log', 'spectacle.log']:
     path = folder / name
     if not path.exists(): continue
     text = re.sub(r'\x1b\[[0-9;]*m', '', path.read_text(errors='replace'))
@@ -41,3 +41,12 @@ node -e 'require("node:sqlite")' # Node >=22.13, as required by the site.
 npm ci --no-audit --no-fund
 node game/tests/run-network.mjs 2>&1 | tee "$LOG_DIR/network.log"
 grep -q IDREM_NATIVE_WSS_SUCCESS "$LOG_DIR/network.log"
+
+# Gate the installer on an actual GL image difference, not just live nodes.
+# The standard Ubuntu runner supplies Xvfb/Mesa; local headless-only users may
+# run the behavioral checks without a display, but CI must exercise this gate.
+if [[ "${GITHUB_ACTIONS:-false}" == "true" || "${IDREM_RENDER_CHECK:-0}" == "1" ]]; then
+  LIBGL_ALWAYS_SOFTWARE=1 timeout 90 xvfb-run -a -s '-screen 0 1280x720x24' "$GODOT" --path game --rendering-method gl_compatibility --audio-driver Dummy --script res://tests/spectacle_render.gd 2>&1 | tee "$LOG_DIR/spectacle.log"
+  ! grep -E 'SCRIPT ERROR:|ERROR:' "$LOG_DIR/spectacle.log"
+  grep -q IDREM_SPECTACLE_RENDER_SUCCESS "$LOG_DIR/spectacle.log"
+fi
