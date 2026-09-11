@@ -2,9 +2,9 @@
 
 Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android avec entraînement, créateur, compte et première zone solo de Konoha](game/README.md) est disponible ; le jeu RP multijoueur connecté n’est pas encore réalisé.
 
-## Ajouts site et musique — préparation du prochain lot
+## Lot 0.10 — administration, téléchargement et musique
 
-Le propriétaire confirme que la mission 0.9 fonctionne. Le code ajoute maintenant la suppression protégée d’un compte accepté, le panneau de téléchargement dans l’espace admis et la musique de village fournie. **Site : 31 tests Node, 9 tests PostgreSQL, 2 parcours navigateur et Vite réussis. Musique : moteur et APK encore à vérifier.** Le multijoueur reste à implémenter ; pas de nouvel APK intermédiaire. [Détails et limites](docs/AJOUTS_SITE_MUSIQUE.md).
+Suppression protégée d’un compte accepté, panneau de téléchargement réservé aux admis et musique de village fournie réunis dans un seul lot. **31 tests Node, 9 tests PostgreSQL, 2 parcours navigateur et 238 assertions Godot** passent ; APK 0.10 signé et captures vérifiés. **Mettre à jour Render pour activer les boutons et le nouveau lien**, puis tester sur téléphone. Le multijoueur reste à implémenter. [Détails, téléchargement et limites](docs/AJOUTS_SITE_MUSIQUE.md).
 
 ## Déployer gratuitement depuis un téléphone
 
@@ -14,13 +14,13 @@ Le dépôt inclut `render.yaml`, l’accès PostgreSQL compatible Neon et la cr�
 
 Branche de cette version : **`arena/01a08158-matchly-project`** (pas `main`).
 
-## Raccordement du compte Android — code prêt
+## Compte Android connecté
 
-L’API native et la sauvegarde d’apparence du compte sont implémentées, séparément de l’entraînement hors ligne. **Déploiement et parcours de compte confirmés par le propriétaire.** [Activation et protections](docs/COMPTE_JEU.md). L’APK **0.9** conserve le [quartier de Konoha](docs/KONOHA_PREMIERE_ZONE.md) et son décor amélioré, puis ajoute la mission d’accueil, le journal et la sauvegarde des étapes sur le compte. **Ce nouvel ajout requiert une mise à jour Render**, pas encore confirmée. Le monde multijoueur n’est pas encore implémenté.
+L’API native et la sauvegarde d’apparence du compte sont implémentées, séparément de l’entraînement hors ligne. **Déploiement et parcours de compte confirmés par le propriétaire.** [Activation et protections](docs/COMPTE_JEU.md). L’APK **0.9** conserve le [quartier de Konoha](docs/KONOHA_PREMIERE_ZONE.md) et son décor amélioré, puis ajoute la mission d’accueil, le journal et la sauvegarde des étapes sur le compte. **Mission et reprise confirmées par le propriétaire.** La mise à jour Render encore nécessaire concerne désormais les ajouts du lot 0.10. Le monde multijoueur n’est pas encore implémenté.
 
-## Lot 0.9 — première mission et journal
+## Lot 0.9 conservé — première mission et journal
 
-Accueil d’Aoi, mission de repérage, journal et sauvegarde des étapes réunis dans **une seule APK**. **231 assertions Godot, 28 tests Node et 8 tests PostgreSQL** passés ; journal et message réseau inspectés sur captures ordinateur. Mettre à jour Render, puis installer le lot complet pour l’essai téléphone. [Parcours, téléchargement et limites](docs/MISSION_ACCUEIL.md).
+Accueil d’Aoi, mission de repérage, journal et sauvegarde des étapes réunis dans **une seule APK**. **231 assertions Godot, 28 tests Node et 8 tests PostgreSQL** passés ; journal et message réseau inspectés sur captures ordinateur. Fonctionnement ensuite confirmé par le propriétaire ; inclus dans 0.10. [Parcours, téléchargement et limites](docs/MISSION_ACCUEIL.md).
 
 ## Fonctionnalités
 
@@ -147,4 +147,4 @@ Après mise à jour du dépôt, lancer un déploiement manuel Render. Les réfé
 
 ## Prototype Android séparé
 
-Un projet Godot 4.5.1 **solo/hors ligne** est maintenant préparé dans [`game/`](game/README.md) : arène procédurale, commandes tactiles, quatre techniques de test et adversaire programmé. Il ne se connecte pas aux comptes et candidatures Render/Neon et ne modifie pas leurs données. Les scripts de tests, d’export APK et un modèle de workflow GitHub sont décrits dans son guide. Le propriétaire a activé le workflow depuis GitHub ; une première APK de test a été compilée et vérifiée, avec le lien de téléchargement dans le guide Android. Les essais sur un vrai téléphone restent à réaliser : le site n’annonce pas automatiquement une APK disponible.
+Le projet Godot 4.5.1 dans [`game/`](game/README.md) sépare l’entraînement solo hors ligne du compte HTTPS Render/Neon. Le compte sauvegarde l’apparence et les étapes de la mission ; Konoha reste une visite solo, désormais avec la musique fournie. Le propriétaire a confirmé le fonctionnement de 0.9. **0.10 est compilé et vérifié techniquement, mais reste à essayer sur téléphone.** Le site propose aux joueurs acceptés le dernier installateur vérifié, après déploiement de sa mise à jour. Les détails, limites et liens temporaires sont dans le guide Android.

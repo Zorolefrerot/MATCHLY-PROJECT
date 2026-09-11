@@ -7,7 +7,7 @@
 1. Dans le service existant sur [Render](https://dashboard.render.com/), utiliser **Manual Deploy → Deploy latest commit**. La branche reste `arena/01a08158-matchly-project`. Ne pas créer de second service et ne pas remplacer les variables privées existantes.
 2. Attendre **Live**, puis vérifier que le site s’ouvre toujours et que le compte propriétaire fonctionne. Le déploiement applique automatiquement les tables supplémentaires du compte et de la mission d’accueil ; aucun tirage/admission n’est relancé.
 
-Après cela seulement : installer l’APK 0.9 indiquée dans [`game/README.md`](../game/README.md), ouvrir **MON COMPTE**, saisir l’adresse HTTPS exacte du site (origine uniquement, sans chemin), puis les identifiants d’un **compte joueur accepté ayant déjà reçu son attribution sur le site**. Ne jamais envoyer de mot de passe dans la conversation. Le propriétaire administrateur reste séparé des places joueurs ; pas de contournement automatique de l’admission.
+Après cela seulement : installer l’APK 0.10 indiquée dans [`game/README.md`](../game/README.md), ouvrir **MON COMPTE**, saisir l’adresse HTTPS exacte du site (origine uniquement, sans chemin), puis les identifiants d’un **compte joueur accepté ayant déjà reçu son attribution sur le site**. Ne jamais envoyer de mot de passe dans la conversation. Le propriétaire administrateur reste séparé des places joueurs ; pas de contournement automatique de l’admission.
 
 L’URL réelle du service n’étant pas enregistrée dans le dépôt, aucune adresse de production n’a été devinée/compilée dans l’APK. Elle se renseigne dans l’application et reste affichée. Seule cette origine publique est mémorisée sur le téléphone. Les redirections sont refusées et les certificats HTTPS restent vérifiés.
 
@@ -78,3 +78,8 @@ Les nouvelles sources ajoutent `welcomeMission` au profil et une route native bo
 Ce lot **nécessite une mise à jour Render** avant de tester la sauvegarde des missions. Le serveur ajoute sa table au démarrage, sans manipulation manuelle de Neon ni nouveau secret. Le mode d’exploration ancien reste disponible si le serveur n’est pas encore à jour. [Contrat, limites et validation](MISSION_ACCUEIL.md).
 
 Validation de 0.9 : **231 assertions Godot, 28 tests Node, 8 tests PostgreSQL**, journal et incident réseau inspectés sur ordinateur. Déploiement Render 0.9 et essai sur appareil réel encore à faire.
+
+
+## Lot 0.10 — administration et distribution
+
+Suppression d’un compte accepté avec confirmation exacte, mot de passe propriétaire et consentement à libérer une place ; sessions et données joueur supprimées, identifiant anonymisé/audit conservés. Le paquet de vingt places et trois potentiels demeure cohérent. Téléchargement dans l’espace accepté, avec recontrôle serveur à chaque clic et gestion de l’expiration. **Nouvelle mise à jour Render nécessaire** pour afficher ces ajouts et l’APK 0.10 avec musique. [Contrat et validation](AJOUTS_SITE_MUSIQUE.md).

@@ -1,6 +1,6 @@
 # Ajouts demandés : suppression de compte, téléchargement et musique
 
-**Sources implémentées ; site testé localement, musique préparée et raccordée mais pas encore compilée/testée dans Godot.** Le propriétaire confirme le bon fonctionnement du lot 0.9, puis demande ces trois ajouts en parallèle de la préparation du multijoueur. Aucun nouveau téléchargement Android imposé à chaque tâche.
+**Lot 0.10 compilé : site testé localement, musique importée et cycle de lecture contrôlé dans Godot. Déploiement Render et écoute sur téléphone encore à faire.** Le propriétaire confirme le bon fonctionnement du lot 0.9, puis demande ces trois ajouts en parallèle de la préparation du multijoueur. Aucun nouveau téléchargement Android imposé à chaque tâche.
 
 ## Supprimer un compte accepté
 
@@ -22,7 +22,7 @@ Une suppression libère la place correspondante ; une nouvelle admission puis at
 
 Le panneau **Installer IDREM ZENKAI** n’apparaît que pour un compte accepté. `GET /api/game-download` recontrôle la session et l’admission au moment du clic ; ni l’administrateur ni un candidat en attente ne peut utiliser cette route. Les réponses sont non mises en cache.
 
-Le panneau pointe actuellement vers **l’APK 0.9 déjà vérifié**, pas vers une compilation inexistante des nouveaux ajouts : ZIP d’environ 67 Mo, nom de l’APK, instructions d’extraction et limites de réinstallation. La connexion GitHub est nécessaire pour ce stockage temporaire, signalée avant le clic. Après l’expiration du **17 septembre 2026 à 12:00:52 UTC**, le bouton est retiré et la route renvoie 410 au lieu de rediriger vers un fichier périmé. Métadonnées dans `server/android-build.js`, à actualiser lors du prochain APK vérifié.
+Le panneau pointe actuellement vers **l’APK 0.10 vérifié**, incluant la musique : ZIP d’environ 68 Mo, nom de l’APK, instructions d’extraction et limites de réinstallation. La connexion GitHub est nécessaire pour ce stockage temporaire, signalée avant le clic. Après l’expiration du **18 septembre 2026 à 12:57:34 UTC**, le bouton est retiré et la route renvoie 410 au lieu de rediriger vers un fichier périmé. Métadonnées actualisées dans `server/android-build.js` uniquement après compilation réussie.
 
 Il s’agit d’un **contrôle d’accès à la distribution sur le site**, pas d’un DRM : un joueur peut partager un fichier déjà téléchargé, et le lien GitHub ne possède pas une autorisation liée au compte du site. Le jeu connecté continue de vérifier l’admission. Aucun compte GitHub ni secret de service n’est créé sur Render.
 
@@ -38,9 +38,19 @@ Un seul lecteur est rattaché à Konoha. Il respecte le volume général existan
 
 - **31 tests Node**, **9 tests PostgreSQL jetable**, dont suppression/replacement concurrent sur deux pools, et Vite réussis.
 - **2 parcours Playwright Chromium réussis**, incluant les écrans mobiles, téléchargement accepté, confirmation erronée, mot de passe vidé, suppression d’un compte fictif et refus de son ancienne session. Captures mobiles inspectées et conservées ci-dessous. Aucun compte réel supprimé.
-- Tests de musique ajoutés à Godot : boucle distincte, volume général, absence de chevauchement du combat, commande tactile, focus et arrêt à la sortie. Analyse GDScript sans nouvelle erreur (l’avertissement tiers historique de géométrie 0.8 demeure). **Exécution moteur, écoute sur téléphone et nouvel APK encore à faire avec le lot complet.**
+- Tests de musique ajoutés à Godot : boucle distincte, volume général, absence de chevauchement du combat, commande tactile, focus et arrêt à la sortie. Analyse GDScript sans nouvelle erreur (l’avertissement tiers historique de géométrie 0.8 demeure). **238 assertions Godot passent**, dont les sept vérifications musicales. Écoute réelle et essai téléphone encore à faire ; pilote audio Dummy pendant les tests.
 - **Aucun déploiement Render effectué par l’agent.** Pour activer les ajouts du site : service existant, branche `arena/01a08158-matchly-project`, Manual Deploy → Deploy latest commit. Migrations additives au démarrage, aucun nouveau secret. Les textes de confirmation exposent la libération de place avant toute action.
-- **Présence multijoueur, déplacements synchronisés et chat RP/HRP restent à implémenter.** Ils ne sont pas inclus dans ces trois ajouts et ne sont pas annoncés comme testés. Le propriétaire a demandé de regrouper le travail avant le prochain APK ; ce commit ne lance pas une compilation Android intermédiaire.
+- **Présence multijoueur, déplacements synchronisés et chat RP/HRP restent à implémenter.** Ils ne sont pas inclus dans ces trois ajouts et ne sont pas annoncés comme testés. Les trois ajouts sont regroupés dans un seul APK 0.10 ; aucun APK par petite tâche.
+
+## Version regroupée vérifiée
+
+- [Exécution 34601493231](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231), source `33fb9ac7d8aa152373be0fa7dca2711749132456`, Godot 4.5.1, version **0.10.0/code 10**.
+- [ZIP `idrem-zenkai-android-19`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231/artifacts/10264293080), **67 529 246 octets**, disponible jusqu’au **18 septembre 2026**. APK à l’intérieur : `idrem-zenkai-training-debug.apk`. Le fichier de journaux n’est pas l’installateur.
+- **31 tests Node, 9 tests PostgreSQL, 2 parcours Playwright, 238 assertions Godot**, Vite, signature Android, permissions et captures réussis. Arrivée avec commande musicale et journal inspectés sur captures ordinateur ; capture mobile du téléchargement actualisé 0.10 également inspectée.
+- Le décodage du Vorbis final confirme **78,13265 s**, pic **0,58483**, RMS **0,08104**, écart entre dernier et premier échantillons **0,0000764**. Ce sont des mesures du signal, pas une écoute ni un benchmark du téléphone.
+- [Empreintes et détails de validation](../game/VALIDATION.md).
+
+![Arrivée dans la version 0.10 avec commande musicale, capture ordinateur](images/konoha-10-arrival.jpg)
 
 ![Téléchargement réservé, rendu navigateur mobile avec compte fictif](images/download-accepted-mobile.png)
 ![Suppression protégée, erreur de mot de passe simulée, champ vidé](images/account-removal-mobile.png)

@@ -2,13 +2,17 @@
 
 **APK 0.9 compilée, tests moteur et captures du journal vérifiés.** Le propriétaire a approuvé le quartier 0.7 puis demandé un décor moins cubique (0.8). Le lot 0.9 regroupe ensuite mission d’accueil, journal et sauvegarde sur compte. **Déploiement Render 0.9 et essai sur son téléphone encore à faire.**
 
+## Version 0.10 — musique de fond
+
+La musique fournie est maintenant incluse, en boucle et à volume de fond, avec commande **MUSIQUE : OUI/NON**. Pause en arrière-plan et arrêt en quittant Konoha vérifiés dans le moteur ; écoute sur téléphone encore à faire. Le quartier et la mission 0.9 restent conservés. [APK regroupé 0.10 et ajouts du site](AJOUTS_SITE_MUSIQUE.md).
+
 ## Mission d’accueil 0.9
 
 Parler à Aoi et accepter la mission, lire/valider les panneaux de l’académie, du marché et de la résidence, puis revenir lui remettre son rapport. **JOURNAL** indique les étapes réellement confirmées sur le compte. Coupure ou conflit : actualiser, sans cocher une étape non confirmée. [Contrat, limites et téléchargement du lot](MISSION_ACCUEIL.md).
 
 ## Accès
 
-1. Dans l’APK **0.9**, ouvrir **MON COMPTE** et se connecter avec son compte joueur admis.
+1. Dans l’APK **0.10**, ouvrir **MON COMPTE** et se connecter avec son compte joueur admis.
 2. Appuyer sur **ENTRER À KONOHA · PREMIÈRE ZONE SOLO**. Le serveur est interrogé à nouveau pour vérifier la session/admission et récupérer la dernière apparence sauvegardée.
 
 **Mettre à jour le service Render existant avant de tester la mission** : Manual Deploy → Deploy latest commit, puis attendre Live. Même API de compte avec champ mission additionnel et route d’événements, migration additive automatique, sans nouveau secret. Sur un ancien serveur, seule l’exploration reste disponible. Le compte administrateur demeure distinct ; ses fonctions initiales de Hokage/chef de l’Akatsuki ne sont pas ajoutées à ce lot.
@@ -38,7 +42,7 @@ Le monument utilise les **quatre premiers visages** pour correspondre à l’ima
 - Bâtiments visibles de l’extérieur uniquement ; portes fermées, pas d’intérieurs, boutique, inventaire ou mission rémunérée.
 - Le repérage n’accorde aucun objet, ryō, expérience, rang ou pouvoir. La position n’est pas sauvegardée : une nouvelle visite repart de l’entrée. Les étapes confirmées de la mission, elles, sont rechargées depuis le compte.
 - L’admission est vérifiée à l’entrée, à l’actualisation du journal et lors de chaque écriture de mission, pas surveillée en continu. Aucun appel réseau périodique pendant la marche.
-- Géométrie et personnages procéduraux provisoires, pas une reconstitution complète/définitive de Konoha. Pas de nouvelle musique ; les sons de combat fournis sont conservés dans l’entraînement.
+- Géométrie et personnages procéduraux provisoires, pas une reconstitution complète/définitive de Konoha. Musique de village fournie ajoutée en 0.10 ; les sons de combat restent conservés et séparés dans l’entraînement.
 
 ## Isolation technique et performances
 

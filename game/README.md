@@ -2,19 +2,27 @@
 
 Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
-## Prochain lot en préparation
+## Lot 0.10 — musique du village et ajouts au site
 
-La mission 0.9 est confirmée fonctionnelle par le propriétaire. Sa musique de village est maintenant préparée et raccordée au code, avec bouton de coupure, pause sur perte de focus et arrêt à la sortie. **Pas encore de nouvel APK ou d’essai moteur de cet ajout.** Le site reçoit suppression protégée et téléchargement pour les admis ; le multijoueur reste à implémenter. [Suivi](../docs/AJOUTS_SITE_MUSIQUE.md).
+La musique fournie joue en fond dans Konoha, avec **MUSIQUE : OUI/NON**, le volume général existant, une pause en arrière-plan et un arrêt à la sortie. Le site reçoit la suppression protégée d’un compte accepté et le téléchargement réservé aux admis. **Mettre à jour le service Render existant** pour afficher ces fonctions et le lien 0.10.
 
-## Lot 0.9 — première mission, journal et sauvegarde
+**238 assertions Godot**, 31 tests Node, 9 tests PostgreSQL et 2 parcours Playwright réussis. APK debug exporté, signature et permissions vérifiées ; arrivée et journal inspectés. **Écoute et essai sur téléphone encore à faire.** Le multijoueur n’est pas inclus. [Détails](../docs/AJOUTS_SITE_MUSIQUE.md).
+
+- [ZIP `idrem-zenkai-android-19` — environ 68 Mo](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231/artifacts/10264293080), jusqu’au **18 septembre 2026** ; connexion GitHub nécessaire.
+- [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231). Extraire **`idrem-zenkai-training-debug.apk`**, pas les journaux.
+- Même fichier proposé par **Installer IDREM ZENKAI** dans l’espace des joueurs acceptés après déploiement du site.
+
+![Konoha 0.10, capture ordinateur réelle](../docs/images/konoha-10-arrival.jpg)
+
+## Lot 0.9 conservé — première mission, journal et sauvegarde
 
 Une seule version réunit le lot demandé : **accepter la mission auprès d’Aoi → lire/valider trois panneaux → remettre son rapport**, avec journal défilant et étapes sauvegardées sur le compte. Les étapes ne sont cochées qu’après confirmation serveur ; coupure/conflit → actualisation, pas de fausse sauvegarde locale. Aucun objet, ryō, expérience ou pouvoir accordé.
 
 **Mettre à jour le service Render existant avant l’essai : Manual Deploy → Deploy latest commit, puis attendre Live.** Même branche, mêmes secrets, migration additive au démarrage. Le mode d’exploration reste utilisable sur un ancien serveur, mais les missions y sont explicitement indisponibles. [Parcours, contrat et limites](../docs/MISSION_ACCUEIL.md).
 
-## État vérifié
+## Historique de validation 0.9
 
-**Version 0.9.0 compilée le 10 septembre 2026.** **231 assertions Godot**, 28 tests Node, 8 tests PostgreSQL, export signé et permissions vérifiés. Journal et incident réseau inspectés sur captures ordinateur ; **le déploiement Render 0.9 et l’essai sur téléphone restent à faire**. Détails : [`VALIDATION.md`](VALIDATION.md).
+**Version 0.9.0 compilée le 10 septembre 2026.** **231 assertions Godot**, 28 tests Node, 8 tests PostgreSQL, export signé et permissions vérifiés. Journal et incident réseau inspectés sur captures ordinateur ; **le propriétaire a ensuite confirmé que la mission et sa reprise fonctionnent sur son téléphone**. Détails : [`VALIDATION.md`](VALIDATION.md).
 
 - [ZIP `idrem-zenkai-android-18` (environ 67 Mo)](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34474189586/artifacts/10150821501) — connexion GitHub nécessaire, disponible jusqu’au **17 septembre 2026**.
 - [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34474189586).
@@ -54,7 +62,7 @@ Détails, contrôles et limites : [première zone de Konoha](../docs/KONOHA_PREM
 - **APPARENCE HORS LIGNE** garde une sauvegarde distincte, sans requête réseau. Les choix du compte ne remplacent pas le combattant local ni ses quatre techniques de test.
 - Une réinstallation efface les choix **locaux** des versions précédentes, qui ne sont pas automatiquement transférés sur le compte. Les modèles, sons et combats validés sont conservés. Affichage **PROTO 0.6**.
 
-**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Serveur 0.6 confirmé par le propriétaire ; déploiement de l’ajout mission 0.9 encore à effectuer, sans vérification indépendante de la production par l’agent. Le quartier 0.7 est une visite solo avec ce profil, pas un monde multijoueur ou une zone de combat partagée.
+**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Compte et mission 0.9 confirmés par le propriétaire ; déploiement des ajouts site 0.10 encore à effectuer, sans vérification indépendante de la production par l’agent. Le quartier 0.7 est une visite solo avec ce profil, pas un monde multijoueur ou une zone de combat partagée.
 
 ## Créateur 0.5 conservé — apparence hors ligne
 
@@ -132,7 +140,7 @@ La connexion Arena ne peut toujours pas modifier les workflows eux-mêmes, mais 
 2. Choisir **Android - Prototype IDREM ZENKAI** et une exécution **verte** correspondant à la version du jeu souhaitée sur `arena/01a08158-matchly-project`. Une mise à jour de documentation seule peut ne pas créer de nouvelle APK.
 3. Dans **Artifacts**, télécharger `idrem-zenkai-android-…` (connexion à GitHub nécessaire).
 4. Extraire le ZIP sur le téléphone et ouvrir `idrem-zenkai-training-debug.apk`.
-5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.9.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
+5. Les clés de test changent entre compilations : **désinstaller l’ancien prototype avant d’installer la version 0.10.0** si Android refuse la mise à jour. Cela ne supprime aucun compte du site. Si Android demande une autorisation d’installation depuis le navigateur/gestionnaire de fichiers, ne l’accorder qu’à cette application de confiance et la retirer après installation. Ne pas désactiver les protections globales du téléphone.
 6. Garder les graphismes **Économie** pour le premier essai.
 
 L’APK est signé avec une **clé de test temporaire**, pas une clé Play Store. Une nouvelle exécution peut générer une signature différente : Android pourra demander de désinstaller le prototype précédent avant installation. Le paquet `org.idremzenkai.training` est distinct du futur jeu. Aucun compte ni candidature n’est supprimé en désinstallant ce prototype.

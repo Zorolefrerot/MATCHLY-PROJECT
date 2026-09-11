@@ -1,33 +1,42 @@
-# Validation du prototype — 10 septembre 2026
+# Validation du prototype — 11 septembre 2026
 
-## Ajouts suivants en préparation, sans nouvel APK
-
-Le propriétaire confirme que le lot 0.9 et sa reprise de mission fonctionnent. Suppression des comptes acceptés et téléchargement protégé : **31 tests Node, 9 tests PostgreSQL, 2 parcours Playwright et Vite réussis**, avec données fictives uniquement. Captures mobiles inspectées.
-
-Musique reçue (`1001641947.mp3` sur `main`), décodée, préparée en Vorbis et raccordée au cycle de vie Konoha. Regénération identique, tests natifs ajoutés, analyse statique sans nouvelle erreur ; **import/simulation moteur, écoute Android et nouvelle compilation pas encore exécutés**. Pas de téléchargement par petite tâche. Présence multijoueur et chat non encore implémentés. [État détaillé](../docs/AJOUTS_SITE_MUSIQUE.md).
-
-Les résultats et l’APK suivants restent ceux de **0.9 déjà livré et confirmé fonctionnel par le propriétaire**, pas une validation des nouvelles modifications.
-
-## Résultats obtenus
+## Résultats actuels du lot regroupé 0.10
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node du site + isolation/sons du prototype | **28/28 passent** |
-| Intégration PostgreSQL réel jetable | **8/8 passent**, dont compte et mission sur deux pools |
+| Tests Node du site et des ressources du prototype | **31/31 passent** |
+| Intégration PostgreSQL réel jetable | **9/9 passent**, dont suppression/remplacement et concurrence sur deux pools |
+| Parcours Playwright Chromium | **2/2 passent**, dont téléchargement accepté et suppression fictive sur mobile |
 | Construction Vite du site | Réussie, 1 597 modules |
-| Analyse GDScript | Import et exécution réussis dans Godot officiel 4.5.1 |
-| Exécution Godot de `tests/smoke.gd` | **231 assertions passent**, code de sortie 0, `IDREM_SMOKE_FAILURES=0` |
-| Erreurs dans le journal de la simulation | Aucune `SCRIPT ERROR`, `ERROR` ou assertion échouée |
-| Import dans l’éditeur officiel complet (CI) | Réussi, contrôle strict passé |
-| Import dans l’ancien éditeur local réduit | Erreurs d’environnement `fontconfig`, historique ci-dessous |
-| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; journal et incident réseau inspectés, pas un test Android |
-| Export APK / signature / permissions finales | **Réussis** : signature debug vérifiée avec `apksigner`, contrôle `aapt` avec INTERNET requis, sans caméra/micro/contacts/localisation/stockage externe |
-| Téléphone Android physique | **0.1.0 testé par le propriétaire** : fluidité appréciée, logo gênant signalé. **0.4 validé ; 0.6 confirmé fonctionnel ; zone 0.7 approuvée par le propriétaire ; lot 0.9 à tester** |
-| Workflow GitHub Actions | Activé par le propriétaire ; exécution **34474189586 verte** |
+| Import dans l’éditeur officiel complet | Réussi dans Godot 4.5.1, contrôle strict passé |
+| Exécution de `tests/smoke.gd` | **238 assertions passent**, sortie 0, `IDREM_SMOKE_FAILURES=0` |
+| Journal de simulation | Aucune `SCRIPT ERROR`, `ERROR` ou assertion échouée |
+| Rendu GL / captures | Étape CI réussie sous Xvfb/Mesa ; arrivée avec musique et journal inspectés |
+| Musique | Vorbis décodé, boucle et cycle de vie testés avec pilote Dummy ; pas une écoute humaine |
+| Export APK / signature / permissions finales | Réussis : `apksigner`, INTERNET requis ; sans caméra/micro/contacts/localisation/stockage externe |
+| Téléphone Android physique | **0.9 confirmé par le propriétaire**, mission et reprise comprises ; **0.10 à tester** |
+| GitHub Actions | Exécution **34601493231 verte** |
+| Production Render | **Mise à jour 0.10 non effectuée par l’agent**, Manual Deploy nécessaire |
 
-Le propriétaire a confirmé le compte 0.6 et approuvé le quartier 0.7. Après les décors 0.8, il a demandé des lots de plusieurs tâches avant installation et validé mission d’accueil + journal + persistance. **Le lot 0.9 n’a pas encore été essayé sur son téléphone ni déployé sur son serveur Render.** Les contrôles utilisent des bases jetables et des réponses/profils fictifs ; ils ne constituent pas un essai HTTPS en production ou un benchmark Android.
+Les contrôles utilisent des bases jetables et des profils fictifs. Aucun compte réel supprimé. Pas d’essai HTTPS de production ni de benchmark Android. Présence multijoueur, déplacements synchronisés et chat RP/HRP restent à implémenter.
 
-## Mise à jour 0.9.0 — mission d’accueil, journal et sauvegarde
+## Mise à jour 0.10.0 — administration, téléchargement et musique
+
+[Exécution n° 19](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231), source **`33fb9ac7d8aa152373be0fa7dca2711749132456`**, branche `arena/01a08158-matchly-project`. Job **103269627552**, du 11 septembre 2026 à **12:55:55 à 12:57:39 UTC**. Un seul APK pour les trois ajouts ; les métadonnées et documents de livraison sont actualisés ensuite sans deuxième build.
+
+- **238 assertions Godot** : les 231 précédentes conservées plus sept vérifications musicales (Vorbis en boucle, volume/bus, lecture et isolation du combat, coupure, focus, arrêt à la sortie). Import, simulation, export, signature, permissions et captures réussis.
+- **31 tests Node, 9 tests PostgreSQL, 2 parcours Playwright et Vite** réussis. Suites locales relancées après mise à jour du lien 0.10. Les tests navigateur couvrent l’admission et le téléchargement, les confirmations de suppression, l’erreur de mot de passe et son effacement, une suppression fictive et la révocation de session.
+- Source musicale conservée, conversion reproductible : Vorbis **458 803 octets**, SHA-256 `0bef4d8e11e2f5ad0d88424726618ed5495f293e8edbdbf4e0f5b3dfd1246c58`. Décodage final : **78,132653 s**, pic **0,5848323**, RMS **0,0810419**, écart de boucle **0,00007638**. Mesures numériques, pas une écoute sur téléphone.
+- Captures ordinateur récupérées intégralement via Checks et inspectées : [arrivée et bouton musical](../docs/images/konoha-10-arrival.jpg), [journal](../docs/images/konoha-10-journal.jpg). Les autres vues du ZIP ne sont pas prétendues inspectées. [Téléchargement 0.10 mobile](../docs/images/download-accepted-mobile.png) également inspecté.
+- Version **0.10.0**, code **10**, HUD **PROTO 0.10**, paquet `org.idremzenkai.training`, API minimum 24/cible 35, ARM64 et ARMv7. Signature debug ; une réinstallation peut être nécessaire, avec perte des préférences locales mais pas des sauvegardes du compte conservé.
+- APK `idrem-zenkai-training-debug.apk` : **63 798 925 octets**, SHA-256 **`c801372744afaa9f54efa958de56583741f67dcc96461a54a84c7ccb0c87b9bd`**.
+- [ZIP `idrem-zenkai-android-19`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231/artifacts/10264293080) : **67 529 246 octets**, expiration **18 septembre 2026 à 12:57:34 UTC** ; SHA-256 GitHub **`9be7bee733317479ee6dce0d6c4805ad5a69f597a211b657737429899e194dec`**. Connexion GitHub nécessaire ; pas un hébergement permanent ni un DRM.
+- Journaux `godot-test-logs-19` : artefact **10264437975**, **24 295 octets**, pas l’installateur.
+- API GitHub après livraison : **27 artefacts non expirés**, total **517 240 603 octets** (environ **493,3 Mio**), contre 449 687 062 avant ce build. Proche du quota gratuit ; ce sous-total du dépôt n’est pas le relevé global de facturation. Aucun artefact supprimé, budget changé ou workflow modifié par l’agent.
+- Serveur : migrations additives, suppression acceptée avec nom exact/mot de passe/accord explicite de libération de place, révocation des accès, anonymisation et audit conservés ; vingt places et exactement trois potentiels préservés lors des remplacements. Téléchargement recontrôlé au clic. Aucun nouveau secret requis.
+- **Déployer le dernier commit sur le service Render existant avant l’essai du site**. Écoute/installation réelles de 0.10 encore à confirmer. [Contrats et limites](../docs/AJOUTS_SITE_MUSIQUE.md).
+
+## Historique : mise à jour 0.9.0 — mission d’accueil, journal et sauvegarde
 
 [Exécution n° 18](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34474189586), source **`fc8beb91a2fd9d9a9d085575ad614bf05dd4e41f`**, branche `arena/01a08158-matchly-project`. Lot implémenté en `334d81d85714bc505d09019c06dd87da18e75370`, puis durcissement des types JSON. Job **102860911832**, toutes les étapes réussies en **1 min 40 s**, du 10 septembre 2026 à 11:59:19 à 12:00:59 UTC.
 
@@ -37,7 +46,7 @@ Le propriétaire a confirmé le compte 0.6 et approuvé le quartier 0.7. Après 
 - Import officiel, simulation, export Android debug signé, permissions et captures réussis. **Un seul APK du lot publié** après le contrôle préalable ; aucun téléchargement intermédiaire demandé au propriétaire.
 - Dix-huit captures ordinateur produites. **Journal et incident réseau inspectés**, images 480×270 récupérées intégralement via huit notices Checks. Texte défilant contenu dans le panneau, boutons visibles. Les autres captures sont dans le ZIP, pas prétendues inspectées individuellement ici. Captures avec profils fictifs, y compris l’incident ; pas de véritable coupure de réseau Android.
 - Serveur modifié uniquement pour l’orientation : table additive `welcome_missions`, champ `welcomeMission` et route de cinq événements bornés. Les sessions et contrôles d’admission existants protègent chaque écriture ; pas de position, outbox local ou récompense. Un client modifié peut déclarer ses lectures : ce n’est pas une validation anti-triche de déplacement.
-- **Déploiement Render nécessaire avant l’essai**, service et branche existants, migration automatique sans nouveau secret. `autoDeploy: false` conservé. Ni Neon de production ni les comptes réels n’ont été modifiés par les tests.
+- Lors de la livraison 0.9 : **déploiement Render nécessaire avant l’essai**, service et branche existants, migration automatique sans nouveau secret. Le propriétaire a ensuite confirmé le fonctionnement de la mission et de sa reprise. `autoDeploy: false` conservé. Ni Neon de production ni les comptes réels n’ont été modifiés par les tests.
 - Version **0.9.0**, code **9**, HUD **PROTO 0.9**, paquet `org.idremzenkai.training`, API minimum 24/cible 35, ARM64 et ARMv7. INTERNET conservé, aucune nouvelle permission sensible ; signature debug vérifiée.
 - APK : **63 344 041 octets**, SHA-256 `b16b1952cddf81f27a37bd233ec8db2f69679680a7cd0eb8b82d1a5691b50505`.
 - [ZIP `idrem-zenkai-android-18`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34474189586/artifacts/10150821501) : **67 075 079 octets**, expiration **17 septembre 2026 à 12:00:52 UTC** ; SHA-256 GitHub `f46bc83811fb5db5f0f706e94456f5de4f26cfec4c89681a6e44a77e1d53c4e3`.

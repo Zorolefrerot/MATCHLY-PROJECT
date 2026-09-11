@@ -12,4 +12,4 @@ Le manifeste contient empreintes, durée et niveau mesurés. Sources du proprié
 
 Un seul lecteur appartient à la visite. Il utilise le volume général `TrainingMix`, avec -12 dB supplémentaires. Le bouton **MUSIQUE : OUI/NON** permet de le couper ; le réglage d’ambiance de l’entraînement est respecté à l’entrée. La perte de focus suspend le son et la sortie du village l’arrête. Le morceau et les effets de combat restent inchangés.
 
-Tests natifs ajoutés ; leur exécution moteur fait partie de la validation du prochain lot, pas d’une nouvelle installation intermédiaire.
+**Sept vérifications musicales passées dans Godot 4.5.1**, incluses dans les 238 assertions du lot 0.10 : ressource Vorbis en boucle, bus/niveau, lecture sans chevauchement avec le combat, bouton de coupure, pause/reprise sur focus et arrêt à la sortie. Le pilote de test est Dummy : aucune écoute sur téléphone n’est déduite de ces résultats. Import, export Android et captures réussis dans l’exécution 34601493231.
