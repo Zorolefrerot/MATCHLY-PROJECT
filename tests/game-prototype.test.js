@@ -254,9 +254,9 @@ test("Konoha remodels silhouettes and batches facade details without changing co
   assert.match(read("game/tests/capture.gd"), /konoha-house/);
   assert.match(read("game/tests/capture.gd"), /konoha-palace/);
   const version = read("game/VERSION").trim();
-  assert.equal(version, "0.9.0");
+  assert.equal(version, "0.10.0");
   assert.ok(
     read("game/export_presets.cfg").includes(`version/name="${version}"`),
   );
-  assert.match(read("game/scripts/konoha_hud.gd"), /PROTO 0\.9/);
+  assert.match(read("game/scripts/konoha_hud.gd"), /PROTO 0\.10/);
 });

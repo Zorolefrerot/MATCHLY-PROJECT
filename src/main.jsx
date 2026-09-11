@@ -1404,7 +1404,7 @@ function Account() {
           {account.download?.available ? (
             <>
               <a className="button" href="/api/game-download">
-                Télécharger l’application · ZIP 67 Mo <ArrowUpRight size={18} />
+                Télécharger l’application · ZIP {Math.round(account.download.bytes / 1000000)} Mo <ArrowUpRight size={18} />
               </a>
               <p>
                 Une connexion GitHub gratuite est nécessaire pour ce fichier.

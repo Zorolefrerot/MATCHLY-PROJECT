@@ -18,7 +18,7 @@ func _build() -> void:
 	objective.add_theme_constant_override("shadow_offset_y", 2)
 	feedback = label("", 18)
 	feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer = label("PROTO 0.9 · Mission solo · Position non sauvegardée", 13)
+	footer = label("PROTO 0.10 · Mission solo · Position non sauvegardée", 13)
 	footer.add_theme_color_override("font_color", Color("253b36"))
 	identity.clip_text = true
 	identity.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS

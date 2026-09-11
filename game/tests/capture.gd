@@ -158,7 +158,7 @@ func save_village_image(folder: String, filename: String, index: int) -> bool:
 	var image: Image = root.get_texture().get_image()
 	if image.save_png(folder.path_join(filename+".png")) != OK:
 		return false
-	if OS.get_environment("GITHUB_ACTIONS") == "true" and index in [6,8]:
+	if OS.get_environment("GITHUB_ACTIONS") == "true" and index in [0,6]:
 		# Two selected views × four parts maximum, below GitHub’s ten-notice step cap.
 		image.resize(480, 270, Image.INTERPOLATE_LANCZOS)
 		var encoded: String = Marshalls.raw_to_base64(image.save_jpg_to_buffer(0.45))
