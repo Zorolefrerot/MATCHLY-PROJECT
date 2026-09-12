@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { VillageRoom, COMBAT } from "../server/village-room.js";
+import {
+  VillageRoom,
+  COMBAT,
+  TECHNIQUES_BY_CLAN,
+} from "../server/village-room.js";
 
 function fixture() {
   let now = 10000;
@@ -41,6 +45,41 @@ const action = (seq, kind, direction = [1, 0, 0]) => ({
 const last = (events, type) =>
   [...events].reverse().find((event) => event.type === type);
 
+test("each clan has four distinct techniques and Katon/Mokuton stay clan-exclusive", () => {
+  const clans = Object.keys(TECHNIQUES_BY_CLAN);
+  assert.equal(clans.length, 14);
+  const names = new Set();
+  for (const clan of clans) {
+    const techniques = TECHNIQUES_BY_CLAN[clan];
+    assert.equal(techniques.length, 4, `${clan} needs four techniques`);
+    for (const value of techniques) {
+      assert.ok(!names.has(value.name), `duplicate technique: ${value.name}`);
+      names.add(value.name);
+      assert.ok(value.cost > 0 && value.cooldown > 0 && value.damage > 0);
+    }
+  }
+  assert.ok(
+    TECHNIQUES_BY_CLAN.Uchiwa.every((value) => value.element === "Katon"),
+  );
+  assert.ok(
+    clans
+      .filter((clan) => clan !== "Uchiwa")
+      .every((clan) =>
+        TECHNIQUES_BY_CLAN[clan].every((value) => value.element !== "Katon"),
+      ),
+  );
+  assert.ok(
+    TECHNIQUES_BY_CLAN.Senju.every((value) => value.element === "Mokuton"),
+  );
+  assert.ok(
+    clans
+      .filter((clan) => clan !== "Senju")
+      .every((clan) =>
+        TECHNIQUES_BY_CLAN[clan].every((value) => value.element !== "Mokuton"),
+      ),
+  );
+});
+
 test("two admitted peers can start an ephemeral online duel with server health and clan ultimates", () => {
   const { room, join, advance } = fixture();
   const a = join(1, "Uchiwa");
@@ -72,6 +111,8 @@ test("two admitted peers can start an ephemeral online duel with server health a
   assert.equal(hit.target, 2);
   assert.equal(hit.damage, 26, "level 10 scales the ordinary technique too");
   assert.equal(hit.health, 94);
+  assert.equal(hit.technique.element, "Katon");
+  assert.equal(hit.technique.name, "Katon · Gōkakyū");
   assert.equal(last(a.events, "combat_action").attacker, 1);
   assert.equal(Object.hasOwn(last(a.events, "combat_action"), "damage"), false);
 
@@ -112,6 +153,7 @@ test("online combat rejects client-forged actions, cooldown spam and out-of-rang
   a.peer.state.p = [-3, 0.25, 22];
   b.peer.state.p = [3, 0.25, 22];
   room.receive(a.peer, action(1, "skill_0"));
+  assert.equal(last(a.events, "combat_action").technique.element, "Mokuton");
   const healthAfterFirst = last(b.events, "combat_hit").health;
   room.receive(a.peer, action(2, "skill_0"));
   assert.equal(last(b.events, "combat_hit").health, healthAfterFirst);

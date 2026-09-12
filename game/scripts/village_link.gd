@@ -48,6 +48,14 @@ static func combat_vector(value: Variant) -> bool:
 			return false
 	return true
 
+static func combat_technique(value: Variant) -> bool:
+	if not value is Dictionary or not plain(value.get("name"),80) or not plain(value.get("subtitle"),100) or not plain(value.get("element"),40) or not integer(value.get("motif")) or value["motif"] < 0 or value["motif"] > 15:
+		return false
+	for key: String in ["cost","cooldown","range"]:
+		if typeof(value.get(key)) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(value[key])) or float(value[key]) < 0:
+			return false
+	return true
+
 static func identity(value: Variant) -> bool:
 	if not value is Dictionary or not integer(value.get("id"),1) or not plain(value.get("name"),50):
 		return false
@@ -286,6 +294,12 @@ func _accept(value: Variant) -> bool:
 			for field: String in ["health","maxHealth","chakra","maxChakra"]:
 				if typeof(combatant.get(field)) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(combatant[field])) or float(combatant[field]) < 0:
 					return false
+			var techniques: Variant = combatant.get("techniques")
+			if not techniques is Array or techniques.size() != 4:
+				return false
+			for value: Variant in techniques:
+				if not combat_technique(value):
+					return false
 	elif kind == "combat_action":
 		if not integer(value.get("actionId"),1) or not integer(value.get("attacker"),1) or value.get("kind") not in ["melee","skill_0","skill_1","skill_2","skill_3","ultimate"] or not combat_vector(value.get("origin")) or not combat_vector(value.get("direction")) or not combat_vector(value.get("target")):
 			return false
@@ -293,8 +307,12 @@ func _accept(value: Variant) -> bool:
 			var ultimate: Variant = value.get("ultimate")
 			if not ultimate is Dictionary or not plain(ultimate.get("clan"),50) or not plain(ultimate.get("name"),80) or not integer(ultimate.get("motif")) or ultimate["motif"] < 0 or ultimate["motif"] > 15 or not integer(ultimate.get("level"),1) or ultimate["level"] > 50:
 				return false
+		elif value["kind"] in ["skill_0","skill_1","skill_2","skill_3"] and not combat_technique(value.get("technique")):
+			return false
 	elif kind == "combat_hit":
 		if not integer(value.get("attacker"),1) or not integer(value.get("target"),1) or value.get("kind") not in ["melee","skill_0","skill_1","skill_2","skill_3","ultimate"] or not combat_vector(value.get("position")) or typeof(value.get("damage")) not in [TYPE_INT,TYPE_FLOAT] or float(value["damage"]) <= 0 or typeof(value.get("health")) not in [TYPE_INT,TYPE_FLOAT] or float(value["health"]) < 0:
+			return false
+		if value["kind"] in ["skill_0","skill_1","skill_2","skill_3"] and not combat_technique(value.get("technique")):
 			return false
 	elif kind == "combat_evaded":
 		if not integer(value.get("attacker"),1) or not integer(value.get("target"),1) or not combat_vector(value.get("position")):

@@ -106,6 +106,7 @@ func _ready() -> void:
 	add_child(hud)
 	var identity: Dictionary = account_profile["character"]
 	hud.identity.text = "KONOHA · QUARTIER D’ACCUEIL\n%s · %s" % [identity["name"], identity["clan"]]
+	hud.set_clan_techniques(ClanTechniques.for_clan(str(identity["clan"])))
 	hud.action_requested.connect(_action)
 	hud.resume_requested.connect(resume_visit)
 	if not InputMap.has_action("village_interact"):
@@ -478,6 +479,9 @@ func _clear_remote() -> void:
 func _combat_color(kind: String) -> Color:
 	return {"skill_0":Color("ff864d"),"skill_1":Color("85d7ee"),"skill_2":Color("b6ddad"),"skill_3":Color("e2b36c"),"ultimate":Color("ef7470"),"melee":Color("e3eacb")}.get(kind,Color("ffe2a3"))
 
+func _technique_color(element: String) -> Color:
+	return {"Katon":Color("ff7045"),"Mokuton":Color("8bcf78"),"Fūinjutsu":Color("ffa95c"),"Jūken":Color("a9dcff"),"Expansion":Color("ef957d"),"Esprit":Color("d6a3ef"),"Kikaichū":Color("9aac78"),"Bestial":Color("91d6e0"),"Ombre":Color("9b98d3"),"Impact":Color("d65872"),"Énergie spirituelle":Color("66b9f2"),"Jeu d’ombres":Color("b88acd"),"Titan":Color("e2b271"),"Lames":Color("94cabb")}.get(element,Color("ef7470"))
+
 func _combat_actor_position(id: int) -> Vector3:
 	if id == int(account_profile["character"]["id"]): return player.position + Vector3.UP
 	if remote_avatars.has(id): return remote_avatars[id].position + Vector3.UP
@@ -502,19 +506,20 @@ func _render_combat_action(event: Dictionary) -> void:
 	var target := Vector3(float(event["target"][0]),float(event["target"][1]),float(event["target"][2]))
 	var aim := Vector3(float(event["direction"][0]),float(event["direction"][1]),float(event["direction"][2])).normalized()
 	var data: Dictionary = event.get("ultimate", {})
-	var color := _ultimate_color(str(data.get("clan", ""))) if kind == "ultimate" else _combat_color(kind)
+	var technique: Dictionary = event.get("technique", {})
+	var element: String = str(technique.get("element", ""))
+	var motif: int = int(technique.get("motif", 9))
+	var color := _ultimate_color(str(data.get("clan", ""))) if kind == "ultimate" else _technique_color(element)
 	if kind == "melee":
 		combat_vfx.slash(origin, aim)
-	elif kind == "skill_0":
-		combat_vfx.impact(origin, color, 0.65)
-		_spawn_online_projectile(origin, target + Vector3.UP, aim, kind)
-	elif kind == "skill_1":
-		combat_vfx.lightning(origin, target + Vector3.UP, color)
-	elif kind == "skill_2":
-		combat_vfx.wind(origin, Vector3(aim.x,0,aim.z).normalized(), color)
-	elif kind == "skill_3":
-		combat_vfx.earth(target)
+	elif kind in ["skill_0", "skill_1", "skill_2", "skill_3"]:
+		if element == "Katon":
+			combat_vfx.impact(origin, color, 0.65)
+			_spawn_online_projectile(origin, target + Vector3.UP, aim, kind)
+		else:
+			combat_vfx.clan_technique(origin, target + Vector3.UP, aim, element, motif, color)
 	elif kind == "ultimate":
+
 		var visual := TrainingSpectacle.new()
 		visual.monumental = true
 		visual.standard = true
@@ -525,7 +530,9 @@ func _render_combat_action(event: Dictionary) -> void:
 		visual.position = target
 		combat_effects.add_child(visual)
 		combat_vfx.impact(target + Vector3.UP, color, 1.1)
-	if is_instance_valid(hud): hud.notice("%s" % (event.get("ultimate",{}).get("name",kind.to_upper()) if kind == "ultimate" else kind.to_upper()))
+	if is_instance_valid(hud):
+		var label: String = str(data.get("name", kind.to_upper())) if kind == "ultimate" else str(technique.get("name", kind.to_upper()))
+		hud.notice(label)
 
 func _network_event(event: Dictionary) -> void:
 	if ending:
@@ -552,6 +559,7 @@ func _network_event(event: Dictionary) -> void:
 				var fighter_id := int(fighter.get("id", -1))
 				if fighter_id == local_id:
 					player.health = float(fighter.get("health", player.health))
+					hud.set_clan_techniques(fighter.get("techniques", []))
 					hud.set_combat_health(local_id,event)
 				elif remote_avatars.has(fighter_id):
 					remote_avatars[fighter_id].set_combat_health(int(fighter.get("health",120)),event.get("status") == "active")
@@ -559,7 +567,8 @@ func _network_event(event: Dictionary) -> void:
 			_render_combat_action(event)
 		"combat_hit":
 			var hit_point := Vector3(float(event["position"][0]),float(event["position"][1]),float(event["position"][2]))
-			var hit_color := _ultimate_color(str(event.get("ultimate",{}).get("clan",""))) if event["kind"] == "ultimate" else _combat_color(event["kind"])
+			var hit_technique: Dictionary = event.get("technique", {})
+			var hit_color := _ultimate_color(str(event.get("ultimate",{}).get("clan",""))) if event["kind"] == "ultimate" else _technique_color(str(hit_technique.get("element", "")))
 			combat_vfx.impact(hit_point + Vector3.UP * 0.4,hit_color,1.0 if event["kind"] == "ultimate" else 0.6)
 			if int(event["target"]) == int(account_profile["character"]["id"]):
 				player.health = float(event["health"])

@@ -84,7 +84,7 @@ Perte de focus → fermeture ; retour → reconnexion. Coupure transitoire → t
 
 ### Effectuée localement
 
-- **43 tests Node** : contrats HTTP précédents conservés, tests déterministes de salle, duel serveur (portée, cooldown, niveau et ultime) et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
+- **44 tests Node** : contrats HTTP précédents conservés, catalogue des 14 clans et leurs techniques, tests déterministes de salle, duel serveur (portée, cooldown, niveau et ultime) et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
 - **10 tests PostgreSQL réel jetable**, dont le contrat réseau avec mutations depuis un deuxième pool.
 - **2 parcours Playwright** et Vite réussis après `npm ci` : les fonctions du site et le téléchargement réservé aux admis sont conservés, avec les métadonnées 0.11.
 - Le contrôle Godot 4.5.1 en CI réussit l’import, les assertions de gameplay, le scénario WSS Node ↔ deux clients Godot et le rendu GL des effets. Cela ne remplace pas un essai de fluidité ou de connexion sur deux téléphones.

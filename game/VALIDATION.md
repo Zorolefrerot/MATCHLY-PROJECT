@@ -8,7 +8,7 @@ Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exéc
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node | **43/43 passent** |
+| Tests Node | **44/44 passent** |
 | Tests PostgreSQL réel jetable | **10/10 passent** |
 | Parcours Playwright Chromium | **2/2 passent** |
 | Construction Vite | Réussie |

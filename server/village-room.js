@@ -29,32 +29,569 @@ const combatKinds = [
   "skill_3",
   "ultimate",
 ];
-const skillCosts = Object.freeze({
-  skill_0: 16,
-  skill_1: 24,
-  skill_2: 12,
-  skill_3: 32,
+const skillSlots = ["skill_0", "skill_1", "skill_2", "skill_3"];
+const technique = (
+  name,
+  subtitle,
+  element,
+  motif,
+  cost,
+  cooldown,
+  damage,
+  range,
+) =>
+  Object.freeze({
+    name,
+    subtitle,
+    element,
+    motif,
+    cost,
+    cooldown,
+    damage,
+    range,
+  });
+
+// Every admitted clan receives its own four-technique loadout. The element is
+// server data, not a client label: performCombatAction rejects any slot that
+// is not in this clan's catalogue. Katon belongs only to Uchiwa and Mokuton
+// belongs only to Senju in this test ruleset.
+export const TECHNIQUES_BY_CLAN = Object.freeze({
+  Uchiwa: Object.freeze([
+    technique("Katon · Gōkakyū", "Boule de feu", "Katon", 0, 16, 5000, 22, 18),
+    technique(
+      "Katon · Hōsenka",
+      "Rafale de flammes",
+      "Katon",
+      0,
+      24,
+      8000,
+      32,
+      18,
+    ),
+    technique("Katon · Ryūka", "Dragon de feu", "Katon", 0, 12, 4000, 14, 9),
+    technique(
+      "Katon · Gōryūka",
+      "Dragon colossal",
+      "Katon",
+      0,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Uzumaki: Object.freeze([
+    technique(
+      "Fūinjutsu · Chaînes",
+      "Entrave de chakra",
+      "Fūinjutsu",
+      1,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique(
+      "Barrière spirale",
+      "Bouclier tournoyant",
+      "Fūinjutsu",
+      1,
+      24,
+      8000,
+      32,
+      18,
+    ),
+    technique(
+      "Sceau d’immobilisation",
+      "Marque entravante",
+      "Fūinjutsu",
+      1,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Rasengan spiral",
+      "Impact concentré",
+      "Fūinjutsu",
+      1,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Senju: Object.freeze([
+    technique(
+      "Mokuton · Jukai",
+      "Forêt naissante",
+      "Mokuton",
+      2,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique(
+      "Mokuton · Hotei",
+      "Mains de bois",
+      "Mokuton",
+      2,
+      24,
+      8000,
+      32,
+      18,
+    ),
+    technique(
+      "Mokuton · Clone",
+      "Double sylvestre",
+      "Mokuton",
+      2,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Mokuton · Mokuryū",
+      "Dragon de bois",
+      "Mokuton",
+      2,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Hyūga: Object.freeze([
+    technique(
+      "Jūken · Paume souple",
+      "Frappe des tenketsu",
+      "Jūken",
+      3,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique("Hakke Kūshō", "Paume de l’air", "Jūken", 3, 24, 8000, 32, 18),
+    technique("Kaiten", "Tourbillon défensif", "Jūken", 3, 12, 4000, 14, 9),
+    technique(
+      "Hakke · 64 paumes",
+      "Rafale de précision",
+      "Jūken",
+      3,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Akimichi: Object.freeze([
+    technique(
+      "Baika no Jutsu",
+      "Expansion partielle",
+      "Expansion",
+      4,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique(
+      "Nikudan Sensha",
+      "Boule humaine",
+      "Expansion",
+      4,
+      24,
+      8000,
+      32,
+      18,
+    ),
+    technique(
+      "Chōdan Bakugeki",
+      "Poing amplifié",
+      "Expansion",
+      4,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Papillon de chakra",
+      "Percée massive",
+      "Expansion",
+      4,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Yamanaka: Object.freeze([
+    technique(
+      "Shintenshin",
+      "Transfert d’esprit",
+      "Esprit",
+      5,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique(
+      "Shinranshin",
+      "Confusion mentale",
+      "Esprit",
+      5,
+      24,
+      8000,
+      32,
+      18,
+    ),
+    technique(
+      "Projection mentale",
+      "Onde psychique",
+      "Esprit",
+      5,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Réseau de l’esprit",
+      "Emprise collective",
+      "Esprit",
+      5,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Aburame: Object.freeze([
+    technique(
+      "Mushi Bunshin",
+      "Clone d’insectes",
+      "Kikaichū",
+      6,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique(
+      "Nuée traçante",
+      "Essaim perforant",
+      "Kikaichū",
+      6,
+      24,
+      8000,
+      32,
+      18,
+    ),
+    technique(
+      "Insectes de chakra",
+      "Drain rampant",
+      "Kikaichū",
+      6,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Kikaichū · Marée noire",
+      "Déferlante d’essaim",
+      "Kikaichū",
+      6,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Inuzuka: Object.freeze([
+    technique(
+      "Shikyaku no Jutsu",
+      "Forme bestiale",
+      "Bestial",
+      7,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique("Gatsūga", "Double croc", "Bestial", 7, 24, 8000, 32, 18),
+    technique(
+      "Jūjin Bunshin",
+      "Compagnon sauvage",
+      "Bestial",
+      7,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Sōga · Crocs du loup",
+      "Assaut tournoyant",
+      "Bestial",
+      7,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Fushiguro: Object.freeze([
+    technique(
+      "Chimères · Chiens divins",
+      "Traque des ombres",
+      "Ombre",
+      8,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique("Nue", "Éclair de la nuée", "Ombre", 8, 24, 8000, 32, 18),
+    technique(
+      "Grenouille d’ombre",
+      "Entrave rampante",
+      "Ombre",
+      8,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Jardin des ombres",
+      "Domaine partiel",
+      "Ombre",
+      8,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Itadori: Object.freeze([
+    technique(
+      "Poing divergent",
+      "Impact retardé",
+      "Impact",
+      9,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique("Black Flash", "Éclair noir", "Impact", 9, 24, 8000, 32, 18),
+    technique(
+      "Coup de percussion",
+      "Onde corporelle",
+      "Impact",
+      9,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Rafale du cœur",
+      "Enchaînement brutal",
+      "Impact",
+      9,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Kurosaki: Object.freeze([
+    technique(
+      "Getsuga bleu",
+      "Lame spirituelle",
+      "Énergie spirituelle",
+      10,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique(
+      "Getsuga Tenshō",
+      "Croissant noir",
+      "Énergie spirituelle",
+      10,
+      24,
+      8000,
+      32,
+      18,
+    ),
+    technique(
+      "Pas éclair",
+      "Tranchant instantané",
+      "Énergie spirituelle",
+      10,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Lame du croissant",
+      "Vague de reiatsu",
+      "Énergie spirituelle",
+      10,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Shunsui: Object.freeze([
+    technique(
+      "Kageoni",
+      "Jeu des ombres",
+      "Jeu d’ombres",
+      11,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique(
+      "Takaoni",
+      "Frappe ascendante",
+      "Jeu d’ombres",
+      11,
+      24,
+      8000,
+      32,
+      18,
+    ),
+    technique(
+      "Irooni",
+      "Couleur tranchante",
+      "Jeu d’ombres",
+      11,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Daruma-san",
+      "Ronde des pétales",
+      "Jeu d’ombres",
+      11,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Yeager: Object.freeze([
+    technique("Durcissement", "Poing blindé", "Titan", 12, 16, 5000, 22, 18),
+    technique(
+      "Marteau de chair",
+      "Onde colossale",
+      "Titan",
+      12,
+      24,
+      8000,
+      32,
+      18,
+    ),
+    technique(
+      "Charge blindée",
+      "Percée de titan",
+      "Titan",
+      12,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Rugissement du colosse",
+      "Onde de transformation",
+      "Titan",
+      12,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
+  Ackerman: Object.freeze([
+    technique(
+      "Lames jumelles",
+      "Entaille rapide",
+      "Lames",
+      13,
+      16,
+      5000,
+      22,
+      18,
+    ),
+    technique(
+      "Vrille de l’éclair",
+      "Rotation tranchante",
+      "Lames",
+      13,
+      24,
+      8000,
+      32,
+      18,
+    ),
+    technique(
+      "Pas tridimensionnel",
+      "Esquive offensive",
+      "Lames",
+      13,
+      12,
+      4000,
+      14,
+      9,
+    ),
+    technique(
+      "Danse des lames",
+      "Assaut en spirale",
+      "Lames",
+      13,
+      32,
+      12000,
+      44,
+      16,
+    ),
+  ]),
 });
-const skillCooldowns = Object.freeze({
-  skill_0: 5000,
-  skill_1: 8000,
-  skill_2: 4000,
-  skill_3: 12000,
-});
-const skillDamage = Object.freeze({
-  skill_0: 22,
-  skill_1: 32,
-  skill_2: 14,
-  skill_3: 44,
-});
-const skillRange = Object.freeze({
-  melee: 2.6,
-  skill_0: 18,
-  skill_1: 18,
-  skill_2: 9,
-  skill_3: 16,
-  ultimate: 20,
-});
+
+const skillRange = Object.freeze({ melee: 2.6, ultimate: 20 });
+const techniquesFor = (clan) => TECHNIQUES_BY_CLAN[clan] || [];
+const techniqueFor = (clan, kind) => {
+  const index = skillSlots.indexOf(kind);
+  return index >= 0 ? techniquesFor(clan)[index] || null : null;
+};
+const techniqueView = (value) =>
+  value
+    ? {
+        name: value.name,
+        subtitle: value.subtitle,
+        element: value.element,
+        motif: value.motif,
+        cost: value.cost,
+        cooldown: value.cooldown / 1000,
+        range: value.range,
+      }
+    : null;
 const ultimateByClan = Object.freeze({
   Uchiwa: { name: "Envol du brasier", motif: 0 },
   Uzumaki: { name: "Spirale du grand sceau", motif: 1 },
@@ -222,6 +759,7 @@ export class VillageRoom {
             0,
             (peer.combat.ultimateUntil - this.now()) / 1000,
           ),
+          techniques: techniquesFor(peer.clan).map(techniqueView),
         })),
     };
   }
@@ -329,7 +867,15 @@ export class VillageRoom {
   combatError(peer, message) {
     this.reject(peer, "COMBAT_ACTION", message);
   }
-  applyCombatHit(attacker, target, kind, damage, position, ultimate = null) {
+  applyCombatHit(
+    attacker,
+    target,
+    kind,
+    damage,
+    position,
+    ultimate = null,
+    technique = null,
+  ) {
     if (!this.combat?.started || !attacker?.combat || !target?.combat) return;
     target.combat.health = Math.max(0, target.combat.health - damage);
     const hit = {
@@ -342,6 +888,7 @@ export class VillageRoom {
       position: clonePosition(position),
     };
     if (ultimate) hit.ultimate = ultimate;
+    if (technique) hit.technique = technique;
     for (const peer of this.combatParticipants()) this.send(peer, hit);
     this.sendCombatState(true);
     if (target.combat.health <= 0)
@@ -358,11 +905,17 @@ export class VillageRoom {
     if (!target || !this.active(target) || !target.combat) return;
     const now = this.now();
     const state = peer.combat;
+    const clanTechnique = techniqueFor(peer.clan, message.kind);
+    if (skillSlots.includes(message.kind) && !clanTechnique) {
+      this.combatError(peer, "Cette technique n’appartient pas à ton clan.");
+      return;
+    }
     const distance = Math.hypot(
       target.state.p[0] - peer.state.p[0],
       target.state.p[2] - peer.state.p[2],
     );
-    if (distance > skillRange[message.kind]) {
+    const attackRange = clanTechnique?.range || skillRange[message.kind];
+    if (distance > attackRange) {
       this.combatError(peer, "Cible trop éloignée pour cette technique.");
       return;
     }
@@ -376,8 +929,8 @@ export class VillageRoom {
         this.combatError(peer, "Cette technique est encore en récupération.");
         return;
       }
-      if (state.chakra < skillCosts[message.kind]) {
-        this.combatError(peer, "Chakra insuffisant.");
+      if (state.chakra < clanTechnique.cost) {
+        this.combatError(peer, `${clanTechnique.name} : chakra insuffisant.`);
         return;
       }
     }
@@ -395,8 +948,8 @@ export class VillageRoom {
     } else if (message.kind === "melee") {
       state.meleeUntil = now + 550;
     } else {
-      state.chakra -= skillCosts[message.kind];
-      state.skillUntil[message.kind] = now + skillCooldowns[message.kind];
+      state.chakra -= clanTechnique.cost;
+      state.skillUntil[message.kind] = now + clanTechnique.cooldown;
     }
     const origin = [peer.state.p[0], peer.state.p[1] + 1.15, peer.state.p[2]];
     const targetPosition = clonePosition(target.state.p);
@@ -409,6 +962,7 @@ export class VillageRoom {
       direction: [...message.direction],
       target: targetPosition,
     };
+    if (clanTechnique) action.technique = techniqueView(clanTechnique);
     if (message.kind === "ultimate")
       action.ultimate = combatUltimate(peer.clan, peer.combatLevel);
     for (const participant of this.combatParticipants())
@@ -425,9 +979,17 @@ export class VillageRoom {
         ultimate: action.ultimate,
       });
     } else {
-      const base = message.kind === "melee" ? 10 : skillDamage[message.kind];
+      const base = message.kind === "melee" ? 10 : clanTechnique.damage;
       const damage = Math.round(base * levelMultiplier(peer.combatLevel));
-      this.applyCombatHit(peer, target, message.kind, damage, targetPosition);
+      this.applyCombatHit(
+        peer,
+        target,
+        message.kind,
+        damage,
+        targetPosition,
+        null,
+        techniqueView(clanTechnique),
+      );
     }
     this.sendCombatState(true);
   }

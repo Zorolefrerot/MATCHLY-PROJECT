@@ -44,6 +44,18 @@ func _build() -> void:
 		var attack: Button = _button("%s\n%d chakra" % [data["name"], int(data["cost"])], "combat_skill_%d" % i)
 		attack.add_theme_color_override("font_color", data["color"])
 	_button("ULTIME\n70 chakra", "combat_ultimate")
+	set_button_icon("pause", 5)
+	set_button_icon("journal", 6)
+	set_button_icon("music", 7)
+	set_button_icon("chat", 4)
+	set_button_icon("sprint", 13)
+	set_button_icon("jump", 3)
+	set_button_icon("interact", 12)
+	set_button_icon("combat_join", 8)
+	set_button_icon("combat_level", 10)
+	set_button_icon("combat_leave", 11)
+	set_button_icon("combat_melee", 0)
+	set_button_icon("combat_ultimate", 10, TECHNIQUE_ATLAS)
 	_set_combat_buttons(false)
 	overlay = ColorRect.new()
 	overlay.color = Color(0.03,0.07,0.08,0.88)
@@ -102,6 +114,19 @@ func _set_combat_buttons(active: bool) -> void:
 
 func set_combat_message(message: String) -> void:
 	combat_status.text = message
+
+func set_clan_techniques(value: Array) -> void:
+	for i in range(mini(4, value.size())):
+		if not value[i] is Dictionary:
+			continue
+		var data: Dictionary = value[i]
+		var button: Button = buttons.get("combat_skill_%d" % i)
+		if button == null:
+			continue
+		button.text = "%s\n%d chakra" % [str(data.get("name", "TECHNIQUE")), int(data.get("cost", 0))]
+		button.tooltip_text = "%s · %s" % [str(data.get("element", "Clan")), str(data.get("subtitle", "Technique particulière"))]
+		button.icon = atlas_icon(TECHNIQUE_ATLAS, int(data.get("motif", i)))
+		button.add_theme_color_override("font_color", {"Katon":Color("ff864d"), "Mokuton":Color("8bcf78"), "Fūinjutsu":Color("ffa95c"), "Jūken":Color("a9dcff"), "Lames":Color("94cabb")}.get(str(data.get("element", "")), Color("e3eacb")))
 
 func set_combat_state(value: Dictionary) -> void:
 	if value.is_empty():
