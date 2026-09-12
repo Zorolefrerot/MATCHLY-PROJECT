@@ -107,7 +107,6 @@ func set_button_icon(action: String, cell: int, atlas: Texture2D = CONTROL_ATLAS
 	var button: Button = buttons[action]
 	button.icon = atlas_icon(atlas, cell)
 	button.expand_icon = true
-	button.icon_max_width = 34
 	button.add_theme_constant_override("h_separation", 7)
 
 func _activate(action: String) -> void:
