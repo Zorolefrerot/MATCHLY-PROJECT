@@ -90,28 +90,27 @@ func clan_technique(point: Vector3, target: Vector3, direction: Vector3, element
 	if group == null:
 		return
 	textured(group, motif, color, 2.0, 0.95)
-	match element:
-		"Mokuton":
-			var root := _ring(group, 0.35, color)
-			root.position.y = 0.05
-			var growth := create_tween().bind_node(group)
-			growth.tween_property(root, "scale", Vector3(4.0, 1.0, 4.0), 0.48)
-			for i in range(4):
-				_segment(group, Vector3.ZERO, Vector3(cos(float(i))*1.3, 0.35, sin(float(i))*1.3), color, 0.10)
-		"Fūinjutsu", "Jūken", "Esprit":
-			var seal := _ring(group, 0.52, color)
-			seal.position.y = 0.08
-			var seal_motion := create_tween().bind_node(group)
-			seal_motion.tween_property(seal, "scale", Vector3(3.2, 1.0, 3.2), 0.42)
-		"Expansion", "Titan":
-			var shock := _ring(group, 0.42, color)
-			shock.position.y = 0.12
-			var shock_motion := create_tween().bind_node(group)
-			shock_motion.tween_property(shock, "scale", Vector3(3.8, 1.0, 3.8), 0.36)
-		"Lames", "Énergie spirituelle":
-			slash(point, direction)
-		"Kikaichū", "Bestial", "Ombre", "Impact", "Jeu d’ombres":
-			wind(point, Vector3(direction.x, 0, direction.z).normalized(), color)
+	if element == "Mokuton":
+		var root := _ring(group, 0.35, color)
+		root.position.y = 0.05
+		var growth := create_tween().bind_node(group)
+		growth.tween_property(root, "scale", Vector3(4.0, 1.0, 4.0), 0.48)
+		for i in range(4):
+			_segment(group, Vector3.ZERO, Vector3(cos(float(i))*1.3, 0.35, sin(float(i))*1.3), color, 0.10)
+	elif element in ["Fūinjutsu", "Jūken", "Esprit"]:
+		var seal := _ring(group, 0.52, color)
+		seal.position.y = 0.08
+		var seal_motion := create_tween().bind_node(group)
+		seal_motion.tween_property(seal, "scale", Vector3(3.2, 1.0, 3.2), 0.42)
+	elif element in ["Expansion", "Titan"]:
+		var shock := _ring(group, 0.42, color)
+		shock.position.y = 0.12
+		var shock_motion := create_tween().bind_node(group)
+		shock_motion.tween_property(shock, "scale", Vector3(3.8, 1.0, 3.8), 0.36)
+	elif element in ["Lames", "Énergie spirituelle"]:
+		slash(point, direction)
+	elif element in ["Kikaichū", "Bestial", "Ombre", "Impact", "Jeu d’ombres"]:
+		wind(point, Vector3(direction.x, 0, direction.z).normalized(), color)
 		var marker := Node3D.new()
 		marker.position = target - point
 		group.add_child(marker)
