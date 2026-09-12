@@ -36,7 +36,7 @@ func _ready() -> void:
 	column.add_theme_constant_override("separation", 10)
 	scroll.add_child(column)
 	column.add_child(_label("MON PERSONNAGE · COMPTE DU SITE", 27))
-	column.add_child(_label("Joueur admis uniquement. Le compte propriétaire ne consomme pas de place.\nKonoha : première zone solo avec ton personnage. Pas encore de multijoueur.", 16))
+	column.add_child(_label("Joueur admis uniquement. Le compte propriétaire ne consomme pas de place.\nKonoha : quartier partagé et duel de test à deux joueurs admis. La progression réelle n’est pas encore persistante.", 16))
 	origin_field = _field("Adresse exacte du site : https://ton-site.onrender.com", column)
 	email_field = _field("E-mail du compte joueur", column)
 	email_field.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_EMAIL_ADDRESS
@@ -50,7 +50,7 @@ func _ready() -> void:
 	login_button = _button("SE CONNECTER", _login, column)
 	identity_label = _label("Aucun personnage connecté.", 19)
 	column.add_child(identity_label)
-	village_button = _button("ENTRER À KONOHA · PREMIÈRE ZONE SOLO", func() -> void: _waiting(); village_requested.emit(), column)
+	village_button = _button("ENTRER À KONOHA · VILLAGE PARTAGÉ", func() -> void: _waiting(); village_requested.emit(), column)
 	village_button.add_theme_stylebox_override("normal", TrainingHUD.panel_style(Color("39776b")))
 	status_label = _label("Le mot de passe et la session restent uniquement en mémoire.", 16)
 	column.add_child(status_label)

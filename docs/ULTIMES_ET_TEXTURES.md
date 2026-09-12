@@ -9,7 +9,8 @@ Demande du propriétaire : utiliser des images/textures, rendre les attaques moi
 - Atlas d’images RGBA de 1024² et seize motifs détaillés, source générée puis inspectée/corrigée. **502 128 octets**, partagé entre tous les effets. Pas d’IA au runtime.
 - Katon : flammes animées conservées, impact texturé de près de 2 s. Raiton : branches conservées et prolongées à 0,85 s, résidu électrique texturé jusqu’à 1,8 s. Fūton : vortex texturé de 1,9 s. Doton : roche/poussière texturée de 2,2 s. Frappes : traînée de lames de 0,75 s.
 - Les quatre techniques gardent leurs dégâts, coûts, collision et recharges indépendantes. Les images ne déclenchent jamais plusieurs impacts.
-- **Bouton ULTIME**, touche **R** ; **RÉGLER ULTIME** ouvre le laboratoire tactile. Le clan et le niveau de ce laboratoire sont clairement indiqués comme une **simulation hors ligne**, pas l’attribution du compte.
+- En entraînement solo : **bouton ULTIME**, touche **R** ; **RÉGLER ULTIME** ouvre le laboratoire tactile. Le clan et le niveau de ce laboratoire sont clairement indiqués comme une **simulation hors ligne**, pas l’attribution du compte.
+- En village partagé : **DÉFIER EN DUEL**, puis **NIVEAU TEST** avant l’arrivée du deuxième joueur. Les attaques sont envoyées sans dégâts depuis le client ; le serveur transmet ensuite l’action, l’impact ou l’esquive à deux clients.
 - Concentration **1,4 s**, déchaînement, puis dissipation : **5,8 s au total**. Apparition géante, sigil au sol, fragments orbitaux, élargissement progressif du champ de vision. Pas de stroboscope, secousse imposée, ralentissement global, démembrement ou mort permanente.
 - L’impact est unique, évitable en quittant la zone marquée, bloqué par les obstacles et limité à l’adversaire d’entraînement. En cas de KO causé pendant l’ultime, la fin visuelle se déroule avant le menu de manche.
 
@@ -19,7 +20,7 @@ Demande du propriétaire : utiliser des images/textures, rendre les attaques moi
 
 Niveaux de test 1 à 50 : dégâts `55 + 3 × (niveau − 1)`, rayon de 3 à 5 m, ampleur visuelle bornée. Toutes les variantes ont la même base à niveau égal pour ne pas inventer un avantage de clan non validé. Le disque de préparation indique la zone réelle ; les grandes images autour restent décoratives.
 
-**Il n’existe pas encore de niveau de combat sauvegardé ni d’XP dans le compte.** Aucun nouveau niveau réel, récompense, pouvoir avancé ou déblocage n’est accordé par ce laboratoire. Le raccordement au futur combat du personnage, les conditions d’apprentissage et l’équilibrage final restent à réaliser. Le village partagé demeure sans combat réseau.
+**Il n’existe pas encore de niveau de combat sauvegardé ni d’XP dans le compte.** Le laboratoire hors ligne ne donne donc aucun nouveau niveau réel, récompense, pouvoir avancé ou déblocage. Le village partagé possède maintenant un **duel de test éphémère à deux joueurs** : chacun choisit un niveau de test de 1 à 50 avant le lancement, le serveur calcule la puissance, le chakra, les recharges et le KO, puis détruit l’état en fin de duel. Ce mode ne constitue pas encore la progression persistante ni l’équilibrage final.
 
 ## Catalogue proposé
 

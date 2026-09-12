@@ -1,8 +1,8 @@
-# Lot suivant — première présence partagée à Konoha
+# Lot suivant — présence partagée et duel de test à Konoha
 
-**Ajout au lot regroupé 0.11 :** attaques enrichies d’images/textures et laboratoire de quatorze ultimes monumentales avec niveau simulé, sans changer les comptes. [Détails et limites](ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
+**Ajout au lot regroupé 0.11 :** deux joueurs admis peuvent lancer un duel réseau éphémère, avec quatre attaques texturées et une ultime clanique monumentale. Les dégâts, recharges, chakra, niveau de test, évitement de l’ultime et KO sont résolus par le serveur ; les comptes et la progression ne changent pas. [Détails des textures et ultimes](ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
 
-**11 septembre 2026 : sources 0.11 en validation, pas d’APK 0.11 livrée.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**, puis demande de poursuivre le lot réseau déjà convenu. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés.
+**12 septembre 2026 : sources 0.11 en validation, pas d’APK 0.11 livrée.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés.
 
 ## Périmètre
 
@@ -10,7 +10,7 @@
 - Marche, course, saut et arrêt transmis ; affichage distant interpolé, sans collision entre joueurs.
 - Départ, retour après arrière-plan/coupure et remplacement d’une connexion du même compte sans avatar doublonné.
 - Texte de proximité **RP / HRP**, rayon **12 mètres**, sans canal global, équipe ou message privé dans ce premier lot.
-- Aucune admission supplémentaire, récompense, action de combat réseau, échange, modification de tirage, position persistante ou validation physique des missions. Mission personnelle, apparence cloud, entraînement séparé et musique restent conservés.
+- Aucune admission supplémentaire, récompense, progression, échange, modification de tirage, position persistante ou validation physique des missions. Le duel de test est la seule action de combat réseau ; mission personnelle, apparence cloud, entraînement solo et musique restent conservés.
 
 Le rayon de 12 m est un paramètre initial du prototype, pas une nouvelle règle narrative imposée. Les murs n’atténuent pas le chat dans ce premier quartier extérieur. Les actions écrites n’ont aucun effet mécanique.
 
@@ -23,26 +23,30 @@ Le rayon de 12 m est un paramètre initial du prototype, pas une nouvelle règle
 - Authentification et installation du socket sous le même verrou transactionnel que connexion/suppression/réinitialisation : une ancienne authentification en attente ne peut réinstaller un jeton déjà révoqué après une nouvelle connexion.
 - Réexamen groupé des sessions/admissions toutes les **2 s**, uniquement lorsqu’il y a des joueurs. Bail d’autorisation de **5 s**, non renouvelé à partir d’une réponse lente. Une panne de vérification ferme l’accès plutôt que prolonger indéfiniment une session. Aucun accès à Neon quand la salle est vide.
 - Une connexion par compte. La nouvelle connexion valide remplace l’ancienne (4001) ; la fermeture tardive de l’ancien socket ne retire pas le nouveau. Le client remplacé ne se reconnecte pas en boucle.
-- Les noms sont assainis et les apparences contrôlées côté serveur. Les autres clients ne reçoivent ni e-mail, mot de passe, jeton, clan, affinité, potentiel Mokuton ni mission personnelle.
+- Les noms sont assainis et les apparences contrôlées côté serveur. Le roster de présence ne contient ni e-mail, mot de passe, jeton, clan, affinité, potentiel Mokuton ni mission personnelle. Pendant un duel, seuls le nom, le clan déjà attribué, le niveau de test et les jauges du duel sont transmis aux deux participants.
 - Maximum vingt présences, dans la cohorte existante de vingt admissions. **Les essais de cette tranche portent sur deux joueurs, pas une charge réelle de vingt téléphones.**
 
 La révocation d’un socket déjà ouvert est bornée par ce bail ; ce n’est pas la promesse d’effacer des paquets déjà reçus ou un APK installé. Les API HTTP continuent leur propre contrôle d’accès à chaque appel.
 
 ## Protocole éphémère 1
 
-Serveur : `welcome` (compte courant, point d’arrivée, rayon), `roster` (identités/apparences), `snapshot` (positions et animations, dix fois par seconde), `correction`, `chat`, `chat_ack`, `error`.
+Serveur : `welcome` (compte courant, point d’arrivée, rayon), `roster` (identités/apparences), `snapshot` (positions et animations, dix fois par seconde), `correction`, `chat`, `chat_ack`, `combat_waiting`, `combat_started`, `combat_state`, `combat_action`, `combat_hit`, `combat_evaded`, `combat_result`, `combat_end`, `error`.
 
 Client :
 
 ```json
 {"type":"move","seq":0,"p":[0,0.25,22],"yaw":0,"motion":"idle"}
 {"type":"chat","seq":0,"channel":"RP","text":"Bonjour !"}
+{"type":"combat_join"}
+{"type":"combat_level","level":10}
+{"type":"combat_action","seq":0,"kind":"ultimate","direction":[1,0,0]}
+{"type":"combat_leave"}
 {"type":"respawn"}
 ```
 
 - Formats exacts, nombres finis, séquences monotones, coordonnées et rotation bornées. Aucune identité, cible, statistique ou récompense fournie par le client.
 - Limite grossière de déplacement horizontal : budget de 2 m, renouvelé à 8 m/s ; saut borné et retour au point d’arrivée limité. Une position trop éloignée provoque une correction, pas une écriture de progression.
-- **Ce n’est pas une simulation physique autoritaire ni un anti-triche complet.** Le serveur ne calcule pas les collisions du décor ; un client modifié pourrait traverser des obstacles et influencer sa proximité. Pas de combat, récompense ou échange qui s’appuie sur ces coordonnées dans ce lot.
+- **La présence n’est pas une simulation physique autoritaire ni un anti-triche complet.** Le serveur ne calcule pas les collisions du décor ; un client modifié pourrait traverser des obstacles. Le duel reste toutefois serveur-authoritatif pour la cible, la portée, les dégâts, les coûts, les recharges, le niveau de test et le KO ; un paquet client ne peut pas fournir ses propres dégâts.
 - Trames entrantes de 1 Kio maximum, compression désactivée, files/fragmentation bornées, budget de messages et fermeture des connexions trop lentes. Quatre authentifications simultanées maximum ; limite de tentatives bornée, partagée lorsque les connexions proviennent du même proxy.
 - Deux secondes sans déplacement reçu → animation au repos ; quinze secondes sans message → retrait de la présence. Un départ explicite ou une mise en arrière-plan ferme le socket sans attendre cette échéance.
 
@@ -70,7 +74,7 @@ Le client vide la saisie **après acquittement**. En cas de coupure ou délai, i
 
 `VillageLink` utilise le WSS de l’origine HTTPS du compte, la vérification TLS normale et un jeton en RAM. Aucun mode TLS non sûr dans le code de production. La confiance dans un certificat local n’existe que dans la sous-classe de test, exclue de l’APK.
 
-`VillageAvatar` est uniquement visuel : nom, apparence, interpolation et animation ; aucune simulation de combat ni collision. Les identités présentes sont réconciliées et les avatars disparus retirés. Déconnexion → avatars effacés et chat désactivé, sans effacer les étapes déjà confirmées de la mission.
+`VillageAvatar` reste visuel pour la présence et reçoit seulement l’état de PV du duel. La simulation de combat est dans `VillageRoom`, côté serveur ; les avatars n’ont pas de collision ni de dégâts locaux. Les identités présentes sont réconciliées et les avatars disparus retirés. Déconnexion → avatars et duel effacés, sans effacer les étapes déjà confirmées de la mission.
 
 `VillageChat` utilise un panneau tactile, choix RP/HRP, fil défilant, saisie et accusé d’envoi. Il bloque les commandes du personnage, pas le réseau ou la musique. Sa hauteur tient compte du clavier virtuel ; **ergonomie et clavier Android encore à vérifier réellement**.
 
@@ -80,7 +84,7 @@ Perte de focus → fermeture ; retour → reconnexion. Coupure transitoire → t
 
 ### Effectuée localement
 
-- **41 tests Node** : contrats HTTP précédents conservés, tests déterministes de salle et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
+- **43 tests Node** : contrats HTTP précédents conservés, tests déterministes de salle, duel serveur (portée, cooldown, niveau et ultime) et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
 - **10 tests PostgreSQL réel jetable**, dont le contrat réseau avec mutations depuis un deuxième pool.
 - **2 parcours Playwright** et Vite réussis après `npm ci` : les fonctions du site et le téléchargement 0.10 sont conservés.
 - Analyse statique GDScript sans nouvelle erreur ; seul le faux positif historique de géométrie `PackedVector3Array` reste inchangé. Ce n’est pas une exécution du moteur.
@@ -89,7 +93,7 @@ Perte de focus → fermeture ; retour → reconnexion. Coupure transitoire → t
 ### Préparée mais NON exécutée à ce stade
 
 - Vérifications supplémentaires de protocole dans `game/tests/smoke.gd`.
-- **Vrai test WSS entre Node et deux visites Godot** : `game/tests/run-network.mjs` et `village_network.gd`. Base SQLite, profils et certificat local jetables ; ne lit jamais la base de production. Exercices de noms/apparences, marche/course/saut, chat RP/HRP proche/loin, focus, reconnexion et remplacement.
+- **Vrai test WSS entre Node et deux visites Godot** : `game/tests/run-network.mjs` et `village_network.gd`. Base SQLite, profils et certificat local jetables ; ne lit jamais la base de production. Exercices de noms/apparences, marche/course/saut, chat RP/HRP proche/loin, duel, textures d’attaque, ultime, focus, reconnexion et remplacement.
 - Ce test est raccordé à `game/tools/check.sh`, **avant tout export Android**. Une erreur ou l’absence du marqueur de succès bloque l’APK. Le workflow GitHub lui-même n’est pas modifié.
 - Captures supplémentaires préparées : autre avatar et chat, avec profils explicitement fictifs. Pas encore rendues ni inspectées.
 - Import/exécution Godot 4.5.1, export/signature 0.11, écoute et essai avec deux téléphones à faire.

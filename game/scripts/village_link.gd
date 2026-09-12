@@ -17,6 +17,7 @@ var last_received: float = 0.0
 var last_frame: int = -1
 var sequence: int = 0
 var chat_sequence: int = 0
+var combat_sequence: int = 0
 var clock: float = 0.0
 var send_clock: float = 0.0
 var pose: Dictionary = {"p":[0,0.25,22],"yaw":0,"motion":"idle"}
@@ -38,6 +39,14 @@ static func point(value: Variant) -> bool:
 
 static func state(value: Variant) -> bool:
 	return value is Dictionary and integer(value.get("id"),1) and point(value.get("p")) and typeof(value.get("yaw")) in [TYPE_INT,TYPE_FLOAT] and is_finite(float(value["yaw"])) and absf(float(value["yaw"])) <= PI+0.00001 and value.get("motion") is String and value["motion"] in ["idle","walk","run","jump"]
+
+static func combat_vector(value: Variant) -> bool:
+	if not value is Array or value.size() != 3:
+		return false
+	for axis: Variant in value:
+		if typeof(axis) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(axis)) or absf(float(axis)) > 40:
+			return false
+	return true
 
 static func identity(value: Variant) -> bool:
 	if not value is Dictionary or not integer(value.get("id"),1) or not plain(value.get("name"),50):
@@ -149,6 +158,7 @@ func _drop() -> void:
 	last_frame = -1
 	sequence = 0
 	chat_sequence = 0
+	combat_sequence = 0
 	send_clock = 0.0
 	if peer != null:
 		peer.handshake_headers = PackedStringArray()
@@ -195,6 +205,27 @@ func chat(channel: String, text: String) -> int:
 		return -1
 	return seq
 
+func combat_join() -> void:
+	if connected:
+		_send({"type":"combat_join"})
+
+func combat_leave() -> void:
+	if connected:
+		_send({"type":"combat_leave"})
+
+func combat_level(value: int) -> void:
+	if connected and value >= 1 and value <= 50:
+		_send({"type":"combat_level","level":value})
+
+func combat_action(kind: String, aim: Vector3) -> int:
+	if not connected or kind not in ["melee","skill_0","skill_1","skill_2","skill_3","ultimate"] or not is_finite(aim.x) or not is_finite(aim.y) or not is_finite(aim.z) or aim.length_squared() < 0.0001:
+		return -1
+	var seq: int = combat_sequence
+	combat_sequence += 1
+	if not _send({"type":"combat_action","seq":seq,"kind":kind,"direction":[aim.x,aim.y,aim.z]}):
+		return -1
+	return seq
+
 func respawn() -> void:
 	if connected:
 		_send({"type":"respawn"})
@@ -234,8 +265,48 @@ func _accept(value: Variant) -> bool:
 	elif kind == "chat_ack":
 		if not integer(value.get("seq")):
 			return false
+	elif kind == "combat_waiting":
+		if not value.get("players") is Array or value["players"].size() > 2 or not integer(value.get("needed"),1) or value["needed"] > 2:
+			return false
+		for name: Variant in value["players"]:
+			if not plain(name,50):
+				return false
+	elif kind == "combat_started":
+		if not value.get("players") is Array or value["players"].size() != 2:
+			return false
+		for id: Variant in value["players"]:
+			if not integer(id,1):
+				return false
+	elif kind == "combat_state":
+		if value.get("status") not in ["waiting","active"] or not value.get("players") is Array or value["players"].size() > 2:
+			return false
+		for combatant: Variant in value["players"]:
+			if not combatant is Dictionary or not integer(combatant.get("id"),1) or not plain(combatant.get("name"),50) or not plain(combatant.get("clan"),50) or not integer(combatant.get("level"),1) or combatant["level"] > 50:
+				return false
+			for field: String in ["health","maxHealth","chakra","maxChakra"]:
+				if typeof(combatant.get(field)) not in [TYPE_INT,TYPE_FLOAT] or not is_finite(float(combatant[field])) or float(combatant[field]) < 0:
+					return false
+	elif kind == "combat_action":
+		if not integer(value.get("actionId"),1) or not integer(value.get("attacker"),1) or value.get("kind") not in ["melee","skill_0","skill_1","skill_2","skill_3","ultimate"] or not combat_vector(value.get("origin")) or not combat_vector(value.get("direction")) or not combat_vector(value.get("target")):
+			return false
+		if value["kind"] == "ultimate":
+			var ultimate: Variant = value.get("ultimate")
+			if not ultimate is Dictionary or not plain(ultimate.get("clan"),50) or not plain(ultimate.get("name"),80) or not integer(ultimate.get("motif")) or ultimate["motif"] < 0 or ultimate["motif"] > 15 or not integer(ultimate.get("level"),1) or ultimate["level"] > 50:
+				return false
+	elif kind == "combat_hit":
+		if not integer(value.get("attacker"),1) or not integer(value.get("target"),1) or value.get("kind") not in ["melee","skill_0","skill_1","skill_2","skill_3","ultimate"] or not combat_vector(value.get("position")) or typeof(value.get("damage")) not in [TYPE_INT,TYPE_FLOAT] or float(value["damage"]) <= 0 or typeof(value.get("health")) not in [TYPE_INT,TYPE_FLOAT] or float(value["health"]) < 0:
+			return false
+	elif kind == "combat_evaded":
+		if not integer(value.get("attacker"),1) or not integer(value.get("target"),1) or not combat_vector(value.get("position")):
+			return false
+	elif kind == "combat_result":
+		if not integer(value.get("winner"),1) or not integer(value.get("loser"),1) or not plain(value.get("reason"),120):
+			return false
+	elif kind == "combat_end":
+		if not plain(value.get("reason"),120):
+			return false
 	elif kind == "error":
-		if not value.get("code") is String or value["code"] != "CHAT_RATE" or not plain(value.get("error"),240):
+		if not value.get("code") is String or value["code"] not in ["CHAT_RATE","COMBAT_BUSY","COMBAT_ACTION"] or not plain(value.get("error"),240):
 			return false
 	else:
 		return false

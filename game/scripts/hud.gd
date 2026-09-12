@@ -185,7 +185,7 @@ func _build_menu() -> void:
 	menu_title.add_theme_color_override("font_color", CREAM)
 	column.add_child(menu_title)
 	menu_text = Label.new()
-	menu_text.text = "Un prototype 3D pour tester les commandes et les combats.\nPersonnages provisoires. Pas encore de multijoueur."
+	menu_text.text = "Un prototype 3D pour tester les commandes et les combats.\nPersonnages provisoires. Le duel en ligne se teste depuis Konoha avec deux comptes admis."
 	menu_text.add_theme_font_size_override("font_size", 16)
 	menu_text.add_theme_color_override("font_color", Color("bfd0c7"))
 	column.add_child(menu_text)

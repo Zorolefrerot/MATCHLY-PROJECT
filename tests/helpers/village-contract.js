@@ -82,6 +82,7 @@ export async function villageContract(db, secondDb = db) {
   const before = await db
     .prepare("SELECT * FROM allocations ORDER BY user_id")
     .all();
+  const firstClan = before.find((row) => row.user_id === ids[0]).clan;
   const app = createApp(db);
   const server = app.listen(0, "127.0.0.1");
   const village = installVillage(server, db, {
@@ -186,6 +187,66 @@ export async function villageContract(db, secondDb = db) {
     const message = await b.wait("chat");
     assert.equal(message.sender, ids[0]);
     assert.equal(message.name, "Genin WS 0");
+    // Exercise the same WSS path used by the Godot visit, not only the pure room.
+    a.ws.send(JSON.stringify({ type: "combat_join" }));
+    await a.wait("combat_waiting");
+    a.ws.send(JSON.stringify({ type: "combat_level", level: 10 }));
+    b.ws.send(JSON.stringify({ type: "combat_join" }));
+    const combat = await a.wait("combat_state", (e) => e.status === "active");
+    assert.equal(combat.players.length, 2);
+    assert.equal(
+      combat.players.find((player) => player.id === ids[0]).level,
+      10,
+    );
+    await b.wait("combat_started");
+    a.ws.send(
+      JSON.stringify({
+        type: "combat_action",
+        seq: 0,
+        kind: "skill_0",
+        direction: [1, 0, 0],
+      }),
+    );
+    const hit = await b.wait("combat_hit", (e) => e.kind === "skill_0");
+    assert.equal(hit.target, ids[1]);
+    assert.equal(hit.damage, 26);
+    a.ws.send(
+      JSON.stringify({
+        type: "combat_action",
+        seq: 1,
+        kind: "ultimate",
+        direction: [1, 0, 0],
+      }),
+    );
+    const ultimate = await b.wait(
+      "combat_action",
+      (e) => e.kind === "ultimate",
+    );
+    const expectedUltimate = {
+      Uchiwa: "Envol du brasier",
+      Uzumaki: "Spirale du grand sceau",
+      Senju: "Rempart des mille rocs",
+      Hyūga: "Couronne des paumes",
+      Akimichi: "Poing du géant",
+      Yamanaka: "Floraison de l’esprit",
+      Aburame: "Nuée d’éclipse",
+      Inuzuka: "Crocs des deux ombres",
+      Fushiguro: "Procession des ombres",
+      Itadori: "Impact du cœur noir",
+      Kurosaki: "Croissant spirituel",
+      Shunsui: "Danse des pétales d’ombre",
+      Yeager: "Colosse de chakra",
+      Ackerman: "Lames de l’orage",
+    };
+    assert.equal(ultimate.ultimate.clan, firstClan);
+    assert.equal(ultimate.ultimate.name, expectedUltimate[firstClan]);
+    const ultimateHit = await b.wait(
+      "combat_hit",
+      (e) => e.kind === "ultimate",
+    );
+    assert.equal(ultimateHit.damage, 82);
+    a.ws.send(JSON.stringify({ type: "combat_leave" }));
+    await b.wait("combat_end");
     const replaced = once(a.ws, "close");
     const again = connect(tokens[0]);
     await again.wait("welcome");

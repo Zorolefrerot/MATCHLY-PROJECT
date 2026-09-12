@@ -94,7 +94,7 @@ func run() -> void:
 		return
 	var remote: VillageAvatar = b.remote_avatars[aid]
 	check(remote.nameplate.text == a.account_profile["character"]["name"] and remote.fighter.appearance == CharacterAppearance.sanitize(a.account_profile["appearance"]),"remote name and male/female appearance come from the account")
-	check(remote.fighter.collision_layer == 0 and remote.fighter.collision_mask == 0,"remote visuals cannot collide or participate in combat")
+	check(remote.fighter.collision_layer == 0 and remote.fighter.collision_mask == 0,"remote visuals cannot collide; combat remains server-authoritative")
 	a.hud.move_vector = Vector2(0,-1)
 	check(await wait_for(func() -> bool: return remote.motion == "walk"),"walking reaches the other native client")
 	a.hud.sprinting = true
@@ -104,6 +104,19 @@ func run() -> void:
 	a._clear_inputs()
 	check(await wait_for(func() -> bool: return remote.motion == "idle"),"stopping reaches the other native client")
 	check(await wait_for(func() -> bool: return remote.position.distance_to(a.player.position) < 0.6),"remote interpolation converges without simulating local collisions")
+	# The same two native clients can now opt into the ephemeral server duel.
+	a._action("combat_join")
+	b._action("combat_join")
+	check(await wait_for(func() -> bool: return a.combat_state.get("status") == "active" and b.combat_state.get("status") == "active"),"two native clients start the online duel")
+	check(await wait_for(func() -> bool: return a.player.position.distance_to(b.player.position) > 4 and a.player.position.distance_to(b.player.position) < 8),"server places duelists apart before the first attack")
+	a._action("combat_skill_0")
+	check(await wait_for(func() -> bool: return b.player.health < 120),"textured technique hit is resolved and synchronized by the server")
+	var health_after_skill: float = b.player.health
+	a._action("combat_ultimate")
+	check(await wait_for(func() -> bool: return b.player.health < health_after_skill,2.5),"clan ultimate waits through its windup then applies one level-scaled hit")
+	check(a.combat_effects.get_child_count() > 0 and b.combat_effects.get_child_count() > 0,"both clients render the shared image-texture combat spectacle")
+	a._action("combat_leave")
+	check(await wait_for(func() -> bool: return a.combat_state.is_empty() and b.combat_state.is_empty()),"leaving the duel removes the ephemeral combat state")
 	a.open_chat()
 	check(a.hud.blocked and a.chat_panel.visible and not a.hud.menu_panel.visible,"touch chat blocks movement without pausing network presence")
 	a.chat_panel.input.text = "Bonjour [b]Konoha[/b]"

@@ -6,7 +6,7 @@ Prototype avec **entraînement solo hors ligne**, **compte connecté** et **prem
 
 ## Sources 0.11 — village partagé, validation moteur à faire
 
-Deux comptes admis, avatars avec apparence sauvegardée, marche/course/saut et chat de proximité **RP/HRP** sont raccordés en code via le même serveur HTTPS/WSS. Reconnexion et départ gérés, sans combat ni économie réseau. **41 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite passent.** Les tests natifs de protocole et le scénario à deux clients Godot sont préparés, **pas encore exécutés**. Pas d’APK 0.11 annoncée. [Détails et limites](../docs/VILLAGE_PARTAGE.md).
+Deux comptes admis, avatars avec apparence sauvegardée, marche/course/saut et chat de proximité **RP/HRP** sont raccordés en code via le même serveur HTTPS/WSS. Le bouton **DÉFIER EN DUEL** ouvre un test à deux joueurs : le serveur décide des dégâts, recharges, chakra, niveau de test, ultime clanique, esquive et KO. Reconnexion et départ restent gérés ; le duel est éphémère et aucune progression n’est enregistrée. **43 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite passent.** L’exécution moteur à deux clients Godot et l’APK 0.11 restent à vérifier. [Détails et limites](../docs/VILLAGE_PARTAGE.md).
 
 Le propriétaire confirme **0.10 fonctionnelle sur son téléphone**. Cette version demeure la seule proposée au téléchargement jusqu’à validation complète du lot réseau.
 
@@ -70,7 +70,7 @@ Détails, contrôles et limites : [première zone de Konoha](../docs/KONOHA_PREM
 - **APPARENCE HORS LIGNE** garde une sauvegarde distincte, sans requête réseau. Les choix du compte ne remplacent pas le combattant local ni ses quatre techniques de test.
 - Une réinstallation efface les choix **locaux** des versions précédentes, qui ne sont pas automatiquement transférés sur le compte. Les modèles, sons et combats validés sont conservés. Affichage **PROTO 0.6**.
 
-**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Compte et mission 0.9 confirmés par le propriétaire ; déploiement des ajouts site 0.10 encore à effectuer, sans vérification indépendante de la production par l’agent. Le quartier 0.7 est une visite solo avec ce profil, pas un monde multijoueur ou une zone de combat partagée.
+**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Compte et mission 0.9 confirmés par le propriétaire ; déploiement des ajouts site 0.10 encore à effectuer, sans vérification indépendante de la production par l’agent. Le quartier conserve la mission personnelle, mais sa présence partagée et son duel réseau restent un mode de test limité à deux joueurs admis ; ce n’est pas encore le serveur RP complet.
 
 ## Créateur 0.5 conservé — apparence hors ligne
 

@@ -6,7 +6,7 @@ Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un
 
 ## Lot suivant — village partagé en validation
 
-Le propriétaire confirme **0.10 sur téléphone**. Les sources suivantes préparent deux joueurs admis visibles ensemble, marche/course/saut, reconnexion sans doublons et chat de proximité RP/HRP. **41 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite** passent ; le raccordement Godot est écrit, mais son exécution moteur et l’APK **0.11** restent à vérifier. Aucun combat réseau ou échange ajouté. Le site propose toujours **0.10**, pas une version non compilée. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
+Le propriétaire confirme **0.10 sur téléphone**. Le lot suivant permet maintenant à **deux joueurs admis** de rejoindre le même quartier, de lancer un duel de test, de marcher/esquiver et d’utiliser les quatre techniques ainsi qu’une ultime clanique. Les dégâts, recharges, chakra, niveau de test et KO sont décidés par le serveur ; aucune progression n’est écrite. **43 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite** passent ; l’exécution moteur à deux clients et l’APK **0.11** restent à vérifier. Le site propose toujours **0.10**, pas une version non compilée. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
 
 ## Lot 0.10 — administration, téléchargement et musique
 
@@ -125,7 +125,7 @@ Un Chromium déjà installé peut être utilisé via `CHROMIUM_EXECUTABLE`. Le t
 - Une édition du quiz n’altère pas les dossiers déjà envoyés.
 - Les offres gratuites peuvent se mettre en veille et suspendre le service au dépassement de quotas. Elles ne garantissent pas le futur serveur de jeu 24 h/24.
 - Les mentions de confidentialité, contact du responsable, durées de conservation, suppression, âge des participants et éventuelle vérification d’e-mail restent à finaliser avant collecte publique.
-- Android, serveur de combat, inventaires et quêtes jouables restent hors de cette livraison.
+- La progression de combat persistante, les inventaires et les quêtes jouables restent hors de cette livraison ; le duel réseau actuel est un mode de test éphémère.
 
 ## Organisation
 

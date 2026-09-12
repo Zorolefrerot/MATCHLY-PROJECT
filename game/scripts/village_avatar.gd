@@ -9,6 +9,8 @@ var motion: String = "idle"
 var has_pose: bool = false
 var animation_clock: float = 0.0
 var current_appearance: Dictionary = {}
+var base_name: String = "Genin"
+var combat_health: int = 120
 
 func _ready() -> void:
 	fighter = TrainingFighter.new()
@@ -24,11 +26,19 @@ func _ready() -> void:
 	hide() # A roster alone must not show phantom avatars at the origin.
 
 func configure(data: Dictionary) -> void:
-	nameplate.text = data["name"]
+	base_name = data["name"]
+	nameplate.text = base_name
 	var look: Dictionary = data["appearance"] if data.get("appearance") is Dictionary else CharacterAppearance.DEFAULTS
 	if look != current_appearance:
 		current_appearance = look.duplicate()
 		fighter.apply_appearance(look)
+
+func set_combat_health(value: int, active: bool) -> void:
+	combat_health = clampi(value,0,120)
+	if active:
+		nameplate.text = "%s\n%d PV" % [base_name,combat_health]
+	else:
+		nameplate.text = base_name
 
 func update_pose(data: Dictionary) -> void:
 	target = Vector3(float(data["p"][0]),float(data["p"][1]),float(data["p"][2]))
