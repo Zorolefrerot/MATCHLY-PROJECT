@@ -4,7 +4,7 @@
 
 ## Résultat 0.11 — APK vérifiée
 
-Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34725333120](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34725333120), sur la branche active, réussit l’import Godot 4.5.1, **310 assertions de simulation**, le scénario WSS avec deux clients Godot dans le village complet, le rendu des effets et l’export Android.
+Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34725480467](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34725480467), sur la branche active, réussit l’import Godot 4.5.1, **310 assertions de simulation**, le scénario WSS avec deux clients Godot dans le village complet, le rendu des effets et l’export Android.
 
 | Vérification | Résultat réel |
 |---|---|
@@ -15,8 +15,8 @@ Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exéc
 | WSS entre deux visites Godot | Réussi avec profils et SQLite jetables |
 | Ultimes et rendu GL | Réussi ; effets visibles et prolongés contrôlés |
 | APK | Version **0.11.0**, code **11**, API minimum 24/cible 35, ARM64/ARMv7 |
-| APK à l’intérieur du ZIP | **66 528 794 octets**, SHA-256 `4e00117aca1436252e1576f8fac46eb9e0534cb93d0c69913bbf999fdd037207` |
-| ZIP GitHub | [`idrem-zenkai-android-39`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34725333120/artifacts/10307602375), **71 721 639 octets**, conservation GitHub temporaire |
+| APK à l’intérieur du ZIP | **66 528 794 octets**, SHA-256 `90f7f93d0a918de1594b02246cac753e378b989750f7ee3221d6ac48aa6d431f` |
+| ZIP GitHub | [`idrem-zenkai-android-40`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34725480467/artifacts/10308065749), **71 720 527 octets**, conservation GitHub temporaire |
 | Téléphones Android physiques | Essai sur deux appareils encore à faire |
 | Production Render | Manual Deploy nécessaire pour afficher 0.11 sur le site |
 

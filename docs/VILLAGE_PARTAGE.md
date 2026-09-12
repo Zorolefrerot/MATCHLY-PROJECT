@@ -2,7 +2,7 @@
 
 **Ajout au lot regroupé 0.11 :** deux joueurs admis peuvent parcourir la carte complète de Konoha et lancer un duel réseau éphémère, avec quatre attaques texturées et une ultime clanique monumentale. Le village contient ses quartiers, son marché, ses routes, sa rivière, ses PNJ actifs et ses animaux. Les dégâts, recharges, chakra, niveau de test, évitement de l’ultime et KO sont résolus par le serveur ; les comptes et la progression ne changent pas. [Détails des textures et ultimes](ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
 
-**12 septembre 2026 : APK 0.11 compilée et artefact vérifié.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés. L’exécution GitHub Actions **34719396621** a réussi l’import Godot, le WSS avec deux clients Godot, le rendu des ultimes, l’export/signature Android et les contrôles de permissions. L’essai physique sur deux téléphones reste à faire.
+**13 septembre 2026 : APK 0.11 compilée et artefact vérifié.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés. L’exécution GitHub Actions **34725480467** a réussi l’import Godot, les **310 assertions**, le WSS avec deux clients Godot dans le village complet, le rendu des ultimes, l’export/signature Android et les contrôles de permissions. L’essai physique sur deux téléphones reste à faire.
 
 ## Périmètre
 
