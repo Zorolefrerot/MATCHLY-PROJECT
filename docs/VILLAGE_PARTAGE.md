@@ -2,7 +2,7 @@
 
 **Ajout au lot regroupé 0.11 :** deux joueurs admis peuvent lancer un duel réseau éphémère, avec quatre attaques texturées et une ultime clanique monumentale. Les dégâts, recharges, chakra, niveau de test, évitement de l’ultime et KO sont résolus par le serveur ; les comptes et la progression ne changent pas. [Détails des textures et ultimes](ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
 
-**12 septembre 2026 : sources 0.11 en validation, pas d’APK 0.11 livrée.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés.
+**12 septembre 2026 : APK 0.11 compilée et artefact vérifié.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés. L’exécution GitHub Actions **34719396621** a réussi l’import Godot, le WSS avec deux clients Godot, le rendu des ultimes, l’export/signature Android et les contrôles de permissions. L’essai physique sur deux téléphones reste à faire.
 
 ## Périmètre
 
@@ -16,7 +16,7 @@ Le rayon de 12 m est un paramètre initial du prototype, pas une nouvelle règle
 
 ## Serveur et accès
 
-`server/village.js` installe **WSS `/api/game/village` sur le même serveur et le même port que le site**, dans `server/index.js`. Dépendance `ws` **8.21.3**, version verrouillée et auditée. Pas de service payant supplémentaire, d’URL locale dans l’application, de changement de secrets ou de workflow GitHub.
+`server/village.js` installe **WSS `/api/game/village` sur le même serveur et le même port que le site**, dans `server/index.js`. Dépendance `ws` **8.21.3**, version verrouillée et auditée. Pas de service payant supplémentaire, d’URL locale dans l’application ni de nouveau secret ; le workflow Android versionné compile la branche active.
 
 - HTTPS requis en production derrière le proxy Render existant ; origine étrangère refusée lorsqu’un en-tête Origin est présent.
 - Uniquement `Authorization: Bearer …` de la session native. Cookie du site/propriétaire, jeton en URL, candidat non admis, compte sans attribution et session expirée refusés.
@@ -68,7 +68,7 @@ Le client vide la saisie **après acquittement**. En cas de coupure ou délai, i
 - Les en-têtes de session absents ou malformés sont refusés avant toute acquisition de connexion/verrou de base. Test avec un adaptateur interdisant tout accès DB.
 - Une salle momentanément pleine ou un bail non renouvelé utilise le code transitoire **1013**, même si un paquet arrive avant le prochain tick. Le client peut réessayer sans effacer une connexion de compte encore valable. Une véritable expiration reste **4003** ; les révocations vérifiées le restent également.
 - Contrats SQLite et PostgreSQL relancés : chemin inconnu, capacité puis départ, reprise, expiration et suppression restent couverts.
-- Les anciens artefacts Android 6 et 9 sont **toujours présents** lors du nouveau contrôle GitHub (total inchangé : 517 240 603 octets). Aucun effacement ou lancement de compilation effectué. L’essai d’accès à un miroir du binaire Godot a également échoué ; aucune validation native supplémentaire n’est prétendue.
+- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-25` a été généré par GitHub Actions ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 19 septembre 2026.
 
 ## Application
 
@@ -86,17 +86,15 @@ Perte de focus → fermeture ; retour → reconnexion. Coupure transitoire → t
 
 - **43 tests Node** : contrats HTTP précédents conservés, tests déterministes de salle, duel serveur (portée, cooldown, niveau et ultime) et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
 - **10 tests PostgreSQL réel jetable**, dont le contrat réseau avec mutations depuis un deuxième pool.
-- **2 parcours Playwright** et Vite réussis après `npm ci` : les fonctions du site et le téléchargement 0.10 sont conservés.
-- Analyse statique GDScript sans nouvelle erreur ; seul le faux positif historique de géométrie `PackedVector3Array` reste inchangé. Ce n’est pas une exécution du moteur.
+- **2 parcours Playwright** et Vite réussis après `npm ci` : les fonctions du site et le téléchargement réservé aux admis sont conservés, avec les métadonnées 0.11.
+- Le contrôle Godot 4.5.1 en CI réussit l’import, les assertions de gameplay, le scénario WSS Node ↔ deux clients Godot et le rendu GL des effets. Cela ne remplace pas un essai de fluidité ou de connexion sur deux téléphones.
 - Audit npm : zéro vulnérabilité signalée au moment du contrôle.
 
-### Préparée mais NON exécutée à ce stade
+### Restant après la compilation
 
-- Vérifications supplémentaires de protocole dans `game/tests/smoke.gd`.
-- **Vrai test WSS entre Node et deux visites Godot** : `game/tests/run-network.mjs` et `village_network.gd`. Base SQLite, profils et certificat local jetables ; ne lit jamais la base de production. Exercices de noms/apparences, marche/course/saut, chat RP/HRP proche/loin, duel, textures d’attaque, ultime, focus, reconnexion et remplacement.
-- Ce test est raccordé à `game/tools/check.sh`, **avant tout export Android**. Une erreur ou l’absence du marqueur de succès bloque l’APK. Le workflow GitHub lui-même n’est pas modifié.
-- Captures supplémentaires préparées : autre avatar et chat, avec profils explicitement fictifs. Pas encore rendues ni inspectées.
-- Import/exécution Godot 4.5.1, export/signature 0.11, écoute et essai avec deux téléphones à faire.
+- Installer l’APK 0.11 sur deux téléphones Android et vérifier l’ergonomie tactile, le clavier de chat, la reconnexion et le délai réel du WSS.
+- Déployer le dernier commit sur le service Render existant : `render.yaml` cible maintenant la branche active, mais le service conserve son **Manual Deploy**.
+- L’artefact GitHub reste un stockage temporaire ; un hébergement Android permanent ou une publication Play Store n’est pas encore en place.
 
 ```sh
 npm ci
@@ -107,15 +105,15 @@ npm run test:browser
 GODOT_BIN=/chemin/godot bash game/tools/check.sh
 ```
 
-**Ne pas annoncer l’APK 0.11 avant ces contrôles.** `server/android-build.js` reste sur **0.10**, déjà compilée et confirmée par le propriétaire.
+`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée : ZIP `idrem-zenkai-android-25`, **68 909 306 octets**, expiration **19 septembre 2026 à 21:17:09 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
 
 ## Livraison groupée et hébergement gratuit
 
-Avant la prochaine compilation : les artefacts non expirés du dépôt totalisent **517 240 603 octets (environ 493,3 Mio)**. Ce n’est pas le relevé de facturation global GitHub. Deux anciens ZIP peuvent être retirés manuellement, en conservant les versions récentes :
+Le nouvel artefact Android 0.11 est temporaire et reste soumis au quota/rétention GitHub. Ce n’est pas le relevé de facturation global GitHub. Deux anciens ZIP peuvent être retirés manuellement, en conservant la version active :
 
 - [`idrem-zenkai-android-6`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34446543408) : 62 880 104 octets, artefact 10139893231.
 - [`idrem-zenkai-android-9`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34449560323) : 62 950 239 octets, artefact 10141009252.
 
-Aucun de ces fichiers n’a été supprimé par l’agent, aucun budget ou paiement modifié. **Garder Android 18 et 19**, en particulier le lien 0.10 actuellement utilisé par le site. Pas d’APK intermédiaire.
+Aucun de ces fichiers n’a été supprimé par l’agent, aucun budget ou paiement modifié. **Garder l’artefact Android 25** tant que le nouveau lien est utilisé par le site. Les artefacts 18 et 19 restent l’historique 0.10 ; ils ne sont plus la version annoncée. Pas d’APK intermédiaire.
 
-Après validation et compilation du lot entier : mettre à jour le lien vérifié du site, puis **Manual Deploy du dernier commit sur le service Render existant**, puis essai à deux. La salle existe en mémoire dans **un seul processus Render**. Un redémarrage/redéploiement déconnecte tout le monde ; chacun rejoint une salle vide au retour. Pas de coordination entre plusieurs instances. Render/Neon gratuits peuvent se mettre en veille ; aucune garantie 24 h/24 ou de disponibilité permanente. Le trafic de présence consomme aussi les quotas gratuits : vingt joueurs continus ne sont pas promis par ce prototype à deux.
+Le lien vérifié du site est maintenant mis à jour vers l’artefact 0.11 ; il reste à effectuer le **Manual Deploy du dernier commit sur le service Render existant**, puis l’essai à deux. La salle existe en mémoire dans **un seul processus Render**. Un redémarrage/redéploiement déconnecte tout le monde ; chacun rejoint une salle vide au retour. Pas de coordination entre plusieurs instances. Render/Neon gratuits peuvent se mettre en veille ; aucune garantie 24 h/24 ou de disponibilité permanente. Le trafic de présence consomme aussi les quotas gratuits : vingt joueurs continus ne sont pas promis par ce prototype à deux.

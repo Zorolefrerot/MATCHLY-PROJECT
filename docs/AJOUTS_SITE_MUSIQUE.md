@@ -22,7 +22,7 @@ Une suppression libère la place correspondante ; une nouvelle admission puis at
 
 Le panneau **Installer IDREM ZENKAI** n’apparaît que pour un compte accepté. `GET /api/game-download` recontrôle la session et l’admission au moment du clic ; ni l’administrateur ni un candidat en attente ne peut utiliser cette route. Les réponses sont non mises en cache.
 
-Le panneau pointe actuellement vers **l’APK 0.10 vérifié**, incluant la musique : ZIP d’environ 68 Mo, nom de l’APK, instructions d’extraction et limites de réinstallation. La connexion GitHub est nécessaire pour ce stockage temporaire, signalée avant le clic. Après l’expiration du **18 septembre 2026 à 12:57:34 UTC**, le bouton est retiré et la route renvoie 410 au lieu de rediriger vers un fichier périmé. Métadonnées actualisées dans `server/android-build.js` uniquement après compilation réussie.
+Pour le lot historique 0.10, le panneau pointait vers **l’APK 0.10 vérifiée**, incluant la musique. Le même mécanisme protège maintenant l’**APK 0.11.0** compilée : ZIP d’environ 69 Mo, nom de l’APK, instructions d’extraction et limites de réinstallation. La connexion GitHub est nécessaire pour ce stockage temporaire, signalée avant le clic. Après l’expiration du nouvel artefact, le bouton est retiré et la route renvoie 410 au lieu de rediriger vers un fichier périmé. Métadonnées actualisées dans `server/android-build.js` uniquement après compilation réussie.
 
 Il s’agit d’un **contrôle d’accès à la distribution sur le site**, pas d’un DRM : un joueur peut partager un fichier déjà téléchargé, et le lien GitHub ne possède pas une autorisation liée au compte du site. Le jeu connecté continue de vérifier l’admission. Aucun compte GitHub ni secret de service n’est créé sur Render.
 
@@ -40,7 +40,7 @@ Un seul lecteur est rattaché à Konoha. Il respecte le volume général existan
 - **2 parcours Playwright Chromium réussis**, incluant les écrans mobiles, téléchargement accepté, confirmation erronée, mot de passe vidé, suppression d’un compte fictif et refus de son ancienne session. Captures mobiles inspectées et conservées ci-dessous. Aucun compte réel supprimé.
 - Tests de musique ajoutés à Godot : boucle distincte, volume général, absence de chevauchement du combat, commande tactile, focus et arrêt à la sortie. Analyse GDScript sans nouvelle erreur (l’avertissement tiers historique de géométrie 0.8 demeure). **238 assertions Godot passent**, dont les sept vérifications musicales. Fonctionnement sur téléphone ensuite confirmé par le propriétaire ; pilote audio Dummy pendant les tests automatisés.
 - **Aucun déploiement Render effectué par l’agent.** Pour activer les ajouts du site : service existant, branche `arena/01a08158-matchly-project`, Manual Deploy → Deploy latest commit. Migrations additives au démarrage, aucun nouveau secret. Les textes de confirmation exposent la libération de place avant toute action.
-- **Le lot réseau suivant est en validation des sources** ([état détaillé](VILLAGE_PARTAGE.md)). Il n’est pas inclus dans l’APK 0.10, et son exécution moteur n’est pas encore annoncée comme testée. Les trois ajouts sont regroupés dans un seul APK 0.10 ; aucun APK par petite tâche.
+- Le lot réseau 0.11 est désormais regroupé dans une APK distincte : la présence à deux, le chat RP/HRP et le duel de test ne sont pas rétroportés dans l’APK 0.10 historique. Les trois ajouts site/audio restent regroupés dans 0.10 ; le lien actif du site est maintenant celui de l’APK 0.11.
 
 ## Version regroupée vérifiée
 

@@ -4,7 +4,7 @@ services:
     name: idrem-zenkai
     runtime: node
     repo: https://github.com/Zorolefrerot/MATCHLY-PROJECT
-    branch: arena/01a08158-matchly-project
+    branch: arena/01a094b6-matchly-project
     plan: free
     region: frankfurt
     buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev

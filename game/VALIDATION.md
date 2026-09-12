@@ -1,16 +1,28 @@
-# Validation du prototype — 11 septembre 2026
+# Validation du prototype — 12 septembre 2026
 
-**Ajout au lot regroupé 0.11 :** attaques enrichies d’images/textures et laboratoire de quatorze ultimes monumentales avec niveau simulé, sans changer les comptes. [Détails et limites](../docs/ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
+**Lot regroupé 0.11 compilé :** attaques enrichies d’images/textures, quatorze ultimes monumentales, présence partagée, chat RP/HRP et duel de test à deux joueurs admis. Les comptes et la progression persistante ne changent pas. [Détails et limites](../docs/ULTIMES_ET_TEXTURES.md).
 
-## Lot suivant 0.11 — sources en validation, aucun nouvel APK
+## Résultat 0.11 — APK vérifiée
 
-Le propriétaire confirme que **0.10 fonctionne sur son téléphone**, puis autorise la suite. Présence, mouvements, reconnexion et chat de proximité raccordés côté serveur et Godot. **41 tests Node, 10 tests PostgreSQL, 2 parcours Playwright et Vite** réussis localement après installation verrouillée. Analyse GDScript sans nouvelle erreur, faux positif historique de géométrie inchangé.
+Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34719396621](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34719396621), sur la branche active, réussit l’import Godot 4.5.1, **308 assertions de simulation**, le scénario WSS avec deux clients Godot, le rendu des effets et l’export Android.
 
-**Les nouveaux tests moteur, le scénario WSS Node ↔ deux visites Godot, les captures 0.11 et l’export Android ne sont pas encore exécutés.** Ils précèdent la prochaine APK regroupée. Libérer d’abord de la place parmi les anciens artefacts GitHub ; aucun budget, fichier de workflow ou compte réel modifié. [Contrat et plan de validation](../docs/VILLAGE_PARTAGE.md).
+| Vérification | Résultat réel |
+|---|---|
+| Tests Node | **43/43 passent** |
+| Tests PostgreSQL réel jetable | **10/10 passent** |
+| Parcours Playwright Chromium | **2/2 passent** |
+| Construction Vite | Réussie |
+| WSS entre deux visites Godot | Réussi avec profils et SQLite jetables |
+| Ultimes et rendu GL | Réussi ; effets visibles et prolongés contrôlés |
+| APK | Version **0.11.0**, code **11**, API minimum 24/cible 35, ARM64/ARMv7 |
+| APK à l’intérieur du ZIP | **64 201 506 octets**, SHA-256 `ade3b87516f18ec6f0fc52698552067941ace38bbb8c24e081b360cb811b2d45` |
+| ZIP GitHub | [`idrem-zenkai-android-25`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34719396621/artifacts/10305958374), **68 909 306 octets**, expiration 19 septembre 2026 à 21:17:09 UTC |
+| Téléphones Android physiques | Essai sur deux appareils encore à faire |
+| Production Render | Manual Deploy nécessaire pour afficher 0.11 sur le site |
 
-Les preuves ci-dessous concernent les APK déjà compilées, pas une validation moteur anticipée du code 0.11.
+Les contrôles utilisent des bases jetables et des profils fictifs. L’artefact est un stockage GitHub temporaire, pas un hébergement permanent ni un DRM. [Contrat et limites](../docs/VILLAGE_PARTAGE.md).
 
-## Résultats actuels du lot regroupé 0.10
+## Historique — résultats du lot regroupé 0.10
 
 | Vérification | Résultat réel |
 |---|---|

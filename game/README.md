@@ -4,11 +4,11 @@
 
 Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
-## Sources 0.11 — village partagé, validation moteur à faire
+## Sources 0.11 — village partagé, APK compilée, essai téléphone à faire
 
-Deux comptes admis peuvent se connecter séparément au même quartier, avec leur nom affiché au-dessus de l’avatar, leur apparence sauvegardée, marche/course/saut et chat de proximité **RP/HRP** via le même serveur HTTPS/WSS. Le bouton **DÉFIER EN DUEL** ouvre un test à deux joueurs : le serveur décide des dégâts, recharges, chakra, niveau de test, ultime clanique, esquive et KO. Reconnexion et départ restent gérés ; le duel est éphémère et aucune progression n’est enregistrée. **43 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite passent.** L’exécution moteur à deux clients Godot et l’APK 0.11 restent à vérifier. [Détails et limites](../docs/VILLAGE_PARTAGE.md).
+Deux comptes admis peuvent se connecter séparément au même quartier, avec leur nom affiché au-dessus de l’avatar, leur apparence sauvegardée, marche/course/saut et chat de proximité **RP/HRP** via le même serveur HTTPS/WSS. Le bouton **DÉFIER EN DUEL** ouvre un test à deux joueurs : le serveur décide des dégâts, recharges, chakra, niveau de test, ultime clanique, esquive et KO. Reconnexion et départ restent gérés ; le duel est éphémère et aucune progression n’est enregistrée. **43 tests Node, 10 tests PostgreSQL, 2 parcours navigateur, Vite et le contrôle Godot/Android 0.11 passent.** Le test physique sur deux téléphones reste à faire. [Détails et limites](../docs/VILLAGE_PARTAGE.md).
 
-Le propriétaire confirme **0.10 fonctionnelle sur son téléphone**. Cette version demeure la seule proposée au téléchargement jusqu’à validation complète du lot réseau.
+Le propriétaire confirme **0.10 fonctionnelle sur son téléphone**. L’APK **0.11.0** est maintenant compilée et le site pointe vers son artefact temporaire ; le déploiement Render doit encore être effectué pour rendre cette nouvelle version visible en production.
 
 ## Lot 0.10 — musique du village et ajouts au site
 
@@ -16,8 +16,8 @@ La musique fournie joue en fond dans Konoha, avec **MUSIQUE : OUI/NON**, le volu
 
 **238 assertions Godot**, 31 tests Node, 9 tests PostgreSQL et 2 parcours Playwright réussis. APK debug exporté, signature et permissions vérifiées ; arrivée et journal inspectés. **Fonctionnement sur téléphone ensuite confirmé par le propriétaire.** Le multijoueur n’est pas inclus dans 0.10. [Détails](../docs/AJOUTS_SITE_MUSIQUE.md).
 
-- [ZIP `idrem-zenkai-android-19` — environ 68 Mo](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231/artifacts/10264293080), jusqu’au **18 septembre 2026** ; connexion GitHub nécessaire.
-- [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231). Extraire **`idrem-zenkai-training-debug.apk`**, pas les journaux.
+- [ZIP `idrem-zenkai-android-25` — environ 69 Mo](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34719396621/artifacts/10305958374), jusqu’au **19 septembre 2026** ; connexion GitHub nécessaire.
+- [Exécution verte 0.11](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34719396621). Extraire **`idrem-zenkai-training-debug.apk`**, pas les journaux.
 - Même fichier proposé par **Installer IDREM ZENKAI** dans l’espace des joueurs acceptés après déploiement du site.
 
 ![Konoha 0.10, capture ordinateur réelle](../docs/images/konoha-10-arrival.jpg)
