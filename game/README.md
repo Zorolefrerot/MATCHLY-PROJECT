@@ -50,6 +50,12 @@ Une seule version réunit le lot demandé : **accepter la mission auprès d’Ao
 
 Sources, méthode et limites : [`assets/konoha/README.md`](assets/konoha/README.md).
 
+## Village complet — carte, quartiers et vie locale
+
+Le quartier d’accueil est devenu une carte complète de Konoha : mur circulaire et quatre portes, routes et rivière avec ponts, forêt de la Mort, mémorial, résidence du Hokage, académie, marché, hôpital, poste de police, stade, sources chaudes et quartiers Shun, Hattori, Hyūga, Uzumaki, Uchiwa, Nara, Akimichi, Yamanaka, Inuzuka, Aburame et Hatake. Les maisons rondes et les toits utilisent les textures de référence préparées dans `assets/konoha/`.
+
+La scène peuple aussi les rues de femmes, hommes, anciens, filles, garçons, chiens, chats, porc et poules. Certains suivent des itinéraires, certains discutent par paires, et des marchands/acheteurs animent le marché. Cette vie est locale et décorative : aucune monnaie, transaction ou progression d’inventaire n’est encore persistée. Voir [la fiche technique du village complet](../docs/KONOHA_VILLAGE_ENTIER.md).
+
 ## Parcours 0.7.0 conservé — première zone de Konoha
 
 - **MON COMPTE → connexion → ENTRER À KONOHA · PREMIÈRE ZONE SOLO**. Entrée distincte du retour à l’entraînement, avec nouvelle vérification de la session et chargement de l’apparence du compte.

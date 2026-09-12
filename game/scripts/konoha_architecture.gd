@@ -144,6 +144,22 @@ func house(point: Vector3, upper_green: bool = true) -> void:
 	for offset in [Vector3(-0.8,0,0.4),Vector3(0.6,0,-0.2)]:
 		lathe([Vector2(0.27,6.7),Vector2(0.27,7.85),Vector2(0.33,7.85),Vector2(0.33,7.99)],point+offset,Vector2.ONE,materials["stone"],Vector2.ONE,false,12)
 
+func compact_house(point: Vector3, roof: String = "tiles", height: float = 4.8) -> void:
+	# Background homes use the same reference palette with fewer rings for mobile performance.
+	house_count += 1
+	var stretch := Vector2(1.0,0.9)
+	_wall(2.8,0.0,height*0.58,point,stretch,materials["plaster"])
+	var roof_material: Material = materials["gold"] if roof == "gold" else materials["tiles"]
+	lathe([Vector2(2.72,height*0.54),Vector2(3.05,height*0.62),Vector2(3.15,height*0.76),Vector2(0,height)],point,stretch,roof_material,Vector2(5,1),false,20)
+	_windows(point,2.8,stretch,height*0.34,8,Vector2(0.72,0.9),Vector2i(1,0),true)
+	_panel(point+Vector3(0,0.92,2.5),Vector2(1.0,1.7),0,Vector2i(0,1))
+
+func tower(point: Vector3, color: String = "red", height: float = 12.0) -> void:
+	var wall_material: Material = materials["red"] if color == "red" else materials["plaster"]
+	_wall(3.0,0.0,height,point,Vector2.ONE,wall_material)
+	lathe([Vector2(3.0,height-0.3),Vector2(3.5,height),Vector2(0,height+2.6)],point,Vector2.ONE,materials["gold"],Vector2(6,1),false,24)
+	_windows(point,3.0,Vector2.ONE,height*0.42,12,Vector2(0.5,0.9),Vector2i(1,0))
+
 func palace(point: Vector3) -> void:
 	palace_built = true
 	# Lower rounded wings frame the central red drum, matching the reference.

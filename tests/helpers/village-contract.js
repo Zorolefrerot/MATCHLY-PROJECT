@@ -167,7 +167,7 @@ export async function villageContract(db, secondDb = db) {
       JSON.stringify({
         type: "move",
         seq: 0,
-        p: [0, 1, 21],
+        p: [0, 1, 77],
         yaw: 1,
         motion: "jump",
       }),

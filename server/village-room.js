@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto";
 export const VILLAGE = Object.freeze({
   protocol: 1,
   capacity: 20,
-  radius: 12,
-  spawn: Object.freeze([0, 0.25, 22]),
+  radius: 18,
+  spawn: Object.freeze([0, 0.25, 78]),
   leaseMs: 5000,
 });
 
@@ -618,10 +618,10 @@ const position = (p) =>
   Array.isArray(p) &&
   p.length === 3 &&
   p.every(Number.isFinite) &&
-  Math.abs(p[0]) <= 31 &&
+  Math.abs(p[0]) <= 86 &&
   p[1] >= -5 &&
   p[1] <= 12 &&
-  Math.abs(p[2]) <= 35;
+  Math.abs(p[2]) <= 92;
 const direction = (p) =>
   Array.isArray(p) &&
   p.length === 3 &&

@@ -12,7 +12,7 @@
 - Texte de proximité **RP / HRP**, rayon **12 mètres**, sans canal global, équipe ou message privé dans ce premier lot.
 - Aucune admission supplémentaire, récompense, progression, échange, modification de tirage, position persistante ou validation physique des missions. Le duel de test est la seule action de combat réseau ; mission personnelle, apparence cloud, entraînement solo et musique restent conservés.
 
-Le rayon de 12 m est un paramètre initial du prototype, pas une nouvelle règle narrative imposée. Les murs n’atténuent pas le chat dans ce premier quartier extérieur. Les actions écrites n’ont aucun effet mécanique.
+Le rayon de 18 m reste un paramètre initial du prototype, pas une nouvelle règle narrative imposée. Les murs n’atténuent pas le chat. Les actions écrites n’ont aucun effet mécanique ; les achats observés au marché sont décoratifs tant que l’économie persistante n’est pas implémentée.
 
 ## Serveur et accès
 

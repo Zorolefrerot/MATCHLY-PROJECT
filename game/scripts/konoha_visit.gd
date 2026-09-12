@@ -99,7 +99,7 @@ func _ready() -> void:
 	pivot.add_child(arm)
 	var camera := Camera3D.new()
 	camera.fov = 67
-	camera.far = 105
+	camera.far = 235
 	arm.add_child(camera)
 	camera.current = true
 	hud = KonohaHUD.new()
@@ -187,7 +187,7 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("skill_%d" % i): _combat_action("skill_%d" % i)
 	if Input.is_action_just_pressed("ultimate"): _combat_action("ultimate")
 	player.simulate(delta, direction, hud.sprinting or Input.is_action_pressed("sprint"))
-	if player.position.y < -5 or absf(player.position.x) > 31 or absf(player.position.z) > 35:
+	if player.position.y < -5 or absf(player.position.x) > KonohaMap.BOUNDS.x or absf(player.position.z) > KonohaMap.BOUNDS.y:
 		player.reset_at(KonohaMap.SPAWN)
 		if is_instance_valid(village_link): village_link.respawn()
 		hud.notice("Retour au point d’arrivée du quartier.")
