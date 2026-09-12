@@ -133,7 +133,7 @@ func run() -> void:
 	a.resume_visit()
 	a.hud.move_vector = Vector2(0,-1)
 	a.hud.sprinting = true
-	check(await wait_for(func() -> bool: return a.player.position.distance_to(b.player.position) > 15,5),"one native player can leave proximity along the village road")
+	check(await wait_for(func() -> bool: return a.player.position.distance_to(b.player.position) > 22,5),"one native player can leave proximity along the village road")
 	a._clear_inputs()
 	await create_timer(0.35).timeout
 	a.open_chat()
