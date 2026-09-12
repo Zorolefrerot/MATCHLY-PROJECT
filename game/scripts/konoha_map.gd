@@ -7,9 +7,9 @@ const BOUNDS := Vector2(86.0, 92.0)
 const SPAWN := Vector3(0, 0.25, 78)
 const GUIDE := Vector3(-4.0, -0.05, 65)
 const LANDMARKS: Array[Dictionary] = [
-	{"name": "Académie", "point": Vector3(-34, 0, 2), "text": "L’Académie de Konoha accueille les jeunes ninjas. Les terrains d’examen s’étendent derrière les salles de cours."},
-	{"name": "Marché", "point": Vector3(-7, 0, 25), "text": "Le marché central rassemble les marchands, les familles et les voyageurs. Les habitants négocient ici leurs achats quotidiens."},
-	{"name": "Résidence du Hokage", "point": Vector3(0, 0, -46), "text": "La résidence du Hokage domine l’axe central, face aux visages sculptés dans la montagne."}
+	{"name": "Académie", "point": Vector3(-34, 0, 7), "text": "L’Académie de Konoha accueille les jeunes ninjas. Les terrains d’examen s’étendent derrière les salles de cours."},
+	{"name": "Marché", "point": Vector3(-7, 0, 19), "text": "Le marché central rassemble les marchands, les familles et les voyageurs. Les habitants négocient ici leurs achats quotidiens."},
+	{"name": "Résidence du Hokage", "point": Vector3(0, 0, -39), "text": "La résidence du Hokage domine l’axe central, face aux visages sculptés dans la montagne."}
 ]
 const DISTRICTS: Array[Dictionary] = [
 	{"name":"FORÊT DE LA MORT", "point":Vector3(-58,0,-64), "kind":"forest"},

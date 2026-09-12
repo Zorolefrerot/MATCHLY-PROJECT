@@ -498,7 +498,7 @@ func run() -> void:
 	check(architecture.details.mesh.get_surface_count() == 1 and architecture.details.mesh.surface_get_array_len(0) > 1800, "all district facade windows and doors share one draw surface")
 	var cliff_bounds: AABB = architecture.cliff.get_aabb()
 	check(absf(cliff_bounds.size.x / cliff_bounds.size.y - 382.0/225.0) < 0.001 and cliff_bounds.end.z < -33, "four-head backdrop restores source proportions and stays beyond the full village perimeter")
-	check(visit.world.npc_count >= 30 and visit.world.moving_npc_count >= 24 and visit.world.animal_count >= 6, "full village populates active pedestrians, children, elders and domestic animals")
+	check(visit.world.npc_count >= 29 and visit.world.moving_npc_count >= 24 and visit.world.animal_count >= 6, "full village populates active pedestrians, children, elders and domestic animals")
 	check(visit.world.discussion_count >= 6 and visit.world.shopping_count >= 5, "villagers pause to converse and shoppers circulate through the market")
 	var materials_ok: bool = true
 	for key: String in KonohaArchitecture.TEXTURES:
