@@ -94,6 +94,8 @@ func run() -> void:
 		return
 	var remote: VillageAvatar = b.remote_avatars[aid]
 	check(remote.nameplate.text == a.account_profile["character"]["name"] and remote.fighter.appearance == CharacterAppearance.sanitize(a.account_profile["appearance"]),"remote name and male/female appearance come from the account")
+	check(a.player.get_node("LocalNameplate").text == a.account_profile["character"]["name"] and b.player.get_node("LocalNameplate").text == b.account_profile["character"]["name"],"each independent client displays its own name above its avatar")
+	check(a.presence_count == 2 and b.presence_count == 2,"each independent connection sees two players in the shared village")
 	check(remote.fighter.collision_layer == 0 and remote.fighter.collision_mask == 0,"remote visuals cannot collide; combat remains server-authoritative")
 	a.hud.move_vector = Vector2(0,-1)
 	check(await wait_for(func() -> bool: return remote.motion == "walk"),"walking reaches the other native client")

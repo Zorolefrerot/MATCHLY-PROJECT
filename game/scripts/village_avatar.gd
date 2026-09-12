@@ -19,8 +19,11 @@ func _ready() -> void:
 	fighter.collision_mask = 0
 	nameplate = Label3D.new()
 	nameplate.position = Vector3(0,2.35,0)
-	nameplate.font_size = 28
+	nameplate.font_size = 30
 	nameplate.pixel_size = 0.008
+	nameplate.modulate = Color("fff0c9")
+	nameplate.outline_size = 8
+	nameplate.outline_modulate = Color("16272b")
 	nameplate.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	add_child(nameplate)
 	hide() # A roster alone must not show phantom avatars at the origin.

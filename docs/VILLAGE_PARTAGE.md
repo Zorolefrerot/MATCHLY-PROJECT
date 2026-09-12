@@ -6,7 +6,7 @@
 
 ## Périmètre
 
-- Deux comptes joueurs admis et déjà attribués, visibles avec leur nom de personnage et leur apparence sauvegardée.
+- Deux comptes joueurs admis et déjà attribués peuvent se connecter séparément à la même salle, visibles avec leur nom de personnage au-dessus de la tête et leur apparence sauvegardée.
 - Marche, course, saut et arrêt transmis ; affichage distant interpolé, sans collision entre joueurs.
 - Départ, retour après arrière-plan/coupure et remplacement d’une connexion du même compte sans avatar doublonné.
 - Texte de proximité **RP / HRP**, rayon **12 mètres**, sans canal global, équipe ou message privé dans ce premier lot.
@@ -76,7 +76,7 @@ Le client vide la saisie **après acquittement**. En cas de coupure ou délai, i
 
 `VillageAvatar` reste visuel pour la présence et reçoit seulement l’état de PV du duel. La simulation de combat est dans `VillageRoom`, côté serveur ; les avatars n’ont pas de collision ni de dégâts locaux. Les identités présentes sont réconciliées et les avatars disparus retirés. Déconnexion → avatars et duel effacés, sans effacer les étapes déjà confirmées de la mission.
 
-`VillageChat` utilise un panneau tactile, choix RP/HRP, fil défilant, saisie et accusé d’envoi. Il bloque les commandes du personnage, pas le réseau ou la musique. Sa hauteur tient compte du clavier virtuel ; **ergonomie et clavier Android encore à vérifier réellement**.
+`VillageChat` utilise un panneau tactile, choix RP/HRP, fil défilant, saisie et accusé d’envoi. Chaque client se connecte avec sa propre session native : aucun joueur n’a besoin d’héberger ou de rester connecté pour que l’autre entre dans le village. Les noms locaux et distants sont affichés au-dessus des avatars. Il bloque les commandes du personnage, pas le réseau ou la musique. Sa hauteur tient compte du clavier virtuel ; **ergonomie et clavier Android encore à vérifier réellement**.
 
 Perte de focus → fermeture ; retour → reconnexion. Coupure transitoire → tentatives espacées (1, 2, 4, 8, 16 s, puis arrêt après six échecs). Session retirée/compte ouvert ailleurs → retour nécessaire au compte, pas de lutte entre deux appareils. Une reconnexion réapparaît au point d’arrivée : aucune fausse sauvegarde de position.
 

@@ -32,6 +32,7 @@ var combat_effects: Node3D
 var combat_vfx: TrainingVFX
 var combat_state: Dictionary = {}
 var combat_level: int = 1
+var presence_count: int = 1
 var unread: int = 0
 
 func _ready() -> void:
@@ -63,6 +64,17 @@ func _ready() -> void:
 	var appearance: Variant = account_profile.get("appearance")
 	player.apply_appearance(appearance if appearance is Dictionary else CharacterAppearance.DEFAULTS)
 	player.reset_at(KonohaMap.SPAWN)
+	var local_nameplate := Label3D.new()
+	local_nameplate.name = "LocalNameplate"
+	local_nameplate.text = account_profile["character"]["name"]
+	local_nameplate.position = Vector3(0,2.35,0)
+	local_nameplate.font_size = 30
+	local_nameplate.pixel_size = 0.008
+	local_nameplate.modulate = Color("fff0c9")
+	local_nameplate.outline_size = 8
+	local_nameplate.outline_modulate = Color("16272b")
+	local_nameplate.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	player.add_child(local_nameplate)
 	guide = TrainingFighter.new()
 	world.add_child(guide)
 	guide.configure(Color("617b50"), 4, 120)
@@ -436,19 +448,30 @@ func _process(_delta: float) -> void:
 		motion = "jump" if not player.is_on_floor() else "run" if player.velocity.length() > 4.5 else "walk" if player.velocity.length() > 0.1 else "idle"
 	village_link.pose = {"p":[player.position.x,player.position.y,player.position.z],"yaw":wrapf(player.visual.rotation.y,-PI,PI),"motion":motion}
 
+func _set_presence(count: int) -> void:
+	presence_count = maxi(1,count)
+	if is_instance_valid(hud) and is_instance_valid(village_link) and village_link.connected:
+		hud.footer.text = "EN LIGNE · %d joueur(s) dans le quartier · Chat RP / HRP de proximité" % presence_count
+
 func _network_status(message: String) -> void:
 	if ending or not is_instance_valid(chat_panel):
 		return
 	var online: bool = is_instance_valid(village_link) and village_link.connected
 	chat_panel.set_network(online,message)
-	hud.footer.text = "DEV RÉSEAU · Village partagé · Mission personnelle" if online else "DEV RÉSEAU · Visite locale · Ouvre le CHAT pour l’état de connexion"
+	if online:
+		_set_presence(presence_count)
+	else:
+		hud.footer.text = "VISITE LOCALE · Ouvre le CHAT pour l’état de connexion"
 
 func _clear_remote() -> void:
 	for avatar: VillageAvatar in remote_avatars.values():
 		avatar.queue_free()
 	remote_avatars.clear()
+	presence_count = 1
 	combat_state.clear()
-	if is_instance_valid(hud): hud.set_combat_state({})
+	if is_instance_valid(hud):
+		hud.set_combat_state({})
+		hud.footer.text = "VISITE LOCALE · Ouvre le CHAT pour l’état de connexion"
 	if is_instance_valid(chat_panel):
 		chat_panel.set_network(false,"Hors ligne · Aucun message renvoyé automatiquement.")
 
@@ -553,6 +576,7 @@ func _network_event(event: Dictionary) -> void:
 			hud.set_combat_state({})
 			hud.set_combat_message("Duel terminé · le bouton DÉFIER EN DUEL relance un test")
 		"roster":
+			_set_presence(event["players"].size())
 			var present: Dictionary = {}
 			for data: Dictionary in event["players"]:
 				var id: int = int(data["id"])
