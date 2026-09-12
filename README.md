@@ -6,7 +6,7 @@ Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un
 
 ## Lot suivant — village partagé en validation
 
-Le propriétaire confirme **0.10 sur téléphone**. Le lot suivant permet maintenant à **deux joueurs admis** de rejoindre le même quartier, de lancer un duel de test, de marcher/esquiver et d’utiliser les quatre techniques propres à leur clan ainsi qu’une ultime clanique. Uchiwa est le seul clan Katon et Senju le seul clan Mokuton ; les dégâts, recharges, chakra, niveau de test et KO sont décidés par le serveur. **44 tests Node, 10 tests PostgreSQL, 2 parcours navigateur, Vite et le contrôle Godot/Android 0.11** passent ; le test physique sur deux téléphones reste à faire. Le site pointe désormais vers l’artefact APK 0.11, après déploiement de cette source sur Render. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
+Le propriétaire confirme **0.10 sur téléphone**. Le lot suivant permet maintenant à **deux joueurs admis** de rejoindre le même quartier, de lancer un duel de test, de marcher/esquiver et d’utiliser les quatre techniques propres à leur clan ainsi qu’une ultime clanique. Uchiwa est le seul clan Katon et Senju le seul clan Mokuton ; les dégâts, recharges, chakra, niveau de test et KO sont décidés par le serveur. **44 tests Node, 10 tests PostgreSQL, 2 parcours navigateur, Vite et le contrôle Godot/Android 0.11** passent ; le test physique sur deux téléphones reste à faire. Le site pointe vers l’artefact APK 0.11 ; le Manual Deploy Render de cette source reste à effectuer. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
 
 ## Lot 0.10 — administration, téléchargement et musique
 
@@ -18,7 +18,7 @@ Suppression protégée d’un compte accepté, panneau de téléchargement rése
 
 Le dépôt inclut `render.yaml`, l’accès PostgreSQL compatible Neon et la création privée du propriétaire au premier démarrage. Rien n’est déployé automatiquement dans les comptes de l’utilisateur. Configurer les secrets dans Render, jamais dans Git ni dans la conversation.
 
-Branche de cette version : **`arena/01a08158-matchly-project`** (pas `main`).
+Branche de cette version : **`arena/01a094b6-matchly-project`** (pas `main`).
 
 ## Compte Android connecté
 
