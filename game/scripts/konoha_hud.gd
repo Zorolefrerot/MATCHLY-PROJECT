@@ -125,7 +125,7 @@ func set_clan_techniques(value: Array) -> void:
 			continue
 		button.text = "%s\n%d chakra" % [str(data.get("name", "TECHNIQUE")), int(data.get("cost", 0))]
 		button.tooltip_text = "%s · %s" % [str(data.get("element", "Clan")), str(data.get("subtitle", "Technique particulière"))]
-		button.icon = atlas_icon(TECHNIQUE_ATLAS, int(data.get("motif", i)))
+		set_button_icon("combat_skill_%d" % i, int(data.get("motif", i)), TECHNIQUE_ATLAS)
 		button.add_theme_color_override("font_color", {"Katon":Color("ff864d"), "Mokuton":Color("8bcf78"), "Fūinjutsu":Color("ffa95c"), "Jūken":Color("a9dcff"), "Lames":Color("94cabb")}.get(str(data.get("element", "")), Color("e3eacb")))
 
 func set_combat_state(value: Dictionary) -> void:

@@ -105,9 +105,22 @@ func set_button_icon(action: String, cell: int, atlas: Texture2D = CONTROL_ATLAS
 	if not buttons.has(action):
 		return
 	var button: Button = buttons[action]
-	button.icon = atlas_icon(atlas, cell)
-	button.expand_icon = true
-	button.add_theme_constant_override("h_separation", 7)
+	# Button.icon uses the atlas cell's native 256 px minimum in Godot 4.5.
+	# Keep the atlas texture, but draw it through a size-independent child so
+	# responsive touch buttons keep their authored bounds on a 1280x720 screen.
+	button.icon = null
+	button.expand_icon = false
+	var icon: TextureRect = button.get_node_or_null("AtlasIcon") as TextureRect
+	if icon == null:
+		icon = TextureRect.new()
+		icon.name = "AtlasIcon"
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.position = Vector2(6, 6)
+		icon.size = Vector2(28, 28)
+		button.add_child(icon)
+	icon.texture = atlas_icon(atlas, cell)
 
 func _activate(action: String) -> void:
 	if action == "sprint":
