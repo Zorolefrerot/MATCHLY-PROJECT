@@ -480,7 +480,7 @@ func run() -> void:
 	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("Genin Test"), "Konoha uses the account identity and saved appearance")
 	check(visit.hud.skill_buttons.is_empty() and not visit.hud.buttons.has("melee"), "village does not expose training combat or test jutsu")
 	var architecture: KonohaArchitecture = visit.world.architecture
-	check(architecture.house_count == 4 and architecture.palace_built, "four stepped round houses and the red palace replace the block buildings")
+	check(architecture.house_count >= 30 and architecture.palace_built, "the full village has district homes and the red Hokage residence")
 	check(architecture.curved_meshes > 40, "architecture uses actual curved surface profiles, not textures on cubes")
 	var geometry_ok: bool = true
 	var vertex_count: int = 0
@@ -494,10 +494,12 @@ func run() -> void:
 			geometry_ok = geometry_ok and vertices.size() == normals.size() and vertices.size() == uv.size()
 			for i in range(vertices.size()):
 				geometry_ok = geometry_ok and vertices[i].is_finite() and normals[i].is_finite() and uv[i].is_finite() and normals[i].length() > 0.99
-	check(geometry_ok and vertex_count < 50000, "curved architecture has finite UVs/normals and a bounded vertex budget")
-	check(architecture.details.mesh.get_surface_count() == 1 and architecture.details.mesh.surface_get_array_len(0) > 800, "facade windows and doors share one draw surface")
+	check(geometry_ok and vertex_count < 250000, "full-village curved architecture has finite UVs/normals and a bounded vertex budget")
+	check(architecture.details.mesh.get_surface_count() == 1 and architecture.details.mesh.surface_get_array_len(0) > 1800, "all district facade windows and doors share one draw surface")
 	var cliff_bounds: AABB = architecture.cliff.get_aabb()
-	check(absf(cliff_bounds.size.x / cliff_bounds.size.y - 382.0/225.0) < 0.001 and cliff_bounds.end.z < -33, "four-head backdrop restores source proportions and stays beyond the playable perimeter")
+	check(absf(cliff_bounds.size.x / cliff_bounds.size.y - 382.0/225.0) < 0.001 and cliff_bounds.end.z < -33, "four-head backdrop restores source proportions and stays beyond the full village perimeter")
+	check(visit.world.npc_count >= 30 and visit.world.moving_npc_count >= 24 and visit.world.animal_count >= 6, "full village populates active pedestrians, children, elders and domestic animals")
+	check(visit.world.discussion_count >= 6 and visit.world.shopping_count >= 5, "villagers pause to converse and shoppers circulate through the market")
 	var materials_ok: bool = true
 	for key: String in KonohaArchitecture.TEXTURES:
 		var mat: StandardMaterial3D = architecture.materials[key]
@@ -507,7 +509,7 @@ func run() -> void:
 	var visit_buttons_fit: bool = true
 	for button: Button in visit.hud.buttons.values():
 		visit_buttons_fit = visit_buttons_fit and village_screen.encloses(button.get_global_rect())
-	check(visit_butt, "village touch buttons fit the landscape viewport")
+	check(visit_buttons_fit, "village touch buttons fit the landscape viewport")
 	var arrival: Vector3 = visit.player.position
 	Input.action_press("move_forward")
 	for frame in range(30):
@@ -527,18 +529,18 @@ func run() -> void:
 	touch(81, visit.hud.joystick_center, false)
 	touch(82, Vector2(700,320), false)
 	check(visit.hud.move_vector == Vector2.ZERO, "village touch release clears movement")
-	visit.player.reset_at(Vector3(27.5,0.1,0))
+	visit.player.reset_at(Vector3(KonohaMap.BOUNDS.x-1.0,0.1,0))
 	Input.action_press("move_right")
 	for frame in range(30):
 		await physics_frame
 	Input.action_release("move_right")
-	check(visit.player.position.x < 28.5, "village perimeter collision prevents walking out")
-	visit.player.reset_at(Vector3(17,0.1,20))
+	check(visit.player.position.x < KonohaMap.BOUNDS.x+1.0, "full village perimeter collision prevents walking out")
+	visit.player.reset_at(Vector3(-35,0.1,7))
 	Input.action_press("move_forward")
 	for frame in range(45):
 		await physics_frame
 	Input.action_release("move_forward")
-	check(visit.player.position.z > 18.5, "rounded house convex hull blocks walking through the closed facade")
+	check(visit.player.position.z > -9.0, "rounded academy house convex hull blocks walking through the closed facade")
 	visit.player.reset_at(Vector3(20.7,0.1,18.1))
 	for frame in range(5):
 		await physics_frame
@@ -565,9 +567,9 @@ func run() -> void:
 		check(visit.hud.blocked and visit.hud.menu_title.text == data["name"], "each landmark has an approachable readable sign: " + data["name"])
 		visit.resume_visit()
 	check(visit.visited.size() == 3, "local orientation counts each of the three landmarks once")
-	visit.player.reset_at(Vector3(15,0.1,-0.5))
+	visit.player.reset_at(KonohaMap.LANDMARKS[0]["point"]+Vector3(0,0.2,5))
 	await physics_frame
-	check(not visit._reachable(Vector3(15,0,-3)), "walls block interaction rays")
+	check(not visit._reachable(KonohaMap.LANDMARKS[0]["point"]+Vector3(0,0,-5)), "district buildings block interaction rays")
 	game.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	check(visit.hud.blocked, "losing focus pauses the Konoha visit")
 	game.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
