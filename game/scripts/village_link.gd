@@ -297,8 +297,8 @@ func _accept(value: Variant) -> bool:
 			var techniques: Variant = combatant.get("techniques")
 			if not techniques is Array or techniques.size() != 4:
 				return false
-			for value: Variant in techniques:
-				if not combat_technique(value):
+			for technique_value: Variant in techniques:
+				if not combat_technique(technique_value):
 					return false
 	elif kind == "combat_action":
 		if not integer(value.get("actionId"),1) or not integer(value.get("attacker"),1) or value.get("kind") not in ["melee","skill_0","skill_1","skill_2","skill_3","ultimate"] or not combat_vector(value.get("origin")) or not combat_vector(value.get("direction")) or not combat_vector(value.get("target")):
