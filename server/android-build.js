@@ -2,9 +2,9 @@
 export const androidBuild = Object.freeze({
   version: "0.11.0",
   name: "idrem-zenkai-training-debug.apk",
-  bytes: 68909306,
-  expiresAt: "2026-09-19T21:17:09Z",
-  url: "https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34719396621/artifacts/10305958374",
+  bytes: 71721683,
+  expiresAt: "2026-09-19T23:33:11Z",
+  url: "https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34725613010/artifacts/10307567913",
 });
 export function downloadInfo(now = Date.now()) {
   const { url, ...info } = androidBuild;

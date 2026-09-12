@@ -2,7 +2,7 @@
 
 **Ajout au lot regroupé 0.11 :** deux joueurs admis peuvent parcourir la carte complète de Konoha et lancer un duel réseau éphémère, avec quatre attaques texturées et une ultime clanique monumentale. Le village contient ses quartiers, son marché, ses routes, sa rivière, ses PNJ actifs et ses animaux. Les dégâts, recharges, chakra, niveau de test, évitement de l’ultime et KO sont résolus par le serveur ; les comptes et la progression ne changent pas. [Détails des textures et ultimes](ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
 
-**13 septembre 2026 : APK 0.11 compilée et artefact vérifié.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés. L’exécution GitHub Actions **34725480467** a réussi l’import Godot, les **310 assertions**, le WSS avec deux clients Godot dans le village complet, le rendu des ultimes, l’export/signature Android et les contrôles de permissions. L’essai physique sur deux téléphones reste à faire.
+**13 septembre 2026 : APK 0.11 compilée et artefact vérifié.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés. L’exécution GitHub Actions **34725613010** a réussi l’import Godot, les **310 assertions**, le WSS avec deux clients Godot dans le village complet, le rendu des ultimes, l’export/signature Android et les contrôles de permissions. L’essai physique sur deux téléphones reste à faire.
 
 ## Périmètre
 
@@ -68,7 +68,7 @@ Le client vide la saisie **après acquittement**. En cas de coupure ou délai, i
 - Les en-têtes de session absents ou malformés sont refusés avant toute acquisition de connexion/verrou de base. Test avec un adaptateur interdisant tout accès DB.
 - Une salle momentanément pleine ou un bail non renouvelé utilise le code transitoire **1013**, même si un paquet arrive avant le prochain tick. Le client peut réessayer sans effacer une connexion de compte encore valable. Une véritable expiration reste **4003** ; les révocations vérifiées le restent également.
 - Contrats SQLite et PostgreSQL relancés : chemin inconnu, capacité puis départ, reprise, expiration et suppression restent couverts.
-- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-25` a été généré par GitHub Actions ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 19 septembre 2026.
+- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-41` a été généré par GitHub Actions ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 19 septembre 2026.
 
 ## Application
 
@@ -105,7 +105,7 @@ npm run test:browser
 GODOT_BIN=/chemin/godot bash game/tools/check.sh
 ```
 
-`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée : ZIP `idrem-zenkai-android-25`, **68 909 306 octets**, expiration **19 septembre 2026 à 21:17:09 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
+`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée du village complet : ZIP `idrem-zenkai-android-41`, **71 721 683 octets**, expiration **19 septembre 2026 à 23:33:11 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
 
 ## Livraison groupée et hébergement gratuit
 
@@ -114,6 +114,6 @@ Le nouvel artefact Android 0.11 est temporaire et reste soumis au quota/rétenti
 - [`idrem-zenkai-android-6`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34446543408) : 62 880 104 octets, artefact 10139893231.
 - [`idrem-zenkai-android-9`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34449560323) : 62 950 239 octets, artefact 10141009252.
 
-Aucun de ces fichiers n’a été supprimé par l’agent, aucun budget ou paiement modifié. **Garder l’artefact Android 25** tant que le nouveau lien est utilisé par le site. Les artefacts 18 et 19 restent l’historique 0.10 ; ils ne sont plus la version annoncée. Pas d’APK intermédiaire.
+Aucun de ces fichiers n’a été supprimé par l’agent, aucun budget ou paiement modifié. **Garder l’artefact Android 41** tant que le lien est utilisé par le site. Les artefacts 18 et 19 restent l’historique 0.10 ; ils ne sont plus la version annoncée. Pas d’APK intermédiaire.
 
 Le lien vérifié du site est maintenant mis à jour vers l’artefact 0.11 ; il reste à effectuer le **Manual Deploy du dernier commit sur le service Render existant**, puis l’essai à deux. La salle existe en mémoire dans **un seul processus Render**. Un redémarrage/redéploiement déconnecte tout le monde ; chacun rejoint une salle vide au retour. Pas de coordination entre plusieurs instances. Render/Neon gratuits peuvent se mettre en veille ; aucune garantie 24 h/24 ou de disponibilité permanente. Le trafic de présence consomme aussi les quotas gratuits : vingt joueurs continus ne sont pas promis par ce prototype à deux.
