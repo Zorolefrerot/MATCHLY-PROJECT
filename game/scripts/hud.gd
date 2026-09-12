@@ -110,17 +110,15 @@ func set_button_icon(action: String, cell: int, atlas: Texture2D = CONTROL_ATLAS
 	# responsive touch buttons keep their authored bounds on a 1280x720 screen.
 	button.icon = null
 	button.expand_icon = false
-	var icon: TextureRect = button.get_node_or_null("AtlasIcon") as TextureRect
+	var icon: Sprite2D = button.get_node_or_null("AtlasIcon") as Sprite2D
 	if icon == null:
-		icon = TextureRect.new()
+		icon = Sprite2D.new()
 		icon.name = "AtlasIcon"
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.centered = false
 		icon.position = Vector2(6, 6)
-		icon.size = Vector2(28, 28)
 		button.add_child(icon)
 	icon.texture = atlas_icon(atlas, cell)
+	icon.scale = Vector2.ONE * (28.0 / 256.0)
 
 func _activate(action: String) -> void:
 	if action == "sprint":
