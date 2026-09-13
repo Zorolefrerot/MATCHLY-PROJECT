@@ -5,7 +5,10 @@ export const VILLAGE = Object.freeze({
   capacity: 20,
   radius: 18,
   spawn: Object.freeze([0, 0.25, 78]),
-  leaseMs: 5000,
+  // Keep a mobile/low-FPS client alive while the authenticated lease is
+  // revalidated every two seconds. This is not a session extension: every
+  // refresh still requires the original admitted account session.
+  leaseMs: 15000,
 });
 
 export const COMBAT = Object.freeze({

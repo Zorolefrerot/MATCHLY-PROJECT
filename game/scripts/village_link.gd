@@ -110,7 +110,7 @@ func _process(delta: float) -> void:
 				stop("Réponse réseau incompatible · Mets à jour le jeu et le serveur.")
 				return
 			last_received = clock
-		if (not connected and clock-started_at > 20) or (connected and clock-last_received > 6):
+		if (not connected and clock-started_at > 30) or (connected and clock-last_received > 18):
 			_retry()
 			return
 		if connected:
