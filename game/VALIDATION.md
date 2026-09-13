@@ -4,7 +4,7 @@
 
 ## Résultat 0.11 — APK vérifiée
 
-Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34748600217](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34748600217), sur la branche active, réussit l’import Godot 4.5.1, **312 assertions de simulation**, le scénario WSS avec deux clients Godot dans le village complet et ses volumes procéduraux, le rendu des effets et l’export Android.
+Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34750747691](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34750747691), sur la branche active, réussit l’import Godot 4.5.1, **312 assertions de simulation**, le scénario WSS avec deux clients Godot dans le village complet et ses volumes procéduraux, le rendu des effets et l’export Android. Cette exécution inclut les quatorze références de sanctuaire tracées depuis `main`, leurs silhouettes 3D distinctes, les quatre portraits Hokage en relief et la session native opaque restaurable.
 
 | Vérification | Résultat réel |
 |---|---|
@@ -15,8 +15,8 @@ Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exéc
 | WSS entre deux visites Godot | Réussi avec profils et SQLite jetables |
 | Ultimes et rendu GL | Réussi ; effets visibles et prolongés contrôlés |
 | APK | Version **0.11.0**, code **11**, API minimum 24/cible 35, ARM64/ARMv7 |
-| APK à l’intérieur du ZIP | **69 843 145 octets**, export Android vérifié par le workflow |
-| ZIP GitHub | [`idrem-zenkai-android-54`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34748819351/artifacts/10315271690), **76 600 993 octets**, expiration 20 septembre 2026 à 09:04:16 UTC |
+| APK à l’intérieur du ZIP | **71 006 409 octets**, SHA-256 `19a76a45f04de925d201519a37146988a8a5a36861524ff32067c88f761ff745`, export Android vérifié par le workflow |
+| ZIP GitHub | [`idrem-zenkai-android-57`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34750747691/artifacts/10316225286), **77 257 892 octets**, expiration 20 septembre 2026 à 10:03:17 UTC |
 | Téléphones Android physiques | Essai sur deux appareils encore à faire |
 | Production Render | Manual Deploy nécessaire pour afficher 0.11 sur le site |
 

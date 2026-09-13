@@ -68,7 +68,7 @@ Le client vide la saisie **après acquittement**. En cas de coupure ou délai, i
 - Les en-têtes de session absents ou malformés sont refusés avant toute acquisition de connexion/verrou de base. Test avec un adaptateur interdisant tout accès DB.
 - Une salle momentanément pleine ou un bail non renouvelé utilise le code transitoire **1013**, même si un paquet arrive avant le prochain tick. Le client peut réessayer sans effacer une connexion de compte encore valable. Une véritable expiration reste **4003** ; les révocations vérifiées le restent également.
 - Contrats SQLite et PostgreSQL relancés : chemin inconnu, capacité puis départ, reprise, expiration et suppression restent couverts.
-- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-54` a été généré par GitHub Actions ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 20 septembre 2026.
+- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-57` a été généré par GitHub Actions après l’intégration des domaines claniques ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 20 septembre 2026.
 
 ## Application
 
@@ -84,7 +84,7 @@ Perte de focus → fermeture ; retour → reconnexion. Coupure transitoire → t
 
 ### Effectuée localement
 
-- **44 tests Node** : contrats HTTP précédents conservés, catalogue des 14 clans et leurs techniques, tests déterministes de salle, duel serveur (portée, cooldown, niveau et ultime) et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
+- **46 tests Node** : contrats HTTP précédents conservés, catalogue des 14 clans et leurs techniques, références des quatorze sanctuaires, session native opaque restaurable, tests déterministes de salle, duel serveur (portée, cooldown, niveau et ultime) et **deux vrais clients WebSocket Node** contre le serveur. Admission, origine/HTTPS, apparences, saut, RP, départ, remplacement, révocation et suppression fictive.
 - **10 tests PostgreSQL réel jetable**, dont le contrat réseau avec mutations depuis un deuxième pool.
 - **2 parcours Playwright** et Vite réussis après `npm ci` : les fonctions du site et le téléchargement réservé aux admis sont conservés, avec les métadonnées 0.11.
 - Le contrôle Godot 4.5.1 en CI réussit l’import, les assertions de gameplay, le scénario WSS Node ↔ deux clients Godot et le rendu GL des effets. Cela ne remplace pas un essai de fluidité ou de connexion sur deux téléphones.
@@ -105,7 +105,7 @@ npm run test:browser
 GODOT_BIN=/chemin/godot bash game/tools/check.sh
 ```
 
-`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée du village complet densifié : ZIP `idrem-zenkai-android-54`, **76 600 993 octets**, expiration **20 septembre 2026 à 09:04:16 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
+`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée du village complet densifié : ZIP `idrem-zenkai-android-57`, **77 257 892 octets**, expiration **20 septembre 2026 à 10:03:17 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
 
 ## Livraison groupée et hébergement gratuit
 
