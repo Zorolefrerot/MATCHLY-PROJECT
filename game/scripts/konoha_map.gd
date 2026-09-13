@@ -349,7 +349,8 @@ func _build_districts() -> void:
 			clan_variant += 1
 			_sign("SANCTUAIRE "+str(data["name"]), sanctuary_point+Vector3(0,8.0,0), 16)
 			_sign("DOMAINE DU "+str(data["name"]), sanctuary_point+Vector3(0,1.5,17.8), 14)
-			box(Vector3(5.2,0.13,1.5), point+Vector3(0,0.07,-3.1), Color("b55d4c"), true)
+			# The approach stays open: the old solid welcome block at this point
+			# trapped the player in front of every courtyard gate.
 			_sign("✦", point+Vector3(0,0.2,-3.8), 24)
 
 func _sanctuary_domain(point: Vector3, title: String, variant: int) -> void:
@@ -408,32 +409,19 @@ func _build_blender_sanctuary(point: Vector3, variant: int) -> void:
 	sanctuary.scale = Vector3.ONE * 1.35
 	add_child(sanctuary)
 	architecture.register_external_sanctuary()
-	# Keep the side walls and rear solid, but leave a central front doorway.
-	# This removes the old invisible block at the entrance while still stopping
-	# players from walking through the merged Blender geometry.
+	# Use the same simple Godot block collider as the other exterior houses.
+	# It sits behind the open courtyard gate, so it prevents traversal through
+	# the sanctuary without putting an invisible obstacle in the approach.
 	var body := StaticBody3D.new()
 	body.name = "SanctuaryFootprint_%02d" % (variant+1)
 	body.position = point + Vector3(0,3.7,1.4)
 	body.collision_layer = 1
 	body.collision_mask = 0
-	var left := CollisionShape3D.new()
-	var left_shape := BoxShape3D.new()
-	left_shape.size = Vector3(6.5,7.4,19.0)
-	left.shape = left_shape
-	left.position = Vector3(-5.75,0,0)
-	body.add_child(left)
-	var right := CollisionShape3D.new()
-	var right_shape := BoxShape3D.new()
-	right_shape.size = Vector3(6.5,7.4,19.0)
-	right.shape = right_shape
-	right.position = Vector3(5.75,0,0)
-	body.add_child(right)
-	var rear := CollisionShape3D.new()
-	var rear_shape := BoxShape3D.new()
-	rear_shape.size = Vector3(5.0,7.4,5.0)
-	rear.shape = rear_shape
-	rear.position = Vector3(0,0,-7.0)
-	body.add_child(rear)
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(18.0,7.4,19.0)
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	body.add_child(collision)
 	add_child(body)
 
 func _build_trees_and_gardens() -> void:

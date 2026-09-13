@@ -290,7 +290,9 @@ test("fourteen clan sanctuary references are traced and kept out of runtime text
   assert.match(map, /func _sanctuary_flag/);
   assert.match(map, /ClanEmblem_/);
   assert.match(map, /SanctuaryFootprint/);
-  assert.match(map, /leave a central front doorway/);
+  assert.match(map, /simple Godot block collider/);
+  assert.match(map, /old solid welcome block/);
+  assert.doesNotMatch(map, /Color\("b55d4c"\), true/);
   assert.match(map, /SolidStairRun/);
   assert.match(map, /clan_variant \+= 1/);
   assert.match(map, /Vector3\(-7,0,-78\)/);
