@@ -68,7 +68,7 @@ Le client vide la saisie **après acquittement**. En cas de coupure ou délai, i
 - Les en-têtes de session absents ou malformés sont refusés avant toute acquisition de connexion/verrou de base. Test avec un adaptateur interdisant tout accès DB.
 - Une salle momentanément pleine ou un bail non renouvelé utilise le code transitoire **1013**, même si un paquet arrive avant le prochain tick. Le client peut réessayer sans effacer une connexion de compte encore valable. Une véritable expiration reste **4003** ; les révocations vérifiées le restent également.
 - Contrats SQLite et PostgreSQL relancés : chemin inconnu, capacité puis départ, reprise, expiration et suppression restent couverts.
-- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-51` a été généré par GitHub Actions ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 20 septembre 2026.
+- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-54` a été généré par GitHub Actions ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 20 septembre 2026.
 
 ## Application
 
