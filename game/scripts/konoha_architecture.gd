@@ -97,7 +97,7 @@ func _sculpted_face(point: Vector3, scale: float, variant: int) -> void:
 	for side in [-1,1]:
 		_sphere_part(point+Vector3(side*(2.6+float(variant%2)*0.4),2.5,3.0)*scale,Vector3(2.7,0.85,0.75)*scale,materials["face_highlight"],12)
 		_sphere_part(point+Vector3(side*2.7,1.0,3.45)*scale,Vector3(0.72,0.72,0.42)*scale,materials["face_shadow"],12)
-	_sphere_part(point+Vector3(side*2.1,-2.9,3.0)*scale,Vector3(2.6,1.6,0.72)*scale,materials["face_highlight"],12)
+		_sphere_part(point+Vector3(side*2.1,-2.9,3.0)*scale,Vector3(2.6,1.6,0.72)*scale,materials["face_highlight"],12)
 	_sphere_part(point+Vector3(0,0.0,3.8)*scale,Vector3(1.15,3.0,1.05)*scale,materials["face_highlight"],12)
 	_block(Vector3(4.2,0.55,0.55)*scale,point+Vector3(0,-4.5,3.25)*scale,materials["face_shadow"])
 	# Hair ridges and a shoulder collar make each relief visible against the cliff.
