@@ -387,7 +387,10 @@ func palace(point: Vector3) -> void:
 func main_door(point: Vector3) -> void:
 	# The compound is assembled from three overlapping palace volumes. This
 	# central entry is intentionally added once at the visible south approach.
-	# The button controls the transition; these parts are a facade marker only.
+	# A solid bridge behind the frame touches the two front palace wings, so
+	# this is a real facade and not a floating sign in the central gap.
+	_block(Vector3(8.4,4.6,0.34), point+Vector3(0,2.30,5.45), materials["red"])
+	_solid_box(Vector3(8.4,4.6,0.34), point+Vector3(0,2.30,5.45), "HokageMainFacadeCollision")
 	_block(Vector3(4.2,4.1,0.30), point+Vector3(0,2.05,5.57), materials["trim"])
 	_block(Vector3(3.35,3.45,0.14), point+Vector3(0,1.73,5.78), materials["glass"])
 	_solid_box(Vector3(3.35,3.45,0.14), point+Vector3(0,1.73,5.78), "HokageMainDoorCollision")

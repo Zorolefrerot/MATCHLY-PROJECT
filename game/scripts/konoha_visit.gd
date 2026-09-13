@@ -14,7 +14,7 @@ var world: KonohaMap
 var hokage_interior: HokageInterior
 var inside_hokage: bool = false
 var transition_lock: float = 0.0
-const HOKAGE_EXTERIOR_DOOR := Vector3(0, 0.25, -81.0)
+const HOKAGE_EXTERIOR_DOOR := Vector3(0, 0.25, -72.0)
 var player: TrainingFighter
 var guide: TrainingFighter
 var hud: KonohaHUD
