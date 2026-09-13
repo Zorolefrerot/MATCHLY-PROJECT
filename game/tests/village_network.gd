@@ -131,9 +131,13 @@ func run() -> void:
 	check(await wait_for(func() -> bool: return b.chat_panel.lines.size() == 2),"HRP uses the same proximity delivery with a distinct label")
 	check(b.chat_panel.lines[1].begins_with("[HRP]"),"HRP label is preserved")
 	a.resume_visit()
+	# Combat starts beside the market tower. Re-center this fixture on the wide
+	# central road so the visual collision set cannot make a flaky corner stop.
+	a.player.reset_at(Vector3(0.5,0.25,22))
+	a.village_link.pose = {"p":[0.5,0.25,22],"yaw":0.0,"motion":"idle"}
 	a.hud.move_vector = Vector2(0,-1)
 	a.hud.sprinting = true
-	check(await wait_for(func() -> bool: return a.player.position.distance_to(b.player.position) > 22,5),"one native player can leave proximity along the village road")
+	check(await wait_for(func() -> bool: return a.player.position.distance_to(b.player.position) > 22,8),"one native player can leave proximity along the village road")
 	a._clear_inputs()
 	await create_timer(0.35).timeout
 	a.open_chat()
