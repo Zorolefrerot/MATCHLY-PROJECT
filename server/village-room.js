@@ -621,10 +621,12 @@ const position = (p) =>
   Array.isArray(p) &&
   p.length === 3 &&
   p.every(Number.isFinite) &&
-  Math.abs(p[0]) <= 86 &&
+  // Match the playable Konoha perimeter (BOUNDS - 2) so multiplayer
+  // movement is not rejected when a player leaves the arrival district.
+  Math.abs(p[0]) <= 148 &&
   p[1] >= -5 &&
   p[1] <= 12 &&
-  Math.abs(p[2]) <= 92;
+  Math.abs(p[2]) <= 158;
 const direction = (p) =>
   Array.isArray(p) &&
   p.length === 3 &&

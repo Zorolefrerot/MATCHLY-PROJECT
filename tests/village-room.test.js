@@ -130,7 +130,7 @@ test("finite/strict packets, flood ceiling, expiry, capacity and shutdown fail c
   for (const bad of [
     move(0, [NaN, 0, 0]),
     move(0, [0, Infinity, 0]),
-    move(0, [91, 0, 0]),
+    move(0, [149, 0, 0]),
     move(-1, [0, 0, 0]),
     chat(0, "x".repeat(241)),
     chat(0, "unsafe\u2028text"),
