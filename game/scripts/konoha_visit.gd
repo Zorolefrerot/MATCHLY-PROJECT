@@ -190,7 +190,7 @@ func _physics_process(delta: float) -> void:
 	# Crossing the outer ring must stop at the wall, not silently teleport the player
 	# back to the arrival point. Horizontal travel stays continuous across districts.
 	# Only a genuine fall through the world respawns.
-	if player.position.y < -7.5:
+	if player.position.y < -5.0:
 		player.reset_at(KonohaMap.SPAWN)
 		if is_instance_valid(village_link): village_link.respawn()
 		hud.notice("Retour au point d’arrivée du quartier après une chute.")
