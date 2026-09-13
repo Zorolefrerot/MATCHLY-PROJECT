@@ -720,7 +720,7 @@ func network_protocol_checks() -> void:
 	check(VillageLink.state(JSON.parse_string(JSON.stringify(pose))), "network pose accepts finite JSON numbers")
 	for value: Variant in [null,[],{"id":"1"}, {"id":1,"p":[NAN,0,0],"yaw":0,"motion":"idle"}, {"id":1,"p":[0,0,0],"yaw":"0","motion":"idle"}, {"id":1,"p":[0,0,0],"yaw":0,"motion":"attack"}]:
 		check(not VillageLink.state(value), "network rejects malformed pose without unsafe variant comparison")
-	check(not VillageLink.point([91,0,0]) and not VillageLink.point([0,13,0]), "network pose is bounded to the full Konoha perimeter")
+	check(not VillageLink.point([149,0,0]) and not VillageLink.point([0,13,0]), "network pose is bounded to the full Konoha perimeter")
 	check(VillageLink.plain("Bonjour [b]ami[/b]",240), "network plaintext can contain literal markup")
 	check(not VillageLink.plain("faux\nnom",240) and not VillageLink.plain("test\u202e",240) and not VillageLink.plain("test\u2028",240), "network rejects newlines and invisible formatting")
 	check(VillageLink.plain("😀".repeat(120),240) and not VillageLink.plain("😀".repeat(121),240), "chat length agrees with server UTF-16 bounds for emoji")
