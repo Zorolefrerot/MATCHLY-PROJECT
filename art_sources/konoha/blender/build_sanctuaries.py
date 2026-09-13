@@ -327,6 +327,23 @@ if __name__ == "__main__":
             objects = list(c.objects) if c else []
             if not objects:
                 continue
+            # Collapse each sanctuary's mesh parts into one material-slotted
+            # mesh before export. This keeps the mobile GLB light on draw calls
+            # while preserving the separate text label and collection name.
+            mesh_objects = [obj for obj in objects if obj.type == "MESH"]
+            if len(mesh_objects) > 1:
+                bpy.ops.object.select_all(action="DESELECT")
+                for obj in mesh_objects:
+                    obj.select_set(True)
+                    bpy.context.view_layer.objects.active = obj
+                    for modifier in list(obj.modifiers):
+                        try:
+                            bpy.ops.object.modifier_apply(modifier=modifier.name)
+                        except Exception:
+                            pass
+                bpy.context.view_layer.objects.active = mesh_objects[0]
+                bpy.ops.object.join()
+                objects = list(c.objects)
             offset = Vector((x, y, 0.0))
             for obj in objects:
                 obj.matrix_world.translation -= offset
