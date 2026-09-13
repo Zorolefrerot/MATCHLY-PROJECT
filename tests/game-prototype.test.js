@@ -228,6 +228,31 @@ test("Konoha reference-derived textures are bounded, mipmapped and traceable", (
   assert.ok(preset.includes("assets/konoha/README.md"));
 });
 
+test("generated village art populates homes, river, shrine, market and animal life", () => {
+  const map = read("game/scripts/konoha_map.gd");
+  const npc = read("game/scripts/konoha_npc.gd");
+  for (const asset of [
+    "village_homes_sheet_alpha.png",
+    "river_water_texture.png",
+    "shrine_torii.png",
+    "market_stalls_sheet.png",
+    "animal_companions_sheet_alpha.png",
+  ]) {
+    const bytes = readFileSync(
+      new URL("../game/assets/konoha/" + asset, import.meta.url),
+    );
+    assert.equal(bytes.toString("hex", 0, 8), "89504e470d0a1a0a");
+    assert.ok(bytes.length > 10000, asset + " is not an empty generated texture");
+  }
+  assert.match(map, /const HOMES_ART/);
+  assert.match(map, /const RIVER_ART/);
+  assert.match(map, /const SHRINE_ART/);
+  assert.match(map, /func _build_generated_art/);
+  assert.match(map, /SANCTUAIRE DES FEUILLES/);
+  assert.match(npc, /const ANIMAL_ART/);
+  assert.match(npc, /animal_companions_sheet_alpha\.png/);
+});
+
 test("Konoha remodels silhouettes and batches facade details without changing combat", () => {
   const architecture = read("game/scripts/konoha_architecture.gd");
   assert.match(architecture, /ConvexPolygonShape3D\.new/);

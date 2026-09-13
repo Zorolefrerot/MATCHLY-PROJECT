@@ -19,7 +19,19 @@ Aucun service externe, IA, récupération réseau ou traitement d’image à cha
 - `details_atlas` 512² RGBA : fenêtres dessinées en haut, porte en bas à gauche, emblème réellement recadré de la résidence en bas à droite. Marges transparentes entre cellules.
 - `hokage_cliff` 512² RGBA : **quatre premiers visages**, choix visuel pour correspondre à l’image de la résidence. L’original à sept visages est conservé. Recadrage `(0,0,382,225)`, retrait du paysage urbain gris selon la ligne de pierre chaude ; proportions 382:225 rétablies par le maillage. La photo coupe déjà le sommet d’une coiffure : aucun détail absent n’est inventé.
 
-Les PNG totalisent **1 467 280 octets**. Imports lossless, mipmaps explicites, filtrage linéaire mipmappé, transparence découpée pour l’atlas et la falaise. Ce poids PNG n’est pas une mesure de RAM ou de fluidité Android.
+## Illustrations générées pour le village complet
+
+Le village complet ajoute des images d’environnement originales générées pour ce prototype puis réduites et importées en textures mobiles :
+
+- `village_homes_sheet_alpha.png` : quatre façades de maisons et immeubles d’habitation, utilisées en 20 façades réparties dans les quartiers.
+- `market_stalls_sheet.png` : trois étals illustrés pour densifier la place du marché.
+- `river_water_texture.png` : eau peinte appliquée aux six segments de la rivière.
+- `shrine_torii.png` : sanctuaire des Feuilles, posé sur une plateforme à l’est du village.
+- `animal_companions_sheet_alpha.png` : chien, chat, porc et poules employés par les PNJ animaux.
+
+Les images d’habitation et d’animaux disposent d’un détourage alpha ; les autres sont des panneaux d’environnement volontairement bornés. Les PNG générés totalisent environ **2,2 Mo** après réduction. Ils ne créent aucun objet réseau, aucune logique par image et aucun collider supplémentaire pour les panneaux ; les collisions principales restent celles des volumes de la carte.
+
+Les PNG préparés à partir des références totalisent **1 467 280 octets**. Imports lossless, mipmaps explicites, filtrage linéaire mipmappé, transparence découpée pour l’atlas et la falaise. Ce poids PNG n’est pas une mesure de RAM ou de fluidité Android.
 
 ## Géométrie et budget
 

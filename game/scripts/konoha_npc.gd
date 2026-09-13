@@ -3,6 +3,8 @@ extends Node3D
 ## Lightweight, non-combat village life actor: pedestrians, shoppers and animals.
 ## Routes are local to Konoha and never touch the account or online combat state.
 
+const ANIMAL_ART: Texture2D = preload("res://assets/konoha/animal_companions_sheet_alpha.png")
+
 var category: String = "man"
 var role: String = "Habitant"
 var activity: String = "walking"
@@ -56,32 +58,32 @@ func _build_person(tint: Color) -> void:
 	actor = fighter
 
 func _build_animal() -> void:
+	# The generated animal sheet replaces primitive blobs while keeping the actor route and budget bounded.
 	actor = Node3D.new()
 	add_child(actor)
-	var fur: Color = {"dog":Color("a36e4c"), "cat":Color("d29c68"), "pig":Color("e5a5a2"), "chicken":Color("eee1bb")}.get(category, Color.WHITE)
-	actor_material = TrainingFighter.material(fur)
-	var dark := TrainingFighter.material(Color("47382f"))
-	if category == "chicken":
-		_mesh(actor, SphereMesh.new(), Vector3(0.28,0.32,0.42), Vector3(0,0.48,0), actor_material)
-		_mesh(actor, SphereMesh.new(), Vector3(0.20,0.22,0.22), Vector3(0,0.78,-0.23), actor_material)
-		var beak_material := TrainingFighter.material(Color("cd8c42"))
-		_mesh(actor, CylinderMesh.new(), Vector3(0.04,0.18,0.04), Vector3(-0.08,0.16,-0.03), beak_material)
-		_mesh(actor, CylinderMesh.new(), Vector3(0.04,0.18,0.04), Vector3(0.08,0.16,-0.03), beak_material)
-		_mesh(actor, SphereMesh.new(), Vector3(0.035,0.035,0.035), Vector3(0.08,0.82,-0.39), dark)
-	else:
-		var body_scale := Vector3(0.48,0.36,0.78) if category == "pig" else Vector3(0.42,0.38,0.82)
-		_mesh(actor, SphereMesh.new(), body_scale, Vector3(0,0.48,0), actor_material)
-		_mesh(actor, SphereMesh.new(), Vector3(0.32,0.30,0.34), Vector3(0,0.68,-0.55), actor_material)
-		for x in [-0.18,0.18]:
-			_mesh(actor, CylinderMesh.new(), Vector3(0.08,0.30,0.08), Vector3(x,0.20,-0.18), dark)
-			_mesh(actor, CylinderMesh.new(), Vector3(0.08,0.30,0.08), Vector3(x,0.20,0.18), dark)
-		if category == "cat":
-			_mesh(actor, PrismMesh.new(), Vector3(0.18,0.24,0.12), Vector3(-0.18,0.94,-0.55), actor_material)
-			_mesh(actor, PrismMesh.new(), Vector3(0.18,0.24,0.12), Vector3(0.18,0.94,-0.55), actor_material)
-		elif category == "pig":
-			_mesh(actor, SphereMesh.new(), Vector3(0.18,0.12,0.07), Vector3(0,0.68,-0.86), dark)
-		else:
-			_mesh(actor, CylinderMesh.new(), Vector3(0.08,0.65,0.08), Vector3(0,0.82,0.47), actor_material)
+	var sprite := Sprite3D.new()
+	sprite.texture = ANIMAL_ART
+	sprite.hframes = 2
+	sprite.vframes = 2
+	sprite.frame = {"dog":0, "cat":1, "pig":2, "chicken":3}.get(category, 0)
+	sprite.pixel_size = 0.0056
+	sprite.position = Vector3(0,0.95,0)
+	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sprite.shaded = false
+	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	actor.add_child(sprite)
+	# A small soft ground marker keeps the generated art anchored to the village paths.
+	var shadow := MeshInstance3D.new()
+	var shadow_mesh := CylinderMesh.new()
+	shadow_mesh.top_radius = 0.55
+	shadow_mesh.bottom_radius = 0.65
+	shadow_mesh.height = 0.025
+	shadow_mesh.radial_segments = 16
+	shadow.mesh = shadow_mesh
+	shadow.position = Vector3(0,0.03,0)
+	shadow.material_override = TrainingFighter.material(Color(0.16,0.20,0.15,0.22))
+	actor.add_child(shadow)
 
 func _mesh(parent: Node3D, shape: PrimitiveMesh, dimensions: Vector3, point: Vector3, material: Material) -> MeshInstance3D:
 	if shape is SphereMesh:

@@ -154,6 +154,25 @@ func compact_house(point: Vector3, roof: String = "tiles", height: float = 4.8) 
 	_windows(point,2.8,stretch,height*0.34,8,Vector2(0.72,0.9),Vector2i(1,0),true)
 	_panel(point+Vector3(0,0.92,2.5),Vector2(1.0,1.7),0,Vector2i(0,1))
 
+func apartment_block(point: Vector3, color: String = "plaster") -> void:
+	# Three-story curved apartment houses make the residential rings feel occupied without spawning interiors.
+	house_count += 1
+	var wall_material: Material = materials["red"] if color == "red" else materials["plaster"]
+	var stretch := Vector2(1.0, 0.82)
+	_wall(4.25,0.0,9.4,point,stretch,wall_material)
+	for y in [2.1,5.0,7.9]:
+		_windows(point,4.25,stretch,y,12,Vector2(0.62,1.02),Vector2i(1,0))
+		for side in [-1,1]:
+			var balcony := MeshInstance3D.new()
+			var balcony_mesh := BoxMesh.new()
+			balcony_mesh.size = Vector3(1.75,0.16,0.95)
+			balcony.mesh = balcony_mesh
+			balcony.position = point + Vector3(side*2.25,y-0.5,0)
+			balcony.material_override = materials["wood"]
+			add_child(balcony)
+	lathe([Vector2(4.2,9.2),Vector2(4.65,9.45),Vector2(4.8,9.7),Vector2(3.2,10.8),Vector2(0,11.15)],point,stretch,materials["tiles"],Vector2(7,1.1))
+	_panel(point+Vector3(0,1.35,3.48),Vector2(1.6,2.7),0,Vector2i(0,1))
+
 func tower(point: Vector3, color: String = "red", height: float = 12.0) -> void:
 	var wall_material: Material = materials["red"] if color == "red" else materials["plaster"]
 	_wall(3.0,0.0,height,point,Vector2.ONE,wall_material)

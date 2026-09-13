@@ -1,7 +1,17 @@
 class_name KonohaMap
 extends TrainingArena
 ## Full Konoha district: a readable, explorable village built from the supplied map layout.
-## The scenery is procedural and uses the prepared reference-derived textures.
+## The scenery combines bounded procedural collision with generated 2D environment art.
+
+const HOMES_ART: Texture2D = preload("res://assets/konoha/village_homes_sheet_alpha.png")
+const RIVER_ART: Texture2D = preload("res://assets/konoha/river_water_texture.png")
+const SHRINE_ART: Texture2D = preload("res://assets/konoha/shrine_torii.png")
+const MARKET_ART: Texture2D = preload("res://assets/konoha/market_stalls_sheet.png")
+const ANIMAL_ART: Texture2D = preload("res://assets/konoha/animal_companions_sheet_alpha.png")
+const HOME_REGIONS: Array[Rect2] = [
+	Rect2(0, 0, 352, 192), Rect2(352, 0, 352, 192),
+	Rect2(0, 192, 352, 192), Rect2(352, 192, 352, 192)
+]
 
 const BOUNDS := Vector2(86.0, 92.0)
 const SPAWN := Vector3(0, 0.25, 78)
@@ -37,6 +47,7 @@ var moving_npc_count: int = 0
 var animal_count: int = 0
 var discussion_count: int = 0
 var shopping_count: int = 0
+var generated_art_count: int = 0
 
 func build() -> void:
 	architecture = KonohaArchitecture.new()
@@ -46,6 +57,7 @@ func build() -> void:
 	_build_roads_and_water()
 	_build_landmarks()
 	_build_districts()
+	_build_generated_art()
 	_build_trees_and_gardens()
 	_build_village_life()
 	architecture.finish()
@@ -131,10 +143,21 @@ func _road(point: Vector3, size: Vector2, angle: float) -> void:
 	border.rotation.y = angle
 
 func _water(from: Vector3, to: Vector3) -> void:
-	var middle := (from+to)*0.5 + Vector3.UP*0.06
+	var middle := (from+to)*0.5 + Vector3.UP*0.075
 	var delta := to-from
-	var river := box(Vector3(3.0,0.08,delta.length()+1.5), middle, Color("2d9fc2"))
-	river.rotation.y = atan2(delta.x,delta.z)
+	var river := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(3.0, delta.length()+1.5)
+	river.mesh = quad
+	river.position = middle
+	river.rotation = Vector3(-PI/2, atan2(delta.x,delta.z), 0)
+	var material := TrainingFighter.material(Color.WHITE)
+	material.albedo_texture = RIVER_ART
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	river.material_override = material
+	add_child(river)
+	generated_art_count += 1
 
 func _bridge(point: Vector3, length: float, angle: float) -> void:
 	var deck := box(Vector3(5.2,0.35,length), point+Vector3.UP*0.25, Color("a76f4e"), true)
@@ -188,13 +211,56 @@ func _build_districts() -> void:
 			for i in range(4):
 				box(Vector3(1.6,2.2,0.7), point+Vector3(float(i-1)*3.0,1.1,2.5), Color("999b91"), true)
 			continue
-		for i in range(2):
-			var angle := float(i)*PI + 0.4
-			var home := point + Vector3(cos(angle)*7.0,0,sin(angle)*6.0)
+		for i in range(3):
+			var angle := float(i)*TAU/3.0 + 0.4
+			var home := point + Vector3(cos(angle)*(7.0+float(i%2)*2.0),0,sin(angle)*(6.0+float(i%2)*1.5))
 			architecture.compact_house(home, "gold" if i == 0 else "tiles", 4.5+float(i%2)*0.8)
 		if kind == "clan":
+			architecture.apartment_block(point+Vector3(0,0,8.5), "red" if int(absf(point.x))%2 == 0 else "plaster")
 			box(Vector3(5.2,0.13,1.5), point+Vector3(0,0.07,-3.1), Color("b55d4c"))
 			_sign("✦", point+Vector3(0,0.2,-3.8), 24)
+
+func _build_generated_art() -> void:
+	# Generated house facades fill the residential rings without adding unbounded physics bodies.
+	var homes: Array[Vector3] = [
+		Vector3(-72,0,-48), Vector3(-57,0,-37), Vector3(-72,0,-5), Vector3(-59,0,4),
+		Vector3(-72,0,38), Vector3(-53,0,51), Vector3(-34,0,52), Vector3(-18,0,63),
+		Vector3(20,0,57), Vector3(38,0,48), Vector3(54,0,37), Vector3(67,0,23),
+		Vector3(66,0,-8), Vector3(61,0,-28), Vector3(45,0,-55), Vector3(29,0,-73),
+		Vector3(-2,0,-72), Vector3(-24,0,-68), Vector3(-43,0,-55), Vector3(-69,0,-69)
+	]
+	for i in range(homes.size()):
+		var point: Vector3 = homes[i]
+		box(Vector3(7.2,0.16,2.8), point+Vector3(0,0.08,0), Color("b58d68"))
+		_art_sprite(HOMES_ART, point+Vector3(0,2.25,0), 0.018, HOME_REGIONS[i%HOME_REGIONS.size()])
+	# The market image is split into three stall faces so the plaza reads as a real commercial street.
+	for i in range(3):
+		var stall := _art_sprite(MARKET_ART, Vector3(-18.0+float(i)*9.4,2.5,27.0), 0.013)
+		stall.hframes = 3
+		stall.frame = i
+	# A shrine garden occupies the quiet eastern edge, with a platform and lantern stones below its art landmark.
+	var shrine_point := Vector3(63,0,55)
+	box(Vector3(15.5,0.22,8.5), shrine_point+Vector3(0,0.11,0), Color("8b7658"), true)
+	for x in [-5.0,5.0]:
+		box(Vector3(0.45,1.5,0.45), shrine_point+Vector3(x,0.75,1.7), Color("6f6251"), true)
+	_art_sprite(SHRINE_ART, shrine_point+Vector3(0,4.0,0), 0.016)
+	_sign("SANCTUAIRE DES FEUILLES", shrine_point+Vector3(0,8.7,0), 20)
+
+func _art_sprite(texture: Texture2D, point: Vector3, pixel_size: float, region: Rect2 = Rect2()) -> Sprite3D:
+	var sprite := Sprite3D.new()
+	sprite.texture = texture
+	sprite.pixel_size = pixel_size
+	sprite.shaded = false
+	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if region.size != Vector2.ZERO:
+		sprite.region_enabled = true
+		sprite.region_rect = region
+	add_child(sprite)
+	sprite.position = point
+	generated_art_count += 1
+	return sprite
 
 func _build_trees_and_gardens() -> void:
 	for point in [

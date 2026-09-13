@@ -480,8 +480,8 @@ func run() -> void:
 	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("Genin Test"), "Konoha uses the account identity and saved appearance")
 	check(visit.hud.skill_buttons.is_empty() and not visit.hud.buttons.has("melee"), "village does not expose training combat or test jutsu")
 	var architecture: KonohaArchitecture = visit.world.architecture
-	check(architecture.house_count >= 30 and architecture.palace_built, "the full village has district homes and the red Hokage residence")
-	check(architecture.curved_meshes > 40, "architecture uses actual curved surface profiles, not textures on cubes")
+	check(architecture.house_count >= 55 and architecture.palace_built, "the full village has dense homes, apartment blocks and the red Hokage residence")
+	check(architecture.curved_meshes > 70, "architecture uses actual curved surface profiles, not textures on cubes")
 	var geometry_ok: bool = true
 	var vertex_count: int = 0
 	for child in architecture.get_children():
@@ -500,6 +500,7 @@ func run() -> void:
 	check(absf(cliff_bounds.size.x / cliff_bounds.size.y - 382.0/225.0) < 0.001 and cliff_bounds.end.z < -33, "four-head backdrop restores source proportions and stays beyond the full village perimeter")
 	check(visit.world.npc_count >= 29 and visit.world.moving_npc_count >= 24 and visit.world.animal_count >= 6, "full village populates active pedestrians, children, elders and domestic animals")
 	check(visit.world.discussion_count >= 6 and visit.world.shopping_count >= 5, "villagers pause to converse and shoppers circulate through the market")
+	check(visit.world.generated_art_count >= 30, "generated homes, market, river, shrine and environmental art are placed across Konoha")
 	var materials_ok: bool = true
 	for key: String in KonohaArchitecture.TEXTURES:
 		var mat: StandardMaterial3D = architecture.materials[key]
