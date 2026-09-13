@@ -273,11 +273,15 @@ test("fourteen clan sanctuary references are traced and kept out of runtime text
   const map = read("game/scripts/konoha_map.gd");
   for (const clan of clans) assert.match(map, new RegExp(`CLAN ${clan.toUpperCase()}`));
   assert.match(map, /DOMAINE DU/);
-  assert.match(map, /former sanctuary plot/);
+  assert.match(map, /former sanctuary plot|Former sanctuary volumes/);
   assert.match(map, /residential_hall/);
+  assert.match(map, /func _district_access/);
   assert.match(map, /clan_variant \+= 1/);
+  assert.match(map, /Vector3\(-7,0,-78\)/);
+  assert.match(read("game/scripts/konoha_visit.gd"), /Only a genuine fall through the world respawns/);
   assert.match(read("game/scripts/konoha_architecture.gd"), /_sanctuary_geometry/);
   assert.match(read("game/scripts/konoha_architecture.gd"), /13: # Ackerman/);
+  assert.match(read("game/scripts/konoha_architecture.gd"), /z0: float = -101\.5/);
 });
 
 test("Konoha remodels silhouettes and batches facade details without changing combat", () => {

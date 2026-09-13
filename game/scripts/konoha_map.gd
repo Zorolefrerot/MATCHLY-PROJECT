@@ -14,51 +14,50 @@ const BOUNDS := Vector2(150.0, 160.0)
 const SPAWN := Vector3(0, 0.25, 78)
 const GUIDE := Vector3(-4.0, -0.05, 65)
 const LANDMARKS: Array[Dictionary] = [
-	{"name": "Académie", "point": Vector3(-34, 0, 7), "text": "L’Académie de Konoha accueille les jeunes ninjas. Les terrains d’examen s’étendent derrière les salles de cours."},
-	{"name": "Marché", "point": Vector3(-20, 0, 17), "text": "Le marché central rassemble les marchands, les familles et les voyageurs. Les habitants négocient ici leurs achats quotidiens."},
+	{"name": "Académie", "point": Vector3(-34, 0, 12), "text": "L’Académie de Konoha accueille les jeunes ninjas. Les terrains d’examen s’étendent derrière les salles de cours."},
+	{"name": "Marché", "point": Vector3(-18, 0, 28), "text": "Le marché central rassemble les marchands, les familles et les voyageurs. Les habitants négocient ici leurs achats quotidiens."},
 	{"name": "Résidence du Hokage", "point": Vector3(0, 0, -76), "text": "La résidence agrandie du Hokage domine l’axe central, face aux grands visages de la montagne."}
 ]
 const DISTRICTS: Array[Dictionary] = [
-	{"name":"FORÊT DE LA MORT", "point":Vector3(-112,0,-112), "kind":"forest"},
-	# Every former sanctuary plot is preserved as an ordinary neighbourhood building;
-	# none of these legacy volumes is counted as one of the fourteen new sanctuaries.
-	{"name":"QUARTIER SHUN", "point":Vector3(-67,0,-43), "kind":"residential"},
-	{"name":"QUARTIER HATTORI", "point":Vector3(-69,0,-12), "kind":"residential"},
-	{"name":"QUARTIER HYŪGA", "point":Vector3(-65,0,47), "kind":"residential"},
-	{"name":"QUARTIER UZUMAKI", "point":Vector3(-43,0,43), "kind":"residential"},
-	{"name":"QUARTIER UCHIWA", "point":Vector3(-16,0,58), "kind":"residential"},
-	{"name":"QUARTIER NARA", "point":Vector3(-25,0,-31), "kind":"residential"},
-	{"name":"QUARTIER AKIMICHI", "point":Vector3(-45,0,-16), "kind":"residential"},
-	{"name":"QUARTIER YAMANAKA", "point":Vector3(-10,0,-8), "kind":"residential"},
-	{"name":"QUARTIER INUZUKA", "point":Vector3(27,0,-63), "kind":"residential"},
-	{"name":"QUARTIER ABURAME", "point":Vector3(38,0,44), "kind":"residential"},
-	{"name":"QUARTIER HATAKE", "point":Vector3(59,0,15), "kind":"residential"},
-	{"name":"QUARTIER SENJU", "point":Vector3(15,0,-27), "kind":"residential"},
-	{"name":"QUARTIER FUSHIGURO", "point":Vector3(43,0,-34), "kind":"residential"},
-	{"name":"QUARTIER ITADORI", "point":Vector3(70,0,-29), "kind":"residential"},
-	{"name":"QUARTIER KUROSAKI", "point":Vector3(-43,0,-63), "kind":"residential"},
-	{"name":"QUARTIER SHUNSUI", "point":Vector3(18,0,48), "kind":"residential"},
-	{"name":"QUARTIER YEAGER", "point":Vector3(65,0,58), "kind":"residential"},
-	{"name":"QUARTIER ACKERMAN", "point":Vector3(-60,0,68), "kind":"residential"},
-	# The fourteen clans from the site receive separated, distant domains.
-	{"name":"CLAN UCHIWA", "point":Vector3(-56,0,105), "kind":"clan"},
-	{"name":"CLAN UZUMAKI", "point":Vector3(-8,0,118), "kind":"clan"},
-	{"name":"CLAN SENJU", "point":Vector3(52,0,108), "kind":"clan"},
-	{"name":"CLAN HYŪGA", "point":Vector3(108,0,92), "kind":"clan"},
-	{"name":"CLAN AKIMICHI", "point":Vector3(-112,0,42), "kind":"clan"},
-	{"name":"CLAN YAMANAKA", "point":Vector3(-48,0,38), "kind":"clan"},
-	{"name":"CLAN ABURAME", "point":Vector3(112,0,40), "kind":"clan"},
-	{"name":"CLAN INUZUKA", "point":Vector3(108,0,-48), "kind":"clan"},
-	{"name":"CLAN FUSHIGURO", "point":Vector3(48,0,-54), "kind":"clan"},
-	{"name":"CLAN ITADORI", "point":Vector3(-42,0,-58), "kind":"clan"},
-	{"name":"CLAN KUROSAKI", "point":Vector3(-108,0,-78), "kind":"clan"},
-	{"name":"CLAN SHUNSUI", "point":Vector3(-36,0,-116), "kind":"clan"},
-	{"name":"CLAN YEAGER", "point":Vector3(36,0,-120), "kind":"clan"},
-	{"name":"CLAN ACKERMAN", "point":Vector3(112,0,-102), "kind":"clan"},
-	{"name":"POSTE DE POLICE", "point":Vector3(23,0,30), "kind":"public"},
-	{"name":"HÔPITAL", "point":Vector3(-8,0,17), "kind":"public"},
-	{"name":"STADE", "point":Vector3(43,0,-7), "kind":"public"},
-	{"name":"MÉMORIAL DE KONOHA", "point":Vector3(76,0,-76), "kind":"memorial"}
+	{"name":"FORÊT DE LA MORT", "point":Vector3(-125,0,-125), "kind":"forest"},
+	# Former sanctuary volumes stay together in two inner housing rings, away from the main roads.
+	{"name":"QUARTIER SHUN", "point":Vector3(-70,0,68), "kind":"residential"},
+	{"name":"QUARTIER HATTORI", "point":Vector3(-42,0,68), "kind":"residential"},
+	{"name":"QUARTIER HYŪGA", "point":Vector3(-14,0,68), "kind":"residential"},
+	{"name":"QUARTIER UZUMAKI", "point":Vector3(14,0,68), "kind":"residential"},
+	{"name":"QUARTIER UCHIWA", "point":Vector3(42,0,68), "kind":"residential"},
+	{"name":"QUARTIER NARA", "point":Vector3(70,0,68), "kind":"residential"},
+	{"name":"QUARTIER AKIMICHI", "point":Vector3(-70,0,38), "kind":"residential"},
+	{"name":"QUARTIER YAMANAKA", "point":Vector3(-70,0,8), "kind":"residential"},
+	{"name":"QUARTIER INUZUKA", "point":Vector3(-70,0,-22), "kind":"residential"},
+	{"name":"QUARTIER ABURAME", "point":Vector3(-70,0,-52), "kind":"residential"},
+	{"name":"QUARTIER HATAKE", "point":Vector3(70,0,38), "kind":"residential"},
+	{"name":"QUARTIER SENJU", "point":Vector3(70,0,8), "kind":"residential"},
+	{"name":"QUARTIER FUSHIGURO", "point":Vector3(70,0,-22), "kind":"residential"},
+	{"name":"QUARTIER ITADORI", "point":Vector3(70,0,-52), "kind":"residential"},
+	{"name":"QUARTIER KUROSAKI", "point":Vector3(-70,0,-68), "kind":"residential"},
+	{"name":"QUARTIER SHUNSUI", "point":Vector3(-42,0,-68), "kind":"residential"},
+	{"name":"QUARTIER YEAGER", "point":Vector3(42,0,-68), "kind":"residential"},
+	{"name":"QUARTIER ACKERMAN", "point":Vector3(70,0,-68), "kind":"residential"},
+	# Four calm outer rows hold the fourteen clans; each domain has a clear access road and plaza.
+	{"name":"CLAN UCHIWA", "point":Vector3(-84,0,110), "kind":"clan"},
+	{"name":"CLAN UZUMAKI", "point":Vector3(-28,0,110), "kind":"clan"},
+	{"name":"CLAN SENJU", "point":Vector3(28,0,110), "kind":"clan"},
+	{"name":"CLAN HYŪGA", "point":Vector3(84,0,110), "kind":"clan"},
+	{"name":"CLAN AKIMICHI", "point":Vector3(-110,0,52), "kind":"clan"},
+	{"name":"CLAN YAMANAKA", "point":Vector3(-110,0,-4), "kind":"clan"},
+	{"name":"CLAN ABURAME", "point":Vector3(-110,0,-60), "kind":"clan"},
+	{"name":"CLAN INUZUKA", "point":Vector3(-110,0,-110), "kind":"clan"},
+	{"name":"CLAN FUSHIGURO", "point":Vector3(110,0,52), "kind":"clan"},
+	{"name":"CLAN ITADORI", "point":Vector3(110,0,-4), "kind":"clan"},
+	{"name":"CLAN KUROSAKI", "point":Vector3(110,0,-60), "kind":"clan"},
+	{"name":"CLAN SHUNSUI", "point":Vector3(-84,0,-110), "kind":"clan"},
+	{"name":"CLAN YEAGER", "point":Vector3(-28,0,-110), "kind":"clan"},
+	{"name":"CLAN ACKERMAN", "point":Vector3(28,0,-110), "kind":"clan"},
+	{"name":"POSTE DE POLICE", "point":Vector3(26,0,30), "kind":"public"},
+	{"name":"HÔPITAL", "point":Vector3(-24,0,28), "kind":"public"},
+	{"name":"STADE", "point":Vector3(42,0,-22), "kind":"public"},
+	{"name":"MÉMORIAL DE KONOHA", "point":Vector3(76,0,-52), "kind":"memorial"}
 ]
 
 var architecture: KonohaArchitecture
@@ -139,25 +138,17 @@ func _gate(point: Vector3, angle: float, title: String) -> void:
 	_sign(title, point + Vector3.UP*6.1, 24, angle + PI/2)
 
 func _build_roads_and_water() -> void:
-	# Yellow road network interpreted from the supplied overhead map, expanded to link the separated domains.
-	_road(Vector3(0, 0, 0), Vector2(9, 292), 0)
-	_road(Vector3(0, 0, 2), Vector2(9, 292), PI/2)
-	# Secondary streets make the districts readable as connected neighbourhoods rather than isolated markers.
-	for x in [-120.0,-80.0,-40.0,40.0,80.0,120.0]:
-		_road(Vector3(x,0,0), Vector2(4.2,270), 0)
-	for z in [-120.0,-80.0,-40.0,40.0,80.0,120.0]:
-		_road(Vector3(0,0,z), Vector2(250,4.2), PI/2)
-	for end in [
-		Vector3(-124,0,-40),Vector3(-124,0,25),Vector3(-56,0,105),Vector3(-8,0,118),
-		Vector3(52,0,108),Vector3(108,0,92),Vector3(-112,0,42),Vector3(-48,0,38),
-		Vector3(112,0,40),Vector3(108,0,-48),Vector3(48,0,-54),Vector3(-42,0,-58),
-		Vector3(-108,0,-78),Vector3(-36,0,-116),Vector3(36,0,-120),Vector3(112,0,-102)
-	]:
-		var midpoint := Vector3(end.x*0.48, 0.015, end.z*0.48)
-		var length := Vector2(end.x, end.z).length()*0.98
-		_road(midpoint, Vector2(6.2,length), atan2(end.x,end.z))
-	for point in [Vector3(-43,0,43),Vector3(-45,0,-16),Vector3(23,0,30),Vector3(-8,0,17),Vector3(43,0,-7),Vector3(0,0,-76)]:
-		_road(point, Vector2(18, 5.5), 0)
+	# A clean central cross and a wide outer ring leave every house plot off the asphalt.
+	_road(Vector3(0, 0, 0), Vector2(8, 292), 0)
+	_road(Vector3(0, 0, 0), Vector2(8, 292), PI/2)
+	for x in [-92.0,92.0]:
+		_road(Vector3(x,0,0), Vector2(5.2,250), 0)
+	for z in [-92.0,92.0]:
+		_road(Vector3(0,0,z), Vector2(250,5.2), PI/2)
+	# Each clan gets one short access street from the ring to its own forecourt.
+	for data: Dictionary in DISTRICTS:
+		if data["kind"] == "clan":
+			_district_access(data["point"])
 	# Blue river around the northern wall and a branch by the memorial.
 	for segment in [
 		[Vector3(-145,0,-132),Vector3(-100,0,-143)], [Vector3(-100,0,-143),Vector3(-50,0,-136)],
@@ -176,6 +167,16 @@ func _build_roads_and_water() -> void:
 	cylinder(7.0, 0.18, Vector3(-58,0.08,20), Color("73b9c1"), 32)
 	cylinder(5.7, 0.19, Vector3(-58,0.18,20), Color("a8d6cc"), 32)
 	box(Vector3(26,0.12,18), Vector3(-7,0.06,25), Color("d4ba91"))
+
+func _district_access(point: Vector3) -> void:
+	var anchor := point
+	if absf(point.x) > absf(point.z):
+		anchor = Vector3(92.0 if point.x > 0 else -92.0, 0, point.z)
+	else:
+		anchor = Vector3(point.x, 0, 92.0 if point.z > 0 else -92.0)
+	var delta := point-anchor
+	var midpoint := (point+anchor)*0.5 + Vector3(0,0.015,0)
+	_road(midpoint, Vector2(5.2,delta.length()+4.0), atan2(delta.x,delta.z))
 
 func _road(point: Vector3, size: Vector2, angle: float) -> void:
 	var road := box(Vector3(size.x, 0.08, size.y), point, Color("d9c58b"))
@@ -224,14 +225,14 @@ func _steps(point: Vector3, angle: float, width: float, count: int, rise: float,
 
 func _build_landmarks() -> void:
 	# Four close-up buildings preserve the detailed round-house silhouette from the arrival view.
-	_house(Vector3(-34,0,2), "ACADÉMIE")
-	_house(Vector3(-7,0,25), "MARCHÉ")
-	_house(Vector3(-35,0,-12), "QUARTIER RÉSIDENTIEL")
-	_house(Vector3(29,0,20), "MAISON DU QUARTIER")
-	# The Hokage compound is enlarged into a three-building residence facing the oversized cliff.
-	architecture.palace(Vector3(-15,0,-76))
-	architecture.palace(Vector3(15,0,-76))
-	architecture.palace(Vector3(0,0,-88))
+	_house(Vector3(-34,0,12), "ACADÉMIE")
+	_house(Vector3(-18,0,28), "MARCHÉ")
+	_house(Vector3(-34,0,-18), "QUARTIER RÉSIDENTIEL")
+	_house(Vector3(30,0,20), "MAISON DU QUARTIER")
+	# The Hokage volumes overlap into one glued compound instead of three isolated houses.
+	architecture.palace(Vector3(-7,0,-78))
+	architecture.palace(Vector3(7,0,-78))
+	architecture.palace(Vector3(0,0,-87))
 	_sign("RÉSIDENCE DU HOKAGE · GRAND COMPOUND", Vector3(0,4.2,-66.0), 30)
 	architecture.monument()
 	# Public buildings have taller silhouettes to orient the player from every road.
@@ -274,9 +275,14 @@ func _build_districts() -> void:
 		if kind == "residential":
 			# Preserve one former sanctuary volume as a house; do not add a second
 			# sanctuary or a duplicate four-home ring at the same legacy plot.
-			architecture.residential_hall(point+Vector3(0,0,-9.5), int(absf(point.x+point.z))%6)
-			_sign("MAISON DU QUARTIER "+str(data["name"]), point+Vector3(0,5.0,-9.5), 15)
+			var legacy_point := point+Vector3(0,0,-9.5)
+			box(Vector3(14.0,0.12,14.0), legacy_point+Vector3.UP*0.05, Color("c7b084"))
+			architecture.residential_hall(legacy_point, int(absf(point.x+point.z))%6)
+			_sign("MAISON DU QUARTIER "+str(data["name"]), legacy_point+Vector3(0,5.0,0), 15)
 			continue
+		if kind == "clan":
+			# A single clean forecourt separates the homes, the sanctuary and the access road.
+			box(Vector3(30.0,0.12,40.0), point+Vector3(0,0.05,-4.0), Color("cdbb91"))
 		for i in range(4):
 			var angle := float(i)*TAU/4.0 + 0.4
 			var home := point + Vector3(cos(angle)*(7.0+float(i%3)*2.0),0,sin(angle)*(6.0+float(i%2)*1.5))
@@ -290,7 +296,8 @@ func _build_districts() -> void:
 				architecture.compact_house(home, "tiles", 5.8)
 		if kind == "clan":
 			architecture.apartment_block(point+Vector3(0,0,8.5), "red" if int(absf(point.x))%2 == 0 else "plaster")
-			var sanctuary_point := point + Vector3(0,0,-9.5)
+			# Place the true sanctuary behind the homes, with a dedicated clear front court.
+			var sanctuary_point := point + Vector3(0,0,-15.0)
 			architecture.clan_sanctuary(sanctuary_point, clan_variant)
 			clan_variant += 1
 			_sign("SANCTUAIRE "+str(data["name"]), sanctuary_point+Vector3(0,5.2,0), 16)

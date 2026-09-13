@@ -399,8 +399,10 @@ func monument() -> void:
 		var u1: float = float(i+1)/8
 		var x0: float = (u0-0.5)*width
 		var x1: float = (u1-0.5)*width
-		var z0: float = -106.0 - absf(x0)*0.065
-		var z1: float = -106.0 - absf(x1)*0.065
+		# Put the large source texture in front of the rock shelf so it remains
+		# clearly readable behind the new relief geometry.
+		var z0: float = -101.5 - absf(x0)*0.065
+		var z1: float = -101.5 - absf(x1)*0.065
 		var corners: Array[Vector3] = [Vector3(x0,7,z0),Vector3(x0,7+height,z0),Vector3(x1,7+height,z1),Vector3(x1,7,z1)]
 		var coords: Array[Vector2] = [Vector2(u0,1),Vector2(u0,0),Vector2(u1,0),Vector2(u1,1)]
 		for index in [0,1,2,0,2,3]:

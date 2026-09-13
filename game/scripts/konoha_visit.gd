@@ -187,10 +187,21 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("skill_%d" % i): _combat_action("skill_%d" % i)
 	if Input.is_action_just_pressed("ultimate"): _combat_action("ultimate")
 	player.simulate(delta, direction, hud.sprinting or Input.is_action_pressed("sprint"))
-	if player.position.y < -5 or absf(player.position.x) > KonohaMap.BOUNDS.x or absf(player.position.z) > KonohaMap.BOUNDS.y:
+	# Crossing the outer ring must stop at the wall, not silently teleport the player
+	# back to the arrival point. Only a genuine fall through the world respawns.
+	if player.position.y < -12.0:
 		player.reset_at(KonohaMap.SPAWN)
 		if is_instance_valid(village_link): village_link.respawn()
-		hud.notice("Retour au point d’arrivée du quartier.")
+		hud.notice("Retour au point d’arrivée du quartier après une chute.")
+	else:
+		var edge_x: float = KonohaMap.BOUNDS.x - 2.0
+		var edge_z: float = KonohaMap.BOUNDS.y - 2.0
+		if absf(player.position.x) > edge_x:
+			player.position.x = clampf(player.position.x, -edge_x, edge_x)
+			player.velocity.x = 0.0
+		if absf(player.position.z) > edge_z:
+			player.position.z = clampf(player.position.z, -edge_z, edge_z)
+			player.velocity.z = 0.0
 	_update_camera()
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
