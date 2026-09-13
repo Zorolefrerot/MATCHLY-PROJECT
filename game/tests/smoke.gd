@@ -481,7 +481,7 @@ func run() -> void:
 	check(visit.hud.skill_buttons.is_empty() and not visit.hud.buttons.has("melee"), "village does not expose training combat or test jutsu")
 	var architecture: KonohaArchitecture = visit.world.architecture
 	check(architecture.house_count >= 80 and architecture.palace_built, "the full village has dense homes, varied houses, apartments and the red Hokage residence")
-	check(architecture.sanctuary_count >= 12, "each clan has a large exterior sanctuary")
+	check(architecture.sanctuary_count >= 14, "each clan has a large exterior sanctuary")
 	check(architecture.curved_meshes > 150, "architecture uses many curved forms, not a few repeated cubes")
 	var geometry_ok: bool = true
 	var vertex_count: int = 0
