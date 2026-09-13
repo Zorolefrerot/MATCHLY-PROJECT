@@ -275,6 +275,16 @@ test("fourteen clan sanctuary references are traced and kept out of runtime text
   assert.match(map, /DOMAINE DU/);
   assert.match(map, /former sanctuary plot|Former sanctuary volumes/);
   assert.match(map, /residential_hall/);
+  assert.match(map, /CLAN_SANCTUARIES: Array\[PackedScene\]/);
+  assert.match(map, /_build_blender_sanctuary/);
+  assert.match(map, /sanctuary\.scale = Vector3\.ONE \* 1\.35/);
+  assert.match(read("game/scripts/konoha_architecture.gd"), /register_external_sanctuary/);
+  for (const file of [
+    "01_uchiwa.glb", "02_uzumaki.glb", "03_senju.glb", "04_hyuga.glb",
+    "05_akimichi.glb", "06_yamanaka.glb", "07_aburame.glb", "08_inuzuka.glb",
+    "09_fushiguro.glb", "10_itadori.glb", "11_kurosaki.glb", "12_shunsui.glb",
+    "13_yeager.glb", "14_ackerman.glb",
+  ]) assert.ok(readFileSync(new URL("../game/assets/konoha/sanctuaries/" + file, import.meta.url)).length > 1000, file + " missing");
   assert.match(map, /func _district_access/);
   assert.match(map, /clan_variant \+= 1/);
   assert.match(map, /Vector3\(-7,0,-78\)/);
@@ -309,7 +319,7 @@ test("Konoha remodels silhouettes and batches facade details without changing co
   assert.match(read("game/tests/capture.gd"), /konoha-house/);
   assert.match(read("game/tests/capture.gd"), /konoha-palace/);
   const version = read("game/VERSION").trim();
-  assert.equal(version, "0.11.0");
+  assert.equal(version, "0.12.0");
   assert.ok(
     read("game/export_presets.cfg").includes(`version/name="${version}"`),
   );

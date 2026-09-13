@@ -9,6 +9,22 @@ const RIVER_ART: Texture2D = preload("res://assets/konoha/river_water_texture.pn
 # The replacement river tile is square; this keeps its texels proportional while
 # repeating it along each long water segment rather than stretching it.
 const RIVER_ASPECT: float = 1.0
+const CLAN_SANCTUARIES: Array[PackedScene] = [
+	preload("res://assets/konoha/sanctuaries/01_uchiwa.glb"),
+	preload("res://assets/konoha/sanctuaries/02_uzumaki.glb"),
+	preload("res://assets/konoha/sanctuaries/03_senju.glb"),
+	preload("res://assets/konoha/sanctuaries/04_hyuga.glb"),
+	preload("res://assets/konoha/sanctuaries/05_akimichi.glb"),
+	preload("res://assets/konoha/sanctuaries/06_yamanaka.glb"),
+	preload("res://assets/konoha/sanctuaries/07_aburame.glb"),
+	preload("res://assets/konoha/sanctuaries/08_inuzuka.glb"),
+	preload("res://assets/konoha/sanctuaries/09_fushiguro.glb"),
+	preload("res://assets/konoha/sanctuaries/10_itadori.glb"),
+	preload("res://assets/konoha/sanctuaries/11_kurosaki.glb"),
+	preload("res://assets/konoha/sanctuaries/12_shunsui.glb"),
+	preload("res://assets/konoha/sanctuaries/13_yeager.glb"),
+	preload("res://assets/konoha/sanctuaries/14_ackerman.glb")
+]
 
 const BOUNDS := Vector2(150.0, 160.0)
 const SPAWN := Vector3(0, 0.25, 78)
@@ -296,9 +312,9 @@ func _build_districts() -> void:
 				architecture.compact_house(home, "tiles", 5.8)
 		if kind == "clan":
 			architecture.apartment_block(point+Vector3(0,0,8.5), "red" if int(absf(point.x))%2 == 0 else "plaster")
-			# Place the true sanctuary behind the homes, with a dedicated clear front court.
+			# Place the true Blender sanctuary behind the homes, with a dedicated clear front court.
 			var sanctuary_point := point + Vector3(0,0,-15.0)
-			architecture.clan_sanctuary(sanctuary_point, clan_variant)
+			_build_blender_sanctuary(sanctuary_point, clan_variant)
 			clan_variant += 1
 			_sign("SANCTUAIRE "+str(data["name"]), sanctuary_point+Vector3(0,5.2,0), 16)
 			# A physical front board makes the clan destination readable before entering its domain.
@@ -306,6 +322,30 @@ func _build_districts() -> void:
 			_sign("DOMAINE DU "+str(data["name"]), sanctuary_point+Vector3(0,1.25,7.18), 14)
 			box(Vector3(5.2,0.13,1.5), point+Vector3(0,0.07,-3.1), Color("b55d4c"))
 			_sign("✦", point+Vector3(0,0.2,-3.8), 24)
+
+func _build_blender_sanctuary(point: Vector3, variant: int) -> void:
+	var scene: PackedScene = CLAN_SANCTUARIES[clampi(variant, 0, CLAN_SANCTUARIES.size()-1)]
+	var sanctuary := scene.instantiate()
+	sanctuary.name = "BlenderSanctuary_%02d" % (variant+1)
+	sanctuary.position = point
+	# The source preview is intentionally enlarged for the game: the entrance,
+	# torii and roof levels must read as a destination from the outer road.
+	sanctuary.scale = Vector3.ONE * 1.35
+	add_child(sanctuary)
+	architecture.register_external_sanctuary()
+	# GLB meshes are visual assets. A bounded static footprint keeps the domain
+	# physically solid without adding a collision shape to every decorative part.
+	var body := StaticBody3D.new()
+	body.name = "SanctuaryFootprint_%02d" % (variant+1)
+	body.position = point + Vector3(0, 2.3, 0)
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(10.5, 4.6, 8.5) * 1.35
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	body.add_child(collision)
+	add_child(body)
 
 func _build_trees_and_gardens() -> void:
 	for point in [

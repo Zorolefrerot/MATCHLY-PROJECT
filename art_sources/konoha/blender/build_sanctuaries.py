@@ -318,6 +318,29 @@ if __name__ == "__main__":
     # not yet wired into the Godot runtime.
     try:
         bpy.ops.export_scene.gltf(filepath=str(BLENDER_OUT / "konoha_14_sanctuaries_preview.glb"), export_format="GLB")
+        runtime_dir = ROOT / "game" / "assets" / "konoha" / "sanctuaries"
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+        for i, clan in enumerate(CLANS):
+            x = -19.5 + (i % 4) * 13.0
+            y = 13.0 - (i // 4) * 13.0
+            c = bpy.data.collections.get(f"Sanctuary_{i+1:02d}_{clan}")
+            objects = list(c.objects) if c else []
+            if not objects:
+                continue
+            offset = Vector((x, y, 0.0))
+            for obj in objects:
+                obj.matrix_world.translation -= offset
+                obj.select_set(True)
+            bpy.context.view_layer.objects.active = objects[0]
+            safe_name = clan.lower().replace("ū", "u").replace("é", "e")
+            bpy.ops.export_scene.gltf(
+                filepath=str(runtime_dir / f"{i+1:02d}_{safe_name}.glb"),
+                export_format="GLB",
+                use_selection=True,
+            )
+            for obj in objects:
+                obj.matrix_world.translation += offset
+                obj.select_set(False)
     except Exception as exc:
         print("GLB export skipped:", exc)
     bpy.ops.render.render(write_still=True)

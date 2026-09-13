@@ -314,10 +314,16 @@ func residential_hall(point: Vector3, variant: int = 0) -> void:
 	_hall_geometry(point, variant)
 
 func clan_sanctuary(point: Vector3, variant: int = 0) -> void:
-	# A true clan sanctuary is counted separately and receives its own front board in the map.
+	# Legacy procedural fallback retained for editor recovery and old exports.
 	sanctuary_count += 1
 	house_count += 1
 	_sanctuary_geometry(point, variant)
+
+func register_external_sanctuary() -> void:
+	# Blender sanctuaries are real imported geometry; keep the architecture
+	# counters authoritative for the village diagnostics and smoke tests.
+	sanctuary_count += 1
+	house_count += 1
 
 func _hall_geometry(point: Vector3, variant: int = 0) -> void:
 	var wall_palette: Array[Material] = [materials["red"],materials["plaster"],materials["green"],materials["wood"],materials["stone"],materials["red"]]
