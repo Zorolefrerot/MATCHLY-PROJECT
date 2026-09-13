@@ -1,10 +1,10 @@
 // Last verified installer only. Never advertise an uncompiled development version.
 export const androidBuild = Object.freeze({
-  version: "0.11.0",
+  version: "0.12.0",
   name: "idrem-zenkai-training-debug.apk",
-  bytes: 77248650,
-  expiresAt: "2026-09-20T10:12:38Z",
-  url: "https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34751157241/artifacts/10315533005",
+  bytes: 79496383,
+  expiresAt: "2026-09-20T12:00:48Z",
+  url: "https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34755818249/artifacts/10317726413",
 });
 export function downloadInfo(now = Date.now()) {
   const { url, ...info } = androidBuild;
