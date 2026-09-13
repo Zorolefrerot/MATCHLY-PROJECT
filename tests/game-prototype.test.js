@@ -273,6 +273,8 @@ test("fourteen clan sanctuary references are traced and kept out of runtime text
   const map = read("game/scripts/konoha_map.gd");
   for (const clan of clans) assert.match(map, new RegExp(`CLAN ${clan.toUpperCase()}`));
   assert.match(map, /DOMAINE DU/);
+  assert.match(map, /former sanctuary plot/);
+  assert.match(map, /residential_hall/);
   assert.match(map, /clan_variant \+= 1/);
   assert.match(read("game/scripts/konoha_architecture.gd"), /_sanctuary_geometry/);
   assert.match(read("game/scripts/konoha_architecture.gd"), /13: # Ackerman/);

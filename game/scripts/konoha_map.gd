@@ -20,11 +20,26 @@ const LANDMARKS: Array[Dictionary] = [
 ]
 const DISTRICTS: Array[Dictionary] = [
 	{"name":"FORÊT DE LA MORT", "point":Vector3(-112,0,-112), "kind":"forest"},
-	# These four legacy halls remain as houses and neighbourhood buildings, not clan sanctuaries.
-	{"name":"QUARTIER SHUN", "point":Vector3(-124,0,-40), "kind":"residential"},
-	{"name":"QUARTIER HATTORI", "point":Vector3(-124,0,25), "kind":"residential"},
-	{"name":"QUARTIER NARA", "point":Vector3(-92,0,-20), "kind":"residential"},
-	{"name":"QUARTIER HATAKE", "point":Vector3(124,0,18), "kind":"residential"},
+	# Every former sanctuary plot is preserved as an ordinary neighbourhood building;
+	# none of these legacy volumes is counted as one of the fourteen new sanctuaries.
+	{"name":"QUARTIER SHUN", "point":Vector3(-67,0,-43), "kind":"residential"},
+	{"name":"QUARTIER HATTORI", "point":Vector3(-69,0,-12), "kind":"residential"},
+	{"name":"QUARTIER HYŪGA", "point":Vector3(-65,0,47), "kind":"residential"},
+	{"name":"QUARTIER UZUMAKI", "point":Vector3(-43,0,43), "kind":"residential"},
+	{"name":"QUARTIER UCHIWA", "point":Vector3(-16,0,58), "kind":"residential"},
+	{"name":"QUARTIER NARA", "point":Vector3(-25,0,-31), "kind":"residential"},
+	{"name":"QUARTIER AKIMICHI", "point":Vector3(-45,0,-16), "kind":"residential"},
+	{"name":"QUARTIER YAMANAKA", "point":Vector3(-10,0,-8), "kind":"residential"},
+	{"name":"QUARTIER INUZUKA", "point":Vector3(27,0,-63), "kind":"residential"},
+	{"name":"QUARTIER ABURAME", "point":Vector3(38,0,44), "kind":"residential"},
+	{"name":"QUARTIER HATAKE", "point":Vector3(59,0,15), "kind":"residential"},
+	{"name":"QUARTIER SENJU", "point":Vector3(15,0,-27), "kind":"residential"},
+	{"name":"QUARTIER FUSHIGURO", "point":Vector3(43,0,-34), "kind":"residential"},
+	{"name":"QUARTIER ITADORI", "point":Vector3(70,0,-29), "kind":"residential"},
+	{"name":"QUARTIER KUROSAKI", "point":Vector3(-43,0,-63), "kind":"residential"},
+	{"name":"QUARTIER SHUNSUI", "point":Vector3(18,0,48), "kind":"residential"},
+	{"name":"QUARTIER YEAGER", "point":Vector3(65,0,58), "kind":"residential"},
+	{"name":"QUARTIER ACKERMAN", "point":Vector3(-60,0,68), "kind":"residential"},
 	# The fourteen clans from the site receive separated, distant domains.
 	{"name":"CLAN UCHIWA", "point":Vector3(-56,0,105), "kind":"clan"},
 	{"name":"CLAN UZUMAKI", "point":Vector3(-8,0,118), "kind":"clan"},
