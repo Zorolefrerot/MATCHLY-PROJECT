@@ -132,7 +132,7 @@ for filename,description in environment_specs:
     path=OUT/filename
     with Image.open(path) as image:
         environment_outputs.append(dict(file=filename,size=list(image.size),sha256=hashlib.sha256(path.read_bytes()).hexdigest(),description=description))
-manifest=dict(source_commit='bc6203d36c5ed53ca9795214627482f42ff056c9',pillow='11.3.0',seed=83021,cliff_crop=[0,0,382,225],head_count=4,
+manifest=dict(source_commit='bc6203d36c5ed53ca9795214627482f42ff056c9',pillow='11.3.0',seed=83021,cliff_crop=[0,0,382,225],head_count=4,texture_scope='environment-only-generated-art',
     sources=[dict(file=n,sha256=hashlib.sha256((SOURCES/n).read_bytes()).hexdigest(),size=Image.open(SOURCES/n).size) for n in NAMES],outputs=outputs,environment_outputs=environment_outputs,
     rights='Owner-provided references; original rights not independently verified. Derived textures are not claimed as wholly original artwork. Generated environment textures are limited to sky, earth and river surfaces.')
 (OUT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')

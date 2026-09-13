@@ -205,6 +205,7 @@ test("Konoha reference-derived textures are bounded, mipmapped and traceable", (
     ["sky_mountain_panorama.png", "earth_ground_texture.png", "river_water_texture.png"],
   );
   assert.equal(manifest.head_count, 4);
+  assert.equal(manifest.texture_scope, "environment-only-generated-art");
   assert.deepEqual(manifest.cliff_crop, [0, 0, 382, 225]);
   for (const source of manifest.sources) {
     const bytes = readFileSync(
