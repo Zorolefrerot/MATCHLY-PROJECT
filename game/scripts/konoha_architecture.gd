@@ -390,6 +390,7 @@ func main_door(point: Vector3) -> void:
 	# The button controls the transition; these parts are a facade marker only.
 	_block(Vector3(4.2,4.1,0.30), point+Vector3(0,2.05,5.57), materials["trim"])
 	_block(Vector3(3.35,3.45,0.14), point+Vector3(0,1.73,5.78), materials["glass"])
+	_solid_box(Vector3(3.35,3.45,0.14), point+Vector3(0,1.73,5.78), "HokageMainDoorCollision")
 	_block(Vector3(3.55,0.22,0.20), point+Vector3(0,3.52,5.88), materials["gold"])
 	for x in [-0.24,0.24]:
 		_block(Vector3(0.10,0.36,0.10), point+Vector3(x,1.65,5.91), materials["gold"])

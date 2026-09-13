@@ -14,7 +14,7 @@ var world: KonohaMap
 var hokage_interior: HokageInterior
 var inside_hokage: bool = false
 var transition_lock: float = 0.0
-const HOKAGE_EXTERIOR_DOOR := Vector3(0, 0.25, -72.0)
+const HOKAGE_EXTERIOR_DOOR := Vector3(0, 0.25, -81.0)
 var player: TrainingFighter
 var guide: TrainingFighter
 var hud: KonohaHUD
@@ -62,7 +62,7 @@ func _ready() -> void:
 	# village perimeter. It shares the same world, camera and player without
 	# overlapping the exterior palace geometry or invalidating network positions.
 	hokage_interior = HokageInterior.new()
-	hokage_interior.position = Vector3(-125, 0, 135)
+	hokage_interior.position = Vector3(-140, 0, -110)
 	world.add_child(hokage_interior)
 	hokage_interior.build()
 	combat_vfx = TrainingVFX.new()
