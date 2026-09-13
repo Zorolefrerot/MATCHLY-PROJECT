@@ -16,8 +16,8 @@ La musique fournie joue en fond dans Konoha, avec **MUSIQUE : OUI/NON**, le volu
 
 **238 assertions Godot**, 31 tests Node, 9 tests PostgreSQL et 2 parcours Playwright réussis. APK debug exporté, signature et permissions vérifiées ; arrivée et journal inspectés. **Fonctionnement sur téléphone ensuite confirmé par le propriétaire.** Le multijoueur n’est pas inclus dans 0.10. [Détails](../docs/AJOUTS_SITE_MUSIQUE.md).
 
-- [ZIP `idrem-zenkai-android-43` — environ 74 Mo](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34726938557/artifacts/10308280471), jusqu’au **20 septembre 2026 à 00:04 UTC** ; connexion GitHub nécessaire.
-- [Exécution verte 0.11](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34726938557). Extraire **`idrem-zenkai-training-debug.apk`**, pas les journaux.
+- [ZIP `idrem-zenkai-android-51` — environ 73 Mo](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34748600217/artifacts/10315530135), jusqu’au **20 septembre 2026 à 08:54 UTC** ; connexion GitHub nécessaire.
+- [Exécution verte 0.11](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34748600217). Extraire **`idrem-zenkai-training-debug.apk`**, pas les journaux.
 - Même fichier proposé par **Installer IDREM ZENKAI** dans l’espace des joueurs acceptés après déploiement du site.
 
 ![Konoha 0.10, capture ordinateur réelle](../docs/images/konoha-10-arrival.jpg)

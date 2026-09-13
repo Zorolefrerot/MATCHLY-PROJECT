@@ -1,10 +1,10 @@
 # Validation du prototype — 13 septembre 2026
 
-**Lot regroupé 0.11 compilé :** village complet de Konoha, quartiers inspirés de la carte fournie, maisons et appartements densifiés, images générées pour les habitations, la rivière, le marché, le sanctuaire et les animaux, PNJ et animaux, attaques enrichies d’images/textures, quatorze ultimes monumentales, présence partagée, chat RP/HRP et duel de test à deux joueurs admis. Les comptes et la progression persistante ne changent pas. [Détails du village](../docs/KONOHA_VILLAGE_ENTIER.md) · [Détails des techniques](../docs/ULTIMES_ET_TEXTURES.md).
+**Lot regroupé 0.11 compilé :** village complet de Konoha, quartiers inspirés de la carte fournie, maisons et appartements densifiés en géométrie 3D procédurale, environnement généré limité au ciel, à la terre et à la rivière, PNJ et animaux procéduraux, attaques enrichies d’images/textures, quatorze ultimes monumentales, présence partagée, chat RP/HRP et duel de test à deux joueurs admis. Les comptes et la progression persistante ne changent pas. [Détails du village](../docs/KONOHA_VILLAGE_ENTIER.md) · [Détails des techniques](../docs/ULTIMES_ET_TEXTURES.md).
 
 ## Résultat 0.11 — APK vérifiée
 
-Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34726938557](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34726938557), sur la branche active, réussit l’import Godot 4.5.1, **311 assertions de simulation**, le scénario WSS avec deux clients Godot dans le village complet et les nouveaux panneaux illustrés, le rendu des effets et l’export Android.
+Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34748600217](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34748600217), sur la branche active, réussit l’import Godot 4.5.1, **312 assertions de simulation**, le scénario WSS avec deux clients Godot dans le village complet et ses volumes procéduraux, le rendu des effets et l’export Android.
 
 | Vérification | Résultat réel |
 |---|---|
@@ -15,8 +15,8 @@ Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exéc
 | WSS entre deux visites Godot | Réussi avec profils et SQLite jetables |
 | Ultimes et rendu GL | Réussi ; effets visibles et prolongés contrôlés |
 | APK | Version **0.11.0**, code **11**, API minimum 24/cible 35, ARM64/ARMv7 |
-| APK à l’intérieur du ZIP | **68 274 843 octets**, SHA-256 `82b94ebfbc09417b927f41103c883e46d44b041c92581dd47f9bd459344bc9cc` |
-| ZIP GitHub | [`idrem-zenkai-android-43`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34726938557/artifacts/10308280471), **73 792 876 octets**, expiration 20 septembre 2026 à 00:04:48 UTC |
+| APK à l’intérieur du ZIP | **69 843 145 octets**, export Android vérifié par le workflow |
+| ZIP GitHub | [`idrem-zenkai-android-51`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34748600217/artifacts/10315530135), **76 601 665 octets**, expiration 20 septembre 2026 à 08:54:12 UTC |
 | Téléphones Android physiques | Essai sur deux appareils encore à faire |
 | Production Render | Manual Deploy nécessaire pour afficher 0.11 sur le site |
 

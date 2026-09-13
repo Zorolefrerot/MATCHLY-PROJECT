@@ -2,7 +2,7 @@
 
 **Ajout au lot regroupé 0.11 :** deux joueurs admis peuvent parcourir la carte complète de Konoha et lancer un duel réseau éphémère, avec quatre attaques texturées et une ultime clanique monumentale. Le village contient ses quartiers, son marché, ses routes, sa rivière, ses PNJ actifs et ses animaux. Les dégâts, recharges, chakra, niveau de test, évitement de l’ultime et KO sont résolus par le serveur ; les comptes et la progression ne changent pas. [Détails des textures et ultimes](ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
 
-**13 septembre 2026 : APK 0.11 compilée et artefact vérifié.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés. L’exécution GitHub Actions **34726938557** a réussi l’import Godot, les **311 assertions**, le WSS avec deux clients Godot dans le village complet, ses rues, ses escaliers, ses forêts et ses sanctuaires claniques, le rendu des ultimes, l’export/signature Android et les contrôles de permissions. L’essai physique sur deux téléphones reste à faire.
+**13 septembre 2026 : APK 0.11 compilée et artefact vérifié.** Le propriétaire confirme le fonctionnement de **0.10 sur son téléphone**. La suppression protégée, le téléchargement accepté et la musique fournie sont conservés, pas réimplémentés. L’exécution GitHub Actions **34748600217** a réussi l’import Godot, les **312 assertions**, le WSS avec deux clients Godot dans le village complet, ses rues, ses escaliers, ses forêts et ses sanctuaires claniques, le rendu des ultimes, l’export/signature Android et les contrôles de permissions. L’essai physique sur deux téléphones reste à faire.
 
 ## Périmètre
 
@@ -68,7 +68,7 @@ Le client vide la saisie **après acquittement**. En cas de coupure ou délai, i
 - Les en-têtes de session absents ou malformés sont refusés avant toute acquisition de connexion/verrou de base. Test avec un adaptateur interdisant tout accès DB.
 - Une salle momentanément pleine ou un bail non renouvelé utilise le code transitoire **1013**, même si un paquet arrive avant le prochain tick. Le client peut réessayer sans effacer une connexion de compte encore valable. Une véritable expiration reste **4003** ; les révocations vérifiées le restent également.
 - Contrats SQLite et PostgreSQL relancés : chemin inconnu, capacité puis départ, reprise, expiration et suppression restent couverts.
-- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-43` a été généré par GitHub Actions ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 20 septembre 2026.
+- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-51` a été généré par GitHub Actions ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 20 septembre 2026.
 
 ## Application
 
@@ -105,7 +105,7 @@ npm run test:browser
 GODOT_BIN=/chemin/godot bash game/tools/check.sh
 ```
 
-`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée du village complet densifié : ZIP `idrem-zenkai-android-43`, **73 792 876 octets**, expiration **20 septembre 2026 à 00:04:48 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
+`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée du village complet densifié : ZIP `idrem-zenkai-android-51`, **76 601 665 octets**, expiration **20 septembre 2026 à 08:54:12 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
 
 ## Livraison groupée et hébergement gratuit
 
