@@ -122,8 +122,18 @@ faces.putalpha(mask)
 # Square storage, restored to the source aspect ratio by the world-space mesh.
 faces=faces.resize((512,512),Image.Resampling.LANCZOS).filter(ImageFilter.UnsharpMask(radius=.8,percent=85,threshold=4))
 save(faces,'hokage_cliff','Cropped first four faces from the provided seven-face image, with a warm-stone skyline alpha mask. Textured scenery, not sculpted face geometry.')
+environment_specs=[
+    ('sky_mountain_panorama.png','Generated panoramic sky and mountain backdrop, used only by the world environment.'),
+    ('earth_ground_texture.png','Generated earth and grass tile, repeated on the ground with mipmaps.'),
+    ('river_water_texture.png','Generated river water tile, repeated along the water segments without stretching.'),
+]
+environment_outputs=[]
+for filename,description in environment_specs:
+    path=OUT/filename
+    with Image.open(path) as image:
+        environment_outputs.append(dict(file=filename,size=list(image.size),sha256=hashlib.sha256(path.read_bytes()).hexdigest(),description=description))
 manifest=dict(source_commit='bc6203d36c5ed53ca9795214627482f42ff056c9',pillow='11.3.0',seed=83021,cliff_crop=[0,0,382,225],head_count=4,
-    sources=[dict(file=n,sha256=hashlib.sha256((SOURCES/n).read_bytes()).hexdigest(),size=Image.open(SOURCES/n).size) for n in NAMES],outputs=outputs,
-    rights='Owner-provided references; original rights not independently verified. Derived textures are not claimed as wholly original artwork.')
+    sources=[dict(file=n,sha256=hashlib.sha256((SOURCES/n).read_bytes()).hexdigest(),size=Image.open(SOURCES/n).size) for n in NAMES],outputs=outputs,environment_outputs=environment_outputs,
+    rights='Owner-provided references; original rights not independently verified. Derived textures are not claimed as wholly original artwork. Generated environment textures are limited to sky, earth and river surfaces.')
 (OUT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 print('Prepared',len(outputs),'textures;',sum((OUT/o['file']).stat().st_size for o in outputs),'PNG bytes')

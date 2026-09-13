@@ -100,5 +100,34 @@
       "description": "Cropped first four faces from the provided seven-face image, with a warm-stone skyline alpha mask. Textured scenery, not sculpted face geometry."
     }
   ],
-  "rights": "Owner-provided references; original rights not independently verified. Derived textures are not claimed as wholly original artwork."
+  "environment_outputs": [
+    {
+      "file": "sky_mountain_panorama.png",
+      "size": [
+        1376,
+        768
+      ],
+      "sha256": "d1e3f7e1b00c94ecb2aad1779ccb153ddc7081759c2ad06a05fafbfbd4ee5571",
+      "description": "Generated panoramic sky and mountain backdrop, used only by the world environment."
+    },
+    {
+      "file": "earth_ground_texture.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "bfa4fe57fb954bd24ccfc735c614849e3741103d1948f997468910900dbad168",
+      "description": "Generated earth and grass tile, repeated on the ground with mipmaps."
+    },
+    {
+      "file": "river_water_texture.png",
+      "size": [
+        688,
+        384
+      ],
+      "sha256": "1ddd8042ad4a9a53176877a9af0f6270a854c0639a56808425552e0e160c647a",
+      "description": "Generated river water tile, repeated along the water segments without stretching."
+    }
+  ],
+  "rights": "Owner-provided references; original rights not independently verified. Derived textures are not claimed as wholly original artwork. Generated environment textures are limited to sky, earth and river surfaces."
 }
