@@ -72,7 +72,7 @@ Détails, contrôles et limites : [première zone de Konoha](../docs/KONOHA_PREM
 - Bouton **MON COMPTE** à l’accueil/pause. Connexion par l’adresse HTTPS exacte du site et les identifiants d’un joueur admis. Le compte administrateur n’est pas un personnage joueur.
 - Nom, clan, affinité et potentiel Mokuton lus depuis les attributions existantes, **sans relancer le tirage**. Genin à Konoha pour cet incrément, sans progression persistante de combat.
 - **MODIFIER L’APPARENCE → ENREGISTRER SUR MON COMPTE** sauvegarde sur le serveur. Retrouver les choix après reconnexion/réinstallation. Un conflit n’écrase pas une version plus récente.
-- Mot de passe et jeton seulement en mémoire ; session 2 h, nouvelle connexion invalidant la précédente. Seule l’origine publique du serveur est mémorisée. Pas de secret Neon dans l’APK.
+- Le mot de passe n’est jamais enregistré. Après la première connexion, l’appareil mémorise seulement l’origine publique et un jeton opaque de session de 30 jours pour restaurer automatiquement le personnage ; déconnexion, réinitialisation, suppression ou révocation invalident ce jeton. Pas de secret Neon dans l’APK.
 - **APPARENCE HORS LIGNE** garde une sauvegarde distincte, sans requête réseau. Les choix du compte ne remplacent pas le combattant local ni ses quatre techniques de test.
 - Une réinstallation efface les choix **locaux** des versions précédentes, qui ne sont pas automatiquement transférés sur le compte. Les modèles, sons et combats validés sont conservés. Affichage **PROTO 0.6**.
 

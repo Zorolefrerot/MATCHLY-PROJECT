@@ -254,6 +254,30 @@ test("generated sky and earth art stays limited to environment surfaces", () => 
   assert.doesNotMatch(map, /HOMES_ART|MARKET_ART|SHRINE_ART|ANIMAL_ART|_build_generated_art/);
 });
 
+test("fourteen clan sanctuary references are traced and kept out of runtime textures", () => {
+  const manifest = JSON.parse(read("art_sources/konoha/sanctuaries/manifest.json"));
+  const sha = (data) => createHash("sha256").update(data).digest("hex");
+  const clans = [
+    "Uchiwa", "Uzumaki", "Senju", "Hyūga", "Akimichi", "Yamanaka", "Aburame",
+    "Inuzuka", "Fushiguro", "Itadori", "Kurosaki", "Shunsui", "Yeager", "Ackerman",
+  ];
+  assert.deepEqual(manifest.models.map((entry) => entry.clan), clans);
+  assert.equal(manifest.models.length, 14);
+  assert.match(manifest.runtime_policy, /reference-only/);
+  for (const entry of manifest.models) {
+    const path = "art_sources/konoha/sanctuaries/" + entry.file;
+    const bytes = readFileSync(new URL("../" + path, import.meta.url));
+    assert.equal(sha(bytes), entry.sha256);
+    assert.equal(bytes.readUInt16BE(0), 0xffd8);
+  }
+  const map = read("game/scripts/konoha_map.gd");
+  for (const clan of clans) assert.match(map, new RegExp(`CLAN ${clan.toUpperCase()}`));
+  assert.match(map, /DOMAINE DU/);
+  assert.match(map, /clan_variant \+= 1/);
+  assert.match(read("game/scripts/konoha_architecture.gd"), /_sanctuary_geometry/);
+  assert.match(read("game/scripts/konoha_architecture.gd"), /13: # Ackerman/);
+});
+
 test("Konoha remodels silhouettes and batches facade details without changing combat", () => {
   const architecture = read("game/scripts/konoha_architecture.gd");
   assert.match(architecture, /ConvexPolygonShape3D\.new/);

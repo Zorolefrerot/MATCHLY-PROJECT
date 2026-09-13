@@ -52,7 +52,7 @@ func _ready() -> void:
 	column.add_child(identity_label)
 	village_button = _button("ENTRER À KONOHA · VILLAGE PARTAGÉ", func() -> void: _waiting(); village_requested.emit(), column)
 	village_button.add_theme_stylebox_override("normal", TrainingHUD.panel_style(Color("39776b")))
-	status_label = _label("Le mot de passe et la session restent uniquement en mémoire.", 16)
+	status_label = _label("Le mot de passe n’est jamais enregistré. Après une première connexion, cet appareil reprend ta session sans redemander le lien, l’e-mail ni le mot de passe.", 16)
 	column.add_child(status_label)
 	var actions := HBoxContainer.new()
 	column.add_child(actions)
@@ -133,6 +133,8 @@ func _update_controls() -> void:
 	back_button.disabled = api.busy
 	for field in [origin_field, email_field, password_field]:
 		field.editable = not api.busy and not connected
+		field.visible = not connected
+	login_button.visible = not connected
 	if connected:
 		var character: Dictionary = api.profile["character"]
 		identity_label.text = "%s · %s de %s\nClan : %s · Affinité : %s · Potentiel Mokuton : %s\nApparence du compte : %s" % [character["name"], character["rank"], character["village"], character["clan"], character["affinity"], "oui, à éveiller" if character["mokuton"] else "non", "à créer" if api.profile["revision"] == 0 else "sauvegardée"]

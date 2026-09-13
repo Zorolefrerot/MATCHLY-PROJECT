@@ -33,9 +33,9 @@ Le propriétaire assurera **Hokage et chef de l’Akatsuki au début du jeu**. I
 
 ## Sessions et sécurité
 
-- Jeton aléatoire de 32 octets ; seulement son SHA-256 en base. Durée de **2 heures**, un jeton natif actif par compte ; une nouvelle connexion révoque l’ancienne.
+- Jeton aléatoire de 32 octets ; seulement son SHA-256 en base. Durée de **30 jours**, un jeton natif actif par compte ; une nouvelle connexion révoque l’ancienne. L’appareil conserve uniquement ce jeton opaque et l’origine du serveur, jamais le mot de passe ni l’e-mail.
 - Mot de passe et jeton uniquement en mémoire de l’application, jamais dans une sauvegarde, les logs, une URL ou le dépôt. Le champ mot de passe est vidé dès l’envoi. Reconnexion nécessaire après fermeture de l’application.
-- Déconnexion native révoque le jeton ; réinitialisation du mot de passe révoque aussi les sessions natives et celles du site. En cas d’échec réseau à la déconnexion, le jeton est oublié localement mais peut rester valide côté serveur jusqu’à expiration.
+- Déconnexion native révoque le jeton et efface la session mémorisée sur l’appareil ; réinitialisation du mot de passe révoque aussi les sessions natives et celles du site. Après une première connexion, seul un jeton opaque de 30 jours est conservé pour éviter de redemander URL, e-mail et mot de passe. Le mot de passe n’est jamais écrit sur l’appareil. En cas d’échec réseau à la déconnexion, le jeton est oublié localement mais peut rester valide côté serveur jusqu’à expiration.
 - Un jeton natif ne peut pas authentifier une requête d’administration ou de tirage du site. Un cookie du site ne suffit pas pour l’API native.
 - JSON borné et schéma cosmétique strict : champs supplémentaires, valeurs non entières/hors catalogue et versions inconnues refusés. Aucun `user_id`, clan, santé, chakra, récompense ou droit d’équipement n’est accepté dans une sauvegarde.
 - Limitation existante des tentatives par IP (processus, pas un système anti-DDoS distribué), pas de polling périodique. Render Free et Neon peuvent dormir ; délai client 90 s, réponse maximale 32 Kio. Aucun service payant ou secret supplémentaire requis.

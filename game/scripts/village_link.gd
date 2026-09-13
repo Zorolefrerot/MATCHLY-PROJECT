@@ -1,6 +1,6 @@
 class_name VillageLink
 extends Node
-## Native-only WSS; credentials from the existing HTTPS login, RAM only.
+## Native-only WSS; receives the opaque token from AccountAPI and never handles a password.
 signal status_changed(message: String)
 signal received(event: Dictionary)
 signal disconnected

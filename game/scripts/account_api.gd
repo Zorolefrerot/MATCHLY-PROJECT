@@ -1,11 +1,13 @@
 class_name CharacterAccountAPI
 extends Node
-## Scoped game session kept in RAM only. Never stores a password or token on disk.
+## Scoped game session: the password is never stored; an opaque device token is remembered so returning players do not have to re-enter the website URL, email or password.
 signal completed(operation: String, success: bool, message: String)
 var profile: Dictionary = {}
 var busy: bool = false
+const SESSION_PATH: String = "user://game-device-session.cfg"
 var _token: String = ""
 var _origin: String = ""
+var _expires_at: int = 0
 var _operation: String = ""
 var request_node: HTTPRequest
 
@@ -17,6 +19,7 @@ func _ready() -> void:
 	request_node.body_size_limit = 32768
 	add_child(request_node)
 	request_node.request_completed.connect(_response)
+	call_deferred("_restore_device_session")
 
 static func normalize_origin(value: String) -> String:
 	var origin: String = value.strip_edges().to_lower()
@@ -25,6 +28,23 @@ static func normalize_origin(value: String) -> String:
 	if pattern.search(origin) == null:
 		return ""
 	return origin.trim_suffix("/").trim_suffix(":443")
+
+func _restore_device_session() -> void:
+	var config := ConfigFile.new()
+	if config.load(SESSION_PATH) != OK:
+		return
+	var saved_origin := normalize_origin(str(config.get_value("session", "origin", "")))
+	var saved_token := str(config.get_value("session", "token", ""))
+	var saved_expiry: int = int(config.get_value("session", "expiresAt", 0))
+	var token_pattern := RegEx.new()
+	token_pattern.compile("^[a-f0-9]{64}$")
+	if saved_origin.is_empty() or token_pattern.search(saved_token) == null or saved_expiry <= int(Time.get_unix_time_from_system()*1000):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SESSION_PATH))
+		return
+	_origin = saved_origin
+	_token = saved_token
+	_expires_at = saved_expiry
+	_send("restore", HTTPClient.METHOD_GET, "/profile")
 
 func login(origin: String, email: String, password: String) -> void:
 	if busy:
@@ -53,6 +73,18 @@ func mission_event(event: String) -> void:
 		return
 	_send("mission", HTTPClient.METHOD_POST, "/missions/welcome/events", {"event": event, "expectedRevision": state["revision"]})
 
+func _remember_device_session() -> void:
+	if _token.is_empty() or _origin.is_empty() or _expires_at <= 0:
+		return
+	var config := ConfigFile.new()
+	config.set_value("session", "origin", _origin)
+	config.set_value("session", "token", _token)
+	config.set_value("session", "expiresAt", _expires_at)
+	config.save(SESSION_PATH)
+
+func _clear_device_session() -> void:
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SESSION_PATH))
+
 func logout() -> void:
 	if busy:
 		return
@@ -61,7 +93,9 @@ func logout() -> void:
 
 func forget() -> void:
 	_token = ""
+	_expires_at = 0
 	profile = {}
+	_clear_device_session()
 
 func village_session() -> Dictionary:
 	if _token.is_empty() or profile.is_empty() or normalize_origin(_origin).is_empty():
@@ -157,5 +191,11 @@ func _response(result: int, status: int, _headers: PackedStringArray, bytes: Pac
 			completed.emit(operation, false, "Session invalide reçue du serveur.")
 			return
 		_token = data["token"]
+		_expires_at = int(data.get("expiresAt", 0))
 	profile = value.duplicate(true)
+	if operation == "login":
+		_remember_device_session()
+	elif operation == "restore":
+		# Keep the opaque token only; never reconstruct or store the password.
+		_remember_device_session()
 	completed.emit(operation, true, "Étape enregistrée sur ton compte." if operation == "mission" else "Apparence enregistrée sur ton compte." if operation == "save" else "Personnage récupéré depuis le site, sans nouveau tirage.")

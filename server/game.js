@@ -36,7 +36,10 @@ export function validAppearance(value) {
 }
 const fail = (status, code, message) =>
   Object.assign(new Error(message), { status, gameCode: code });
-const TTL = 2 * 60 * 60 * 1000;
+// The device session is an opaque bearer token, never a password. A remembered
+// device may return without asking for the website credentials again; logout,
+// password reset, account deletion and admission revocation still invalidate it.
+const TTL = 30 * 24 * 60 * 60 * 1000;
 
 export function installGameRoutes(app, db, limit) {
   const dummy = hashPassword(randomBytes(24).toString("hex"));

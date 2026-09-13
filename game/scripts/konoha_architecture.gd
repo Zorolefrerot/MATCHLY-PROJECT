@@ -39,6 +39,11 @@ func _ready() -> void:
 	materials["wood"] = TrainingFighter.material(Color("716047"))
 	materials["trim"] = TrainingFighter.material(Color("dbd1b3"))
 	materials["glass"] = TrainingFighter.material(Color("304e50"))
+	# The mountain portraits use actual relief geometry; these color-only materials keep
+	# the sculpted faces independent from the reference image used behind the cliff.
+	materials["face_rock"] = TrainingFighter.material(Color("8c7562"))
+	materials["face_highlight"] = TrainingFighter.material(Color("b69a7b"))
+	materials["face_shadow"] = TrainingFighter.material(Color("403832"))
 
 func _mesh(vertices: PackedVector3Array, normals: PackedVector3Array, uv: PackedVector2Array, mat: Material, point: Vector3 = Vector3.ZERO) -> MeshInstance3D:
 	var arrays: Array = []
@@ -66,6 +71,39 @@ func _block(dimensions: Vector3, point: Vector3, mat: Material) -> MeshInstance3
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(node)
 	return node
+
+func _sphere_part(point: Vector3, scale: Vector3, mat: Material, segments: int = 16) -> MeshInstance3D:
+	var sphere := SphereMesh.new()
+	sphere.radius = 1.0
+	sphere.height = 2.0
+	sphere.radial_segments = segments
+	sphere.rings = 8
+	var node := MeshInstance3D.new()
+	node.mesh = sphere
+	node.position = point
+	node.scale = scale
+	node.material_override = mat
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(node)
+	return node
+
+func _sculpted_face(point: Vector3, scale: float, variant: int) -> void:
+	# A low-poly relief portrait: brow, nose, cheeks, jaw, eyes and hair are all
+	# separate volumes, so the four Hokage faces read as carvings from every angle.
+	_sphere_part(point+Vector3(0,0,0),Vector3(8.5,11.8,3.5)*scale,materials["face_rock"])
+	_sphere_part(point+Vector3(0,7.2,0.5),Vector3(8.0,4.0,3.7)*scale,materials["face_shadow"])
+	_sphere_part(point+Vector3(0,-8.0,0.25),Vector3(8.2,3.4,3.4)*scale,materials["face_highlight"])
+	# The brow line changes per portrait while keeping the broad monumental silhouette.
+	for side in [-1,1]:
+		_sphere_part(point+Vector3(side*(2.6+float(variant%2)*0.4),2.5,3.0)*scale,Vector3(2.7,0.85,0.75)*scale,materials["face_highlight"],12)
+		_sphere_part(point+Vector3(side*2.7,1.0,3.45)*scale,Vector3(0.72,0.72,0.42)*scale,materials["face_shadow"],12)
+	_sphere_part(point+Vector3(side*2.1,-2.9,3.0)*scale,Vector3(2.6,1.6,0.72)*scale,materials["face_highlight"],12)
+	_sphere_part(point+Vector3(0,0.0,3.8)*scale,Vector3(1.15,3.0,1.05)*scale,materials["face_highlight"],12)
+	_block(Vector3(4.2,0.55,0.55)*scale,point+Vector3(0,-4.5,3.25)*scale,materials["face_shadow"])
+	# Hair ridges and a shoulder collar make each relief visible against the cliff.
+	for side in [-1,1]:
+		_sphere_part(point+Vector3(side*5.9,5.0,0.1)*scale,Vector3(2.8,7.0,3.0)*scale,materials["face_shadow"],12)
+	_block(Vector3(16.0,2.0,3.0)*scale,point+Vector3(0,-12.0,0.0)*scale,materials["face_rock"])
 
 func _point(radius: float, height: float, angle: float, stretch: Vector2) -> Vector3:
 	return Vector3(sin(angle)*radius*stretch.x, height, cos(angle)*radius*stretch.y)
@@ -194,10 +232,94 @@ func stilt_house(point: Vector3, roof: String = "tiles") -> void:
 	_windows(point,3.65,stretch,3.0,8,Vector2(0.78,1.05),Vector2i(1,0),true)
 	_panel(point+Vector3(0,2.45,3.0),Vector2(1.25,2.25),0,Vector2i(0,1))
 
+func _sanctuary_steps(point: Vector3, width: float = 7.0, count: int = 5) -> void:
+	for i in range(count):
+		var depth := 0.9*float(i+1)
+		_block(Vector3(width,0.22*float(i+1),0.9), point+Vector3(0,0.11*float(i+1),5.0+depth), materials["stone"])
+
+func _sanctuary_torii(point: Vector3, color: Material = null, width: float = 8.0, height: float = 5.5) -> void:
+	var post_material: Material = materials["red"] if color == null else color
+	for side in [-1,1]:
+		lathe([Vector2(0.28,0),Vector2(0.28,height),Vector2(0.38,height+0.2)], point+Vector3(side*width*0.42,0,5.0), Vector2.ONE, post_material, Vector2.ONE, true, 12)
+	_block(Vector3(width,0.32,0.34), point+Vector3(0,height+0.15,5.0), post_material)
+	_block(Vector3(width+0.8,0.22,0.30), point+Vector3(0,height+0.62,5.0), materials["gold"])
+
+func _sanctuary_body(point: Vector3, wall: Material, roof: Material, width: float, height: float, stretch: Vector2 = Vector2(1.0,0.82)) -> void:
+	_wall(width,0.0,height,point,stretch,wall)
+	lathe([Vector2(width-0.1,height-0.25),Vector2(width+0.35,height),Vector2(width+0.55,height+0.25),Vector2(width*0.72,height+1.15),Vector2(0,height+1.55)], point, stretch, roof, Vector2(7,1.1))
+	_windows(point,width,stretch,height*0.52,12,Vector2(0.72,1.1),Vector2i(1,0),true)
+	_panel(point+Vector3(0,1.55,width*0.84),Vector2(2.0,3.0),0,Vector2i(0,1))
+
+func _sanctuary_pagoda(point: Vector3, wall: Material, roof: Material, tiers: int = 3, scale: float = 1.0) -> void:
+	for tier in range(tiers):
+		var y := float(tier)*3.25*scale
+		var width := (4.6-0.55*float(tier))*scale
+		_wall(width, y, y+2.65*scale, point+Vector3(0,0,-1.2*float(tier)), Vector2(1,0.82), wall)
+		lathe([Vector2(width+0.25*scale,y+2.45*scale),Vector2(width+0.72*scale,y+2.7*scale),Vector2(0,y+3.2*scale)], point+Vector3(0,0,-1.2*float(tier)), Vector2(1,0.82), roof, Vector2(6,1))
+		_windows(point+Vector3(0,0,-1.2*float(tier)),width,Vector2(1,0.82),y+1.5*scale,8,Vector2(0.45,0.7),Vector2i(1,0))
+	lathe([Vector2(0.22*scale,0),Vector2(0.22*scale,tiers*3.25*scale+2)],point+Vector3(0,0,-1.2*float(tiers-1)),Vector2.ONE,materials["gold"],Vector2.ONE,false,12)
+
+func _sanctuary_courtyard(point: Vector3, wall: Material, roof: Material, scale: float = 1.0) -> void:
+	for side in [-1,1]:
+		var wing := point+Vector3(side*3.6*scale,0,-1.0)
+		_sanctuary_body(wing,wall,roof,2.35*scale,3.7*scale,Vector2(0.92,0.72))
+	_block(Vector3(11.0*scale,0.18,7.5*scale),point+Vector3(0,0.09,-0.7),materials["stone"])
+	_sanctuary_torii(point,materials["red"],7.2*scale,5.0*scale)
+
+func _sanctuary_cliff(point: Vector3, wall: Material, roof: Material, scale: float = 1.0) -> void:
+	_block(Vector3(13*scale,1.0,9*scale),point+Vector3(0,0.5,-1),materials["stone"])
+	_sanctuary_body(point+Vector3(0,1.0,-1.4),wall,roof,4.2*scale,5.1*scale,Vector2(1,0.8))
+	for side in [-1,1]:
+		_sanctuary_body(point+Vector3(side*5.4*scale,0,0),wall,roof,1.65*scale,3.5*scale,Vector2(1,0.7))
+	_sanctuary_steps(point,8.0*scale,6)
+
+func _sanctuary_geometry(point: Vector3, variant: int) -> void:
+	# Fourteen reference images from main are translated into fourteen low-poly silhouettes:
+	# pagodas, courtyards, cliff halls, torii gates, towers and garden compounds.
+	_block(Vector3(13.5,0.22,10.5),point+Vector3(0,0.11,-0.8),materials["stone"])
+	_sanctuary_steps(point,7.0,5)
+	match variant:
+		0: # Uchiwa — purple forest pagoda
+			_sanctuary_pagoda(point,materials["wood"],materials["gold"],3,1.12); _sanctuary_torii(point,materials["red"],8.0,6.0)
+		1: # Uzumaki — blue courtyard estate
+			_sanctuary_courtyard(point,materials["plaster"],materials["tiles"],1.1)
+		2: # Senju — tall mountain palace
+			_sanctuary_pagoda(point,materials["plaster"],materials["gold"],4,1.12)
+		3: # Hyūga — elevated garden pavilion
+			_sanctuary_cliff(point,materials["plaster"],materials["tiles"],1.0)
+		4: # Akimichi — broad multi-wing hall
+			_sanctuary_courtyard(point,materials["red"],materials["gold"],1.35); _sanctuary_body(point,materials["red"],materials["gold"],3.4,4.4)
+		5: # Yamanaka — flowering five-level tower
+			_sanctuary_pagoda(point,materials["wood"],materials["tiles"],5,0.9); _sanctuary_torii(point,materials["red"],7.5,5.2)
+		6: # Aburame — dark fog gate and compact hall
+			_sanctuary_torii(point,materials["wood"],9.0,6.4); _sanctuary_body(point+Vector3(0,0,-2.0),materials["stone"],materials["tiles"],4.0,4.0)
+		7: # Inuzuka — wooded raised compound
+			_sanctuary_cliff(point,materials["wood"],materials["tiles"],1.12)
+		8: # Fushiguro — red mountain gate
+			_sanctuary_torii(point,materials["red"],10.0,7.0); _sanctuary_pagoda(point,materials["red"],materials["red"],3,1.0)
+		9: # Itadori — sunset stair temple
+			_sanctuary_body(point,materials["red"],materials["gold"],4.7,5.0,Vector2(1,0.78)); _sanctuary_torii(point,materials["red"],8.5,6.2)
+		10: # Kurosaki — blue waterfall tower
+			_sanctuary_pagoda(point,materials["plaster"],materials["gold"],4,1.0); _block(Vector3(2.2,7.0,0.7),point+Vector3(6,3.5,-2),materials["glass"])
+		11: # Shunsui — pink circular garden
+			_sanctuary_courtyard(point,materials["plaster"],materials["gold"],1.0); _block(Vector3(11,0.16,11),point+Vector3(0,0.08,-1),materials["green"])
+		12: # Yeager — fortified estate
+			_sanctuary_cliff(point,materials["stone"],materials["tiles"],1.2); _sanctuary_torii(point,materials["wood"],9.5,5.8)
+		13: # Ackerman — snow court and central torii
+			_sanctuary_courtyard(point,materials["plaster"],materials["tiles"],1.2); _sanctuary_torii(point,materials["red"],8.8,6.3)
+
+func residential_hall(point: Vector3, variant: int = 0) -> void:
+	# Legacy halls remain as varied houses after the fourteen true clan sanctuaries move away.
+	house_count += 1
+	_hall_geometry(point, variant)
+
 func clan_sanctuary(point: Vector3, variant: int = 0) -> void:
-	# Each clan receives a large exterior hall with its own material pairing and roof profile.
+	# A true clan sanctuary is counted separately and receives its own front board in the map.
 	sanctuary_count += 1
 	house_count += 1
+	_sanctuary_geometry(point, variant)
+
+func _hall_geometry(point: Vector3, variant: int = 0) -> void:
 	var wall_palette: Array[Material] = [materials["red"],materials["plaster"],materials["green"],materials["wood"],materials["stone"],materials["red"]]
 	var wall_material: Material = wall_palette[clampi(variant,0,wall_palette.size()-1)]
 	var stretch := Vector2(1.2,0.88)
@@ -267,24 +389,28 @@ func palace(point: Vector3) -> void:
 			lathe([Vector2(0.18,11.35),Vector2(0.15,12.65),Vector2(0.08,13.75)],point+Vector3(x,0,z),Vector2.ONE,materials["trim"],Vector2.ONE,false,12)
 
 func monument() -> void:
-	# A shallow fixed world-space ribbon, not a camera-facing billboard or a sky photo.
-	# Its proportions restore the 382x225 source crop stored as a square texture.
+	# A broad textured rock reference remains behind the monument, but the four
+	# portraits in front are genuine 3D reliefs rather than a camera-facing card.
 	var vertices := PackedVector3Array(); var normals := PackedVector3Array(); var uv := PackedVector2Array()
-	var width: float = 52.0
+	var width: float = 124.0
 	var height: float = width*225.0/382.0
 	for i in range(8):
 		var u0: float = float(i)/8
 		var u1: float = float(i+1)/8
 		var x0: float = (u0-0.5)*width
 		var x1: float = (u1-0.5)*width
-		var z0: float = -56.0 - absf(x0)*0.065
-		var z1: float = -56.0 - absf(x1)*0.065
-		var corners: Array[Vector3] = [Vector3(x0,11,z0),Vector3(x0,11+height,z0),Vector3(x1,11+height,z1),Vector3(x1,11,z1)]
+		var z0: float = -106.0 - absf(x0)*0.065
+		var z1: float = -106.0 - absf(x1)*0.065
+		var corners: Array[Vector3] = [Vector3(x0,7,z0),Vector3(x0,7+height,z0),Vector3(x1,7+height,z1),Vector3(x1,7,z1)]
 		var coords: Array[Vector2] = [Vector2(u0,1),Vector2(u0,0),Vector2(u1,0),Vector2(u1,1)]
 		for index in [0,1,2,0,2,3]:
 			vertices.append(corners[index]); normals.append(Vector3.BACK); uv.append(coords[index])
 	cliff = _mesh(vertices,normals,uv,materials["faces"])
-	# Rock volumes hide the card's lower and side edges, without claiming sculpted faces.
-	lathe([Vector2(27,0),Vector2(27,12),Vector2(25,17),Vector2(0,18)],Vector3(0,0,-61.5),Vector2(1,0.12),materials["stone"],Vector2(7,2),false,24)
-	for x in [-29.0,29.0]:
-		lathe([Vector2(4.5,0),Vector2(5.2,14),Vector2(4.3,27),Vector2(2.1,33),Vector2(0,34)],Vector3(x,0,-59.5),Vector2(1,0.6),materials["stone"],Vector2(3,4),false,9)
+	# The rock shelf is taller and wider than the old ribbon so the portraits can
+	# be approached as a real landmark from the enlarged Hokage compound.
+	lathe([Vector2(62,0),Vector2(62,52),Vector2(56,68),Vector2(0,74)],Vector3(0,0,-111.0),Vector2(1,0.12),materials["stone"],Vector2(8,3),false,28)
+	for x in [-68.0,68.0]:
+		lathe([Vector2(10,0),Vector2(11,30),Vector2(9,56),Vector2(4,72),Vector2(0,78)],Vector3(x,0,-110.0),Vector2(1,0.6),materials["stone"],Vector2(4,5),false,10)
+	for index in range(4):
+		var x := -46.5+float(index)*31.0
+		_sculpted_face(Vector3(x,34.0,-99.0-absf(x)*0.01),1.22 if index == 1 else 1.12, index)

@@ -119,8 +119,8 @@ export async function gameContract(db) {
     assert.equal(stored.token, digest(token));
     assert.notEqual(stored.token, token);
     assert.ok(
-      Number(stored.expires) > Date.now() &&
-        Number(stored.expires) < Date.now() + 7210000,
+      Number(stored.expires) > Date.now() + 29 * 24 * 60 * 60 * 1000 &&
+        Number(stored.expires) < Date.now() + 31 * 24 * 60 * 60 * 1000,
     );
     assert.equal(
       (await request("/me", { token })).body.user,

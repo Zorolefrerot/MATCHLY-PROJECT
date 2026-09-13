@@ -72,7 +72,7 @@ Le client vide la saisie **après acquittement**. En cas de coupure ou délai, i
 
 ## Application
 
-`VillageLink` utilise le WSS de l’origine HTTPS du compte, la vérification TLS normale et un jeton en RAM. Aucun mode TLS non sûr dans le code de production. La confiance dans un certificat local n’existe que dans la sous-classe de test, exclue de l’APK.
+`VillageLink` utilise le WSS de l’origine HTTPS du compte, la vérification TLS normale et le jeton opaque de la session de l’appareil. Le mot de passe n’est jamais conservé. Aucun mode TLS non sûr dans le code de production. La confiance dans un certificat local n’existe que dans la sous-classe de test, exclue de l’APK.
 
 `VillageAvatar` reste visuel pour la présence et reçoit seulement l’état de PV du duel. La simulation de combat est dans `VillageRoom`, côté serveur ; les avatars n’ont pas de collision ni de dégâts locaux. Les identités présentes sont réconciliées et les avatars disparus retirés. Déconnexion → avatars et duel effacés, sans effacer les étapes déjà confirmées de la mission.
 

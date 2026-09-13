@@ -98,7 +98,7 @@
         512
       ],
       "sha256": "e0d05d629b3f67348b6fa2de4bcba62e179e0df119f55eb9fc823cd359566e1d",
-      "description": "Cropped first four faces from the provided seven-face image, with a warm-stone skyline alpha mask. Textured scenery, not sculpted face geometry."
+      "description": "Cropped first four faces retained as a distant reference backdrop; enlarged 3D relief portraits are now built in konoha_architecture.gd in front of it."
     }
   ],
   "environment_outputs": [
@@ -117,16 +117,16 @@
         1024,
         1024
       ],
-      "sha256": "bfa4fe57fb954bd24ccfc735c614849e3741103d1948f997468910900dbad168",
+      "sha256": "b3a40cd2cf9ac89473cf53d846a404a30706d09f5ab04e7ad27a7dd939e929dc",
       "description": "Generated earth and grass tile, repeated on the ground with mipmaps."
     },
     {
       "file": "river_water_texture.png",
       "size": [
-        688,
-        384
+        1024,
+        1024
       ],
-      "sha256": "1ddd8042ad4a9a53176877a9af0f6270a854c0639a56808425552e0e160c647a",
+      "sha256": "a35c9f533ebeec0d6011ae50d68fb4b45601838d1690cc97527050fd837e5d0c",
       "description": "Generated river water tile, repeated along the water segments without stretching."
     }
   ],

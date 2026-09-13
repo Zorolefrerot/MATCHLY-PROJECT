@@ -1,0 +1,146 @@
+{
+  "source_commit": "4cfc4bc7d9290d50043c1cf19a9db9295630fefb",
+  "models": [
+    {
+      "clan": "Uchiwa",
+      "file": "0008f3faad8d517982096edbae18a77c.jpg",
+      "size": [
+        736,
+        1329
+      ],
+      "sha256": "ca5e1852d3df7efc5ce3419dd6e3f04a48fd947857253b88455191f5ff6ca269",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Uzumaki",
+      "file": "19dbad1c326a1e931870d4ae59cbe5e6.jpg",
+      "size": [
+        736,
+        432
+      ],
+      "sha256": "127553e699cdc2ac14f74cfedf029c2f811777bfda8ea05d162b4ca935faa5fb",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Senju",
+      "file": "1f0a4964275b16527ff1cbb42ec72f86.jpg",
+      "size": [
+        734,
+        1174
+      ],
+      "sha256": "bcca0e451b17da729f3a760f7aaf3c7861142d638cfd27589ad47682f10c3ec1",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Hyūga",
+      "file": "54d18133b59e763115645ddd11d01a0b.jpg",
+      "size": [
+        735,
+        919
+      ],
+      "sha256": "548d8587fe58dd719db95f8a19ba9b8e6df4c83351e5f4770daeaa960f51befe",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Akimichi",
+      "file": "575dae66bd9dd407080d080aa9f9727f.jpg",
+      "size": [
+        735,
+        923
+      ],
+      "sha256": "5a81dc8b3a879f2976ae60161f4f88579c9ba8bb87b88bca317329a3dca49204",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Yamanaka",
+      "file": "630064e73dfafea707c52b5c27d43f85 (1).jpg",
+      "size": [
+        736,
+        940
+      ],
+      "sha256": "1697e44ce3434ad219f6e1363ee18bb3d5b1d10de1e4fdae3529bb2f89d1c8f4",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Aburame",
+      "file": "76014810ea5665152f3c9aa3faaeb865.jpg",
+      "size": [
+        736,
+        1317
+      ],
+      "sha256": "495ff03dd26c67d8d583faa5ae3a1012eeb9a4a65baa72c7e0f57a5b6691209e",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Inuzuka",
+      "file": "76213d69d28bfaf3fe67011a6f5124af.jpg",
+      "size": [
+        736,
+        1308
+      ],
+      "sha256": "7d83aeca006df91e32b152e24dd1a3ae8df335c30baa0d2ce61e18fa85eb9475",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Fushiguro",
+      "file": "a5d2d079cfbf776275740bd7336c2eee.jpg",
+      "size": [
+        736,
+        1309
+      ],
+      "sha256": "d8a24ebf2b8ebf923c54e18f1c07b2f67fa339a74c03397c2c5e4507ee449bde",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Itadori",
+      "file": "afcc1dca2b65a38c5776fe968b1dc14c.jpg",
+      "size": [
+        683,
+        1024
+      ],
+      "sha256": "8a0f586f890f508bc884614de387a8deb2d5ace7511e27870d301bf34fcd47cc",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Kurosaki",
+      "file": "c718243ce11548f448e611d241c06969.jpg",
+      "size": [
+        667,
+        1215
+      ],
+      "sha256": "ec7644fca5e9546420da6a34651b1c71c4d7a3c198ebcdb80b062e9b82f335cf",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Shunsui",
+      "file": "ca5c00858c9ba5f3825051eb9e4b48f6.jpg",
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "97848a6475182241abc04159c04a9f6b45cb09a7fe4f70122bcba17c0607ab24",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Yeager",
+      "file": "d6fae5b90ed3d00a2c1138722a738586.jpg",
+      "size": [
+        720,
+        501
+      ],
+      "sha256": "a507e7c8d857b2230e24cf3f868b7b6b93860f672195aa806ec9628defdd428a",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    },
+    {
+      "clan": "Ackerman",
+      "file": "dc1d1f120248f1a7b800e219b3f568b7.jpg",
+      "size": [
+        736,
+        414
+      ],
+      "sha256": "7dada73f0c342a6fa0b7d7f1c97a9c5df4aafdf23cdb9c685171d36718c6dbaf",
+      "description": "Reference blueprint for the clan sanctuary; geometry is recreated procedurally, never shown as a runtime billboard."
+    }
+  ],
+  "runtime_policy": "reference-only; no sanctuary image is imported into the Android scene"
+}
