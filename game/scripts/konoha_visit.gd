@@ -11,6 +11,9 @@ var sync_error: String = ""
 var journal_open: bool = false
 var viewport: SubViewport
 var world: KonohaMap
+var hokage_interior: HokageInterior
+var inside_hokage: bool = false
+const HOKAGE_EXTERIOR_DOOR := Vector3(0, 0.25, -68.0)
 var player: TrainingFighter
 var guide: TrainingFighter
 var hud: KonohaHUD
@@ -54,6 +57,13 @@ func _ready() -> void:
 	world = KonohaMap.new()
 	viewport.add_child(world)
 	world.build()
+	# The compact interior lives in a private scene pocket inside the accepted
+	# village perimeter. It shares the same world, camera and player without
+	# overlapping the exterior palace geometry or invalidating network positions.
+	hokage_interior = HokageInterior.new()
+	hokage_interior.position = Vector3(-125, 0, 135)
+	world.add_child(hokage_interior)
+	hokage_interior.build()
 	combat_vfx = TrainingVFX.new()
 	world.add_child(combat_vfx)
 	combat_effects = Node3D.new()
@@ -195,18 +205,19 @@ func _physics_process(delta: float) -> void:
 		if is_instance_valid(village_link): village_link.respawn()
 		hud.notice("Retour au point d’arrivée du quartier après une chute.")
 	else:
-		var edge_x: float = KonohaMap.BOUNDS.x - 2.0
-		var edge_z: float = KonohaMap.BOUNDS.y - 2.0
-		if absf(player.position.x) > edge_x:
-			player.position.x = clampf(player.position.x, -edge_x, edge_x)
-			player.velocity.x = 0.0
-		if absf(player.position.z) > edge_z:
-			player.position.z = clampf(player.position.z, -edge_z, edge_z)
-			player.velocity.z = 0.0
+		if not inside_hokage:
+			var edge_x: float = KonohaMap.BOUNDS.x - 2.0
+			var edge_z: float = KonohaMap.BOUNDS.y - 2.0
+			if absf(player.position.x) > edge_x:
+				player.position.x = clampf(player.position.x, -edge_x, edge_x)
+				player.velocity.x = 0.0
+			if absf(player.position.z) > edge_z:
+				player.position.z = clampf(player.position.z, -edge_z, edge_z)
+				player.velocity.z = 0.0
 	_update_camera()
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
-	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
+	hud.buttons["interact"].text = "RESSORTIR DE LA RÉSIDENCE" if inside_hokage and nearest == -3 else "ENTRER DANS LA RÉSIDENCE" if nearest == -3 else "PARLER À AOI" if nearest == -1 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
 	hud.objective.text = WelcomeMission.objective(mission)
 	if not request_kind.is_empty():
 		hud.objective.text = "Connexion en cours · Ne ferme pas l’application pour confirmer l’étape."
@@ -228,6 +239,15 @@ func _reachable(point: Vector3) -> bool:
 	return world.get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
 
 func nearest_interaction() -> int:
+	# -3 is reserved for the Hokage residence door, both outside and inside.
+	# It is distance based rather than ray based: the palace facade is a visual
+	# landmark, while the button owns the deliberate scene transition.
+	if inside_hokage:
+		if is_instance_valid(hokage_interior) and hokage_interior.near_exit(player.position):
+			return -3
+		return -2
+	if player.position.distance_to(HOKAGE_EXTERIOR_DOOR) < 4.6:
+		return -3
 	if _reachable(guide.position):
 		return -1
 	for i in range(KonohaMap.LANDMARKS.size()):
@@ -240,9 +260,15 @@ func interact() -> void:
 		return
 	var nearest: int = nearest_interaction()
 	if nearest == -2:
-		hud.notice("Approche-toi d’Aoi ou d’un panneau pour interagir.")
+		hud.notice("Approche-toi d’Aoi, d’un panneau ou de la porte du Hokage pour interagir.")
 		return
 	_clear_inputs()
+	if nearest == -3:
+		if inside_hokage:
+			_exit_hokage_residence()
+		else:
+			_enter_hokage_residence()
+		return
 	if nearest == -1:
 		guide_met = true
 		guide.face(player.position-guide.position)
@@ -272,6 +298,29 @@ func interact() -> void:
 		else:
 			text += "\nCette lecture est déjà enregistrée sur ton compte."
 		_dialogue(data["name"], text, event)
+
+func _enter_hokage_residence() -> void:
+	if not is_instance_valid(hokage_interior):
+		return
+	inside_hokage = true
+	hokage_interior.set_active(true)
+	player.reset_at(hokage_interior.global_position + HokageInterior.EXIT_POINT + Vector3(0,0,-1.2))
+	player.face(Vector3(0,0,-1))
+	yaw = 0.0
+	pitch = -0.10
+	hud.notice("Bienvenue dans la résidence du Hokage. Explore le hall, la galerie et l’étage du conseil.")
+
+func _exit_hokage_residence() -> void:
+	if not is_instance_valid(hokage_interior):
+		return
+	inside_hokage = false
+	hokage_interior.set_active(false)
+	# The return point is just outside the front door, never inside the facade.
+	player.reset_at(HOKAGE_EXTERIOR_DOOR + Vector3(0,0,3.4))
+	player.face(Vector3(0,0,-1))
+	yaw = 0.0
+	pitch = -0.06
+	hud.notice("Te voilà devant la porte principale de la résidence.")
 
 func _dialogue(title: String, text: String, event: String = "") -> void:
 	_close_chat()
@@ -439,6 +488,9 @@ func finish() -> void:
 	if ending:
 		return
 	ending = true
+	if is_instance_valid(hokage_interior):
+		hokage_interior.set_active(false)
+	inside_hokage = false
 	_close_chat()
 	if is_instance_valid(village_link): village_link.stop()
 	if is_instance_valid(music):

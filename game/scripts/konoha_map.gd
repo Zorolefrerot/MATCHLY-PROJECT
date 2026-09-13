@@ -280,6 +280,7 @@ func _build_landmarks() -> void:
 	architecture.palace(Vector3(7,0,-78))
 	architecture.palace(Vector3(0,0,-87))
 	_sign("RÉSIDENCE DU HOKAGE · GRAND COMPOUND", Vector3(0,4.2,-66.0), 30)
+	_sign("PORTE PRINCIPALE · E POUR ENTRER", Vector3(0,2.25,-66.0), 15)
 	architecture.monument()
 	# Public buildings have taller silhouettes to orient the player from every road.
 	architecture.tower(Vector3(-8,0,17), "plaster", 10.0)

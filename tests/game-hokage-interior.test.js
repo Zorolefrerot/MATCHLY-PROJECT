@@ -1,0 +1,50 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+
+const root = new URL("../", import.meta.url);
+const read = (file) => readFileSync(new URL(file, root), "utf8");
+
+test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
+  const interior = read("game/scripts/hokage_interior.gd");
+  for (const section of [
+    "ACCUEIL",
+    "SALLE DU CONSEIL",
+    "BUREAU DU HOKAGE",
+    "BALCON",
+    "_portrait_card",
+    "_stairs",
+    "StaticBody3D.new()",
+    "ConvexPolygonShape3D.new()",
+  ])
+    assert.match(interior, new RegExp(section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  for (const name of [
+    "Hashirama Senju",
+    "Tobirama Senju",
+    "Hiruzen Sarutobi",
+    "Minato Namikaze",
+    "Tsunade",
+    "Kakashi Hatake",
+    "Naruto Uzumaki",
+  ])
+    assert.ok(interior.includes(name));
+
+  const visit = read("game/scripts/konoha_visit.gd");
+  assert.match(visit, /ENTRER DANS LA RÉSIDENCE/);
+  assert.match(visit, /RESSORTIR DE LA RÉSIDENCE/);
+  assert.match(visit, /_enter_hokage_residence/);
+  assert.match(visit, /_exit_hokage_residence/);
+  assert.match(visit, /hokage_interior\.position = Vector3\(-125, 0, 135\)/);
+
+  const portraitDir = new URL("game/assets/konoha/hokage/", root);
+  const portraits = readdirSync(portraitDir).filter((file) => file.endsWith("_portrait.png"));
+  assert.equal(portraits.length, 7);
+  for (const file of portraits) {
+    const bytes = readFileSync(new URL(file, portraitDir));
+    assert.equal(bytes.toString("hex", 0, 8), "89504e470d0a1a0a");
+    assert.equal(bytes.readUInt32BE(16), 144);
+    assert.equal(bytes.readUInt32BE(20), 528);
+  }
+  assert.match(read("game/assets/konoha/hokage/README.md"), /peakpx\.com/);
+  assert.match(read("art_sources/konoha/hokage-gallery-source.json"), /license_verified/);
+});
