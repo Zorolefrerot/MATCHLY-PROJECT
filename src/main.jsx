@@ -566,7 +566,7 @@ function Home() {
             ],
             [
               "Est-ce que je peux déjà jouer sur Android ?",
-              "Un prototype Android est disponible pour les joueurs acceptés, depuis leur espace personnel : entraînement, quartier de Konoha et mission d’accueil. Il ne s’agit pas encore du jeu multijoueur complet. Le lien de chaque compilation est temporaire.",
+              "Un prototype Android est disponible pour les joueurs acceptés, depuis leur espace personnel : entraînement, quartier de Konoha, résidence du Hokage, mission d’accueil et musique du village. Le lien de chaque compilation est temporaire.",
             ],
             [
               "Comment sont choisis les 20 joueurs ?",
@@ -1319,7 +1319,7 @@ function Account() {
             <span className="step-circle">4</span>
             <p>
               Rejoindre les tests Android
-              <small>Date à annoncer · APK indisponible</small>
+              <small>APK temporaire disponible après admission</small>
             </p>
           </div>
         </aside>
@@ -1399,8 +1399,8 @@ function Account() {
             <h2>Installer IDREM ZENKAI</h2>
           </div>
           <p>
-            Version Android vérifiée {account.download?.version || "—"} ·
-            entraînement, Konoha, mission d’accueil et musique du village.
+              Version Android vérifiée {account.download?.version || "—"} ·
+            entraînement, Konoha, résidence du Hokage, mission d’accueil et musique du village.
           </p>
           {account.download?.available ? (
             <>

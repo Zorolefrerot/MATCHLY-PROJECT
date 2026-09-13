@@ -1,8 +1,8 @@
 # IDREM ZENKAI
 
-**Lot regroupé 0.12 vérifié :** les 14 sanctuaires Blender sont intégrés directement dans la scène Godot, avec téléchargement séparé de la scène `.blend`, du GLB groupé et du rendu PNG. Le village partagé, les attaques enrichies d’images/textures et les quatorze ultimes monumentales sont conservés sans changer les comptes. [Détails et limites](docs/ULTIMES_ET_TEXTURES.md). APK Android 0.12.0/code 12 compilée et vérifiée par GitHub Actions ; le service Render reste en Manual Deploy.
+**Lot regroupé 0.12 vérifié :** les 14 sanctuaires Blender sont intégrés directement dans la scène Godot, avec téléchargement séparé de la scène `.blend`, du GLB groupé et du rendu PNG. Le village partagé, les attaques enrichies d’images/textures, les quatorze ultimes monumentales et l’intérieur visitable de la résidence du Hokage sont conservés sans changer les comptes. [Détails et limites](docs/ULTIMES_ET_TEXTURES.md). APK Android 0.12.0/code 12 compilée et vérifiée par GitHub Actions ; le site pointe vers l’artefact 81 et le service Render reste en Manual Deploy.
 
-Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android avec entraînement, créateur, compte et première zone solo de Konoha](game/README.md) est disponible ; le jeu RP multijoueur connecté n’est pas encore réalisé.
+Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android avec entraînement, créateur, compte, village partagé et intérieur visitable de la résidence du Hokage](game/README.md) est disponible pour les joueurs acceptés ; le jeu complet reste en développement.
 
 ## Lot suivant — village partagé en validation
 

@@ -1,6 +1,6 @@
 # Lot suivant — présence partagée et duel de test à Konoha
 
-**Mise à jour du 13 septembre 2026 — APK 0.12.0/code 12 vérifiée :** l’exécution GitHub Actions **34771830224** a réussi l’import Godot, les **312 assertions**, les quatre scénarios WSS natifs, l’export Android et les contrôles de paquet après correction de la mise au sol et de l’entrée des sanctuaires. L’artefact téléchargeable est [`idrem-zenkai-android-79`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34771830224/artifacts/10321894302), **79 596 475 octets**, jusqu’au **20 septembre 2026 à 17:33:22 UTC**. Le site conserve les téléchargements séparés et protégés de la scène Blender, du GLB groupé et du rendu PNG ; il faut encore déclencher le Manual Deploy du service Render pour les rendre visibles en production.
+**Mise à jour du 13 septembre 2026 — APK 0.12.0/code 12 vérifiée :** l’exécution GitHub Actions **34784337369** a réussi l’import Godot, les **312 assertions**, les quatre scénarios WSS natifs, l’export Android et les contrôles de paquet avec l’intérieur visitable de la résidence du Hokage. L’artefact téléchargeable est [`idrem-zenkai-android-81`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34784337369/artifacts/10326226120), **79 878 031 octets**, jusqu’au **20 septembre 2026 à 21:38:49 UTC**. Le site pointe vers cette compilation pour les joueurs acceptés ; il faut encore déclencher le Manual Deploy du service Render pour rendre la nouvelle référence visible en production.
 
 **Ajout au lot regroupé 0.12 :** deux joueurs admis peuvent parcourir la carte complète de Konoha et lancer un duel réseau éphémère, avec quatre attaques texturées et une ultime clanique monumentale. Le village contient ses quartiers, son marché, ses routes, sa rivière, ses PNJ actifs et ses animaux. Les dégâts, recharges, chakra, niveau de test, évitement de l’ultime et KO sont résolus par le serveur ; les comptes et la progression ne changent pas. [Détails des textures et ultimes](ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
 
@@ -107,7 +107,7 @@ npm run test:browser
 GODOT_BIN=/chemin/godot bash game/tools/check.sh
 ```
 
-`server/android-build.js` pointe maintenant vers l’APK **0.12.0/code 12** vérifiée du village complet avec les sanctuaires Blender : ZIP `idrem-zenkai-android-79`, **79 596 475 octets**, expiration **20 septembre 2026 à 17:33:22 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
+`server/android-build.js` pointe maintenant vers l’APK **0.12.0/code 12** vérifiée du village complet avec l’intérieur de la résidence du Hokage : ZIP `idrem-zenkai-android-81`, **79 878 031 octets**, expiration **20 septembre 2026 à 21:38:49 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
 
 ## Livraison groupée et hébergement gratuit
 
