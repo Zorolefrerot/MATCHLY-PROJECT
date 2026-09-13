@@ -34,7 +34,13 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
   assert.match(visit, /RESSORTIR DE LA RÉSIDENCE/);
   assert.match(visit, /_enter_hokage_residence/);
   assert.match(visit, /_exit_hokage_residence/);
+  assert.match(visit, /transition_lock/);
+  assert.match(visit, /EXIT_POINT \+ Vector3\(0,0,-4\.5\)/);
   assert.match(visit, /hokage_interior\.position = Vector3\(-125, 0, 135\)/);
+
+  const architecture = read("game/scripts/konoha_architecture.gd");
+  assert.match(architecture, /PORTE PRINCIPALE/);
+  assert.match(architecture, /point\+Vector3\(0,1\.73,5\.78\)/);
 
   const portraitDir = new URL("game/assets/konoha/hokage/", root);
   const portraits = readdirSync(portraitDir).filter((file) => file.endsWith("_portrait.png"));

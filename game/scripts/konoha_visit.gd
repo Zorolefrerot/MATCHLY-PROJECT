@@ -13,6 +13,7 @@ var viewport: SubViewport
 var world: KonohaMap
 var hokage_interior: HokageInterior
 var inside_hokage: bool = false
+var transition_lock: float = 0.0
 const HOKAGE_EXTERIOR_DOOR := Vector3(0, 0.25, -72.0)
 var player: TrainingFighter
 var guide: TrainingFighter
@@ -184,6 +185,7 @@ func _notification(what: int) -> void:
 func _physics_process(delta: float) -> void:
 	if not initialized or ending or hud.blocked or not app_active:
 		return
+	transition_lock = maxf(0.0, transition_lock-delta)
 	var look: Vector2 = hud.consume_look()
 	yaw -= look.x*0.004
 	pitch = clampf(pitch-look.y*0.003, -0.85, -0.08)
@@ -242,6 +244,8 @@ func nearest_interaction() -> int:
 	# -3 is reserved for the Hokage residence door, both outside and inside.
 	# It is distance based rather than ray based: the palace facade is a visual
 	# landmark, while the button owns the deliberate scene transition.
+	if transition_lock > 0.0:
+		return -2
 	if inside_hokage:
 		if is_instance_valid(hokage_interior) and hokage_interior.near_exit(player.position):
 			return -3
@@ -303,8 +307,11 @@ func _enter_hokage_residence() -> void:
 	if not is_instance_valid(hokage_interior):
 		return
 	inside_hokage = true
+	transition_lock = 0.85
 	hokage_interior.set_active(true)
-	player.reset_at(hokage_interior.global_position + HokageInterior.EXIT_POINT + Vector3(0,0,-1.2))
+	# Spawn a few metres beyond the threshold so the same button cannot
+	# immediately interpret the entrance as a request to leave.
+	player.reset_at(hokage_interior.global_position + HokageInterior.EXIT_POINT + Vector3(0,0,-4.5))
 	player.face(Vector3(0,0,-1))
 	yaw = 0.0
 	pitch = -0.10
@@ -314,6 +321,7 @@ func _exit_hokage_residence() -> void:
 	if not is_instance_valid(hokage_interior):
 		return
 	inside_hokage = false
+	transition_lock = 0.85
 	hokage_interior.set_active(false)
 	# The return point is just outside the front door, never inside the facade.
 	player.reset_at(HOKAGE_EXTERIOR_DOOR + Vector3(0,0,3.4))

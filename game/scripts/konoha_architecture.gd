@@ -384,6 +384,26 @@ func palace(point: Vector3) -> void:
 		for z in [-2.8,2.8]:
 			lathe([Vector2(0.18,11.35),Vector2(0.15,12.65),Vector2(0.08,13.75)],point+Vector3(x,0,z),Vector2.ONE,materials["trim"],Vector2.ONE,false,12)
 
+func main_door(point: Vector3) -> void:
+	# The compound is assembled from three overlapping palace volumes. This
+	# central entry is intentionally added once at the visible south approach.
+	# The button controls the transition; these parts are a facade marker only.
+	_block(Vector3(4.2,4.1,0.30), point+Vector3(0,2.05,5.57), materials["trim"])
+	_block(Vector3(3.35,3.45,0.14), point+Vector3(0,1.73,5.78), materials["glass"])
+	_block(Vector3(3.55,0.22,0.20), point+Vector3(0,3.52,5.88), materials["gold"])
+	for x in [-0.24,0.24]:
+		_block(Vector3(0.10,0.36,0.10), point+Vector3(x,1.65,5.91), materials["gold"])
+	var entrance_label := Label3D.new()
+	entrance_label.text = "PORTE PRINCIPALE"
+	entrance_label.position = point+Vector3(0,4.15,5.90)
+	entrance_label.rotation.y = PI
+	entrance_label.font_size = 18
+	entrance_label.pixel_size = 0.010
+	entrance_label.modulate = Color("fff0c9")
+	entrance_label.outline_size = 4
+	entrance_label.outline_modulate = Color("39271f")
+	add_child(entrance_label)
+
 func monument() -> void:
 	# Keep the supplied Hokage image as the only face representation. The image
 	# is large and readable; the rock shelf and wall below it remain physical.
