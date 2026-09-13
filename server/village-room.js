@@ -1195,6 +1195,11 @@ export class VillageRoom {
       this.send(peer, { type: "correction", ...peer.state });
       return;
     }
+    // Keep the fixture diagnosis visible when a native client is rejected;
+    // payload contents are intentionally not logged.
+    console.error(
+      `ERROR: native invalid packet type=${typeof message === "object" && message ? message.type : typeof message} keys=${typeof message === "object" && message ? Object.keys(message).sort().join(",") : ""}`,
+    );
     this.leave(peer, 1008, "Message incompatible");
   }
   tick() {
