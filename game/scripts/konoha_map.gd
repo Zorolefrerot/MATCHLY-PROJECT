@@ -9,6 +9,15 @@ const RIVER_ART: Texture2D = preload("res://assets/konoha/river_water_texture.pn
 # The replacement river tile is square; this keeps its texels proportional while
 # repeating it along each long water segment rather than stretching it.
 const RIVER_ASPECT: float = 1.0
+const CLAN_EMBLEMS: Array[String] = [
+	"UCH", "UZU", "SEN", "HYU", "AKI", "YAM", "ABU", "INU", "FUS", "ITA", "KUR", "SHU", "YEA", "ACK"
+]
+const CLAN_FLAG_COLORS: Array[Color] = [
+	Color("6d3f9f"), Color("3a7ca5"), Color("6c9b61"), Color("ded1a0"),
+	Color("b84b45"), Color("d48a62"), Color("34434a"), Color("76513b"),
+	Color("8b2c35"), Color("bd4e3b"), Color("3d718c"), Color("bf6d87"),
+	Color("8d4e3e"), Color("e5e4d2")
+]
 const CLAN_SANCTUARIES: Array[PackedScene] = [
 	preload("res://assets/konoha/sanctuaries/01_uchiwa.glb"),
 	preload("res://assets/konoha/sanctuaries/02_uzumaki.glb"),
@@ -321,7 +330,7 @@ func _build_districts() -> void:
 			# The sanctuary owns the rear half of the domain. Homes stay on the
 			# opposite side so no former plot or house cuts through the Blender asset.
 			var sanctuary_point := point + Vector3(0,0,-18.0)
-			_sanctuary_domain(sanctuary_point, str(data["name"]))
+			_sanctuary_domain(sanctuary_point, str(data["name"]), clan_variant)
 			for i in range(4):
 				var angle := float(i)*TAU/4.0 + 0.4
 				var home_center := point + Vector3(0,0,12.0)
@@ -343,7 +352,7 @@ func _build_districts() -> void:
 			box(Vector3(5.2,0.13,1.5), point+Vector3(0,0.07,-3.1), Color("b55d4c"), true)
 			_sign("✦", point+Vector3(0,0.2,-3.8), 24)
 
-func _sanctuary_domain(point: Vector3, title: String) -> void:
+func _sanctuary_domain(point: Vector3, title: String, variant: int) -> void:
 	# Every sanctuary gets its own walled courtyard. The front is split into
 	# two solid fence sections so the central gate remains genuinely passable.
 	var half_width := 13.5
@@ -365,32 +374,66 @@ func _sanctuary_domain(point: Vector3, title: String) -> void:
 	# A visible stone court and a short approach make the entrance readable.
 	box(Vector3(half_width*2.0-1.2,0.10,half_depth*2.0-1.2), point+Vector3(0,0.05,0), Color("cdbb91"))
 	box(Vector3(gate_gap,0.08,half_depth+3.0), point+Vector3(0,0.10,half_depth*0.5+1.0), Color("d8c28e"))
+	_sanctuary_flag(point+Vector3(0,0,11.5), variant)
 	_sign("PORTE DU "+title, point+Vector3(0,3.8,half_depth+0.5), 13)
+
+func _sanctuary_flag(point: Vector3, variant: int) -> void:
+	var safe_variant := clampi(variant, 0, CLAN_EMBLEMS.size()-1)
+	var cloth_color: Color = CLAN_FLAG_COLORS[safe_variant]
+	cylinder(0.13,5.8,point+Vector3(0,2.9,0),Color("6e4a34"),10,true)
+	box(Vector3(3.6,1.9,0.10),point+Vector3(1.55,4.35,0),cloth_color)
+	var emblem := Label3D.new()
+	emblem.name = "ClanEmblem_%02d" % (safe_variant+1)
+	emblem.text = CLAN_EMBLEMS[safe_variant]
+	emblem.position = point+Vector3(1.58,4.33,0.08)
+	emblem.font_size = 42
+	emblem.pixel_size = 0.012
+	emblem.modulate = Color("fff0ce")
+	emblem.outline_size = 6
+	emblem.outline_modulate = Color("271d1a")
+	emblem.rotation.y = PI
+	add_child(emblem)
+	box(Vector3(0.48,0.48,0.14),point+Vector3(0,5.9,0),Color("d5ac5d"))
 
 func _build_blender_sanctuary(point: Vector3, variant: int) -> void:
 	var scene: PackedScene = CLAN_SANCTUARIES[clampi(variant, 0, CLAN_SANCTUARIES.size()-1)]
 	var sanctuary := scene.instantiate()
 	sanctuary.name = "BlenderSanctuary_%02d" % (variant+1)
-	# The imported meshes have small negative base offsets; lift them exactly
-	# onto the courtyard floor instead of leaving part of the building buried.
-	sanctuary.position = point + Vector3(0, 2.8, 0)
+	# The GLBs were authored with their lowest mesh vertices at about y=0.18
+	# after the Blender object translation. This small correction puts every
+	# variant on the same courtyard floor instead of floating it.
+	sanctuary.position = point + Vector3(0, -0.24, 0)
 	# The source preview is intentionally enlarged for the game: the entrance,
 	# torii and roof levels must read as a destination from the outer road.
 	sanctuary.scale = Vector3.ONE * 1.35
 	add_child(sanctuary)
 	architecture.register_external_sanctuary()
-	# The GLB is visual geometry; this robust solid footprint prevents the player
-	# from walking through any of its merged meshes while interiors are prepared.
+	# Keep the side walls and rear solid, but leave a central front doorway.
+	# This removes the old invisible block at the entrance while still stopping
+	# players from walking through the merged Blender geometry.
 	var body := StaticBody3D.new()
 	body.name = "SanctuaryFootprint_%02d" % (variant+1)
-	body.position = point + Vector3(0, 3.7, 1.4)
+	body.position = point + Vector3(0,3.7,1.4)
 	body.collision_layer = 1
 	body.collision_mask = 0
-	var shape := BoxShape3D.new()
-	shape.size = Vector3(18.0, 7.4, 19.0)
-	var collision := CollisionShape3D.new()
-	collision.shape = shape
-	body.add_child(collision)
+	var left := CollisionShape3D.new()
+	var left_shape := BoxShape3D.new()
+	left_shape.size = Vector3(6.5,7.4,19.0)
+	left.shape = left_shape
+	left.position = Vector3(-5.75,0,0)
+	body.add_child(left)
+	var right := CollisionShape3D.new()
+	var right_shape := BoxShape3D.new()
+	right_shape.size = Vector3(6.5,7.4,19.0)
+	right.shape = right_shape
+	right.position = Vector3(5.75,0,0)
+	body.add_child(right)
+	var rear := CollisionShape3D.new()
+	var rear_shape := BoxShape3D.new()
+	rear_shape.size = Vector3(5.0,7.4,5.0)
+	rear.shape = rear_shape
+	rear.position = Vector3(0,0,-7.0)
+	body.add_child(rear)
 	add_child(body)
 
 func _build_trees_and_gardens() -> void:

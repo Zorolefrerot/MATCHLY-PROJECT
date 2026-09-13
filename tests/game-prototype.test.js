@@ -287,7 +287,10 @@ test("fourteen clan sanctuary references are traced and kept out of runtime text
   ]) assert.ok(readFileSync(new URL("../game/assets/konoha/sanctuaries/" + file, import.meta.url)).length > 1000, file + " missing");
   assert.match(map, /func _district_access/);
   assert.match(map, /func _sanctuary_domain/);
+  assert.match(map, /func _sanctuary_flag/);
+  assert.match(map, /ClanEmblem_/);
   assert.match(map, /SanctuaryFootprint/);
+  assert.match(map, /leave a central front doorway/);
   assert.match(map, /SolidStairRun/);
   assert.match(map, /clan_variant \+= 1/);
   assert.match(map, /Vector3\(-7,0,-78\)/);
