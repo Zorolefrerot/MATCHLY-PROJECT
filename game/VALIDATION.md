@@ -1,22 +1,22 @@
 # Validation du prototype — 13 septembre 2026
 
-**Lot regroupé 0.11 compilé :** village complet de Konoha, quartiers inspirés de la carte fournie, rivière, marché animé, PNJ et animaux, attaques enrichies d’images/textures, quatorze ultimes monumentales, présence partagée, chat RP/HRP et duel de test à deux joueurs admis. Les comptes et la progression persistante ne changent pas. [Détails du village](../docs/KONOHA_VILLAGE_ENTIER.md) · [Détails des techniques](../docs/ULTIMES_ET_TEXTURES.md).
+**Lot regroupé 0.11 compilé :** village complet de Konoha, quartiers inspirés de la carte fournie, maisons et appartements densifiés, images générées pour les habitations, la rivière, le marché, le sanctuaire et les animaux, PNJ et animaux, attaques enrichies d’images/textures, quatorze ultimes monumentales, présence partagée, chat RP/HRP et duel de test à deux joueurs admis. Les comptes et la progression persistante ne changent pas. [Détails du village](../docs/KONOHA_VILLAGE_ENTIER.md) · [Détails des techniques](../docs/ULTIMES_ET_TEXTURES.md).
 
 ## Résultat 0.11 — APK vérifiée
 
-Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34725480467](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34725480467), sur la branche active, réussit l’import Godot 4.5.1, **310 assertions de simulation**, le scénario WSS avec deux clients Godot dans le village complet, le rendu des effets et l’export Android.
+Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34726938557](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34726938557), sur la branche active, réussit l’import Godot 4.5.1, **311 assertions de simulation**, le scénario WSS avec deux clients Godot dans le village complet et les nouveaux panneaux illustrés, le rendu des effets et l’export Android.
 
 | Vérification | Résultat réel |
 |---|---|
-| Tests Node | **44/44 passent** |
+| Tests Node | **45/45 passent** |
 | Tests PostgreSQL réel jetable | **10/10 passent** |
 | Parcours Playwright Chromium | **2/2 passent** |
 | Construction Vite | Réussie |
 | WSS entre deux visites Godot | Réussi avec profils et SQLite jetables |
 | Ultimes et rendu GL | Réussi ; effets visibles et prolongés contrôlés |
 | APK | Version **0.11.0**, code **11**, API minimum 24/cible 35, ARM64/ARMv7 |
-| APK à l’intérieur du ZIP | **66 528 794 octets**, SHA-256 `90f7f93d0a918de1594b02246cac753e378b989750f7ee3221d6ac48aa6d431f` |
-| ZIP GitHub | [`idrem-zenkai-android-40`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34725480467/artifacts/10308065749), **71 720 527 octets**, conservation GitHub temporaire |
+| APK à l’intérieur du ZIP | **68 274 843 octets**, SHA-256 `82b94ebfbc09417b927f41103c883e46d44b041c92581dd47f9bd459344bc9cc` |
+| ZIP GitHub | [`idrem-zenkai-android-43`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34726938557/artifacts/10308280471), **73 792 876 octets**, expiration 20 septembre 2026 à 00:04:48 UTC |
 | Téléphones Android physiques | Essai sur deux appareils encore à faire |
 | Production Render | Manual Deploy nécessaire pour afficher 0.11 sur le site |
 
