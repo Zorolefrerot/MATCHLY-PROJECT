@@ -133,7 +133,7 @@ func run() -> void:
 	a.resume_visit()
 	# Combat starts beside the market tower. Re-center this fixture on the wide
 	# central road so the visual collision set cannot make a flaky corner stop.
-	a.player.reset_at(Vector3(-1.1,0.25,22))
+	a.player.reset_at(Vector3(-3.4,0.25,22))
 	a.village_link.pose = {"p":[-1.0,0.25,22],"yaw":0.0,"motion":"idle"}
 	a.hud.move_vector = Vector2(0,-1)
 	a.hud.sprinting = true
