@@ -188,7 +188,8 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("ultimate"): _combat_action("ultimate")
 	player.simulate(delta, direction, hud.sprinting or Input.is_action_pressed("sprint"))
 	# Crossing the outer ring must stop at the wall, not silently teleport the player
-	# back to the arrival point. Only a genuine fall through the world respawns.
+	# back to the arrival point. Horizontal travel stays continuous across districts.
+	# Only a genuine fall through the world respawns.
 	if player.position.y < -7.5:
 		player.reset_at(KonohaMap.SPAWN)
 		if is_instance_valid(village_link): village_link.respawn()
