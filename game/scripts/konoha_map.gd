@@ -271,6 +271,12 @@ func _build_districts() -> void:
 			for i in range(4):
 				box(Vector3(1.6,2.2,0.7), point+Vector3(float(i-1)*3.0,1.1,2.5), Color("999b91"), true)
 			continue
+		if kind == "residential":
+			# Preserve one former sanctuary volume as a house; do not add a second
+			# sanctuary or a duplicate four-home ring at the same legacy plot.
+			architecture.residential_hall(point+Vector3(0,0,-9.5), int(absf(point.x+point.z))%6)
+			_sign("MAISON DU QUARTIER "+str(data["name"]), point+Vector3(0,5.0,-9.5), 15)
+			continue
 		for i in range(4):
 			var angle := float(i)*TAU/4.0 + 0.4
 			var home := point + Vector3(cos(angle)*(7.0+float(i%3)*2.0),0,sin(angle)*(6.0+float(i%2)*1.5))
@@ -293,10 +299,6 @@ func _build_districts() -> void:
 			_sign("DOMAINE DU "+str(data["name"]), sanctuary_point+Vector3(0,1.25,7.18), 14)
 			box(Vector3(5.2,0.13,1.5), point+Vector3(0,0.07,-3.1), Color("b55d4c"))
 			_sign("✦", point+Vector3(0,0.2,-3.8), 24)
-		elif kind == "residential":
-			# The former generated halls remain in the enlarged city as houses, not clan sanctuaries.
-			architecture.residential_hall(point+Vector3(0,0,-9.5), int(absf(point.x+point.z))%6)
-			_sign("MAISON DU QUARTIER "+str(data["name"]), point+Vector3(0,5.0,-9.5), 15)
 
 func _build_trees_and_gardens() -> void:
 	for point in [
