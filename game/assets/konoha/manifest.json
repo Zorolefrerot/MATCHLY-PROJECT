@@ -98,7 +98,7 @@
         512
       ],
       "sha256": "e0d05d629b3f67348b6fa2de4bcba62e179e0df119f55eb9fc823cd359566e1d",
-      "description": "Cropped first four faces retained as a distant reference backdrop; enlarged 3D relief portraits are now built in konoha_architecture.gd in front of it."
+      "description": "Cropped first four faces retained as the large, fixed image backdrop; no 3D face geometry is generated."
     }
   ],
   "environment_outputs": [

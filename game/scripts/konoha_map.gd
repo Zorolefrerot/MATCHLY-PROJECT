@@ -67,9 +67,10 @@ const DISTRICTS: Array[Dictionary] = [
 	{"name":"CLAN FUSHIGURO", "point":Vector3(110,0,52), "kind":"clan"},
 	{"name":"CLAN ITADORI", "point":Vector3(110,0,-4), "kind":"clan"},
 	{"name":"CLAN KUROSAKI", "point":Vector3(110,0,-60), "kind":"clan"},
+	# Keep the southern clan domains outside the Hokage image and rock shelf.
 	{"name":"CLAN SHUNSUI", "point":Vector3(-84,0,-110), "kind":"clan"},
-	{"name":"CLAN YEAGER", "point":Vector3(-28,0,-110), "kind":"clan"},
-	{"name":"CLAN ACKERMAN", "point":Vector3(28,0,-110), "kind":"clan"},
+	{"name":"CLAN YEAGER", "point":Vector3(84,0,-110), "kind":"clan"},
+	{"name":"CLAN ACKERMAN", "point":Vector3(112,0,-110), "kind":"clan"},
 	{"name":"POSTE DE POLICE", "point":Vector3(26,0,30), "kind":"public"},
 	{"name":"HÔPITAL", "point":Vector3(-24,0,28), "kind":"public"},
 	{"name":"STADE", "point":Vector3(42,0,-22), "kind":"public"},
@@ -236,8 +237,28 @@ func _steps(point: Vector3, angle: float, width: float, count: int, rise: float,
 		var step_point := point + forward*(run*(float(i)+0.5)) + Vector3.UP*(height*0.5)
 		var step := box(Vector3(width,height,run), step_point, Color("9b795b"), true)
 		step.rotation.y = angle
-		var lip := box(Vector3(width+0.16,0.08,0.10), point + forward*(run*(float(i)+0.95)) + Vector3.UP*height, Color("d5b983"))
+		var lip := box(Vector3(width+0.16,0.08,0.10), point + forward*(run*(float(i)+0.95)) + Vector3.UP*height, Color("d5b983"), true)
 		lip.rotation.y = angle
+	# The individual steps provide the visible treads; this convex wedge closes
+	# the side gaps and makes the whole stair run a real climbable collider.
+	var wedge := ConvexPolygonShape3D.new()
+	var total_run := run*float(count)
+	var total_height := rise*float(count)
+	wedge.points = PackedVector3Array([
+		Vector3(-width*0.5,0,0), Vector3(width*0.5,0,0),
+		Vector3(-width*0.5,0,total_run), Vector3(width*0.5,0,total_run),
+		Vector3(-width*0.5,total_height,total_run), Vector3(width*0.5,total_height,total_run)
+	])
+	var stair_body := StaticBody3D.new()
+	stair_body.name = "SolidStairRun"
+	stair_body.position = point
+	stair_body.rotation.y = angle
+	stair_body.collision_layer = 1
+	stair_body.collision_mask = 0
+	var stair_collision := CollisionShape3D.new()
+	stair_collision.shape = wedge
+	stair_body.add_child(stair_collision)
+	add_child(stair_body)
 
 func _build_landmarks() -> void:
 	# Four close-up buildings preserve the detailed round-house silhouette from the arrival view.
@@ -297,51 +318,76 @@ func _build_districts() -> void:
 			_sign("MAISON DU QUARTIER "+str(data["name"]), legacy_point+Vector3(0,5.0,0), 15)
 			continue
 		if kind == "clan":
-			# A single clean forecourt separates the homes, the sanctuary and the access road.
-			box(Vector3(30.0,0.12,40.0), point+Vector3(0,0.05,-4.0), Color("cdbb91"))
-		for i in range(4):
-			var angle := float(i)*TAU/4.0 + 0.4
-			var home := point + Vector3(cos(angle)*(7.0+float(i%3)*2.0),0,sin(angle)*(6.0+float(i%2)*1.5))
-			if i == 0:
-				architecture.compact_house(home, "gold", 4.4)
-			elif i == 1:
-				architecture.courtyard_house(home, "red" if int(absf(point.x))%2 == 0 else "plaster")
-			elif i == 2:
-				architecture.stilt_house(home, "tiles")
-			else:
-				architecture.compact_house(home, "tiles", 5.8)
-		if kind == "clan":
-			architecture.apartment_block(point+Vector3(0,0,8.5), "red" if int(absf(point.x))%2 == 0 else "plaster")
-			# Place the true Blender sanctuary behind the homes, with a dedicated clear front court.
-			var sanctuary_point := point + Vector3(0,0,-15.0)
+			# The sanctuary owns the rear half of the domain. Homes stay on the
+			# opposite side so no former plot or house cuts through the Blender asset.
+			var sanctuary_point := point + Vector3(0,0,-18.0)
+			_sanctuary_domain(sanctuary_point, str(data["name"]))
+			for i in range(4):
+				var angle := float(i)*TAU/4.0 + 0.4
+				var home_center := point + Vector3(0,0,12.0)
+				var home := home_center + Vector3(cos(angle)*(7.0+float(i%3)*1.8),0,sin(angle)*(5.0+float(i%2)*1.2))
+				if i == 0:
+					architecture.compact_house(home, "gold", 4.4)
+				elif i == 1:
+					architecture.courtyard_house(home, "red" if int(absf(point.x))%2 == 0 else "plaster")
+				elif i == 2:
+					architecture.stilt_house(home, "tiles")
+				else:
+					architecture.compact_house(home, "tiles", 5.8)
+			architecture.apartment_block(point+Vector3(0,0,26.0), "red" if int(absf(point.x))%2 == 0 else "plaster")
+			# The true Blender sanctuary is large, solid and separated from the homes.
 			_build_blender_sanctuary(sanctuary_point, clan_variant)
 			clan_variant += 1
-			_sign("SANCTUAIRE "+str(data["name"]), sanctuary_point+Vector3(0,5.2,0), 16)
-			# A physical front board makes the clan destination readable before entering its domain.
-			box(Vector3(6.2,2.25,0.18), sanctuary_point+Vector3(0,1.2,7.05), Color("6b4a3a"), true)
-			_sign("DOMAINE DU "+str(data["name"]), sanctuary_point+Vector3(0,1.25,7.18), 14)
-			box(Vector3(5.2,0.13,1.5), point+Vector3(0,0.07,-3.1), Color("b55d4c"))
+			_sign("SANCTUAIRE "+str(data["name"]), sanctuary_point+Vector3(0,8.0,0), 16)
+			_sign("DOMAINE DU "+str(data["name"]), sanctuary_point+Vector3(0,1.5,17.8), 14)
+			box(Vector3(5.2,0.13,1.5), point+Vector3(0,0.07,-3.1), Color("b55d4c"), true)
 			_sign("✦", point+Vector3(0,0.2,-3.8), 24)
+
+func _sanctuary_domain(point: Vector3, title: String) -> void:
+	# Every sanctuary gets its own walled courtyard. The front is split into
+	# two solid fence sections so the central gate remains genuinely passable.
+	var half_width := 13.5
+	var half_depth := 17.0
+	var wall_height := 2.7
+	var wall_color := Color("80624d")
+	var trim_color := Color("b98a55")
+	box(Vector3(0.55,wall_height,half_depth*2.0), point+Vector3(-half_width,wall_height*0.5,0), wall_color, true)
+	box(Vector3(0.55,wall_height,half_depth*2.0), point+Vector3(half_width,wall_height*0.5,0), wall_color, true)
+	box(Vector3(half_width*2.0,wall_height,0.55), point+Vector3(0,wall_height*0.5,-half_depth), wall_color, true)
+	var gate_gap := 6.0
+	var segment_width := (half_width*2.0-gate_gap)*0.5
+	for side in [-1,1]:
+		box(Vector3(segment_width,wall_height,0.55), point+Vector3(side*(gate_gap*0.5+segment_width*0.5),wall_height*0.5,half_depth), wall_color, true)
+	for side in [-1,1]:
+		box(Vector3(0.8,4.6,0.8), point+Vector3(side*gate_gap*0.5,2.3,half_depth), trim_color, true)
+	box(Vector3(gate_gap+1.0,0.45,0.9), point+Vector3(0,4.55,half_depth), trim_color, true)
+	box(Vector3(half_width*2.0-1.5,0.16,0.18), point+Vector3(0,wall_height+0.18,-half_depth+0.2), trim_color)
+	# A visible stone court and a short approach make the entrance readable.
+	box(Vector3(half_width*2.0-1.2,0.10,half_depth*2.0-1.2), point+Vector3(0,0.05,0), Color("cdbb91"))
+	box(Vector3(gate_gap,0.08,half_depth+3.0), point+Vector3(0,0.10,half_depth*0.5+1.0), Color("d8c28e"))
+	_sign("PORTE DU "+title, point+Vector3(0,3.8,half_depth+0.5), 13)
 
 func _build_blender_sanctuary(point: Vector3, variant: int) -> void:
 	var scene: PackedScene = CLAN_SANCTUARIES[clampi(variant, 0, CLAN_SANCTUARIES.size()-1)]
 	var sanctuary := scene.instantiate()
 	sanctuary.name = "BlenderSanctuary_%02d" % (variant+1)
-	sanctuary.position = point
+	# The imported meshes have small negative base offsets; lift them exactly
+	# onto the courtyard floor instead of leaving part of the building buried.
+	sanctuary.position = point + Vector3(0, 2.8, 0)
 	# The source preview is intentionally enlarged for the game: the entrance,
 	# torii and roof levels must read as a destination from the outer road.
 	sanctuary.scale = Vector3.ONE * 1.35
 	add_child(sanctuary)
 	architecture.register_external_sanctuary()
-	# GLB meshes are visual assets. A bounded static footprint keeps the domain
-	# physically solid without adding a collision shape to every decorative part.
+	# The GLB is visual geometry; this robust solid footprint prevents the player
+	# from walking through any of its merged meshes while interiors are prepared.
 	var body := StaticBody3D.new()
 	body.name = "SanctuaryFootprint_%02d" % (variant+1)
-	body.position = point + Vector3(0, 2.3, 0)
+	body.position = point + Vector3(0, 3.7, 1.4)
 	body.collision_layer = 1
 	body.collision_mask = 0
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(10.5, 4.6, 8.5) * 1.35
+	shape.size = Vector3(18.0, 7.4, 19.0)
 	var collision := CollisionShape3D.new()
 	collision.shape = shape
 	body.add_child(collision)

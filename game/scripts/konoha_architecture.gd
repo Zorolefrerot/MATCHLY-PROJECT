@@ -39,12 +39,6 @@ func _ready() -> void:
 	materials["wood"] = TrainingFighter.material(Color("716047"))
 	materials["trim"] = TrainingFighter.material(Color("dbd1b3"))
 	materials["glass"] = TrainingFighter.material(Color("304e50"))
-	# The mountain portraits use actual relief geometry; these color-only materials keep
-	# the sculpted faces independent from the reference image used behind the cliff.
-	materials["face_rock"] = TrainingFighter.material(Color("8c7562"))
-	materials["face_highlight"] = TrainingFighter.material(Color("b69a7b"))
-	materials["face_shadow"] = TrainingFighter.material(Color("403832"))
-
 func _mesh(vertices: PackedVector3Array, normals: PackedVector3Array, uv: PackedVector2Array, mat: Material, point: Vector3 = Vector3.ZERO) -> MeshInstance3D:
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
@@ -72,6 +66,20 @@ func _block(dimensions: Vector3, point: Vector3, mat: Material) -> MeshInstance3
 	add_child(node)
 	return node
 
+func _solid_box(dimensions: Vector3, point: Vector3, name: String) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.name = name
+	body.position = point
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var shape := BoxShape3D.new()
+	shape.size = dimensions
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	body.add_child(collision)
+	add_child(body)
+	return body
+
 func _sphere_part(point: Vector3, scale: Vector3, mat: Material, segments: int = 16) -> MeshInstance3D:
 	var sphere := SphereMesh.new()
 	sphere.radius = 1.0
@@ -86,24 +94,6 @@ func _sphere_part(point: Vector3, scale: Vector3, mat: Material, segments: int =
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(node)
 	return node
-
-func _sculpted_face(point: Vector3, scale: float, variant: int) -> void:
-	# A low-poly relief portrait: brow, nose, cheeks, jaw, eyes and hair are all
-	# separate volumes, so the four Hokage faces read as carvings from every angle.
-	_sphere_part(point+Vector3(0,0,0),Vector3(8.5,11.8,3.5)*scale,materials["face_rock"])
-	_sphere_part(point+Vector3(0,7.2,0.5),Vector3(8.0,4.0,3.7)*scale,materials["face_shadow"])
-	_sphere_part(point+Vector3(0,-8.0,0.25),Vector3(8.2,3.4,3.4)*scale,materials["face_highlight"])
-	# The brow line changes per portrait while keeping the broad monumental silhouette.
-	for side in [-1,1]:
-		_sphere_part(point+Vector3(side*(2.6+float(variant%2)*0.4),2.5,3.0)*scale,Vector3(2.7,0.85,0.75)*scale,materials["face_highlight"],12)
-		_sphere_part(point+Vector3(side*2.7,1.0,3.45)*scale,Vector3(0.72,0.72,0.42)*scale,materials["face_shadow"],12)
-		_sphere_part(point+Vector3(side*2.1,-2.9,3.0)*scale,Vector3(2.6,1.6,0.72)*scale,materials["face_highlight"],12)
-	_sphere_part(point+Vector3(0,0.0,3.8)*scale,Vector3(1.15,3.0,1.05)*scale,materials["face_highlight"],12)
-	_block(Vector3(4.2,0.55,0.55)*scale,point+Vector3(0,-4.5,3.25)*scale,materials["face_shadow"])
-	# Hair ridges and a shoulder collar make each relief visible against the cliff.
-	for side in [-1,1]:
-		_sphere_part(point+Vector3(side*5.9,5.0,0.1)*scale,Vector3(2.8,7.0,3.0)*scale,materials["face_shadow"],12)
-	_block(Vector3(16.0,2.0,3.0)*scale,point+Vector3(0,-12.0,0.0)*scale,materials["face_rock"])
 
 func _point(radius: float, height: float, angle: float, stretch: Vector2) -> Vector3:
 	return Vector3(sin(angle)*radius*stretch.x, height, cos(angle)*radius*stretch.y)
@@ -395,8 +385,8 @@ func palace(point: Vector3) -> void:
 			lathe([Vector2(0.18,11.35),Vector2(0.15,12.65),Vector2(0.08,13.75)],point+Vector3(x,0,z),Vector2.ONE,materials["trim"],Vector2.ONE,false,12)
 
 func monument() -> void:
-	# A broad textured rock reference remains behind the monument, but the four
-	# portraits in front are genuine 3D reliefs rather than a camera-facing card.
+	# Keep the supplied Hokage image as the only face representation. The image
+	# is large and readable; the rock shelf and wall below it remain physical.
 	var vertices := PackedVector3Array(); var normals := PackedVector3Array(); var uv := PackedVector2Array()
 	var width: float = 124.0
 	var height: float = width*225.0/382.0
@@ -414,11 +404,10 @@ func monument() -> void:
 		for index in [0,1,2,0,2,3]:
 			vertices.append(corners[index]); normals.append(Vector3.BACK); uv.append(coords[index])
 	cliff = _mesh(vertices,normals,uv,materials["faces"])
-	# The rock shelf is taller and wider than the old ribbon so the portraits can
-	# be approached as a real landmark from the enlarged Hokage compound.
+	# The rock shelf stays a visible 3D base, while a hidden solid wall prevents
+	# the player from walking through the image or the shelf at ground level.
 	lathe([Vector2(62,0),Vector2(62,52),Vector2(56,68),Vector2(0,74)],Vector3(0,0,-111.0),Vector2(1,0.12),materials["stone"],Vector2(8,3),false,28)
 	for x in [-68.0,68.0]:
 		lathe([Vector2(10,0),Vector2(11,30),Vector2(9,56),Vector2(4,72),Vector2(0,78)],Vector3(x,0,-110.0),Vector2(1,0.6),materials["stone"],Vector2(4,5),false,10)
-	for index in range(4):
-		var x := -46.5+float(index)*31.0
-		_sculpted_face(Vector3(x,34.0,-99.0-absf(x)*0.01),1.22 if index == 1 else 1.12, index)
+	_solid_box(Vector3(124,7.0,14.0),Vector3(0,3.5,-106.5),"HokageRockBaseCollision")
+	_solid_box(Vector3(width,74.0,1.4),Vector3(0,7.0+height*0.5,-102.0),"HokageImageWallCollision")

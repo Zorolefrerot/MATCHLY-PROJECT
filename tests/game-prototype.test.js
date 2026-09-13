@@ -286,11 +286,17 @@ test("fourteen clan sanctuary references are traced and kept out of runtime text
     "13_yeager.glb", "14_ackerman.glb",
   ]) assert.ok(readFileSync(new URL("../game/assets/konoha/sanctuaries/" + file, import.meta.url)).length > 1000, file + " missing");
   assert.match(map, /func _district_access/);
+  assert.match(map, /func _sanctuary_domain/);
+  assert.match(map, /SanctuaryFootprint/);
+  assert.match(map, /SolidStairRun/);
   assert.match(map, /clan_variant \+= 1/);
   assert.match(map, /Vector3\(-7,0,-78\)/);
+  assert.match(read("game/tests/smoke.gd"), /Hokage|monument/);
   assert.match(read("game/scripts/konoha_visit.gd"), /Only a genuine fall through the world respawns/);
   assert.match(read("game/scripts/konoha_architecture.gd"), /_sanctuary_geometry/);
   assert.match(read("game/scripts/konoha_architecture.gd"), /13: # Ackerman/);
+  assert.match(read("game/scripts/konoha_architecture.gd"), /HokageImageWallCollision/);
+  assert.doesNotMatch(read("game/scripts/konoha_architecture.gd"), /_sculpted_face|face_rock|face_highlight/);
   assert.match(read("game/scripts/konoha_architecture.gd"), /z0: float = -101\.5/);
 });
 
