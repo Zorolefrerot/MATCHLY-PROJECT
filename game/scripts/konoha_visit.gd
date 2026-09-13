@@ -13,7 +13,7 @@ var viewport: SubViewport
 var world: KonohaMap
 var hokage_interior: HokageInterior
 var inside_hokage: bool = false
-const HOKAGE_EXTERIOR_DOOR := Vector3(0, 0.25, -68.0)
+const HOKAGE_EXTERIOR_DOOR := Vector3(0, 0.25, -72.0)
 var player: TrainingFighter
 var guide: TrainingFighter
 var hud: KonohaHUD
@@ -246,7 +246,7 @@ func nearest_interaction() -> int:
 		if is_instance_valid(hokage_interior) and hokage_interior.near_exit(player.position):
 			return -3
 		return -2
-	if player.position.distance_to(HOKAGE_EXTERIOR_DOOR) < 4.6:
+	if player.position.distance_to(HOKAGE_EXTERIOR_DOOR) < 3.5:
 		return -3
 	if _reachable(guide.position):
 		return -1
