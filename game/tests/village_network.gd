@@ -145,7 +145,7 @@ func run() -> void:
 	a.open_chat()
 	a.chat_panel.input.text = "Message hors portée"
 	a.chat_panel._submit()
-	check(await wait_for(func() -> bool: return a.chat_panel.pending == -1 and a.chat_panel.lines.size() == 3),"sender receives an acknowledgement even alone")
+	check(await wait_for(func() -> bool: return a.chat_panel.pending == -1 and a.chat_panel.lines.size() == 3),"sender receives an acknowledgement even alone (connected=%s pending=%d lines=%d status=%s)" % [a.village_link.connected, a.chat_panel.pending, a.chat_panel.lines.size(), a.chat_panel.status.text])
 	check(b.chat_panel.lines.size() == 2,"out-of-range player receives no chat message")
 	a.resume_visit()
 	a.village_link.set_active(false)
