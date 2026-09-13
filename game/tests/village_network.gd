@@ -131,10 +131,12 @@ func run() -> void:
 	check(await wait_for(func() -> bool: return b.chat_panel.lines.size() == 2),"HRP uses the same proximity delivery with a distinct label")
 	check(b.chat_panel.lines[1].begins_with("[HRP]"),"HRP label is preserved")
 	a.resume_visit()
-	# Combat starts beside the market tower. Re-center this fixture on the wide
-	# central road so the visual collision set cannot make a flaky corner stop.
-	a.player.reset_at(Vector3(-3.4,0.25,22))
-	a.village_link.pose = {"p":[-1.0,0.25,22],"yaw":0.0,"motion":"idle"}
+	# Combat starts beside the market tower. This integration fixture validates
+	# transport proximity, not local scenery collision, so use a ghosted local
+	# body and leave the server-authoritative road position unchanged.
+	a.player.collision_mask = 0
+	a.player.reset_at(Vector3(-3,0.25,22))
+	a.village_link.pose = {"p":[-3,0.25,22],"yaw":0.0,"motion":"idle"}
 	a.hud.move_vector = Vector2(0,-1)
 	a.hud.sprinting = true
 	check(await wait_for(func() -> bool: return a.player.position.distance_to(b.player.position) > 22,8),"one native player can leave proximity along the village road")
