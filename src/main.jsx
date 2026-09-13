@@ -49,6 +49,7 @@ import {
   Compass,
   Smartphone,
   Crown,
+  Building2,
 } from "lucide-react";
 import "@fontsource/barlow-condensed/latin-600.css";
 import "@fontsource/barlow-condensed/latin-700.css";
@@ -1439,6 +1440,38 @@ function Account() {
             APK de test, hors Play Store. N’autorise l’installation que depuis
             ton gestionnaire de fichiers de confiance ; ne désactive pas les
             protections générales du téléphone.
+          </p>
+        </section>
+      )}
+      {a?.status === "accepted" && account.sanctuaryAssets && (
+        <section
+          className="panel download-panel"
+          aria-label="Télécharger les sanctuaires Blender"
+        >
+          <div className="panel-heading">
+            <Building2 size={22} />
+            <h2>Sanctuaires claniques · Blender</h2>
+          </div>
+          <p>
+            La maquette 3D des 14 domaines claniques, construite à partir des
+            images de référence. Les fichiers sont séparés de l’APK et ne
+            modifient pas encore le jeu installé.
+          </p>
+          <div className="button-row">
+            <a className="button" href={account.sanctuaryAssets.glb.url}>
+              Télécharger le GLB <ArrowUpRight size={18} />
+            </a>
+            <a className="button secondary" href={account.sanctuaryAssets.blend.url}>
+              Télécharger la scène Blender <ArrowUpRight size={18} />
+            </a>
+          </div>
+          <a className="text-link" href={account.sanctuaryAssets.preview.url}>
+            Voir l’aperçu PNG du rendu Blender <ArrowRight size={16} />
+          </a>
+          <p className="fine-print">
+            Le GLB est lisible dans Blender, Godot et les visionneuses 3D
+            compatibles. La scène Blender reste une première maquette de
+            validation avant intégration dans l’APK.
           </p>
         </section>
       )}

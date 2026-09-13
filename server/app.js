@@ -1,6 +1,7 @@
 import express from "express";
 import { removeAcceptedAccount } from "./account-removal.js";
 import { androidBuild, downloadInfo } from "./android-build.js";
+import { sanctuaryDownloadInfo, sanctuaryPath } from "./sanctuaries-build.js";
 import { installGameRoutes } from "./game.js";
 import { randomBytes } from "node:crypto";
 import { recoveryAvailable, sendRecovery } from "./mailer.js";
@@ -189,6 +190,8 @@ export function createApp(db) {
     res.json({
       user: req.user,
       download: application?.status === "accepted" ? downloadInfo() : null,
+      sanctuaryAssets:
+        application?.status === "accepted" ? sanctuaryDownloadInfo() : null,
       application,
       allocation:
         (await db
@@ -214,6 +217,26 @@ export function createApp(db) {
           "Ce fichier a expiré. Une nouvelle compilation doit être publiée.",
       });
     res.redirect(302, androidBuild.url);
+  });
+  app.get("/api/konoha-sanctuaries/:asset", auth, async (req, res) => {
+    const allowed = await db
+      .prepare(
+        "SELECT a.id FROM applications a JOIN users u ON u.id=a.user_id WHERE a.user_id=? AND a.status='accepted' AND u.role='player' AND NOT EXISTS(SELECT 1 FROM deleted_accounts d WHERE d.user_id=a.user_id)",
+      )
+      .get(req.user.id);
+    if (!allowed)
+      return res
+        .status(403)
+        .json({ error: "Le téléchargement est réservé aux joueurs acceptés." });
+    const path = sanctuaryPath(req.params.asset);
+    if (!path) return res.status(404).json({ error: "Fichier inconnu." });
+    return res.download(path, undefined, {
+      dotfiles: "deny",
+      headers: {
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   });
   app.post(
     "/api/admin/accounts/:id/delete",
