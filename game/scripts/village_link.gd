@@ -36,7 +36,7 @@ static func point(value: Variant) -> bool:
 		if typeof(axis) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(axis)):
 			return false
 	# Match KonohaMap.BOUNDS - 2: the server accepts a multiplayer player across the whole
-	# village, not only the arrival district; the strict server packet stays finite.
+	# village, not only the arrival district; the strict server packet stays finite and carries the full perimeter pose.
 	return absf(float(value[0])) <= 148 and float(value[1]) >= -5 and float(value[1]) <= 12 and absf(float(value[2])) <= 158
 
 static func state(value: Variant) -> bool:
