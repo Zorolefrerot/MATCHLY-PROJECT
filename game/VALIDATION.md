@@ -4,7 +4,7 @@
 
 ## Résultat 0.11 — APK vérifiée
 
-Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34751157241](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34751157241), sur la branche active, réussit l’import Godot 4.5.1, **312 assertions de simulation**, le scénario WSS avec deux clients Godot dans le village complet et ses volumes procéduraux, le rendu des effets et l’export Android. Cette exécution inclut les quatorze références de sanctuaire tracées depuis `main`, leurs silhouettes 3D distinctes, les quatre portraits Hokage en relief et la session native opaque restaurable.
+Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exécution GitHub Actions [34751157241](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34751157241), sur la branche active, réussit l’import Godot 4.5.1, **312 assertions de simulation**, le scénario WSS avec deux clients Godot dans le village complet et ses volumes procéduraux, le rendu des effets et l’export Android. Cette exécution inclut les quatorze références de sanctuaire tracées depuis `main`, leurs silhouettes 3D distinctes, l’image texturée Hokage protégée par la collision de son socle et la session native opaque restaurable.
 
 | Vérification | Résultat réel |
 |---|---|

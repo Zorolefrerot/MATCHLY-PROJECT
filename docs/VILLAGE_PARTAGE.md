@@ -1,6 +1,6 @@
 # Lot suivant — présence partagée et duel de test à Konoha
 
-**Mise à jour du 13 septembre 2026 — APK 0.12.0/code 12 vérifiée :** l’exécution GitHub Actions **34755818249** a réussi l’import Godot, les **312 assertions**, les quatre scénarios WSS natifs, l’export Android et les contrôles de paquet. L’artefact téléchargeable est [`idrem-zenkai-android-75`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34755818249/artifacts/10317726413), **79 496 383 octets**, jusqu’au **20 septembre 2026 à 12:00:48 UTC**. Le site conserve les téléchargements séparés et protégés de la scène Blender, du GLB groupé et du rendu PNG ; il faut encore déclencher le Manual Deploy du service Render pour les rendre visibles en production.
+**Mise à jour du 13 septembre 2026 — APK 0.12.0/code 12 vérifiée :** l’exécution GitHub Actions **34760824120** a réussi l’import Godot, les **312 assertions**, les quatre scénarios WSS natifs, l’export Android et les contrôles de paquet après correction des collisions. L’artefact téléchargeable est [`idrem-zenkai-android-76`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34760824120/artifacts/10318886714), **79 595 456 octets**, jusqu’au **20 septembre 2026 à 13:50:03 UTC**. Le site conserve les téléchargements séparés et protégés de la scène Blender, du GLB groupé et du rendu PNG ; il faut encore déclencher le Manual Deploy du service Render pour les rendre visibles en production.
 
 **Ajout au lot regroupé 0.12 :** deux joueurs admis peuvent parcourir la carte complète de Konoha et lancer un duel réseau éphémère, avec quatre attaques texturées et une ultime clanique monumentale. Le village contient ses quartiers, son marché, ses routes, sa rivière, ses PNJ actifs et ses animaux. Les dégâts, recharges, chakra, niveau de test, évitement de l’ultime et KO sont résolus par le serveur ; les comptes et la progression ne changent pas. [Détails des textures et ultimes](ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
 
@@ -107,11 +107,11 @@ npm run test:browser
 GODOT_BIN=/chemin/godot bash game/tools/check.sh
 ```
 
-`server/android-build.js` pointe maintenant vers l’APK **0.12.0/code 12** vérifiée du village complet avec les sanctuaires Blender : ZIP `idrem-zenkai-android-75`, **79 496 383 octets**, expiration **20 septembre 2026 à 12:00:48 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
+`server/android-build.js` pointe maintenant vers l’APK **0.12.0/code 12** vérifiée du village complet avec les sanctuaires Blender : ZIP `idrem-zenkai-android-76`, **79 595 456 octets**, expiration **20 septembre 2026 à 13:50:03 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
 
 ## Livraison groupée et hébergement gratuit
 
-Le nouvel artefact Android 0.11 est temporaire et reste soumis au quota/rétention GitHub. Ce n’est pas le relevé de facturation global GitHub. Deux anciens ZIP peuvent être retirés manuellement, en conservant la version active :
+Le nouvel artefact Android 0.12 est temporaire et reste soumis au quota/rétention GitHub. Ce n’est pas le relevé de facturation global GitHub. Deux anciens ZIP peuvent être retirés manuellement, en conservant la version active :
 
 - [`idrem-zenkai-android-6`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34446543408) : 62 880 104 octets, artefact 10139893231.
 - [`idrem-zenkai-android-9`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34449560323) : 62 950 239 octets, artefact 10141009252.
