@@ -68,7 +68,7 @@ Le client vide la saisie **après acquittement**. En cas de coupure ou délai, i
 - Les en-têtes de session absents ou malformés sont refusés avant toute acquisition de connexion/verrou de base. Test avec un adaptateur interdisant tout accès DB.
 - Une salle momentanément pleine ou un bail non renouvelé utilise le code transitoire **1013**, même si un paquet arrive avant le prochain tick. Le client peut réessayer sans effacer une connexion de compte encore valable. Une véritable expiration reste **4003** ; les révocations vérifiées le restent également.
 - Contrats SQLite et PostgreSQL relancés : chemin inconnu, capacité puis départ, reprise, expiration et suppression restent couverts.
-- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-57` a été généré par GitHub Actions après l’intégration des domaines claniques ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 20 septembre 2026.
+- Les anciens artefacts Android 6 et 9 ne sont pas nécessaires au nouveau téléchargement. L’artefact 0.11 `idrem-zenkai-android-60` a été généré par GitHub Actions après l’intégration des domaines claniques ; l’APK est contrôlée, mais l’artefact temporaire reste soumis à l’expiration GitHub du 20 septembre 2026.
 
 ## Application
 
@@ -105,7 +105,7 @@ npm run test:browser
 GODOT_BIN=/chemin/godot bash game/tools/check.sh
 ```
 
-`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée du village complet densifié : ZIP `idrem-zenkai-android-57`, **77 257 892 octets**, expiration **20 septembre 2026 à 10:03:17 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
+`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée du village complet densifié : ZIP `idrem-zenkai-android-60`, **77 248 650 octets**, expiration **20 septembre 2026 à 10:12:38 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
 
 ## Livraison groupée et hébergement gratuit
 
