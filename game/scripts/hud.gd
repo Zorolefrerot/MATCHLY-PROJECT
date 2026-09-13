@@ -50,6 +50,8 @@ var notice_seconds: float = 0.0
 const RED := Color("ed6567")
 const INK := Color("132327")
 const CREAM := Color("eee6d1")
+const CONTROL_ATLAS: Texture2D = preload("res://assets/ui/control_atlas.png")
+const TECHNIQUE_ATLAS: Texture2D = preload("res://assets/ui/combat_technique_atlas.png")
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -91,6 +93,32 @@ func _button(caption: String, action: String) -> Button:
 	add_child(button)
 	buttons[action] = button
 	return button
+
+func atlas_icon(atlas: Texture2D, cell: int) -> AtlasTexture:
+	var icon := AtlasTexture.new()
+	icon.atlas = atlas
+	var safe_cell: int = clampi(cell, 0, 15)
+	icon.region = Rect2(Vector2((safe_cell % 4) * 256, (safe_cell / 4) * 256), Vector2(256, 256))
+	return icon
+
+func set_button_icon(action: String, cell: int, atlas: Texture2D = CONTROL_ATLAS) -> void:
+	if not buttons.has(action):
+		return
+	var button: Button = buttons[action]
+	# Button.icon uses the atlas cell's native 256 px minimum in Godot 4.5.
+	# Keep the atlas texture, but draw it through a size-independent child so
+	# responsive touch buttons keep their authored bounds on a 1280x720 screen.
+	button.icon = null
+	button.expand_icon = false
+	var icon: Sprite2D = button.get_node_or_null("AtlasIcon") as Sprite2D
+	if icon == null:
+		icon = Sprite2D.new()
+		icon.name = "AtlasIcon"
+		icon.centered = false
+		icon.position = Vector2(6, 6)
+		button.add_child(icon)
+	icon.texture = atlas_icon(atlas, cell)
+	icon.scale = Vector2.ONE * (28.0 / 256.0)
 
 func _activate(action: String) -> void:
 	if action == "sprint":
@@ -157,6 +185,16 @@ func _build() -> void:
 		var button: Button = _button("%s\n%d chakra" % [data["name"], int(data["cost"])], "skill_%d" % i)
 		button.add_theme_color_override("font_color", data["color"])
 		skill_buttons.append(button)
+	set_button_icon("pause", 5)
+	set_button_icon("lock", 9)
+	set_button_icon("melee", 0)
+	set_button_icon("dodge", 11)
+	set_button_icon("jump", 3)
+	set_button_icon("sprint", 13)
+	set_button_icon("ultimate", 10)
+	set_button_icon("ultimate_setup", 6)
+	for i in range(4):
+		set_button_icon("skill_%d" % i, [0, 14, 15, 12][i], TECHNIQUE_ATLAS)
 	_build_menu()
 
 func _build_menu() -> void:
@@ -185,7 +223,7 @@ func _build_menu() -> void:
 	menu_title.add_theme_color_override("font_color", CREAM)
 	column.add_child(menu_title)
 	menu_text = Label.new()
-	menu_text.text = "Un prototype 3D pour tester les commandes et les combats.\nPersonnages provisoires. Pas encore de multijoueur."
+	menu_text.text = "Un prototype 3D pour tester les commandes et les combats.\nPersonnages provisoires. Le duel en ligne se teste depuis Konoha avec deux comptes admis."
 	menu_text.add_theme_font_size_override("font_size", 16)
 	menu_text.add_theme_color_override("font_color", Color("bfd0c7"))
 	column.add_child(menu_text)

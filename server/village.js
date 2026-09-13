@@ -14,7 +14,7 @@ export async function villageIdentity(db, authorization, now = Date.now()) {
   const tokenHash = digest(token);
   const row = await db
     .prepare(
-      `SELECT u.id,a.character AS name,s.expires,
+      `SELECT u.id,a.character AS name,l.clan,s.expires,
     (SELECT appearance FROM character_appearances WHERE user_id=u.id) AS appearance
     ${accessSQL} AND s.token=?`,
     )
@@ -29,6 +29,7 @@ export async function villageIdentity(db, authorization, now = Date.now()) {
         .replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, "")
         .slice(0, 50)
         .toWellFormed() || "Genin",
+    clan: row.clan || "Uchiwa",
     appearance,
     tokenHash,
     expires: Number(row.expires),

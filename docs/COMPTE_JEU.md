@@ -4,7 +4,7 @@
 
 ## Activation depuis le téléphone
 
-1. Dans le service existant sur [Render](https://dashboard.render.com/), utiliser **Manual Deploy → Deploy latest commit**. La branche reste `arena/01a08158-matchly-project`. Ne pas créer de second service et ne pas remplacer les variables privées existantes.
+1. Dans le service existant sur [Render](https://dashboard.render.com/), utiliser **Manual Deploy → Deploy latest commit**. La branche est `arena/01a094b6-matchly-project`. Ne pas créer de second service et ne pas remplacer les variables privées existantes.
 2. Attendre **Live**, puis vérifier que le site s’ouvre toujours et que le compte propriétaire fonctionne. Le déploiement applique automatiquement les tables supplémentaires du compte et de la mission d’accueil ; aucun tirage/admission n’est relancé.
 
 Après cela seulement : installer l’APK 0.10 indiquée dans [`game/README.md`](../game/README.md), ouvrir **MON COMPTE**, saisir l’adresse HTTPS exacte du site (origine uniquement, sans chemin), puis les identifiants d’un **compte joueur accepté ayant déjà reçu son attribution sur le site**. Ne jamais envoyer de mot de passe dans la conversation. Le propriétaire administrateur reste séparé des places joueurs ; pas de contournement automatique de l’admission.

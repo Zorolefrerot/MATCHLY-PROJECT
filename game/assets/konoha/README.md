@@ -19,7 +19,15 @@ Aucun service externe, IA, récupération réseau ou traitement d’image à cha
 - `details_atlas` 512² RGBA : fenêtres dessinées en haut, porte en bas à gauche, emblème réellement recadré de la résidence en bas à droite. Marges transparentes entre cellules.
 - `hokage_cliff` 512² RGBA : **quatre premiers visages**, choix visuel pour correspondre à l’image de la résidence. L’original à sept visages est conservé. Recadrage `(0,0,382,225)`, retrait du paysage urbain gris selon la ligne de pierre chaude ; proportions 382:225 rétablies par le maillage. La photo coupe déjà le sommet d’une coiffure : aucun détail absent n’est inventé.
 
-Les PNG totalisent **1 467 280 octets**. Imports lossless, mipmaps explicites, filtrage linéaire mipmappé, transparence découpée pour l’atlas et la falaise. Ce poids PNG n’est pas une mesure de RAM ou de fluidité Android.
+## Textures générées pour l’environnement
+
+Le village utilise volontairement peu d’images : les maisons, le marché, les sanctuaires et les animaux restent des volumes 3D procéduraux afin d’éviter des panneaux plats et répétitifs. Trois images générées sont limitées aux surfaces qui en bénéficient réellement :
+
+- `sky_mountain_panorama.png` : panorama montagneux appliqué au ciel du monde.
+- `earth_ground_texture.png` : terre et herbe répétées sur le sol extérieur.
+- `river_water_texture.png` : eau peinte répétée le long des segments de la rivière, sans étirer l’image.
+
+Les images sont réduites pour mobile, filtrées avec mipmaps et ne créent ni acteur, ni objet réseau, ni collider supplémentaire. Les façades, escaliers, arbres, sanctuaires et animaux sont construits en géométrie 3D : leurs formes, dimensions et collisions peuvent donc varier réellement.
 
 ## Géométrie et budget
 

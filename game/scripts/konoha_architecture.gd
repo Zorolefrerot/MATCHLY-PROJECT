@@ -12,6 +12,7 @@ const TEXTURES: Dictionary = {
 }
 var materials: Dictionary = {}
 var house_count: int = 0
+var sanctuary_count: int = 0
 var palace_built: bool = false
 var cliff: MeshInstance3D
 var curved_meshes: int = 0
@@ -51,6 +52,17 @@ func _mesh(vertices: PackedVector3Array, normals: PackedVector3Array, uv: Packed
 	node.mesh = mesh
 	node.material_override = mat
 	node.position = point
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(node)
+	return node
+
+func _block(dimensions: Vector3, point: Vector3, mat: Material) -> MeshInstance3D:
+	var node := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = dimensions
+	node.mesh = mesh
+	node.position = point
+	node.material_override = mat
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(node)
 	return node
@@ -143,6 +155,85 @@ func house(point: Vector3, upper_green: bool = true) -> void:
 	_panel(point+Vector3(0,1.17,3.57),Vector2(1.55,2.42),0,Vector2i(0,1))
 	for offset in [Vector3(-0.8,0,0.4),Vector3(0.6,0,-0.2)]:
 		lathe([Vector2(0.27,6.7),Vector2(0.27,7.85),Vector2(0.33,7.85),Vector2(0.33,7.99)],point+offset,Vector2.ONE,materials["stone"],Vector2.ONE,false,12)
+
+func compact_house(point: Vector3, roof: String = "tiles", height: float = 4.8) -> void:
+	# Background homes use the same reference palette with fewer rings for mobile performance.
+	house_count += 1
+	var stretch := Vector2(1.0,0.9)
+	_wall(2.8,0.0,height*0.58,point,stretch,materials["plaster"])
+	var roof_material: Material = materials["gold"] if roof == "gold" else materials["tiles"]
+	lathe([Vector2(2.72,height*0.54),Vector2(3.05,height*0.62),Vector2(3.15,height*0.76),Vector2(0,height)],point,stretch,roof_material,Vector2(5,1),false,20)
+	_windows(point,2.8,stretch,height*0.34,8,Vector2(0.72,0.9),Vector2i(1,0),true)
+	_panel(point+Vector3(0,0.92,2.5),Vector2(1.0,1.7),0,Vector2i(0,1))
+
+func courtyard_house(point: Vector3, color: String = "plaster") -> void:
+	# Low courtyard homes use two offset wings and a covered entrance, unlike the round houses.
+	house_count += 1
+	var wall_material: Material = materials["red"] if color == "red" else materials["plaster"]
+	for side in [-1,1]:
+		var wing := point+Vector3(side*2.25,0,0)
+		_wall(2.15,0.0,3.25,wing,Vector2(0.9,0.72),wall_material)
+		lathe([Vector2(2.1,3.05),Vector2(2.55,3.18),Vector2(2.65,3.35),Vector2(0,4.05)],wing,Vector2(0.9,0.72),materials["tiles"],Vector2(5,1))
+		_windows(wing,2.15,Vector2(0.9,0.72),1.8,6,Vector2(0.7,1.0),Vector2i(1,0),true)
+	_block(Vector3(2.4,0.18,1.6),point+Vector3(0,0.09,2.65),materials["wood"])
+	for side in [-1,1]:
+		_block(Vector3(0.16,2.7,0.16),point+Vector3(side*1.05,1.35,2.65),materials["wood"])
+	_block(Vector3(2.6,0.16,0.18),point+Vector3(0,2.6,2.65),materials["wood"])
+	_panel(point+Vector3(0,1.15,2.75),Vector2(1.15,2.2),0,Vector2i(0,1))
+
+func stilt_house(point: Vector3, roof: String = "tiles") -> void:
+	# Raised homes create a third silhouette and leave a visible shaded passage underneath.
+	house_count += 1
+	var stretch := Vector2(1.0,0.78)
+	for x in [-2.2,2.2]:
+		for z in [-1.7,1.7]:
+			lathe([Vector2(0.19,0),Vector2(0.19,2.0)],point+Vector3(x,0,z),Vector2.ONE,materials["wood"],Vector2.ONE,true,10)
+	_wall(3.65,1.65,4.65,point,stretch,materials["plaster"])
+	var roof_material: Material = materials["gold"] if roof == "gold" else materials["tiles"]
+	lathe([Vector2(3.55,4.48),Vector2(4.05,4.6),Vector2(4.15,4.82),Vector2(3.1,5.75),Vector2(0,6.35)],point,stretch,roof_material,Vector2(6,1.1))
+	_windows(point,3.65,stretch,3.0,8,Vector2(0.78,1.05),Vector2i(1,0),true)
+	_panel(point+Vector3(0,2.45,3.0),Vector2(1.25,2.25),0,Vector2i(0,1))
+
+func clan_sanctuary(point: Vector3, variant: int = 0) -> void:
+	# Each clan receives a large exterior hall with its own material pairing and roof profile.
+	sanctuary_count += 1
+	house_count += 1
+	var wall_palette: Array[Material] = [materials["red"],materials["plaster"],materials["green"],materials["wood"],materials["stone"],materials["red"]]
+	var wall_material: Material = wall_palette[clampi(variant,0,wall_palette.size()-1)]
+	var stretch := Vector2(1.2,0.88)
+	_wall(5.2,0.0,4.8,point,stretch,wall_material)
+	lathe([Vector2(5.1,4.55),Vector2(5.7,4.75),Vector2(5.9,5.0),Vector2(4.6,6.3),Vector2(0,7.0)],point,stretch,materials["gold"] if variant%2 == 0 else materials["tiles"],Vector2(8,1.2))
+	_windows(point,5.2,stretch,2.75,12,Vector2(0.78,1.15),Vector2i(1,0),true)
+	_panel(point+Vector3(0,1.75,4.6),Vector2(2.1,3.1),0,Vector2i(0,1))
+	for side in [-1,1]:
+		lathe([Vector2(0.28,0),Vector2(0.28,3.7),Vector2(0.36,3.7),Vector2(0.36,4.8)],point+Vector3(side*2.25,0,5.0),Vector2.ONE,materials["wood"],Vector2.ONE,true,12)
+	_block(Vector3(6.8,0.16,2.0),point+Vector3(0,0.08,5.0),materials["stone"])
+	_block(Vector3(7.5,0.18,0.22),point+Vector3(0,4.3,5.0),materials["wood"])
+
+func apartment_block(point: Vector3, color: String = "plaster") -> void:
+	# Three-story curved apartment houses make the residential rings feel occupied without spawning interiors.
+	house_count += 1
+	var wall_material: Material = materials["red"] if color == "red" else materials["plaster"]
+	var stretch := Vector2(1.0, 0.82)
+	_wall(4.25,0.0,9.4,point,stretch,wall_material)
+	for y in [2.1,5.0,7.9]:
+		_windows(point,4.25,stretch,y,12,Vector2(0.62,1.02),Vector2i(1,0))
+		for side in [-1,1]:
+			var balcony := MeshInstance3D.new()
+			var balcony_mesh := BoxMesh.new()
+			balcony_mesh.size = Vector3(1.75,0.16,0.95)
+			balcony.mesh = balcony_mesh
+			balcony.position = point + Vector3(side*2.25,y-0.5,0)
+			balcony.material_override = materials["wood"]
+			add_child(balcony)
+	lathe([Vector2(4.2,9.2),Vector2(4.65,9.45),Vector2(4.8,9.7),Vector2(3.2,10.8),Vector2(0,11.15)],point,stretch,materials["tiles"],Vector2(7,1.1))
+	_panel(point+Vector3(0,1.35,3.48),Vector2(1.6,2.7),0,Vector2i(0,1))
+
+func tower(point: Vector3, color: String = "red", height: float = 12.0) -> void:
+	var wall_material: Material = materials["red"] if color == "red" else materials["plaster"]
+	_wall(3.0,0.0,height,point,Vector2.ONE,wall_material)
+	lathe([Vector2(3.0,height-0.3),Vector2(3.5,height),Vector2(0,height+2.6)],point,Vector2.ONE,materials["gold"],Vector2(6,1),false,24)
+	_windows(point,3.0,Vector2.ONE,height*0.42,12,Vector2(0.5,0.9),Vector2i(1,0))
 
 func palace(point: Vector3) -> void:
 	palace_built = true

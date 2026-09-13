@@ -1,6 +1,6 @@
 class_name KonohaVisit
 extends Control
-## Separate world and personal mission, with ephemeral shared presence. No network combat.
+## Separate world and personal mission, with ephemeral shared presence and duel.
 signal closed
 var account_profile: Dictionary = {}
 var api: CharacterAccountAPI
@@ -28,6 +28,11 @@ var app_active: bool = true
 var village_link: VillageLink
 var chat_panel: VillageChat
 var remote_avatars: Dictionary = {}
+var combat_effects: Node3D
+var combat_vfx: TrainingVFX
+var combat_state: Dictionary = {}
+var combat_level: int = 1
+var presence_count: int = 1
 var unread: int = 0
 
 func _ready() -> void:
@@ -49,12 +54,27 @@ func _ready() -> void:
 	world = KonohaMap.new()
 	viewport.add_child(world)
 	world.build()
+	combat_vfx = TrainingVFX.new()
+	world.add_child(combat_vfx)
+	combat_effects = Node3D.new()
+	world.add_child(combat_effects)
 	player = TrainingFighter.new()
 	world.add_child(player)
 	player.configure(Color("385962"), 2, 120)
 	var appearance: Variant = account_profile.get("appearance")
 	player.apply_appearance(appearance if appearance is Dictionary else CharacterAppearance.DEFAULTS)
 	player.reset_at(KonohaMap.SPAWN)
+	var local_nameplate := Label3D.new()
+	local_nameplate.name = "LocalNameplate"
+	local_nameplate.text = account_profile["character"]["name"]
+	local_nameplate.position = Vector3(0,2.35,0)
+	local_nameplate.font_size = 30
+	local_nameplate.pixel_size = 0.008
+	local_nameplate.modulate = Color("fff0c9")
+	local_nameplate.outline_size = 8
+	local_nameplate.outline_modulate = Color("16272b")
+	local_nameplate.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	player.add_child(local_nameplate)
 	guide = TrainingFighter.new()
 	world.add_child(guide)
 	guide.configure(Color("617b50"), 4, 120)
@@ -79,13 +99,14 @@ func _ready() -> void:
 	pivot.add_child(arm)
 	var camera := Camera3D.new()
 	camera.fov = 67
-	camera.far = 105
+	camera.far = 235
 	arm.add_child(camera)
 	camera.current = true
 	hud = KonohaHUD.new()
 	add_child(hud)
 	var identity: Dictionary = account_profile["character"]
 	hud.identity.text = "KONOHA · QUARTIER D’ACCUEIL\n%s · %s" % [identity["name"], identity["clan"]]
+	hud.set_clan_techniques(ClanTechniques.for_clan(str(identity["clan"])))
 	hud.action_requested.connect(_action)
 	hud.resume_requested.connect(resume_visit)
 	if not InputMap.has_action("village_interact"):
@@ -93,6 +114,13 @@ func _ready() -> void:
 		var key := InputEventKey.new()
 		key.physical_keycode = KEY_E
 		InputMap.action_add_event("village_interact", key)
+	var combat_bindings: Dictionary = {"melee":KEY_F,"skill_0":KEY_1,"skill_1":KEY_2,"skill_2":KEY_3,"skill_3":KEY_4,"ultimate":KEY_R}
+	for action: String in combat_bindings:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+			var combat_key := InputEventKey.new()
+			combat_key.physical_keycode = combat_bindings[action]
+			InputMap.action_add_event(action, combat_key)
 	if api != null:
 		api.completed.connect(_mission_response)
 	_sync_mission()
@@ -154,8 +182,12 @@ func _physics_process(delta: float) -> void:
 	var direction: Vector3 = (pivot.basis.x*axes.x + pivot.basis.z*axes.y).limit_length()
 	if Input.is_action_just_pressed("jump"):
 		player.jump()
+	if Input.is_action_just_pressed("melee"): _combat_action("melee")
+	for i in range(4):
+		if Input.is_action_just_pressed("skill_%d" % i): _combat_action("skill_%d" % i)
+	if Input.is_action_just_pressed("ultimate"): _combat_action("ultimate")
 	player.simulate(delta, direction, hud.sprinting or Input.is_action_pressed("sprint"))
-	if player.position.y < -5 or absf(player.position.x) > 31 or absf(player.position.z) > 35:
+	if player.position.y < -5 or absf(player.position.x) > KonohaMap.BOUNDS.x or absf(player.position.z) > KonohaMap.BOUNDS.y:
 		player.reset_at(KonohaMap.SPAWN)
 		if is_instance_valid(village_link): village_link.respawn()
 		hud.notice("Retour au point d’arrivée du quartier.")
@@ -326,13 +358,45 @@ func _action(action: String) -> void:
 			_update_music()
 		"mission_confirm": _confirm_mission()
 		"mission_refresh": _refresh_mission()
+		"combat_join":
+			if is_instance_valid(village_link): village_link.combat_join()
+			if is_instance_valid(hud): hud.set_combat_message("DUEL EN PRÉPARATION · Recherche d’un deuxième joueur…")
+		"combat_leave":
+			if is_instance_valid(village_link): village_link.combat_leave()
+		"combat_level":
+			combat_level = 1 if combat_level >= 50 else 10 if combat_level < 10 else 25 if combat_level < 25 else 50
+			if is_instance_valid(village_link): village_link.combat_level(combat_level)
+			if is_instance_valid(hud): hud.set_combat_message("Niveau de test demandé : %d · réglable avant le lancement" % combat_level)
+		"combat_melee": _combat_action("melee")
+		"combat_skill_0": _combat_action("skill_0")
+		"combat_skill_1": _combat_action("skill_1")
+		"combat_skill_2": _combat_action("skill_2")
+		"combat_skill_3": _combat_action("skill_3")
+		"combat_ultimate": _combat_action("ultimate")
 		"jump":
 			if not hud.blocked: player.jump()
+
+func _combat_action(kind: String) -> void:
+	if ending or hud.blocked or not is_instance_valid(village_link) or not village_link.connected:
+		return
+	var target_point := player.position + player.forward() * 6.0
+	for fighter: Dictionary in combat_state.get("players", []):
+		if int(fighter.get("id", -1)) == int(account_profile["character"]["id"]):
+			continue
+		var other_id := int(fighter.get("id", -1))
+		if remote_avatars.has(other_id):
+			target_point = remote_avatars[other_id].position
+			break
+	var aim: Vector3 = target_point - player.position
+	if aim.length_squared() < 0.01: aim = player.forward()
+	var sent: int = village_link.combat_action(kind, aim.normalized())
+	if sent >= 0 and is_instance_valid(hud):
+		hud.notice("%s envoyé · résolution serveur" % kind.to_upper())
 
 func _clear_inputs() -> void:
 	if is_instance_valid(hud):
 		hud.reset_input()
-	for action in ["move_left", "move_right", "move_forward", "move_back", "sprint", "jump", "village_interact"]:
+	for action in ["move_left", "move_right", "move_forward", "move_back", "sprint", "jump", "village_interact", "melee", "skill_0", "skill_1", "skill_2", "skill_3", "ultimate"]:
 		if InputMap.has_action(action):
 			Input.action_release(action)
 
@@ -341,7 +405,7 @@ func pause_visit() -> void:
 		return
 	_clear_inputs()
 	if not hud.blocked:
-		_dialogue("Une pause à Konoha", "Quartier d’accueil · apparence du compte et présence partagée si connecté.\nLe combat de l’entraînement reste dans sa propre zone. Mission personnelle sauvegardée. Ni position ni chat conservés après la visite. Le chat ne déclenche aucune action de combat.\nTu peux reprendre la visite ou revenir à ton compte.", "")
+		_dialogue("Une pause à Konoha", "Quartier d’accueil · apparence du compte et présence partagée si connecté.\nLe duel en ligne de test est optionnel : deux joueurs admis rejoignent le même quartier, choisissent un niveau de test, puis utilisent leurs jutsu. Les dégâts sont décidés par le serveur et rien n’est écrit dans la progression.\nTu peux reprendre la visite ou revenir à ton compte.", "")
 
 func resume_visit() -> void:
 	_close_chat()
@@ -385,19 +449,90 @@ func _process(_delta: float) -> void:
 		motion = "jump" if not player.is_on_floor() else "run" if player.velocity.length() > 4.5 else "walk" if player.velocity.length() > 0.1 else "idle"
 	village_link.pose = {"p":[player.position.x,player.position.y,player.position.z],"yaw":wrapf(player.visual.rotation.y,-PI,PI),"motion":motion}
 
+func _set_presence(count: int) -> void:
+	presence_count = maxi(1,count)
+	if is_instance_valid(hud) and is_instance_valid(village_link) and village_link.connected:
+		hud.footer.text = "EN LIGNE · %d joueur(s) dans le quartier · Chat RP / HRP de proximité" % presence_count
+
 func _network_status(message: String) -> void:
 	if ending or not is_instance_valid(chat_panel):
 		return
 	var online: bool = is_instance_valid(village_link) and village_link.connected
 	chat_panel.set_network(online,message)
-	hud.footer.text = "DEV RÉSEAU · Village partagé · Mission personnelle" if online else "DEV RÉSEAU · Visite locale · Ouvre le CHAT pour l’état de connexion"
+	if online:
+		_set_presence(presence_count)
+	else:
+		hud.footer.text = "VISITE LOCALE · Ouvre le CHAT pour l’état de connexion"
 
 func _clear_remote() -> void:
 	for avatar: VillageAvatar in remote_avatars.values():
 		avatar.queue_free()
 	remote_avatars.clear()
+	presence_count = 1
+	combat_state.clear()
+	if is_instance_valid(hud):
+		hud.set_combat_state({})
+		hud.footer.text = "VISITE LOCALE · Ouvre le CHAT pour l’état de connexion"
 	if is_instance_valid(chat_panel):
 		chat_panel.set_network(false,"Hors ligne · Aucun message renvoyé automatiquement.")
+
+func _combat_color(kind: String) -> Color:
+	return {"skill_0":Color("ff864d"),"skill_1":Color("85d7ee"),"skill_2":Color("b6ddad"),"skill_3":Color("e2b36c"),"ultimate":Color("ef7470"),"melee":Color("e3eacb")}.get(kind,Color("ffe2a3"))
+
+func _technique_color(element: String) -> Color:
+	return {"Katon":Color("ff7045"),"Mokuton":Color("8bcf78"),"Fūinjutsu":Color("ffa95c"),"Jūken":Color("a9dcff"),"Expansion":Color("ef957d"),"Esprit":Color("d6a3ef"),"Kikaichū":Color("9aac78"),"Bestial":Color("91d6e0"),"Ombre":Color("9b98d3"),"Impact":Color("d65872"),"Énergie spirituelle":Color("66b9f2"),"Jeu d’ombres":Color("b88acd"),"Titan":Color("e2b271"),"Lames":Color("94cabb")}.get(element,Color("ef7470"))
+
+func _combat_actor_position(id: int) -> Vector3:
+	if id == int(account_profile["character"]["id"]): return player.position + Vector3.UP
+	if remote_avatars.has(id): return remote_avatars[id].position + Vector3.UP
+	return player.position + Vector3.UP
+
+func _ultimate_color(clan: String) -> Color:
+	return {"Uchiwa":Color("ff7045"),"Uzumaki":Color("ffa95c"),"Senju":Color("caa16c"),"Hyūga":Color("a9dcff"),"Akimichi":Color("ef957d"),"Yamanaka":Color("d6a3ef"),"Aburame":Color("9aac78"),"Inuzuka":Color("91d6e0"),"Fushiguro":Color("9b98d3"),"Itadori":Color("d65872"),"Kurosaki":Color("66b9f2"),"Shunsui":Color("b88acd"),"Yeager":Color("e2b271"),"Ackerman":Color("94cabb")}.get(clan,Color("ef7470"))
+
+func _spawn_online_projectile(origin: Vector3, target: Vector3, direction: Vector3, kind: String) -> void:
+	var orb: TrainingFlame = combat_vfx.fireball(origin, direction)
+	combat_effects.add_child(orb)
+	var travel := create_tween().bind_node(orb)
+	travel.tween_property(orb, "position", target, 0.42)
+	travel.tween_callback(func() -> void:
+		if is_instance_valid(combat_vfx): combat_vfx.fire_impact(target, direction)
+		if is_instance_valid(orb): orb.queue_free()
+	)
+
+func _render_combat_action(event: Dictionary) -> void:
+	var kind: String = event["kind"]
+	var origin := Vector3(float(event["origin"][0]),float(event["origin"][1]),float(event["origin"][2]))
+	var target := Vector3(float(event["target"][0]),float(event["target"][1]),float(event["target"][2]))
+	var aim := Vector3(float(event["direction"][0]),float(event["direction"][1]),float(event["direction"][2])).normalized()
+	var data: Dictionary = event.get("ultimate", {})
+	var technique: Dictionary = event.get("technique", {})
+	var element: String = str(technique.get("element", ""))
+	var motif: int = int(technique.get("motif", 9))
+	var color := _ultimate_color(str(data.get("clan", ""))) if kind == "ultimate" else _technique_color(element)
+	if kind == "melee":
+		combat_vfx.slash(origin, aim)
+	elif kind in ["skill_0", "skill_1", "skill_2", "skill_3"]:
+		if element == "Katon":
+			combat_vfx.impact(origin, color, 0.65)
+			_spawn_online_projectile(origin, target + Vector3.UP, aim, kind)
+		else:
+			combat_vfx.clan_technique(origin, target + Vector3.UP, aim, element, motif, color)
+	elif kind == "ultimate":
+
+		var visual := TrainingSpectacle.new()
+		visual.monumental = true
+		visual.standard = true
+		visual.motif = int(data.get("motif",9))
+		visual.tint = color
+		visual.accent = color.lightened(0.35)
+		visual.magnitude = 0.85 + 0.45 * float(int(data.get("level",1))-1) / 49.0
+		visual.position = target
+		combat_effects.add_child(visual)
+		combat_vfx.impact(target + Vector3.UP, color, 1.1)
+	if is_instance_valid(hud):
+		var label: String = str(data.get("name", kind.to_upper())) if kind == "ultimate" else str(technique.get("name", kind.to_upper()))
+		hud.notice(label)
 
 func _network_event(event: Dictionary) -> void:
 	if ending:
@@ -412,7 +547,45 @@ func _network_event(event: Dictionary) -> void:
 			_update_camera()
 			# Send the correction, never the stale position cached before this frame.
 			village_link.pose = {"p":point.duplicate(),"yaw":facing,"motion":"idle"}
+		"combat_waiting":
+			hud.set_combat_message("DUEL EN PRÉPARATION · %d joueur(s) · Invite le deuxième joueur à appuyer sur DÉFIER EN DUEL" % event.get("players",[]).size())
+		"combat_started":
+			hud.set_combat_message("DUEL LANCÉ · Les dégâts et les niveaux sont contrôlés par le serveur")
+		"combat_state":
+			combat_state = event.duplicate(true)
+			hud.set_combat_state(combat_state)
+			var local_id := int(account_profile["character"]["id"])
+			for fighter: Dictionary in event["players"]:
+				var fighter_id := int(fighter.get("id", -1))
+				if fighter_id == local_id:
+					player.health = float(fighter.get("health", player.health))
+					hud.set_clan_techniques(fighter.get("techniques", []))
+					hud.set_combat_health(local_id,event)
+				elif remote_avatars.has(fighter_id):
+					remote_avatars[fighter_id].set_combat_health(int(fighter.get("health",120)),event.get("status") == "active")
+		"combat_action":
+			_render_combat_action(event)
+		"combat_hit":
+			var hit_point := Vector3(float(event["position"][0]),float(event["position"][1]),float(event["position"][2]))
+			var hit_technique: Dictionary = event.get("technique", {})
+			var hit_color := _ultimate_color(str(event.get("ultimate",{}).get("clan",""))) if event["kind"] == "ultimate" else _technique_color(str(hit_technique.get("element", "")))
+			combat_vfx.impact(hit_point + Vector3.UP * 0.4,hit_color,1.0 if event["kind"] == "ultimate" else 0.6)
+			if int(event["target"]) == int(account_profile["character"]["id"]):
+				player.health = float(event["health"])
+				hud.notice("Touché · %d dégâts" % int(event["damage"]))
+		"combat_evaded":
+			hud.notice("Ultime esquivée · éloigne-toi pendant la concentration")
+		"combat_result":
+			var victory: bool = int(event["winner"]) == int(account_profile["character"]["id"])
+			hud.set_combat_message("VICTOIRE DE TEST" if victory else "DÉFAITE DE TEST")
+			hud.notice("%s · aucun gain enregistré" % ("Victoire" if victory else "Défaite"))
+		"combat_end":
+			combat_state.clear()
+			for avatar: VillageAvatar in remote_avatars.values(): avatar.set_combat_health(120,false)
+			hud.set_combat_state({})
+			hud.set_combat_message("Duel terminé · le bouton DÉFIER EN DUEL relance un test")
 		"roster":
+			_set_presence(event["players"].size())
 			var present: Dictionary = {}
 			for data: Dictionary in event["players"]:
 				var id: int = int(data["id"])

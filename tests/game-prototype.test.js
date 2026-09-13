@@ -228,6 +228,27 @@ test("Konoha reference-derived textures are bounded, mipmapped and traceable", (
   assert.ok(preset.includes("assets/konoha/README.md"));
 });
 
+test("generated sky and earth art stays limited to environment surfaces", () => {
+  const map = read("game/scripts/konoha_map.gd");
+  for (const asset of [
+    "sky_mountain_panorama.png",
+    "earth_ground_texture.png",
+    "river_water_texture.png",
+  ]) {
+    const bytes = readFileSync(
+      new URL("../game/assets/konoha/" + asset, import.meta.url),
+    );
+    assert.equal(bytes.toString("hex", 0, 8), "89504e470d0a1a0a");
+    assert.ok(bytes.length > 10000, asset + " is not an empty generated texture");
+  }
+  assert.match(map, /const SKY_ART/);
+  assert.match(map, /const EARTH_ART/);
+  assert.match(map, /const RIVER_ART/);
+  assert.match(map, /PanoramaSkyMaterial/);
+  assert.match(map, /uv1_scale = Vector3\(1\.0, maxf/);
+  assert.doesNotMatch(map, /HOMES_ART|MARKET_ART|SHRINE_ART|ANIMAL_ART|_build_generated_art/);
+});
+
 test("Konoha remodels silhouettes and batches facade details without changing combat", () => {
   const architecture = read("game/scripts/konoha_architecture.gd");
   assert.match(architecture, /ConvexPolygonShape3D\.new/);
