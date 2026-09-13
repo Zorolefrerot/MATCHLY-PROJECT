@@ -16,7 +16,7 @@ Le propriétaire confirme que **0.10 fonctionne sur son téléphone**. L’exéc
 | Ultimes et rendu GL | Réussi ; effets visibles et prolongés contrôlés |
 | APK | Version **0.11.0**, code **11**, API minimum 24/cible 35, ARM64/ARMv7 |
 | APK à l’intérieur du ZIP | **69 843 145 octets**, export Android vérifié par le workflow |
-| ZIP GitHub | [`idrem-zenkai-android-51`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34748600217/artifacts/10315530135), **76 601 665 octets**, expiration 20 septembre 2026 à 08:54:12 UTC |
+| ZIP GitHub | [`idrem-zenkai-android-54`](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34748819351/artifacts/10315271690), **76 600 993 octets**, expiration 20 septembre 2026 à 09:04:16 UTC |
 | Téléphones Android physiques | Essai sur deux appareils encore à faire |
 | Production Render | Manual Deploy nécessaire pour afficher 0.11 sur le site |
 

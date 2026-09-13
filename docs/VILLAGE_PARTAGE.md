@@ -105,7 +105,7 @@ npm run test:browser
 GODOT_BIN=/chemin/godot bash game/tools/check.sh
 ```
 
-`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée du village complet densifié : ZIP `idrem-zenkai-android-51`, **76 601 665 octets**, expiration **20 septembre 2026 à 08:54:12 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
+`server/android-build.js` pointe maintenant vers l’APK **0.11.0** vérifiée du village complet densifié : ZIP `idrem-zenkai-android-54`, **76 600 993 octets**, expiration **20 septembre 2026 à 09:04:16 UTC**. Le bouton reste protégé par l’admission du compte ; il sera visible en production après le Manual Deploy Render.
 
 ## Livraison groupée et hébergement gratuit
 
