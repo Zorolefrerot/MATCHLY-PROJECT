@@ -35,7 +35,7 @@ static func point(value: Variant) -> bool:
 	for axis: Variant in value:
 		if typeof(axis) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(axis)):
 			return false
-	# Match KonohaMap.BOUNDS - 2: a multiplayer player may cross the whole
+	# Match KonohaMap.BOUNDS - 2: the server accepts a multiplayer player across the whole
 	# village, not only the arrival district.
 	return absf(float(value[0])) <= 148 and float(value[1]) >= -5 and float(value[1]) <= 12 and absf(float(value[2])) <= 158
 
