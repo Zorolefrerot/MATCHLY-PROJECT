@@ -1,12 +1,12 @@
 # IDREM ZENKAI
 
-**Ajout au lot regroupé 0.11 :** attaques enrichies d’images/textures et laboratoire de quatorze ultimes monumentales avec niveau simulé, sans changer les comptes. [Détails et limites](docs/ULTIMES_ET_TEXTURES.md). Les anciens ZIP Android 6 et 9 sont maintenant supprimés (vérifié), la place nécessaire à la compilation est disponible.
+**Lot regroupé 0.12 vérifié :** les 14 sanctuaires Blender sont intégrés directement dans la scène Godot, avec téléchargement séparé de la scène `.blend`, du GLB groupé et du rendu PNG. Le village partagé, les attaques enrichies d’images/textures et les quatorze ultimes monumentales sont conservés sans changer les comptes. [Détails et limites](docs/ULTIMES_ET_TEXTURES.md). APK Android 0.12.0/code 12 compilée et vérifiée par GitHub Actions ; le service Render reste en Manual Deploy.
 
 Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android avec entraînement, créateur, compte et première zone solo de Konoha](game/README.md) est disponible ; le jeu RP multijoueur connecté n’est pas encore réalisé.
 
 ## Lot suivant — village partagé en validation
 
-Le propriétaire confirme **0.10 sur téléphone**. Le lot suivant permet maintenant à **deux joueurs admis** de parcourir le village complet de Konoha, avec ses quartiers, sa rivière, son marché et sa population locale, puis de lancer un duel de test, marcher/esquiver et utiliser les quatre techniques propres à leur clan ainsi qu’une ultime clanique. Uchiwa est le seul clan Katon et Senju le seul clan Mokuton ; les dégâts, recharges, chakra, niveau de test et KO sont décidés par le serveur. **45 tests Node, 10 tests PostgreSQL, 2 parcours navigateur, Vite et le contrôle Godot/Android 0.11** passent ; le test physique sur deux téléphones reste à faire. Le site pointe vers l’artefact APK 0.11 ; le Manual Deploy Render de cette source reste à effectuer. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
+Le propriétaire confirme **0.10 sur téléphone**. Le lot suivant permet maintenant à **deux joueurs admis** de parcourir le village complet de Konoha, avec ses quartiers, sa rivière, son marché et sa population locale, puis de lancer un duel de test, marcher/esquiver et utiliser les quatre techniques propres à leur clan ainsi qu’une ultime clanique. Uchiwa est le seul clan Katon et Senju le seul clan Mokuton ; les dégâts, recharges, chakra, niveau de test et KO sont décidés par le serveur. **46 tests Node, Vite et le contrôle Godot/Android 0.12** passent ; le test physique sur deux téléphones reste à faire. Le site est préparé pour l’artefact APK 0.12 ; le Manual Deploy Render de cette source reste à effectuer. [Contrat, tests et prochaines étapes](docs/VILLAGE_PARTAGE.md).
 
 ## Lot 0.10 — administration, téléchargement et musique
 
