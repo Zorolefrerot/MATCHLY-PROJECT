@@ -15,6 +15,14 @@ var hokage_interior: HokageInterior
 var inside_hokage: bool = false
 var transition_lock: float = 0.0
 const HOKAGE_EXTERIOR_DOOR := Vector3(0, 0.25, -72.0)
+const HOKAGE_PORTAL_POINT := Vector3(0, 0.25, -70.45)
+const HOKAGE_PORTAL_RADIUS := 1.55
+const HOKAGE_PORTAL_HOLD_SECONDS := 3.0
+var hokage_portal_hold: float = 0.0
+var hokage_loading: bool = false
+var loading_overlay: ColorRect
+var loading_image: TextureRect
+var loading_progress: ProgressBar
 var player: TrainingFighter
 var guide: TrainingFighter
 var hud: KonohaHUD
@@ -120,6 +128,7 @@ func _ready() -> void:
 	hud.set_clan_techniques(ClanTechniques.for_clan(str(identity["clan"])))
 	hud.action_requested.connect(_action)
 	hud.resume_requested.connect(resume_visit)
+	_build_loading_overlay()
 	if not InputMap.has_action("village_interact"):
 		InputMap.add_action("village_interact")
 		var key := InputEventKey.new()
@@ -157,6 +166,49 @@ func _ready() -> void:
 		village_link.disconnected.connect(_clear_remote)
 		add_child(village_link)
 
+func _build_loading_overlay() -> void:
+	loading_overlay = ColorRect.new()
+	loading_overlay.color = Color(0.01,0.035,0.09,0.97)
+	loading_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	loading_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	loading_overlay.z_index = 100
+	add_child(loading_overlay)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	loading_overlay.add_child(center)
+	var column := VBoxContainer.new()
+	column.custom_minimum_size = Vector2(340,390)
+	column.add_theme_constant_override("separation", 12)
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(column)
+	loading_image = TextureRect.new()
+	loading_image.texture = preload("res://assets/konoha/hokage/loading_portal.png")
+	loading_image.custom_minimum_size = Vector2(240,240)
+	loading_image.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	loading_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	loading_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	loading_image.pivot_offset = Vector2(120,120)
+	column.add_child(loading_image)
+	var title := Label.new()
+	title.text = "CHARGEMENT DE LA RÉSIDENCE"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color("b9f5ff"))
+	column.add_child(title)
+	var subtitle := Label.new()
+	subtitle.text = "Le passage s’ouvre…"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 15)
+	subtitle.add_theme_color_override("font_color", Color("8bc8d8"))
+	column.add_child(subtitle)
+	loading_progress = ProgressBar.new()
+	loading_progress.custom_minimum_size = Vector2(300,20)
+	loading_progress.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	loading_progress.show_percentage = false
+	loading_progress.max_value = 100.0
+	column.add_child(loading_progress)
+	loading_overlay.hide()
+
 func create_village_link() -> VillageLink:
 	return VillageLink.new()
 
@@ -183,7 +235,7 @@ func _notification(what: int) -> void:
 		_update_music()
 
 func _physics_process(delta: float) -> void:
-	if not initialized or ending or hud.blocked or not app_active:
+	if not initialized or ending or hud.blocked or not app_active or hokage_loading:
 		return
 	transition_lock = maxf(0.0, transition_lock-delta)
 	var look: Vector2 = hud.consume_look()
@@ -199,7 +251,7 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("skill_%d" % i): _combat_action("skill_%d" % i)
 	if Input.is_action_just_pressed("ultimate"): _combat_action("ultimate")
 	player.simulate(delta, direction, hud.sprinting or Input.is_action_pressed("sprint"))
-	_check_hokage_hall_transition()
+	_update_hokage_portal(delta)
 	# Crossing the outer ring must stop at the wall, not silently teleport the player
 	# back to the arrival point. Horizontal travel stays continuous across districts.
 	# Only a genuine fall through the world respawns.
@@ -232,20 +284,47 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("village_interact"):
 		interact()
 
-func _check_hokage_hall_transition() -> void:
-	if transition_lock > 0.0 or not is_instance_valid(hokage_interior):
+func _update_hokage_portal(delta: float) -> void:
+	if transition_lock > 0.0 or hokage_loading or not is_instance_valid(hokage_interior):
 		return
 	if inside_hokage:
 		var interior_point: Vector3 = player.position-hokage_interior.global_position
-		# The interior entrance is open too: keep walking toward the front
-		# balcony until the player crosses the threshold.
+		# The virtual hall has an open inner threshold. Walking toward it exits
+		# without a button and places the player back in front of the closed door.
 		if absf(interior_point.x) <= 1.55 and interior_point.z >= HokageInterior.EXIT_POINT.z+0.85:
 			_exit_hokage_residence()
+		return
+	var flat_offset := Vector2(player.position.x-HOKAGE_PORTAL_POINT.x, player.position.z-HOKAGE_PORTAL_POINT.z)
+	var horizontal_speed := Vector2(player.velocity.x, player.velocity.z).length()
+	if flat_offset.length() <= HOKAGE_PORTAL_RADIUS and horizontal_speed <= 0.35:
+		hokage_portal_hold = minf(HOKAGE_PORTAL_HOLD_SECONDS, hokage_portal_hold+delta)
 	else:
-		# The exterior hall has no door collider. Crossing its centre line is
-		# the only portal condition; approaching from the side never teleports.
-		if absf(player.position.x) <= 1.55 and player.position.z <= HOKAGE_EXTERIOR_DOOR.z-0.85:
-			_enter_hokage_residence()
+		hokage_portal_hold = 0.0
+	if hokage_portal_hold >= HOKAGE_PORTAL_HOLD_SECONDS:
+		_begin_hokage_loading()
+
+func _begin_hokage_loading() -> void:
+	if hokage_loading or inside_hokage:
+		return
+	hokage_loading = true
+	hokage_portal_hold = 0.0
+	transition_lock = 9.0
+	_clear_inputs()
+	loading_progress.value = 0.0
+	loading_image.rotation = 0.0
+	loading_overlay.show()
+	var progress_tween := create_tween().bind_node(loading_overlay)
+	progress_tween.tween_property(loading_progress, "value", 100.0, 1.35)
+	var rotation_tween := create_tween().bind_node(loading_image)
+	rotation_tween.tween_property(loading_image, "rotation", TAU, 1.35)
+	get_tree().create_timer(1.45).timeout.connect(_finish_hokage_loading)
+
+func _finish_hokage_loading() -> void:
+	if ending or not hokage_loading:
+		return
+	hokage_loading = false
+	loading_overlay.hide()
+	_enter_hokage_residence()
 
 func _update_camera() -> void:
 	pivot.position = player.position + Vector3.UP*1.4
@@ -262,6 +341,9 @@ func nearest_interaction() -> int:
 	# The residence hall is a physical walk-through, not an interaction target.
 	# Keep the general interaction system for Aoi and the village panels only.
 	if transition_lock > 0.0 or inside_hokage:
+		return -2
+	var portal_offset := Vector2(player.position.x-HOKAGE_PORTAL_POINT.x, player.position.z-HOKAGE_PORTAL_POINT.z)
+	if portal_offset.length() <= HOKAGE_PORTAL_RADIUS:
 		return -2
 	if _reachable(guide.position):
 		return -1
@@ -328,9 +410,9 @@ func _exit_hokage_residence() -> void:
 	inside_hokage = false
 	transition_lock = 0.85
 	hokage_interior.set_active(false)
-	# The return point is just outside the open hall, never inside the facade.
+	# The return point is just outside the closed front door, never inside the facade.
 	player.reset_at(HOKAGE_EXTERIOR_DOOR + Vector3(0,0,3.4))
-	player.face(Vector3(0,0,-1))
+	player.face(Vector3(0,0,1))
 	yaw = 0.0
 	pitch = -0.06
 	hud.notice("Te voilà devant la porte principale de la résidence.")
@@ -501,6 +583,9 @@ func finish() -> void:
 	if ending:
 		return
 	ending = true
+	hokage_loading = false
+	if is_instance_valid(loading_overlay):
+		loading_overlay.hide()
 	if is_instance_valid(hokage_interior):
 		hokage_interior.set_active(false)
 	inside_hokage = false

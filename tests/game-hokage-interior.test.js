@@ -32,9 +32,11 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
   const visit = read("game/scripts/konoha_visit.gd");
   assert.doesNotMatch(visit, /ENTRER DANS LA RÉSIDENCE|RESSORTIR DE LA RÉSIDENCE/);
   assert.doesNotMatch(visit, /_toggle_hokage_residence/);
-  assert.match(visit, /_check_hokage_hall_transition/);
+  assert.match(visit, /_update_hokage_portal/);
   assert.match(visit, /HokageInterior\.EXIT_POINT\.z\+0\.85/);
-  assert.match(visit, /HOKAGE_EXTERIOR_DOOR\.z-0\.85/);
+  assert.match(visit, /HOKAGE_PORTAL_HOLD_SECONDS/);
+  assert.match(visit, /_begin_hokage_loading/);
+  assert.match(visit, /loading_portal\.png/);
   const hud = read("game/scripts/konoha_hud.gd");
   assert.doesNotMatch(hud, /VISITER LA RÉSIDENCE/);
   assert.doesNotMatch(hud, /buttons\["residence"\]/);
@@ -45,15 +47,17 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
   assert.match(visit, /hokage_interior\.position = Vector3\(-140, 0, -110\)/);
 
   const architecture = read("game/scripts/konoha_architecture.gd");
-  assert.match(architecture, /HALL OUVERT/);
-  assert.doesNotMatch(architecture, /E POUR ENTRER/);
-  assert.match(architecture, /_open_wall/);
-  assert.match(architecture, /HokageMainLintelCollision/);
+  assert.match(architecture, /RÉSIDENCE DU HOKAGE/);
   assert.match(architecture, /HokageMainFacadeCollision/);
-  assert.doesNotMatch(architecture, /HokageMainDoorCollision/);
-  assert.doesNotMatch(architecture, /point\+Vector3\(0,1\.73,5\.78\)/);
+  assert.match(architecture, /HokageMainDoorCollision/);
+  assert.match(architecture, /point\+Vector3\(0,1\.73,5\.78\)/);
+  assert.match(architecture, /OmniLight3D\.new\(\)/);
+  assert.match(architecture, /RESTER SUR LE SCEAU/);
+  assert.doesNotMatch(architecture, /HALL OUVERT · E POUR ENTRER/);
   assert.match(read("game/scripts/konoha_map.gd"), /architecture\.main_door\(Vector3\(0,0,-78\)\)/);
 
+  const loadingImage = readFileSync(new URL("game/assets/konoha/hokage/loading_portal.png", root));
+  assert.equal(loadingImage.toString("hex", 0, 8), "89504e470d0a1a0a");
   const portraitDir = new URL("game/assets/konoha/hokage/", root);
   const portraits = readdirSync(portraitDir).filter((file) => file.endsWith("_portrait.png"));
   assert.equal(portraits.length, 7);

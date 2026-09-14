@@ -143,34 +143,6 @@ func lathe(profile: Array[Vector2], point: Vector3, stretch: Vector2, mat: Mater
 func _wall(radius: float, low: float, high: float, point: Vector3, stretch: Vector2, mat: Material) -> MeshInstance3D:
 	return lathe([Vector2(radius,low),Vector2(radius,high)],point,stretch,mat,Vector2(4,1),true)
 
-func _open_wall(radius: float, low: float, high: float, point: Vector3, stretch: Vector2, mat: Material, opening_width: float) -> MeshInstance3D:
-	# Keep the circular drum visible while removing the south-facing hall
-	# opening. The omitted sector is the permanent walk-through, not a hidden
-	# teleport wall.
-	var opening_angle := asin(clampf(opening_width/(radius*stretch.x), 0.05, 0.95))
-	var segments := 32
-	var span := TAU-opening_angle*2.0
-	var vertices := PackedVector3Array()
-	var normals := PackedVector3Array()
-	var uv := PackedVector2Array()
-	for i in range(segments):
-		var a := opening_angle+span*float(i)/segments
-		var b := opening_angle+span*float(i+1)/segments
-		var points: Array[Vector3] = [
-			_point(radius,low,a,stretch), _point(radius,high,a,stretch),
-			_point(radius,high,b,stretch), _point(radius,low,b,stretch)
-		]
-		var ns: Array[Vector3] = [
-			Vector3(sin(a)/stretch.x,0,cos(a)/stretch.y).normalized(),
-			Vector3(sin(a)/stretch.x,0,cos(a)/stretch.y).normalized(),
-			Vector3(sin(b)/stretch.x,0,cos(b)/stretch.y).normalized(),
-			Vector3(sin(b)/stretch.x,0,cos(b)/stretch.y).normalized()
-		]
-		var coords: Array[Vector2] = [Vector2(float(i)/segments,1),Vector2(float(i)/segments,0),Vector2(float(i+1)/segments,0),Vector2(float(i+1)/segments,1)]
-		for index in [0,1,2,0,2,3]:
-			vertices.append(points[index]); normals.append(ns[index]); uv.append(coords[index])
-	return _mesh(vertices,normals,uv,mat,point)
-
 func _panel(point: Vector3, size: Vector2, angle: float, cell: Vector2i) -> void:
 	var right := Vector3(cos(angle),0,-sin(angle))
 	var up := Vector3.UP
@@ -389,10 +361,9 @@ func palace(point: Vector3) -> void:
 		_wall(3.0,0,3.4,wing,Vector2(1,1.2),materials["red"])
 		lathe([Vector2(2.96,3.2),Vector2(3.45,3.3),Vector2(3.6,3.48),Vector2(2.45,4.35),Vector2(0,4.35)],wing,Vector2(1,1.2),materials["gold"],Vector2(5,1))
 		_windows(wing,3.0,Vector2(1,1.2),2.15,10,Vector2(0.42,0.85),Vector2i(1,0))
-	_open_wall(5.4,-0.03,9.15,point,Vector2.ONE,materials["red"],3.35)
-	# The upper drum remains closed above the hall lintel; only the ground-level
-	# centre is open, so the façade cannot be crossed beside the entrance.
-	_block(Vector3(3.35,5.35,0.30),point+Vector3(0,6.55,5.45),materials["red"])
+	# Keep the exterior drum continuous: the hall is represented by a closed
+	# entrance façade and the visit is handled by the blue floor portal below.
+	_wall(5.4,-0.03,9.15,point,Vector2.ONE,materials["red"])
 	lathe([Vector2(5.4,2.9),Vector2(5.75,2.94),Vector2(6.05,3.12),Vector2(5.45,3.88)],point,Vector2.ONE,materials["gold"],Vector2(10,0.8))
 	lathe([Vector2(5.4,8.8),Vector2(5.8,8.85),Vector2(6.05,9.05),Vector2(5.45,9.42),Vector2(4.6,10.10)],point,Vector2.ONE,materials["gold"],Vector2(10,1.1))
 	_wall(4.57,9.9,11.2,point,Vector2.ONE,materials["red"])
@@ -416,28 +387,19 @@ func palace(point: Vector3) -> void:
 			lathe([Vector2(0.18,11.35),Vector2(0.15,12.65),Vector2(0.08,13.75)],point+Vector3(x,0,z),Vector2.ONE,materials["trim"],Vector2.ONE,false,12)
 
 func main_door(point: Vector3) -> void:
-	# The hall is a permanent open passage. The visible side piers and lintel
-	# keep the entrance architectural, while the centre deliberately has no
-	# door mesh and no door collision.
-	var side_width := (8.4-3.35)/2.0
-	for side in [-1,1]:
-		var x: float = float(side)*(3.35/2.0+side_width/2.0)
-		_block(Vector3(side_width,4.6,0.34),point+Vector3(x,2.30,5.45),materials["red"])
-		_solid_box(Vector3(side_width,4.6,0.34),point+Vector3(x,2.30,5.45),"HokageMainFacadeCollision")
-	# A solid lintel closes the façade above the opening without closing the hall.
-	_block(Vector3(8.4,1.15,0.34),point+Vector3(0,4.03,5.45),materials["red"])
-	_solid_box(Vector3(8.4,1.15,0.34),point+Vector3(0,4.03,5.45),"HokageMainLintelCollision")
-	# The trim is split as well: the centre remains visibly and physically open.
-	for side in [-1,1]:
-		var trim_x: float = float(side)*(3.35/2.0+0.425)
-		_block(Vector3(0.85,4.1,0.30),point+Vector3(trim_x,2.05,5.57),materials["trim"])
+	# The exterior is a complete, closed façade again. The blue portal is
+	# deliberately placed in front of this solid entrance instead of cutting a
+	# hole through the building or leaving visual gaps in the compound.
+	_block(Vector3(8.4,4.6,0.34),point+Vector3(0,2.30,5.45),materials["red"])
+	_solid_box(Vector3(8.4,4.6,0.34),point+Vector3(0,2.30,5.45),"HokageMainFacadeCollision")
+	_block(Vector3(4.2,4.1,0.30),point+Vector3(0,2.05,5.57),materials["trim"])
+	_block(Vector3(3.35,3.45,0.14),point+Vector3(0,1.73,5.78),materials["glass"])
+	_solid_box(Vector3(3.35,3.45,0.14),point+Vector3(0,1.73,5.78),"HokageMainDoorCollision")
 	_block(Vector3(3.55,0.22,0.20),point+Vector3(0,3.52,5.88),materials["gold"])
-	# Keep the drum's side and rear walls solid while leaving the front hall clear.
-	_solid_box(Vector3(1.20,9.15,10.0),point+Vector3(-4.8,4.55,0),"HokageMainShellLeft")
-	_solid_box(Vector3(1.20,9.15,10.0),point+Vector3(4.8,4.55,0),"HokageMainShellRight")
-	_solid_box(Vector3(10.8,9.15,1.0),point+Vector3(0,4.55,-4.9),"HokageMainShellRear")
+	for x in [-0.24,0.24]:
+		_block(Vector3(0.10,0.36,0.10),point+Vector3(x,1.65,5.91),materials["gold"])
 	var entrance_label := Label3D.new()
-	entrance_label.text = "HALL OUVERT"
+	entrance_label.text = "RÉSIDENCE DU HOKAGE"
 	entrance_label.position = point+Vector3(0,4.15,5.90)
 	entrance_label.rotation.y = PI
 	entrance_label.font_size = 18
@@ -446,6 +408,48 @@ func main_door(point: Vector3) -> void:
 	entrance_label.outline_size = 4
 	entrance_label.outline_modulate = Color("39271f")
 	add_child(entrance_label)
+	# A compact cyan landing seal marks the exact place where the player must
+	# remain still for three seconds before the virtual visit is loaded.
+	var pad := MeshInstance3D.new()
+	var pad_mesh := CylinderMesh.new()
+	pad_mesh.top_radius = 1.65
+	pad_mesh.bottom_radius = 1.65
+	pad_mesh.height = 0.06
+	pad_mesh.radial_segments = 32
+	pad.mesh = pad_mesh
+	pad.position = point+Vector3(0,0.05,7.55)
+	var pad_material := TrainingFighter.material(Color("1cc9ff"), true)
+	pad_material.emission_enabled = true
+	pad_material.emission = Color("0b9dff")
+	pad_material.emission_energy_multiplier = 2.6
+	pad.material_override = pad_material
+	add_child(pad)
+	var ring := MeshInstance3D.new()
+	var ring_mesh := TorusMesh.new()
+	ring_mesh.inner_radius = 1.48
+	ring_mesh.outer_radius = 1.58
+	ring_mesh.rings = 32
+	ring_mesh.ring_segments = 8
+	ring.mesh = ring_mesh
+	ring.position = point+Vector3(0,0.10,7.55)
+	ring.material_override = pad_material
+	add_child(ring)
+	var portal_light := OmniLight3D.new()
+	portal_light.light_color = Color("35d8ff")
+	portal_light.light_energy = 2.8
+	portal_light.omni_range = 5.5
+	portal_light.shadow_enabled = false
+	portal_light.position = point+Vector3(0,1.25,7.55)
+	add_child(portal_light)
+	var portal_label := Label3D.new()
+	portal_label.text = "RESTER SUR LE SCEAU"
+	portal_label.position = point+Vector3(0,0.55,7.55)
+	portal_label.font_size = 13
+	portal_label.pixel_size = 0.008
+	portal_label.modulate = Color("b9f5ff")
+	portal_label.outline_size = 3
+	portal_label.outline_modulate = Color("09283b")
+	add_child(portal_label)
 
 func monument() -> void:
 	# Keep the supplied Hokage image as the only face representation. The image
