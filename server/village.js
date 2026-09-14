@@ -6,7 +6,7 @@ import { VillageRoom, VILLAGE } from "./village-room.js";
 const accessSQL = `FROM game_sessions s
   JOIN users u ON u.id=s.user_id AND u.role='player'
   JOIN applications a ON a.user_id=u.id AND a.status='accepted'
-  JOIN allocations l ON l.user_id=u.id
+  LEFT JOIN allocations l ON l.user_id=u.id
   WHERE s.expires>? AND NOT EXISTS(SELECT 1 FROM deleted_accounts d WHERE d.user_id=u.id)`;
 export async function villageIdentity(db, authorization, now = Date.now()) {
   const token = /^Bearer ([a-f0-9]{64})$/.exec(authorization || "")?.[1];

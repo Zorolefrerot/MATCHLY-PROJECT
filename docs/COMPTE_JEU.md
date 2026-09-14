@@ -7,7 +7,7 @@
 1. Dans le service existant sur [Render](https://dashboard.render.com/), utiliser **Manual Deploy → Deploy latest commit**. La branche est `arena/01a094b6-matchly-project`. Ne pas créer de second service et ne pas remplacer les variables privées existantes.
 2. Attendre **Live**, puis vérifier que le site s’ouvre toujours et que le compte propriétaire fonctionne. Le déploiement applique automatiquement les tables supplémentaires du compte et de la mission d’accueil ; aucun tirage/admission n’est relancé.
 
-Après cela seulement : installer l’APK 0.10 indiquée dans [`game/README.md`](../game/README.md), ouvrir **MON COMPTE**, saisir l’adresse HTTPS exacte du site (origine uniquement, sans chemin), puis les identifiants d’un **compte joueur accepté ayant déjà reçu son attribution sur le site**. Ne jamais envoyer de mot de passe dans la conversation. Le propriétaire administrateur reste séparé des places joueurs ; pas de contournement automatique de l’admission.
+Après cela seulement : installer l’APK indiquée dans [`game/README.md`](../game/README.md), ouvrir **MON COMPTE**, saisir l’adresse HTTPS exacte du site (origine uniquement, sans chemin), puis les identifiants d’un **compte joueur accepté**. L’attribution du clan peut être faite plus tard : l’admission suffit désormais pour entrer dans le monde, avec une identité de départ neutre. Ne jamais envoyer de mot de passe dans la conversation. Le propriétaire administrateur reste séparé des places joueurs ; pas de contournement automatique de l’admission.
 
 L’URL réelle du service n’étant pas enregistrée dans le dépôt, aucune adresse de production n’a été devinée/compilée dans l’APK. Elle se renseigne dans l’application et reste affichée. Seule cette origine publique est mémorisée sur le téléphone. Les redirections sont refusées et les certificats HTTPS restent vérifiés.
 
@@ -24,7 +24,7 @@ Le propriétaire assurera **Hokage et chef de l’Akatsuki au début du jeu**. I
 ## Fonctionnement
 
 - **Connexion native dédiée**, distincte des cookies du navigateur. Le site conserve son authentification et ses protections actuelles.
-- Admission, rôle joueur et attribution existante vérifiés à la connexion, à la lecture et à chaque sauvegarde. En attente, liste d’attente, refus ou compte administrateur : pas de personnage connecté. Admis sans tirage : retour vers le site, aucun tirage lancé par l’APK.
+- Admission et rôle joueur vérifiés à la connexion, à la lecture et à chaque sauvegarde. En attente, liste d’attente, refus ou compte administrateur : pas de personnage connecté. Un joueur accepté sans attribution peut déjà entrer dans le monde ; le serveur lui donne une identité de départ neutre sans lancer de tirage.
 - Identité renvoyée depuis la candidature/attribution : identifiant du compte, nom du personnage, clan, affinité, potentiel Mokuton. Genin à Konoha pour cet incrément ; aucun rang ni progression de combat n’est gagné ; seules les étapes d’accueil sont ajoutées en 0.9.
 - Apparence du compte distincte de l’apparence de l’entraînement. Elle se retrouve en se reconnectant, y compris depuis une réinstallation. Aucun import automatique du fichier local, ni remplacement du combattant hors ligne.
 - **MODIFIER L’APPARENCE → ENREGISTRER SUR MON COMPTE** : confirmation uniquement après réponse positive du serveur. Une erreur laisse le brouillon visible. Après interruption réseau, actualiser pour vérifier si l’écriture a abouti ; une réponse perdue ne signifie pas nécessairement une sauvegarde perdue.

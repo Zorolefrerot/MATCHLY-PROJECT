@@ -141,9 +141,10 @@ export async function villageContract(db, secondDb = db) {
     ws.terminate();
   };
   try {
+    assert.equal((await villageIdentity(db, "Bearer " + tokens[3])).id, ids[3]);
     await denied(null, 401, { Cookie: "iz_session=ws-owner-cookie" });
     await denied(tokens[2], 401); // pending
-    await denied(tokens[3], 401); // accepted but attribution not performed
+    // An accepted account without a clan attribution can already enter Konoha.
     await denied(ownerToken, 401);
     await denied(tokens[0], 403, { Origin: "https://foreign.test" });
     await denied(tokens[0], 403, { "X-Forwarded-Proto": "http" });

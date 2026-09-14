@@ -74,12 +74,9 @@ export function installGameRoutes(app, db, limit) {
         "ADMISSION_REQUIRED",
         "Ta candidature doit être acceptée sur le site.",
       );
-    if (!row.clan)
-      throw fail(
-        409,
-        "ALLOCATION_REQUIRED",
-        "Effectue d’abord ton attribution unique dans ton espace sur le site.",
-      );
+    // Admission is enough to enter the world. If the owner has not yet
+    // assigned a clan, use a neutral starter identity and let the player
+    // enter Konoha immediately instead of blocking the native session.
     const saved = await db
       .prepare(
         "SELECT appearance,revision FROM character_appearances WHERE user_id=?",
@@ -90,8 +87,8 @@ export function installGameRoutes(app, db, limit) {
       character: {
         id: row.id,
         name: row.character,
-        clan: row.clan,
-        affinity: row.affinity,
+        clan: row.clan || "Uchiwa",
+        affinity: row.affinity || "Chakra",
         mokuton: Boolean(row.mokuton),
         rank: "Genin",
         village: "Konoha",
@@ -252,7 +249,7 @@ export function installGameRoutes(app, db, limit) {
         );
       const data = await transaction(db, async () => {
         const userId = await authenticate(req);
-        await profile(userId); // Recheck admission/allocation under the same lock.
+        await profile(userId); // Recheck admission under the same lock.
         const row = await db
           .prepare(
             "SELECT phase,visited,revision FROM welcome_missions WHERE user_id=?",

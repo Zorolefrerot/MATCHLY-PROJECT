@@ -1405,23 +1405,20 @@ function Account() {
           {account.download?.available ? (
             <>
               <a className="button" href="/api/game-download">
-                Télécharger l’application · ZIP{" "}
+                Télécharger l’application · APK{" "}
                 {Math.round(account.download.bytes / 1000000)} Mo{" "}
                 <ArrowUpRight size={18} />
               </a>
               <p>
-                Une connexion GitHub gratuite est nécessaire pour ce fichier.
-                Extrais le ZIP, puis ouvre{" "}
-                <strong>idrem-zenkai-training-debug.apk</strong>.
+                Téléchargement public sécurisé par ton compte accepté : aucune
+                connexion GitHub n’est nécessaire. Ouvre directement{" "}
+                <strong>idrem-zenkai-training-debug.apk</strong> après le téléchargement.
               </p>
               <p className="fine-print">
-                Lien valable jusqu’au{" "}
-                {new Date(account.download.expiresAt).toLocaleDateString(
-                  "fr-FR",
-                )}
-                . Android 7 minimum, ARM64/ARMv7. Si une réinstallation est
-                nécessaire, les choix locaux sont effacés, pas l’apparence et
-                les étapes déjà sauvegardées sur ton compte.
+                Téléchargement public permanent · Android 7 minimum,
+                ARM64/ARMv7. Si une réinstallation est nécessaire, les choix
+                locaux sont effacés, pas l’apparence et les étapes déjà
+                sauvegardées sur ton compte.
               </p>
             </>
           ) : (

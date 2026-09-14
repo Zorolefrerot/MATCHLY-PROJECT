@@ -128,7 +128,10 @@ export async function removalContract(db, secondDb = db) {
     const download = await request("/game-download", { cookie: playerToken });
     assert.equal(download.status, downloadInfo().available ? 302 : 410);
     if (downloadInfo().available)
-      assert.match(download.headers.get("location"), /^https:\/\/github.com\//);
+      assert.match(
+        download.headers.get("location"),
+        /https:\/\/github\.com\/Zorolefrerot\/MATCHLY-PROJECT\/releases\/download\/android-latest\/idrem-zenkai-training-debug\.apk$/,
+      );
     assert.equal(download.headers.get("cache-control"), "no-store");
     assert.equal(
       (await request("/game-download", { cookie: ownerToken })).status,
