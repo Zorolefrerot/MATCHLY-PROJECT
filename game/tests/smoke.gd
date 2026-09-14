@@ -475,6 +475,44 @@ func run() -> void:
 	check(visit.music.stream_paused, "village background music pauses on focus loss")
 	visit.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_IN)
 	check(visit.music.playing and not visit.music.stream_paused, "village music resumes when the app regains focus")
+	check(is_instance_valid(visit.hokage_entry_trigger) and visit.hokage_entry_trigger.name == "HokageExteriorEntryTrigger", "Hokage exterior has one dedicated entry trigger")
+	check(is_instance_valid(visit.hokage_interior.exit_trigger) and visit.hokage_interior.exit_trigger.name == "HokageInteriorExitTrigger", "Hokage interior has a distinct exit trigger")
+	# TEST 1: hold still on the exterior seal for three seconds, then finish the
+	# loading transition at the named interior spawn.
+	visit.player.reset_at(visit.hokage_entry_trigger.global_position)
+	for frame in range(190):
+		await physics_frame
+	check(visit.hokage_loading or visit.inside_hokage, "exterior seal starts exactly one Hokage transition after the three-second hold")
+	for frame in range(100):
+		await physics_frame
+	check(visit.inside_hokage and visit.player.position.distance_to(visit.hokage_interior.interior_spawn.global_position) < 0.2, "exterior enters the residence at HokageInteriorSpawn")
+	# TEST 2: five seconds at the interior spawn must not invoke the exit.
+	var interior_position := visit.player.position
+	for frame in range(300):
+		await physics_frame
+	check(visit.inside_hokage and visit.player.position.distance_to(interior_position) < 0.2, "standing inside for five seconds does not disappear or exit")
+	# TEST 3/4: crossing the interior exit immediately returns outside, then
+	# the debounce keeps the exterior spawn from re-entering by itself.
+	visit.player.reset_at(visit.hokage_interior.exit_trigger.global_position)
+	for frame in range(8):
+		await physics_frame
+	check(not visit.inside_hokage and visit.player.position.distance_to(visit.hokage_exterior_spawn.global_position) < 0.2, "interior exit returns to HokageExteriorSpawn")
+	for frame in range(70):
+		await physics_frame
+	check(not visit.inside_hokage, "immediate exit cannot bounce back through the entry trigger")
+	# TEST 5/6: a second complete entry/exit works without creating a loop.
+	visit.player.reset_at(visit.hokage_entry_trigger.global_position)
+	for frame in range(290):
+		await physics_frame
+	check(visit.inside_hokage, "the residence can be entered repeatedly")
+	visit.player.reset_at(visit.hokage_interior.exit_trigger.global_position)
+	for frame in range(90):
+		await physics_frame
+	check(not visit.inside_hokage and visit.player.position.distance_to(visit.hokage_exterior_spawn.global_position) < 0.2, "second entry/exit completes without an exterior-interior loop")
+	visit.player.reset_at(KonohaMap.SPAWN)
+	for frame in range(70):
+		await physics_frame
+	check(not visit.inside_hokage and not visit.hokage_loading, "leaving the residence leaves no pending transition")
 	check(visit.player.get_world_3d() != game.player.get_world_3d(), "Konoha uses its own physics world, not the training arena")
 	check(root.disable_3d and game.process_mode == Node.PROCESS_MODE_DISABLED and not game.hud.is_processing_input(), "training rendering, simulation and input are suspended during the visit")
 	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("Genin Test"), "Konoha uses the account identity and saved appearance")

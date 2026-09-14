@@ -16,11 +16,14 @@ const HOKAGE_NAMES: Array[String] = [
 	"Hashirama Senju", "Tobirama Senju", "Hiruzen Sarutobi", "Minato Namikaze",
 	"Tsunade", "Kakashi Hatake", "Naruto Uzumaki"
 ]
-const EXIT_POINT := Vector3(0, 0.25, 9.3)
+const INTERIOR_SPAWN_LOCAL := Vector3(0, 0.25, 4.8)
+const EXIT_TRIGGER_LOCAL := Vector3(0, 0.75, 10.15)
 const OFFICE_POINT := Vector3(0, 4.65, -5.0)
 
 var active: bool = false
 var built: bool = false
+var interior_spawn: Marker3D
+var exit_trigger: Area3D
 var static_bodies: Array[StaticBody3D] = []
 
 func build() -> void:
@@ -77,6 +80,27 @@ func build() -> void:
 		box(Vector3(0.18,1.15,0.18), Vector3(x,4.75,11.55), Color("6a4738"), true)
 	box(Vector3(8.0,0.18,0.18), Vector3(0,5.25,11.55), Color("d1aa62"), true)
 	label_3d("BALCON · VUE SUR KONOHA", Vector3(0,5.75,11.42), 13, PI)
+
+	# Named transition points are separate from all doorway colliders.
+	interior_spawn = Marker3D.new()
+	interior_spawn.name = "HokageInteriorSpawn"
+	interior_spawn.position = INTERIOR_SPAWN_LOCAL
+	add_child(interior_spawn)
+
+	# The exit is an interior-only trigger. It is not the exterior entry area,
+	# and it is disabled whenever the interior is hidden.
+	exit_trigger = Area3D.new()
+	exit_trigger.name = "HokageInteriorExitTrigger"
+	exit_trigger.position = EXIT_TRIGGER_LOCAL
+	exit_trigger.collision_layer = 0
+	exit_trigger.collision_mask = 2
+	exit_trigger.monitorable = false
+	var exit_shape := CollisionShape3D.new()
+	var exit_volume := BoxShape3D.new()
+	exit_volume.size = Vector3(3.1, 1.5, 1.4)
+	exit_shape.shape = exit_volume
+	exit_trigger.add_child(exit_shape)
+	add_child(exit_trigger)
 	set_active(false)
 
 func _portrait_card(index: int, point: Vector3) -> void:
@@ -159,13 +183,12 @@ func label_3d(text: String, point: Vector3, size: int, angle: float = 0.0) -> vo
 func set_active(value: bool) -> void:
 	active = value
 	visible = value
+	if is_instance_valid(exit_trigger):
+		exit_trigger.monitoring = value
 	for body in static_bodies:
 		if is_instance_valid(body):
 			body.collision_layer = 1 if value else 0
 			body.collision_mask = 0
 
-func near_exit(player_position: Vector3) -> bool:
-	return active and player_position.distance_to(global_position + EXIT_POINT) < 3.6
-
-func near_office(player_position: Vector3) -> bool:
-	return active and player_position.distance_to(global_position + OFFICE_POINT) < 3.8
+func exit_trigger_overlaps(body: Node3D) -> bool:
+	return active and is_instance_valid(exit_trigger) and exit_trigger.get_overlapping_bodies().has(body)

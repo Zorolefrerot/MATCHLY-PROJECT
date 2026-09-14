@@ -12,14 +12,27 @@ var journal_open: bool = false
 var viewport: SubViewport
 var world: KonohaMap
 var hokage_interior: HokageInterior
+var hokage_exterior_spawn: Marker3D
+var hokage_entry_trigger: Area3D
 var inside_hokage: bool = false
 var transition_lock: float = 0.0
+# The residence is a private pocket of this SubViewport, deliberately outside
+# the playable Konoha ground and every exterior collider. It is not a second
+# scene or a second teleport system: the same player is moved between these
+# named spawn nodes.
+const HOKAGE_INTERIOR_ORIGIN := Vector3(220.0, 0.0, -220.0)
 const HOKAGE_EXTERIOR_DOOR := Vector3(0, 0.25, -72.0)
 const HOKAGE_PORTAL_POINT := Vector3(0, 0.25, -70.45)
 const HOKAGE_PORTAL_RADIUS := 1.55
 const HOKAGE_PORTAL_HOLD_SECONDS := 3.0
+const HOKAGE_TELEPORT_DEBOUNCE_SECONDS := 0.85
+const HOKAGE_NETWORK_RELEASE_SECONDS := 0.9
 var hokage_portal_hold: float = 0.0
 var hokage_loading: bool = false
+var hokage_network_paused: bool = false
+var hokage_network_release: float = -1.0
+var hokage_network_release_origin: Vector3 = Vector3.ZERO
+var hokage_network_release_target: Vector3 = Vector3.ZERO
 var loading_overlay: ColorRect
 var loading_image: TextureRect
 var loading_progress: ProgressBar
@@ -66,13 +79,15 @@ func _ready() -> void:
 	world = KonohaMap.new()
 	viewport.add_child(world)
 	world.build()
-	# The compact interior lives in a private scene pocket inside the accepted
-	# village perimeter. It shares the same world, camera and player without
-	# overlapping the exterior palace geometry or invalidating network positions.
+	# The interior is already provided by hokage_interior.gd. Keep one world and
+	# one player, but place this virtual pocket outside Konoha's ground/wall
+	# colliders so it cannot look like a hidden building in another district.
 	hokage_interior = HokageInterior.new()
-	hokage_interior.position = Vector3(-140, 0, -110)
+	hokage_interior.name = "HokageInterior"
+	hokage_interior.position = HOKAGE_INTERIOR_ORIGIN
 	world.add_child(hokage_interior)
 	hokage_interior.build()
+	_build_hokage_transition_nodes()
 	combat_vfx = TrainingVFX.new()
 	world.add_child(combat_vfx)
 	combat_effects = Node3D.new()
@@ -166,6 +181,34 @@ func _ready() -> void:
 		village_link.disconnected.connect(_clear_remote)
 		add_child(village_link)
 
+func _build_hokage_transition_nodes() -> void:
+	# Explicit points are the only destinations used by the transition.
+	hokage_exterior_spawn = Marker3D.new()
+	hokage_exterior_spawn.name = "HokageExteriorSpawn"
+	hokage_exterior_spawn.position = HOKAGE_EXTERIOR_DOOR + Vector3(0,0,4.0)
+	world.add_child(hokage_exterior_spawn)
+
+	# Entry and exit are separate triggers. They are detection-only: neither
+	# trigger moves the player directly or owns a second transition routine.
+	hokage_entry_trigger = Area3D.new()
+	hokage_entry_trigger.name = "HokageExteriorEntryTrigger"
+	hokage_entry_trigger.position = HOKAGE_PORTAL_POINT
+	hokage_entry_trigger.collision_layer = 0
+	hokage_entry_trigger.collision_mask = 2
+	hokage_entry_trigger.monitorable = false
+	var entry_shape := CollisionShape3D.new()
+	var entry_volume := CylinderShape3D.new()
+	entry_volume.radius = HOKAGE_PORTAL_RADIUS
+	entry_volume.height = 1.2
+	entry_shape.shape = entry_volume
+	hokage_entry_trigger.add_child(entry_shape)
+	world.add_child(hokage_entry_trigger)
+	_set_hokage_entry_trigger(false)
+
+func _set_hokage_entry_trigger(value: bool) -> void:
+	if is_instance_valid(hokage_entry_trigger):
+		hokage_entry_trigger.monitoring = value and not inside_hokage and not hokage_loading
+
 func _build_loading_overlay() -> void:
 	loading_overlay = ColorRect.new()
 	loading_overlay.color = Color(0.01,0.035,0.09,0.97)
@@ -238,6 +281,7 @@ func _physics_process(delta: float) -> void:
 	if not initialized or ending or hud.blocked or not app_active or hokage_loading:
 		return
 	transition_lock = maxf(0.0, transition_lock-delta)
+	_set_hokage_entry_trigger(transition_lock <= 0.0)
 	var look: Vector2 = hud.consume_look()
 	yaw -= look.x*0.004
 	pitch = clampf(pitch-look.y*0.003, -0.85, -0.08)
@@ -288,15 +332,14 @@ func _update_hokage_portal(delta: float) -> void:
 	if transition_lock > 0.0 or hokage_loading or not is_instance_valid(hokage_interior):
 		return
 	if inside_hokage:
-		var interior_point: Vector3 = player.position-hokage_interior.global_position
-		# The virtual hall has an open inner threshold. Walking toward it exits
-		# without a button and places the player back in front of the closed door.
-		if absf(interior_point.x) <= 1.55 and interior_point.z >= HokageInterior.EXIT_POINT.z+0.85:
+		# The exit trigger is local to HokageInterior and cannot overlap the
+		# exterior entry trigger or the interior spawn.
+		if hokage_interior.exit_trigger_overlaps(player):
 			_exit_hokage_residence()
 		return
-	var flat_offset := Vector2(player.position.x-HOKAGE_PORTAL_POINT.x, player.position.z-HOKAGE_PORTAL_POINT.z)
+	var in_entry_trigger := is_instance_valid(hokage_entry_trigger) and hokage_entry_trigger.get_overlapping_bodies().has(player)
 	var horizontal_speed := Vector2(player.velocity.x, player.velocity.z).length()
-	if flat_offset.length() <= HOKAGE_PORTAL_RADIUS and horizontal_speed <= 0.35:
+	if in_entry_trigger and horizontal_speed <= 0.35:
 		hokage_portal_hold = minf(HOKAGE_PORTAL_HOLD_SECONDS, hokage_portal_hold+delta)
 	else:
 		hokage_portal_hold = 0.0
@@ -309,6 +352,12 @@ func _begin_hokage_loading() -> void:
 	hokage_loading = true
 	hokage_portal_hold = 0.0
 	transition_lock = 9.0
+	_set_hokage_entry_trigger(false)
+	# Keep the authenticated village presence at its last exterior pose. The
+	# server cannot know about this local virtual pocket and would otherwise
+	# send an anti-teleport correction during the scene transition.
+	hokage_network_paused = true
+	hokage_network_release = -1.0
 	_clear_inputs()
 	loading_progress.value = 0.0
 	loading_image.rotation = 0.0
@@ -342,8 +391,7 @@ func nearest_interaction() -> int:
 	# Keep the general interaction system for Aoi and the village panels only.
 	if transition_lock > 0.0 or inside_hokage:
 		return -2
-	var portal_offset := Vector2(player.position.x-HOKAGE_PORTAL_POINT.x, player.position.z-HOKAGE_PORTAL_POINT.z)
-	if portal_offset.length() <= HOKAGE_PORTAL_RADIUS:
+	if is_instance_valid(hokage_entry_trigger) and hokage_entry_trigger.get_overlapping_bodies().has(player):
 		return -2
 	if _reachable(guide.position):
 		return -1
@@ -391,30 +439,39 @@ func interact() -> void:
 		_dialogue(data["name"], text, event)
 
 func _enter_hokage_residence() -> void:
-	if not is_instance_valid(hokage_interior):
+	if not is_instance_valid(hokage_interior) or not is_instance_valid(hokage_interior.interior_spawn):
 		return
 	inside_hokage = true
-	transition_lock = 0.85
 	hokage_interior.set_active(true)
-	# Spawn a few metres beyond the threshold so the same walking event cannot
-	# immediately interpret the entrance as a request to leave.
-	player.reset_at(hokage_interior.global_position + HokageInterior.EXIT_POINT + Vector3(0,0,-4.5))
+	# HokageInteriorSpawn is inside the hall, well behind the distinct exit
+	# trigger. It is never placed on the doorway collider.
+	player.reset_at(hokage_interior.interior_spawn.global_position)
 	player.face(Vector3(0,0,-1))
 	yaw = 0.0
 	pitch = -0.10
+	transition_lock = HOKAGE_TELEPORT_DEBOUNCE_SECONDS
+	_set_hokage_entry_trigger(false)
 	hud.notice("Bienvenue dans la résidence du Hokage. Explore le hall, la galerie et l’étage du conseil.")
 
 func _exit_hokage_residence() -> void:
-	if not is_instance_valid(hokage_interior):
+	if not is_instance_valid(hokage_interior) or not is_instance_valid(hokage_exterior_spawn):
 		return
-	inside_hokage = false
-	transition_lock = 0.85
 	hokage_interior.set_active(false)
-	# The return point is just outside the closed front door, never inside the facade.
-	player.reset_at(HOKAGE_EXTERIOR_DOOR + Vector3(0,0,3.4))
+	# HokageExteriorSpawn is outside the closed façade and outside the entry
+	# trigger, so the return cannot start a second transition.
+	player.reset_at(hokage_exterior_spawn.global_position)
 	player.face(Vector3(0,0,1))
 	yaw = 0.0
 	pitch = -0.06
+	inside_hokage = false
+	transition_lock = HOKAGE_TELEPORT_DEBOUNCE_SECONDS
+	_set_hokage_entry_trigger(false)
+	# Resume only after the local placement. The server sees a short interpolated
+	# movement from the remembered exterior pose, never the private pocket jump.
+	hokage_network_release_origin = _village_pose_position()
+	hokage_network_release_target = player.position
+	hokage_network_release = 0.0
+	hokage_network_paused = false
 	hud.notice("Te voilà devant la porte principale de la résidence.")
 
 func _dialogue(title: String, text: String, event: String = "") -> void:
@@ -603,13 +660,26 @@ func finish() -> void:
 	closed.emit()
 
 
-func _process(_delta: float) -> void:
+func _village_pose_position() -> Vector3:
+	if not is_instance_valid(village_link) or not village_link.pose.get("p") is Array or village_link.pose["p"].size() != 3:
+		return player.position
+	return Vector3(float(village_link.pose["p"][0]),float(village_link.pose["p"][1]),float(village_link.pose["p"][2]))
+
+func _process(delta: float) -> void:
 	if not initialized or ending or not is_instance_valid(village_link):
 		return
+	if hokage_network_paused:
+		return
+	var network_position := player.position
+	if hokage_network_release >= 0.0:
+		hokage_network_release = minf(HOKAGE_NETWORK_RELEASE_SECONDS, hokage_network_release+delta)
+		network_position = hokage_network_release_origin.lerp(hokage_network_release_target, hokage_network_release/HOKAGE_NETWORK_RELEASE_SECONDS)
+		if hokage_network_release >= HOKAGE_NETWORK_RELEASE_SECONDS:
+			hokage_network_release = -1.0
 	var motion: String = "idle"
 	if not hud.blocked and app_active:
 		motion = "jump" if not player.is_on_floor() else "run" if player.velocity.length() > 4.5 else "walk" if player.velocity.length() > 0.1 else "idle"
-	village_link.pose = {"p":[player.position.x,player.position.y,player.position.z],"yaw":wrapf(player.visual.rotation.y,-PI,PI),"motion":motion}
+	village_link.pose = {"p":[network_position.x,network_position.y,network_position.z],"yaw":wrapf(player.visual.rotation.y,-PI,PI),"motion":motion}
 
 func _set_presence(count: int) -> void:
 	presence_count = maxi(1,count)
@@ -701,6 +771,11 @@ func _network_event(event: Dictionary) -> void:
 		return
 	match event["type"]:
 		"welcome", "correction":
+			# The server only knows the exterior village coordinate space. While
+			# loading or inside the private pocket, its spawn/correction must never
+			# pull the local player through the residence transition.
+			if hokage_loading or inside_hokage or transition_lock > 0.0:
+				return
 			var point: Array = event["spawn"] if event["type"] == "welcome" else event["p"]
 			_clear_inputs()
 			player.reset_at(Vector3(float(point[0]),float(point[1]),float(point[2])))

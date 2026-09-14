@@ -33,7 +33,6 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
   assert.doesNotMatch(visit, /ENTRER DANS LA RÉSIDENCE|RESSORTIR DE LA RÉSIDENCE/);
   assert.doesNotMatch(visit, /_toggle_hokage_residence/);
   assert.match(visit, /_update_hokage_portal/);
-  assert.match(visit, /HokageInterior\.EXIT_POINT\.z\+0\.85/);
   assert.match(visit, /HOKAGE_PORTAL_HOLD_SECONDS/);
   assert.match(visit, /_begin_hokage_loading/);
   assert.match(visit, /loading_portal\.png/);
@@ -43,8 +42,17 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
   assert.match(visit, /_enter_hokage_residence/);
   assert.match(visit, /_exit_hokage_residence/);
   assert.match(visit, /transition_lock/);
-  assert.match(visit, /EXIT_POINT \+ Vector3\(0,0,-4\.5\)/);
-  assert.match(visit, /hokage_interior\.position = Vector3\(-140, 0, -110\)/);
+  assert.match(visit, /HokageExteriorSpawn/);
+  assert.match(visit, /HokageExteriorEntryTrigger/);
+  assert.match(visit, /HOKAGE_INTERIOR_ORIGIN/);
+  assert.match(visit, /hokage_network_paused/);
+  assert.match(visit, /HOKAGE_NETWORK_RELEASE_SECONDS/);
+  assert.match(visit, /hokage_loading or inside_hokage or transition_lock/);
+  assert.doesNotMatch(visit, /player\.reset_at\(HOKAGE_EXTERIOR_DOOR/);
+  assert.doesNotMatch(visit, /HokageInterior\.EXIT_POINT/);
+  assert.match(interior, /HokageInteriorSpawn/);
+  assert.match(interior, /HokageInteriorExitTrigger/);
+  assert.match(interior, /exit_trigger_overlaps/);
 
   const architecture = read("game/scripts/konoha_architecture.gd");
   assert.match(architecture, /RÉSIDENCE DU HOKAGE/);
