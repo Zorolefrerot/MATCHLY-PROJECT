@@ -32,6 +32,10 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
   const visit = read("game/scripts/konoha_visit.gd");
   assert.match(visit, /ENTRER DANS LA RÉSIDENCE/);
   assert.match(visit, /RESSORTIR DE LA RÉSIDENCE/);
+  assert.match(visit, /_toggle_hokage_residence/);
+  const hud = read("game/scripts/konoha_hud.gd");
+  assert.match(hud, /_button\("VISITER LA RÉSIDENCE", "residence"\)/);
+  assert.match(hud, /buttons\["residence"\]\.position/);
   assert.match(visit, /_enter_hokage_residence/);
   assert.match(visit, /_exit_hokage_residence/);
   assert.match(visit, /transition_lock/);

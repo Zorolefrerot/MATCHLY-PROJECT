@@ -220,6 +220,10 @@ func _physics_process(delta: float) -> void:
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
 	hud.buttons["interact"].text = "RESSORTIR DE LA RÉSIDENCE" if inside_hokage and nearest == -3 else "ENTRER DANS LA RÉSIDENCE" if nearest == -3 else "PARLER À AOI" if nearest == -1 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
+	# Dedicated transition button: it is intentionally independent from the
+	# generic E interaction and stays available while testing the interior.
+	hud.buttons["residence"].disabled = transition_lock > 0.0
+	hud.buttons["residence"].text = "SORTIR DE LA RÉSIDENCE" if inside_hokage else "VISITER LA RÉSIDENCE"
 	hud.objective.text = WelcomeMission.objective(mission)
 	if not request_kind.is_empty():
 		hud.objective.text = "Connexion en cours · Ne ferme pas l’application pour confirmer l’étape."
@@ -302,6 +306,15 @@ func interact() -> void:
 		else:
 			text += "\nCette lecture est déjà enregistrée sur ton compte."
 		_dialogue(data["name"], text, event)
+
+func _toggle_hokage_residence() -> void:
+	if not initialized or ending or hud.blocked or transition_lock > 0.0:
+		return
+	_clear_inputs()
+	if inside_hokage:
+		_exit_hokage_residence()
+	else:
+		_enter_hokage_residence()
 
 func _enter_hokage_residence() -> void:
 	if not is_instance_valid(hokage_interior):
@@ -420,6 +433,7 @@ func _action(action: String) -> void:
 		"pause": toggle_pause()
 		"leave": finish()
 		"interact": interact()
+		"residence": _toggle_hokage_residence()
 		"journal": open_journal()
 		"chat": open_chat()
 		"music":

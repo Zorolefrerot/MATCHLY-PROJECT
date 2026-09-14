@@ -11,7 +11,7 @@ La première version de l’intérieur est un bâtiment compact de deux niveaux,
 
 ## Entrée et sortie
 
-À proximité de la porte extérieure de la résidence, `KonohaVisit` réutilise l’action `village_interact` (`E`) et le bouton tactile. Le bouton affiche **ENTRER DANS LA RÉSIDENCE** ; il n’y a pas de téléportation automatique. Une fois à l’intérieur, le même bouton affiche **RESSORTIR DE LA RÉSIDENCE** au niveau du hall.
+`KonohaVisit` possède maintenant un bouton dédié **VISITER LA RÉSIDENCE**, indépendant de l’action générique `village_interact` (`E`) utilisée par les panneaux et Aoi. Le bouton est disponible dans le HUD pour rendre la transition testable sans dépendre d’une collision ou d’une distance exacte devant la façade. Il téléporte directement le joueur vers le hall interne ; une fois à l’intérieur, le même bouton affiche **SORTIR DE LA RÉSIDENCE** et replace le joueur devant la porte extérieure.
 
 L’intérieur est placé dans une poche de scène séparée, dans le périmètre réseau accepté du village mais à distance du décor extérieur, afin de ne pas superposer les colliders du palais. Le même joueur, la même caméra, le HUD, la connexion WebSocket et les avatars partagés restent utilisés. La poche est désactivée hors visite.
 

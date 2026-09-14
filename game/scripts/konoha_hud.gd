@@ -35,6 +35,7 @@ func _build() -> void:
 	_button("COURIR", "sprint")
 	_button("SAUT", "jump")
 	_button("PARLER / LIRE", "interact")
+	_button("VISITER LA RÉSIDENCE", "residence")
 	_button("DÉFIER EN DUEL", "combat_join")
 	_button("NIVEAU TEST : 1", "combat_level")
 	_button("QUITTER LE DUEL", "combat_leave")
@@ -51,6 +52,7 @@ func _build() -> void:
 	set_button_icon("sprint", 13)
 	set_button_icon("jump", 3)
 	set_button_icon("interact", 12)
+	set_button_icon("residence", 12)
 	set_button_icon("combat_join", 8)
 	set_button_icon("combat_level", 10)
 	set_button_icon("combat_leave", 11)
@@ -111,6 +113,8 @@ func _set_combat_buttons(active: bool) -> void:
 		buttons["combat_join"].visible = not active
 	if buttons.has("interact"):
 		buttons["interact"].visible = not active
+	if buttons.has("residence"):
+		buttons["residence"].visible = not active
 
 func set_combat_message(message: String) -> void:
 	combat_status.text = message
@@ -179,6 +183,8 @@ func _layout() -> void:
 	buttons["jump"].size = Vector2(130,70.0)
 	buttons["interact"].position = Vector2(w-236,h-137)
 	buttons["interact"].size = Vector2(206,70.0)
+	buttons["residence"].position = Vector2(w-500,h-137)
+	buttons["residence"].size = Vector2(250,70.0)
 	buttons["combat_melee"].position = Vector2(w-130,h-137)
 	buttons["combat_melee"].size = Vector2(110,58)
 	buttons["combat_skill_0"].position = Vector2(w-370,h-205)
