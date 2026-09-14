@@ -32,10 +32,10 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
   const visit = read("game/scripts/konoha_visit.gd");
   assert.match(visit, /ENTRER DANS LA RÉSIDENCE/);
   assert.match(visit, /RESSORTIR DE LA RÉSIDENCE/);
-  assert.match(visit, /_toggle_hokage_residence/);
+  assert.doesNotMatch(visit, /_toggle_hokage_residence/);
   const hud = read("game/scripts/konoha_hud.gd");
-  assert.match(hud, /_button\("VISITER LA RÉSIDENCE", "residence"\)/);
-  assert.match(hud, /buttons\["residence"\]\.position/);
+  assert.doesNotMatch(hud, /VISITER LA RÉSIDENCE/);
+  assert.doesNotMatch(hud, /buttons\["residence"\]/);
   assert.match(visit, /_enter_hokage_residence/);
   assert.match(visit, /_exit_hokage_residence/);
   assert.match(visit, /transition_lock/);
@@ -43,10 +43,12 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
   assert.match(visit, /hokage_interior\.position = Vector3\(-140, 0, -110\)/);
 
   const architecture = read("game/scripts/konoha_architecture.gd");
-  assert.match(architecture, /PORTE PRINCIPALE/);
-  assert.match(architecture, /HokageMainDoorCollision/);
+  assert.match(architecture, /HALL OUVERT · E POUR ENTRER/);
+  assert.match(architecture, /_open_wall/);
+  assert.match(architecture, /HokageMainLintelCollision/);
   assert.match(architecture, /HokageMainFacadeCollision/);
-  assert.match(architecture, /point\+Vector3\(0,1\.73,5\.78\)/);
+  assert.doesNotMatch(architecture, /HokageMainDoorCollision/);
+  assert.doesNotMatch(architecture, /point\+Vector3\(0,1\.73,5\.78\)/);
   assert.match(read("game/scripts/konoha_map.gd"), /architecture\.main_door\(Vector3\(0,0,-78\)\)/);
 
   const portraitDir = new URL("game/assets/konoha/hokage/", root);

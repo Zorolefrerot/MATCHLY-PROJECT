@@ -11,7 +11,7 @@ La première version de l’intérieur est un bâtiment compact de deux niveaux,
 
 ## Entrée et sortie
 
-`KonohaVisit` possède maintenant un bouton dédié **VISITER LA RÉSIDENCE**, indépendant de l’action générique `village_interact` (`E`) utilisée par les panneaux et Aoi. Le bouton est disponible dans le HUD pour rendre la transition testable sans dépendre d’une collision ou d’une distance exacte devant la façade. Il téléporte directement le joueur vers le hall interne ; une fois à l’intérieur, le même bouton affiche **SORTIR DE LA RÉSIDENCE** et replace le joueur devant la porte extérieure.
+Le hall extérieur est maintenant une ouverture permanente : aucune porte fermée ni collision de battant ne barre le passage. La façade reste solide sur les côtés et au-dessus du lintel. L’entrée et la sortie restent manuelles via l’interaction générique `village_interact` (`E`) lorsque le joueur se trouve devant le hall ; `transition_lock` filtre les doubles événements tactiles et empêche une sortie immédiate. L’entrée téléporte le joueur vers le hall interne et la sortie le replace devant la façade.
 
 L’intérieur est placé dans une poche de scène séparée, dans le périmètre réseau accepté du village mais à distance du décor extérieur, afin de ne pas superposer les colliders du palais. Le même joueur, la même caméra, le HUD, la connexion WebSocket et les avatars partagés restent utilisés. La poche est désactivée hors visite.
 
@@ -25,4 +25,4 @@ Les avatars distants et le duel multijoueur ne sont pas supprimés. L’intérie
 
 La source est conservée hors export dans `art_sources/konoha/hokage-gallery-source.jpg`. Elle vient de [Peakpx](https://www.peakpx.com/en/hd-wallpaper-desktop-pttge) ; la licence n’a pas été vérifiée indépendamment. Les sept panneaux sont découpés et redimensionnés dans `game/assets/konoha/hokage/`, avec provenance détaillée dans le README de ce dossier. Les portraits sont affichés comme cartes encadrées dans la galerie, pas comme des visages 3D sur le mur extérieur.
 
-L’opening reste volontairement hors périmètre de cette livraison.
+Le hall reste ouvert en permanence pendant toute la visite ; le décor intérieur conserve les deux niveaux, les salles utiles, les portraits encadrés et le balcon orienté vers Konoha.
