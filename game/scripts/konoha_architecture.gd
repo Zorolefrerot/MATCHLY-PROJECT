@@ -421,7 +421,7 @@ func main_door(point: Vector3) -> void:
 	# door mesh and no door collision.
 	var side_width := (8.4-3.35)/2.0
 	for side in [-1,1]:
-		var x := side*(3.35/2.0+side_width/2.0)
+		var x: float = float(side)*(3.35/2.0+side_width/2.0)
 		_block(Vector3(side_width,4.6,0.34),point+Vector3(x,2.30,5.45),materials["red"])
 		_solid_box(Vector3(side_width,4.6,0.34),point+Vector3(x,2.30,5.45),"HokageMainFacadeCollision")
 	# A solid lintel closes the façade above the opening without closing the hall.
@@ -429,7 +429,7 @@ func main_door(point: Vector3) -> void:
 	_solid_box(Vector3(8.4,1.15,0.34),point+Vector3(0,4.03,5.45),"HokageMainLintelCollision")
 	# The trim is split as well: the centre remains visibly and physically open.
 	for side in [-1,1]:
-		var trim_x := side*(3.35/2.0+0.425)
+		var trim_x: float = float(side)*(3.35/2.0+0.425)
 		_block(Vector3(0.85,4.1,0.30),point+Vector3(trim_x,2.05,5.57),materials["trim"])
 	_block(Vector3(3.55,0.22,0.20),point+Vector3(0,3.52,5.88),materials["gold"])
 	# Keep the drum's side and rear walls solid while leaving the front hall clear.
