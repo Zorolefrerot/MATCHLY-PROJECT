@@ -199,6 +199,7 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("skill_%d" % i): _combat_action("skill_%d" % i)
 	if Input.is_action_just_pressed("ultimate"): _combat_action("ultimate")
 	player.simulate(delta, direction, hud.sprinting or Input.is_action_pressed("sprint"))
+	_check_hokage_hall_transition()
 	# Crossing the outer ring must stop at the wall, not silently teleport the player
 	# back to the arrival point. Horizontal travel stays continuous across districts.
 	# Only a genuine fall through the world respawns.
@@ -219,9 +220,9 @@ func _physics_process(delta: float) -> void:
 	_update_camera()
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
-	hud.buttons["interact"].text = "RESSORTIR DE LA RÉSIDENCE" if inside_hokage and nearest == -3 else "ENTRER DANS LA RÉSIDENCE" if nearest == -3 else "PARLER À AOI" if nearest == -1 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
-	# The open hall remains a deliberate interaction: E or the shared touch
-	# interaction button enters and exits, while transition_lock filters repeats.
+	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
+	# The residence has no entry or exit control: crossing its open hall moves
+	# the player between the exterior and the virtual interior automatically.
 	hud.objective.text = WelcomeMission.objective(mission)
 	if not request_kind.is_empty():
 		hud.objective.text = "Connexion en cours · Ne ferme pas l’application pour confirmer l’étape."
@@ -230,6 +231,21 @@ func _physics_process(delta: float) -> void:
 	hud.fps.text = "%d FPS · %s" % [Engine.get_frames_per_second(), "EN LIGNE" if is_instance_valid(village_link) and village_link.connected else "LOCAL"]
 	if Input.is_action_just_pressed("village_interact"):
 		interact()
+
+func _check_hokage_hall_transition() -> void:
+	if transition_lock > 0.0 or not is_instance_valid(hokage_interior):
+		return
+	if inside_hokage:
+		var interior_point: Vector3 = player.position-hokage_interior.global_position
+		# The interior entrance is open too: keep walking toward the front
+		# balcony until the player crosses the threshold.
+		if absf(interior_point.x) <= 1.55 and interior_point.z >= HokageInterior.EXIT_POINT.z+0.85:
+			_exit_hokage_residence()
+	else:
+		# The exterior hall has no door collider. Crossing its centre line is
+		# the only portal condition; approaching from the side never teleports.
+		if absf(player.position.x) <= 1.55 and player.position.z <= HOKAGE_EXTERIOR_DOOR.z-0.85:
+			_enter_hokage_residence()
 
 func _update_camera() -> void:
 	pivot.position = player.position + Vector3.UP*1.4
@@ -243,17 +259,10 @@ func _reachable(point: Vector3) -> bool:
 	return world.get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
 
 func nearest_interaction() -> int:
-	# -3 is reserved for the Hokage residence door, both outside and inside.
-	# It is distance based rather than ray based: the palace facade is a visual
-	# landmark, while the button owns the deliberate scene transition.
-	if transition_lock > 0.0:
+	# The residence hall is a physical walk-through, not an interaction target.
+	# Keep the general interaction system for Aoi and the village panels only.
+	if transition_lock > 0.0 or inside_hokage:
 		return -2
-	if inside_hokage:
-		if is_instance_valid(hokage_interior) and hokage_interior.near_exit(player.position):
-			return -3
-		return -2
-	if player.position.distance_to(HOKAGE_EXTERIOR_DOOR) < 3.5:
-		return -3
 	if _reachable(guide.position):
 		return -1
 	for i in range(KonohaMap.LANDMARKS.size()):
@@ -266,15 +275,9 @@ func interact() -> void:
 		return
 	var nearest: int = nearest_interaction()
 	if nearest == -2:
-		hud.notice("Approche-toi d’Aoi, d’un panneau ou de la porte du Hokage pour interagir.")
+		hud.notice("Approche-toi d’Aoi ou d’un panneau pour interagir.")
 		return
 	_clear_inputs()
-	if nearest == -3:
-		if inside_hokage:
-			_exit_hokage_residence()
-		else:
-			_enter_hokage_residence()
-		return
 	if nearest == -1:
 		guide_met = true
 		guide.face(player.position-guide.position)
@@ -311,7 +314,7 @@ func _enter_hokage_residence() -> void:
 	inside_hokage = true
 	transition_lock = 0.85
 	hokage_interior.set_active(true)
-	# Spawn a few metres beyond the threshold so the same button cannot
+	# Spawn a few metres beyond the threshold so the same walking event cannot
 	# immediately interpret the entrance as a request to leave.
 	player.reset_at(hokage_interior.global_position + HokageInterior.EXIT_POINT + Vector3(0,0,-4.5))
 	player.face(Vector3(0,0,-1))
@@ -325,7 +328,7 @@ func _exit_hokage_residence() -> void:
 	inside_hokage = false
 	transition_lock = 0.85
 	hokage_interior.set_active(false)
-	# The return point is just outside the front door, never inside the facade.
+	# The return point is just outside the open hall, never inside the facade.
 	player.reset_at(HOKAGE_EXTERIOR_DOOR + Vector3(0,0,3.4))
 	player.face(Vector3(0,0,-1))
 	yaw = 0.0

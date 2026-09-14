@@ -11,7 +11,7 @@ La première version de l’intérieur est un bâtiment compact de deux niveaux,
 
 ## Entrée et sortie
 
-Le hall extérieur est maintenant une ouverture permanente : aucune porte fermée ni collision de battant ne barre le passage. La façade reste solide sur les côtés et au-dessus du lintel. L’entrée et la sortie restent manuelles via l’interaction générique `village_interact` (`E`) lorsque le joueur se trouve devant le hall ; `transition_lock` filtre les doubles événements tactiles et empêche une sortie immédiate. L’entrée téléporte le joueur vers le hall interne et la sortie le replace devant la façade.
+Le hall extérieur est maintenant une ouverture permanente : aucune porte fermée ni collision de battant ne barre le passage. La façade reste solide sur les côtés et au-dessus du lintel. Il n’y a aucun bouton d’entrée ou de sortie : en avançant au centre du hall, le joueur traverse automatiquement vers le hall interne ; en avançant vers le balcon intérieur, il ressort automatiquement devant la façade. `transition_lock` filtre les doubles événements et empêche un retour immédiat après chaque téléportation.
 
 L’intérieur est placé dans une poche de scène séparée, dans le périmètre réseau accepté du village mais à distance du décor extérieur, afin de ne pas superposer les colliders du palais. Le même joueur, la même caméra, le HUD, la connexion WebSocket et les avatars partagés restent utilisés. La poche est désactivée hors visite.
 

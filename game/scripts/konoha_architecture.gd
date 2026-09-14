@@ -437,7 +437,7 @@ func main_door(point: Vector3) -> void:
 	_solid_box(Vector3(1.20,9.15,10.0),point+Vector3(4.8,4.55,0),"HokageMainShellRight")
 	_solid_box(Vector3(10.8,9.15,1.0),point+Vector3(0,4.55,-4.9),"HokageMainShellRear")
 	var entrance_label := Label3D.new()
-	entrance_label.text = "HALL OUVERT · E POUR ENTRER"
+	entrance_label.text = "HALL OUVERT"
 	entrance_label.position = point+Vector3(0,4.15,5.90)
 	entrance_label.rotation.y = PI
 	entrance_label.font_size = 18
