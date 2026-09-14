@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: android-prototype-${{ github.ref }}
@@ -43,13 +43,6 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "build-tools;35.0.0" "platforms;android-35"
       - name: Export and verify debug APK
         run: bash game/tools/export_android.sh
-      - name: Publish public Android installer
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload android-latest game/artifacts/idrem-zenkai-training-debug.apk \
-            --repo "$GITHUB_REPOSITORY" --clobber
-
       - name: Prepare software-rendered desktop capture
         run: |
           sudo apt-get update -qq
