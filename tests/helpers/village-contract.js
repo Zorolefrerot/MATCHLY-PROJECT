@@ -141,11 +141,18 @@ export async function villageContract(db, secondDb = db) {
     ws.terminate();
   };
   try {
-    assert.equal((await villageIdentity(db, "Bearer " + tokens[3])).id, ids[3]);
+    const noClanIdentity = await villageIdentity(db, "Bearer " + tokens[3]);
+    assert.equal(noClanIdentity.id, ids[3]);
+    assert.equal(noClanIdentity.clan, "Uchiwa");
     await denied(null, 401, { Cookie: "iz_session=ws-owner-cookie" });
     await denied(tokens[2], 401); // pending
-    // An accepted account without a clan attribution can already enter Konoha.
     await denied(ownerToken, 401);
+    // The same accepted account can complete a real WSS handshake before a clan draw.
+    const noClan = connect(tokens[3]);
+    await noClan.wait("welcome");
+    const noClanClosed = once(noClan.ws, "close");
+    noClan.ws.close(1000, "test");
+    await noClanClosed;
     await denied(tokens[0], 403, { Origin: "https://foreign.test" });
     await denied(tokens[0], 403, { "X-Forwarded-Proto": "http" });
     await denied(tokens[0], 400, {}, `?token=${tokens[0]}`);
