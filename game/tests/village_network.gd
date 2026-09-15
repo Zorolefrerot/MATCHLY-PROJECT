@@ -39,6 +39,26 @@ func wait_for(condition: Callable, seconds: float = 8.0) -> bool:
 		elapsed += 0.05
 	return bool(condition.call())
 
+func _step_toward(visit: KonohaVisit, target: Vector3, step: float) -> void:
+	var current: Vector3 = visit.player.position
+	var remaining: Vector3 = target - current
+	if remaining.length() <= step:
+		if remaining.length() > 0.05: visit.player.reset_at(target)
+		return
+	visit.player.reset_at(current + remaining.normalized()*step)
+
+func _travel_pair(va: KonohaVisit, ta: Vector3, vb: KonohaVisit, tb: Vector3) -> void:
+	# La route serveur rejette les téléportations (budget anti-triche : 8 m/s,
+	# rafale ≤ 2 m) et collision_mask 0 laisserait la gravité locale traverser
+	# le sol. Les deux clients avancent donc par petits pas légaux (~6.5 m/s),
+	# exactement comme une marche réelle validée par le serveur.
+	for iteration in range(300):
+		if va.player.position.distance_to(ta) <= 0.05 and vb.player.position.distance_to(tb) <= 0.05:
+			return
+		_step_toward(va, ta, 1.3)
+		_step_toward(vb, tb, 1.3)
+		await create_timer(0.2).timeout
+
 func join_player(index: int) -> KonohaVisit:
 	var account := FixtureAPI.new()
 	account.endpoint = fixture["url"]
@@ -107,21 +127,18 @@ func run() -> void:
 	check(await wait_for(func() -> bool: return remote.motion == "idle"),"stopping reaches the other native client")
 	check(await wait_for(func() -> bool: return remote.position.distance_to(a.player.position) < 0.6),"remote interpolation converges without simulating local collisions")
 	# L'Académie Ninja est un espace partagé : les deux clients s'y voient
-	# normalement, sans instance privée. Positions fantômes (mask 0) comme pour
-	# le test de proximité plus bas : la route serveur fait foi.
+	# normalement, sans instance privée. Le trajet se fait par pas légaux validés
+	# par le budget anti-téléportation du serveur : la route WSS fait foi.
 	var academy_hall := Vector3(-46,0.4,-24)
 	check(a.academy.built and b.academy.built and a.academy.unlocked == a.secondary_manager.unlocked and b.academy.unlocked == b.secondary_manager.unlocked,"the shared academy follows the real mission state on both native clients")
-	a.player.collision_mask = 0
-	b.player.collision_mask = 0
-	a.player.reset_at(academy_hall)
-	a.village_link.pose = {"p":[-46.0,0.4,-24.0],"yaw":0.0,"motion":"idle"}
-	b.player.reset_at(academy_hall+Vector3(2.5,0,0))
-	b.village_link.pose = {"p":[-43.5,0.4,-24.0],"yaw":0.0,"motion":"idle"}
-	check(await wait_for(func() -> bool: return b.remote_avatars[aid].position.distance_to(academy_hall) < 1.2 and a.remote_avatars[bid].position.distance_to(academy_hall+Vector3(2.5,0,0)) < 1.2),"two players see each other inside the shared academy hall")
+	# Trajet légal aller : pas de téléport brut (rejeté par le budget serveur).
+	await _travel_pair(a, academy_hall, b, academy_hall+Vector3(2.5,0,0))
+	check(await wait_for(func() -> bool: return b.remote_avatars[aid].position.distance_to(academy_hall) < 1.2 and a.remote_avatars[bid].position.distance_to(academy_hall+Vector3(2.5,0,0)) < 1.2,20.0),"two players see each other inside the shared academy hall")
 	a._clear_inputs()
 	b._clear_inputs()
-	a.player.reset_at(KonohaMap.SPAWN)
-	b.player.reset_at(KonohaMap.SPAWN+Vector3(2,0,0))
+	# Retour légal au point d'arrivée : le duel suivant doit démarrer depuis une
+	# position serveur réellement proche du spawn, sans correction en vol.
+	await _travel_pair(a, KonohaMap.SPAWN, b, KonohaMap.SPAWN+Vector3(2,0,0))
 	a.player.collision_mask = 7
 	b.player.collision_mask = 7
 	await create_timer(0.2).timeout
