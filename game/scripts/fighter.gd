@@ -4,6 +4,8 @@ extends CharacterBody3D
 
 var health: float = 120.0
 var maximum_health: float = 120.0
+# Account-derived identity used by clan-gated village systems; combat never mutates it.
+var clan_id: String = ""
 var visual: Node3D
 var left_arm: Node3D
 var right_arm: Node3D

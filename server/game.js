@@ -320,6 +320,15 @@ export function installGameRoutes(app, db, limit) {
       const data = await transaction(db, async () => {
         const userId = await authenticate(req);
         await profile(userId); // Recheck admission and the account clan on every write.
+        const welcome = await db
+          .prepare("SELECT phase FROM welcome_missions WHERE user_id=?")
+          .get(userId);
+        if (welcome?.phase !== "completed")
+          throw fail(
+            403,
+            "CLAN_MISSION_LOCKED",
+            "Termine d’abord la mission d’accueil d’Aoi.",
+          );
         const row = await db
           .prepare(
             "SELECT mission_id,status,score,revision,started_at,reward_claimed FROM clan_missions WHERE user_id=?",

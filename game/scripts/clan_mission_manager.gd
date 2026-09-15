@@ -57,6 +57,7 @@ func configure(value_player: TrainingFighter, value_hud: KonohaHUD, value_profil
 	var identity: Dictionary = profile.get("character", {})
 	mission_unlocked = str(profile.get("welcomeMission", {}).get("status", "")) == "completed"
 	clan_id = normalize_clan(str(identity.get("clan_id", identity.get("clan", "Uchiwa"))) )
+	player.clan_id = clan_id
 	player.set_meta("clan_id", clan_id)
 	rng.seed = abs(hash(str(identity.get("id", 1)) + clan_id)) + 1
 	_build_sanctuary_leaders()
@@ -136,7 +137,7 @@ func interaction_text() -> String:
 	if not mission_unlocked and mission.get("status", "NOT_STARTED") == "NOT_STARTED":
 		return "Bienvenue dans la cour de ton clan.\n\nTermine d'abord la mission d'accueil d'Aoi avant de recevoir la mission des étoiles."
 	match mission.get("status", "NOT_STARTED"):
-		"NOT_STARTED": return "Tu es enfin venu. J'ai une mission pour toi.\n\nParcours le village et récupère autant d'étoiles que possible. La collecte dure exactement 5 minutes."
+		"NOT_STARTED": return "Tu es enfin venu. J'ai une mission pour toi.\n%s\n\nParcours le village et récupère autant d'étoiles que possible. La collecte dure exactement 5 minutes." % str(data["dialogue"])
 		"ACCEPTED": return "La mission est acceptée. Prépare-toi à parcourir le village."
 		"IN_PROGRESS": return "La collecte est en cours. Reviens après le compte à rebours pour faire ton rapport."
 		"TIME_EXPIRED", "REPORT_PENDING": return "Combien d'étoiles as-tu réussi à récupérer ?\n\nÉtoiles récupérées : %d" % score
