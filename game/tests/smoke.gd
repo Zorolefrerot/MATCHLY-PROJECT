@@ -515,9 +515,11 @@ func run() -> void:
 	# The stair is exercised as CharacterBody3D movement, never as a transition.
 	# Start just before the first tread, not inside a step collision.
 	visit.player.reset_at(Vector3(7.0, 0.25, 8.7))
-	var stair_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3(0, 5, 0), visit.player.global_position - Vector3(0, 1, 0), 1)
+	var stair_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3(0, 5, -1.1), visit.player.global_position + Vector3(0, -1, -1.1), 1)
 	var stair_hit: Dictionary = visit.player.get_world_3d().direct_space_state.intersect_ray(stair_ray)
-	check(not stair_hit.is_empty(), "physical stair collider is active (bodies=%d layers=%d/%d)" % [visit.hokage_interior.static_bodies.size(), visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 2].collision_layer, visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 1].collision_layer])
+	var stair_hit_name := str(stair_hit.get("collider").name) if not stair_hit.is_empty() else "NONE"
+	var stair_hit_y := stair_hit.get("position", Vector3.ZERO).y if not stair_hit.is_empty() else -999.0
+	check(false, "STAIR_DEBUG hit=%s y=%.2f bodies=%d layers=%d/%d" % [stair_hit_name, stair_hit_y, visit.hokage_interior.static_bodies.size(), visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 2].collision_layer, visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 1].collision_layer])
 	Input.action_press("move_forward")
 	for frame in range(180):
 		await physics_frame
