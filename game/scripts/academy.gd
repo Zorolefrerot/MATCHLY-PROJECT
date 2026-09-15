@@ -731,7 +731,7 @@ func _build_barrier() -> void:
 	cylinder(0.55, 0.1, Vector3(CENTER_X, 1.9, SOUTH + 0.22), Color(0.72, 0.58, 0.24), 14, false, Vector3(PI * 0.5, 0, 0))
 	label_3d("忍", Vector3(CENTER_X, 1.9, SOUTH + 0.3), 54, Color(0.35, 0.18, 0.08))
 	barrier_labels.append(label_3d("ACADÉMIE SCELLÉE", Vector3(CENTER_X, 2.9, SOUTH + 0.35), 30, Color(0.95, 0.85, 0.45)))
-	barrier_labels.append(label_3d("Termine ta 2e mission de clan\net réclame ta récompense", Vector3(CENTER_X, 0.95, SOUTH + 0.35), 16, Color(0.9, 0.85, 0.75)))
+	barrier_labels.append(label_3d("2e mission de clan : fais ton\nrapport à ton chef de clan", Vector3(CENTER_X, 0.95, SOUTH + 0.35), 16, Color(0.9, 0.85, 0.75)))
 
 func _build_lights() -> void:
 	# Budget Android : exactement 3 OmniLight (hall, entraînement, couloir).

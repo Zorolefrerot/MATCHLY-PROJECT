@@ -12,6 +12,7 @@ var clan_mission_status: Label
 var secondary_status: Label
 var secondary_decline: Button
 var abandon_button: Button
+var secondary_button: Button
 var combat_active: bool = false
 
 func _build() -> void:
@@ -63,6 +64,17 @@ func _build() -> void:
 	secondary_status.position = Vector2(10,7)
 	secondary_status.size = Vector2(280,68)
 	secondary_panel.add_child(secondary_status)
+	# Le panneau entier est un bouton invisible : appuyer dessus ouvre le menu
+	# CONTINUER / ABANDONNER de la mission secondaire active, où que soit le
+	# joueur dans le village.
+	secondary_button = Button.new()
+	secondary_button.name = "SecondaryMenuButton"
+	secondary_button.flat = true
+	secondary_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	secondary_button.set_anchors_preset(Control.PRESET_FULL_RECT)
+	secondary_button.pressed.connect(func() -> void: action_requested.emit("secondary_menu"))
+	secondary_panel.add_child(secondary_button)
+	secondary_button.hide()
 	secondary_panel.hide()
 	feedback = label("", 18)
 	feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -192,6 +204,8 @@ func set_secondary_objective(message: String, visible: bool) -> void:
 	var panel: Panel = get_node_or_null("SecondaryMissionPanel") as Panel
 	if panel != null:
 		panel.visible = visible
+	if is_instance_valid(secondary_button):
+		secondary_button.visible = visible
 
 func show_secondary_prompt(title: String, text: String) -> void:
 	show_menu(title, text, "ACCEPTER", false)

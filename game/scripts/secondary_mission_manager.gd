@@ -140,7 +140,20 @@ func interact() -> bool:
 
 func _open_status_prompt(mission: Dictionary, progress: Array) -> void:
 	var line := "%s %d / %d" % [str(mission.get("progressLabel", "Objectif réalisé")), progress.size(), int(mission.get("required", 1))]
-	hud.show_secondary_status("Mission en cours · %s" % str(mission.get("npcName", "Habitant")), "%s\n\n%s\n\nUne seule mission secondaire peut être active : tant que celle-ci n’est pas terminée ou abandonnée, les autres habitants ne peuvent pas te confier la leur." % [str(mission.get("objective", "Aider un habitant.")), line])
+	hud.show_secondary_status("Mission en cours · %s" % str(mission.get("npcName", "Habitant")), "%s\n\n%s\n\nCONTINUER : tu gardes la mission (une seule active à la fois).\nABANDONNER : elle retourne au tableau du village, sans pénalité." % [str(mission.get("objective", "Aider un habitant.")), line])
+
+func open_status_menu() -> bool:
+	## Appui sur le panneau « MISSION SECONDAIRE » : le joueur choisit de
+	## continuer ou d'abandonner, où qu'il soit dans le village. Le serveur
+	## n'exige aucune proximité pour l'abandon (contrairement à la collecte
+	## et à la remise, validées sur la position réelle).
+	var own := active_mission()
+	if own.is_empty():
+		return false
+	var progress: Array = own.get("progress", [])
+	_clear_inputs()
+	_open_status_prompt(own, progress)
+	return true
 
 func abandon_active() -> bool:
 	var own := active_mission()
@@ -236,7 +249,7 @@ func _refresh_objective() -> void:
 	var line := "%s %d / %d" % [str(own.get("progressLabel", "Objectif")), progress.size(), required]
 	if progress.size() >= required:
 		line = "✓ Objectif terminé · Retourner voir %s" % str(own.get("npcName", "le propriétaire"))
-	hud.set_secondary_objective("MISSION SECONDAIRE\n%s\n%s" % [str(own.get("icon", "•")) + " " + str(own.get("title", "Mission")), line], true)
+	hud.set_secondary_objective("MISSION SECONDAIRE · MENU\n%s\n%s" % [str(own.get("icon", "•")) + " " + str(own.get("title", "Mission")), line], true)
 	_update_arrow()
 
 func arrow_target() -> Dictionary:
@@ -335,7 +348,10 @@ func _update_arrow() -> void:
 		return
 	arrow.visible = true
 	arrow.position = Vector3(0, 2.95 + 0.06 * sin(arrow_clock * 2.6), 0)
-	arrow.rotation.y = lerp_angle(arrow.rotation.y, atan2(flat.x, flat.z), 0.30)
+	# La pointe de la flèche suit -Z (même convention que les personnages) :
+	# atan2(-x,-z) vise la cible. atan2(x,z) la faisait pointer à l'opposé,
+	# d'où une flèche « déboussolée » qui ne montrait jamais le bon endroit.
+	arrow.rotation.y = lerp_angle(arrow.rotation.y, atan2(-flat.x, -flat.z), 0.30)
 
 func _tick_arrow(delta: float) -> void:
 	arrow_clock += delta

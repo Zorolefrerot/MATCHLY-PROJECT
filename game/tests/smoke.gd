@@ -568,6 +568,19 @@ func run() -> void:
 	check(not target_point.is_empty() and absf(float(target_point["point"].z) - 40.0) < 0.01, "the red arrow targets the server objective point")
 	visit.secondary_manager.update_hud(0.016)
 	check(arrow.visible, "the red arrow appears above the player while a mission is active")
+	# Orientation : la pointe (-Z) doit viser l'objectif, jamais l'opposé.
+	# Joueur à l'origine, cible en (-23,·,40) : cap attendu atan2(23,-40).
+	visit.player.reset_at(Vector3(0,0.25,0))
+	for step in range(24):
+		visit.secondary_manager.update_hud(0.016)
+	var expected_yaw := atan2(23.0, -40.0)
+	check(absf(wrapf(arrow.rotation.y - expected_yaw, -PI, PI)) < 0.05, "the guidance arrow points at the objective, never away from it")
+	# Le panneau HUD de la mission est un bouton : l'appui ouvre le menu
+	# continuer/abandonner partout dans le village, sans proximité du donneur.
+	check(visit.hud.secondary_button.visible, "the on-screen mission panel is pressable while a mission is active")
+	visit.hud.secondary_button.pressed.emit()
+	check(visit.hud.abandon_button.visible and visit.hud.primary.text == "CONTINUER LA MISSION", "pressing the mission panel offers continue and abandon anywhere")
+	visit.resume_visit()
 	# A second, available mission must not open an acceptance while one runs.
 	fake_state["missions"].append({"missionId":"smoke-second","slot":1,"revision":1,"typeId":"lost_cat","npcId":other_npc["id"],"status":"available","npcPosition":[other_npc["position"].x,other_npc["position"].y,other_npc["position"].z],"returnPosition":[other_npc["position"].x,other_npc["position"].y,other_npc["position"].z],"targets":[[62,0.65,30]],"progress":[],"required":1,"title":"Chat","icon":"*","objective":"Retrouver.","progressLabel":"Chat retrouvé","dialogue":"d","acceptedDialogue":"m","availableAt":0})
 	visit.secondary_manager.apply_state(fake_state)
@@ -582,7 +595,7 @@ func run() -> void:
 	check(not visit.secondary_manager.active_mission().is_empty() and visit.hud.feedback.text.contains("hors connexion"), "abandon only travels through the verified link")
 	check(not visit.hud.overlay.visible, "the abandon menu closes when the choice is confirmed")
 	visit.secondary_manager.apply_state({"schemaVersion":1,"unlocked":false,"message":"","missions":[]})
-	check(visit.secondary_manager.active_mission().is_empty() and not arrow.visible, "clearing the board hides the arrow again")
+	check(visit.secondary_manager.active_mission().is_empty() and not arrow.visible and not visit.hud.secondary_button.visible, "clearing the board hides the arrow and the mission panel button again")
 	visit.player.reset_at(KonohaMap.SPAWN)
 	for frame in range(6):
 		await physics_frame

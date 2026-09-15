@@ -749,6 +749,9 @@ func _action(action: String) -> void:
 			_update_music()
 		"mission_confirm":
 			if not secondary_manager.confirm_pending(): _confirm_mission()
+		"secondary_menu":
+			if is_instance_valid(secondary_manager):
+				secondary_manager.open_status_menu()
 		"secondary_decline":
 			secondary_manager.decline_pending()
 		"secondary_abandon":

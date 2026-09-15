@@ -185,7 +185,7 @@ func _update_hud() -> void:
 	if status == "IN_PROGRESS" or running:
 		hud.set_clan_mission_hud(ClanMission.hud_line(score, remaining_seconds), true)
 	elif status in ["TIME_EXPIRED", "REPORT_PENDING"]:
-		hud.set_clan_mission_hud("Mission terminée !\nÉtoiles récupérées : %d\nRetournez voir votre chef de clan pour faire votre rapport." % score, true)
+		hud.set_clan_mission_hud("Collecte terminée ! Étoiles : %d\nFais ton rapport à ton chef de clan :\nla récompense valide la mission et ouvre l'Académie." % score, true)
 	else:
 		hud.set_clan_mission_hud("", false)
 
@@ -202,6 +202,13 @@ func sync_state(value: Dictionary) -> void:
 		running = remaining_seconds > 0.0
 		if running and active_stars.is_empty():
 			_spawn_initial_stars()
+		elif not running:
+			# Minuteur écoulé pendant une déconnexion : sans ce rattrapage la
+			# mission reste bloquée à jamais en IN_PROGRESS côté serveur (il
+			# attend l'événement « expire » du client) et l'Académie ne se
+			# débloque jamais. La chaîne reprend : expire → rapport au chef →
+			# récompense → déblocage.
+			_expire_locally()
 	elif status in ["TIME_EXPIRED", "REPORT_PENDING", "COMPLETED"]:
 		running = false
 		_clear_stars()
@@ -221,14 +228,17 @@ func start_local_mission() -> void:
 	_update_hud()
 
 func _expire_locally() -> void:
-	if not running:
+	# Garde sur le statut (pas sur running) : le rattrapage hors ligne arrive
+	# avec running déjà faux, et un double envoi reste impossible car le statut
+	# local passe immédiatement à TIME_EXPIRED.
+	if str(mission.get("status", "")) != "IN_PROGRESS":
 		return
 	running = false
 	_clear_stars()
 	mission["status"] = "TIME_EXPIRED"
 	mission["score"] = score
 	mission["startedAt"] = mission.get("startedAt")
-	collection_feedback.emit("Mission terminée ! Étoiles récupérées : %d" % score)
+	collection_feedback.emit("Collecte terminée ! Étoiles récupérées : %d · Fais ton rapport à ton chef de clan pour valider la mission." % score)
 	expiration_requested.emit(score)
 	_update_hud()
 
