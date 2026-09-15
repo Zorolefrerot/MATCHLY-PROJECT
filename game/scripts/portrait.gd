@@ -20,7 +20,7 @@ static func texture(appearance: Dictionary, sensei: bool = false) -> ImageTextur
 	var key := "%s|%s" % [JSON.stringify(data), "sensei" if sensei else "genin"]
 	if cache.has(key):
 		return cache[key]
-	var image := Image.create(SIZE, SIZE, false, Image.FORMAT_RGBA8)
+	var image := Image.create_empty(SIZE, SIZE, false, Image.FORMAT_RGBA8)
 	_paint(image, data, sensei)
 	var result := ImageTexture.create_from_image(image)
 	if cache.size() >= 96:

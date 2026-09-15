@@ -510,7 +510,12 @@ func _candidate_row(item: Dictionary) -> Control:
 	var details := Label.new()
 	var affinity: String = str(item.get("affinity", ""))
 	var style: String = str(item.get("style", ""))
-	details.text = " · ".join(PackedStringArray([affinity, style]).filter(func(value: String) -> bool: return not value.is_empty()))
+	var parts: Array[String] = []
+	if not affinity.is_empty():
+		parts.append(affinity)
+	if not style.is_empty():
+		parts.append(style)
+	details.text = " · ".join(PackedStringArray(parts))
 	if details.text.is_empty():
 		details.text = "Candidat de l’Académie"
 	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

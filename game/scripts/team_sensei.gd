@@ -19,7 +19,7 @@ var name_label: Label3D
 var vest_root: Node3D
 
 func configure(sensei: Dictionary, from: Vector3, to: Vector3) -> void:
-	data = sensei if sensei is Dictionary else {}
+	data = sensei
 	position = from
 	target_point = to
 	_build()
