@@ -513,7 +513,8 @@ func run() -> void:
 	check(visit.hud.blocked and visit.hud.menu_title.text == "Garde de la Résidence", "guard has a simple welcome interaction")
 	visit.resume_visit()
 	# The stair is exercised as CharacterBody3D movement, never as a transition.
-	visit.player.reset_at(Vector3(7.0, 0.25, 7.1))
+	# Start just before the first tread, not inside a step collision.
+	visit.player.reset_at(Vector3(7.0, 0.25, 8.7))
 	var stair_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3(0, 5, 0), visit.player.global_position - Vector3(0, 1, 0), 1)
 	var stair_hit: Dictionary = visit.player.get_world_3d().direct_space_state.intersect_ray(stair_ray)
 	check(not stair_hit.is_empty(), "physical stair collider is active (bodies=%d layers=%d/%d)" % [visit.hokage_interior.static_bodies.size(), visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 2].collision_layer, visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 1].collision_layer])
