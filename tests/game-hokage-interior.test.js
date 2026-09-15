@@ -14,8 +14,18 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
     "BALCON",
     "_portrait_card",
     "_stairs",
+    "_war_frame",
+    "_office_door",
+    "GALERIE · 4e GRANDE GUERRE NINJA",
+    "Secrétaire des Missions",
+    "HokageSecretary",
+    "HokageGuardLeft",
+    "HokageGuardRight",
+    "secretary_overlaps",
+    "guard_overlaps",
     "StaticBody3D.new()",
     "ConvexPolygonShape3D.new()",
+    "OmniLight3D.new()",
   ])
     assert.match(interior, new RegExp(section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   for (const name of [
@@ -76,5 +86,14 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
     assert.equal(bytes.readUInt32BE(20), 528);
   }
   assert.match(read("game/assets/konoha/hokage/README.md"), /peakpx\.com/);
+  assert.match(read("game/assets/konoha/hokage/README.md"), /Quatrième Grande Guerre Ninja/);
   assert.match(read("art_sources/konoha/hokage-gallery-source.json"), /license_verified/);
+  const warPanels = readdirSync(portraitDir).filter((file) => /^war_\d+_.*\.png$/.test(file));
+  assert.equal(warPanels.length, 10);
+  for (const file of warPanels) {
+    const bytes = readFileSync(new URL(file, portraitDir));
+    assert.equal(bytes.toString("hex", 0, 8), "89504e470d0a1a0a");
+    assert.equal(bytes.readUInt32BE(16), 640);
+    assert.equal(bytes.readUInt32BE(20), 360);
+  }
 });

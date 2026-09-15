@@ -387,9 +387,15 @@ func _reachable(point: Vector3) -> bool:
 	return world.get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
 
 func nearest_interaction() -> int:
-	# The residence hall is a physical walk-through, not an interaction target.
-	# Keep the general interaction system for Aoi and the village panels only.
-	if transition_lock > 0.0 or inside_hokage:
+	# The residence remains a physical walk-through. Only its existing staff
+	# zones are interaction targets; they do not own any transition logic.
+	if transition_lock > 0.0:
+		return -2
+	if inside_hokage:
+		if is_instance_valid(hokage_interior) and hokage_interior.secretary_overlaps(player):
+			return -3
+		if is_instance_valid(hokage_interior) and hokage_interior.guard_overlaps(player):
+			return -4
 		return -2
 	if is_instance_valid(hokage_entry_trigger) and hokage_entry_trigger.get_overlapping_bodies().has(player):
 		return -2
@@ -405,9 +411,15 @@ func interact() -> void:
 		return
 	var nearest: int = nearest_interaction()
 	if nearest == -2:
-		hud.notice("Approche-toi d’Aoi ou d’un panneau pour interagir.")
+		hud.notice("Approche-toi d’un interlocuteur ou d’un panneau pour interagir.")
 		return
 	_clear_inputs()
+	if nearest == -3:
+		open_journal("Secrétaire des Missions · Tableau", "Bonjour, shinobi. Que puis-je faire pour toi ?")
+		return
+	if nearest == -4:
+		_dialogue("Garde de la Résidence", "Bienvenue à la Résidence du Hokage.\nGarde le passage libre et respecte les archives du village.")
+		return
 	if nearest == -1:
 		guide_met = true
 		guide.face(player.position-guide.position)
@@ -498,7 +510,7 @@ func _sync_mission() -> void:
 			if WelcomeMission.PLACES[i] in mission["visited"]:
 				visited[i] = true
 
-func open_journal() -> void:
+func open_journal(title: String = "Journal · Mission d’accueil", introduction: String = "") -> void:
 	_close_chat()
 	if not initialized or ending:
 		return
@@ -506,13 +518,15 @@ func open_journal() -> void:
 	journal_open = true
 	menu_event = ""
 	var text: String = WelcomeMission.journal(mission)
+	if not introduction.is_empty():
+		text = introduction + "\n\n" + text
 	if api != null and api.profile.is_empty():
 		text = "Session expirée ou accès indisponible. Reviens à MON COMPTE pour te reconnecter. Les étapes déjà confirmées restent sur ton compte."
 	if not request_kind.is_empty():
 		text = "Enregistrement / actualisation en cours. Attends la confirmation.\n\n" + text
 	elif not sync_error.is_empty():
 		text = sync_error + "\nActualise avant de valider à nouveau une étape.\n\n" + text
-	hud.show_menu("Journal · Mission d’accueil",text,"CONTINUER LA VISITE",true)
+	hud.show_menu(title,text,"CONTINUER LA VISITE",true)
 	hud.primary.disabled = false
 	hud.mission_refresh.show()
 	hud.mission_refresh.disabled = api == null or api.busy or api.profile.is_empty() or not request_kind.is_empty()

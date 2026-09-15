@@ -7,13 +7,17 @@ La première version de l’intérieur est un bâtiment compact de deux niveaux,
 3. galerie des sept portraits encadrés ;
 4. escalier à marches et collision convexe continue ;
 5. salle du conseil à l’étage ;
-6. bureau du Hokage, carte de Konoha et balcon.
+6. bureau du Hokage, carte de Konoha et balcon ;
+7. hall administratif avec deux gardes, secrétaire immobile et comptoir de missions ;
+8. premier niveau avec couloir, porte officielle, galerie de la Quatrième Grande Guerre Ninja et sept portraits des Hokage.
 
 ## Entrée et sortie
 
 La façade extérieure est restaurée comme un volume fermé et continu : la porte est visible, fermée et solide, sans espace vide dans le compound. Un sceau circulaire bleu lumineux est posé au sol devant la porte. Le joueur doit rester immobile sur ce sceau pendant trois secondes ; un écran de chargement avec une image de portail bleu s’affiche, puis le joueur est téléporté vers la résidence virtuelle. Aucun bouton d’entrée ou de sortie n’est utilisé. Depuis l’intérieur, marcher vers le seuil avant ressort automatiquement devant la façade. `transition_lock` filtre les doubles événements et empêche un retour immédiat après chaque téléportation.
 
 L’intérieur reste dans le même `SubViewport` et le même `KonohaMap` que Konoha : il n’y a pas de seconde scène ni de second système de téléportation. Pour éviter qu’il apparaisse dans un autre quartier ou rencontre les colliders extérieurs, son origine est une poche virtuelle explicitement isolée hors du sol jouable (`HOKAGE_INTERIOR_ORIGIN`). Les destinations sont des `Marker3D` nommés `HokageExteriorSpawn` et `HokageInteriorSpawn`. L’entrée (`HokageExteriorEntryTrigger`) et la sortie (`HokageInteriorExitTrigger`) sont deux `Area3D` distinctes.
+
+Le rez-de-chaussée est organisé autour d’un hall lisible : deux gardes symétriques, un comptoir solide avec une zone d’approche libre, une secrétaire statique et un tableau de missions. L’interaction de la secrétaire ouvre le journal `WelcomeMission` existant ; aucun deuxième système de mission n’a été créé. Le premier niveau est accessible par l’escalier physique et contient un couloir central, cinq cadres de guerre de chaque côté, une porte officielle ouverte et un bureau meublé. Les PNJ utilisent la géométrie légère et la pose idle existante de `KonohaNPC`, mais leurs couches de collision physiques restent nulles ; seules leurs zones d’interaction détectent le joueur.
 
 Pendant le chargement et la visite intérieure, la position locale n’est pas envoyée au serveur WSS : le serveur conserve la dernière position extérieure valide. Cela évite que sa protection anti-téléportation renvoie une correction au joueur intérieur. À la sortie, la présence réseau est relâchée progressivement vers le spawn extérieur. Le même joueur, la même caméra, le HUD, la connexion WebSocket et les avatars partagés restent utilisés. La poche et son trigger de sortie sont désactivés hors visite.
 

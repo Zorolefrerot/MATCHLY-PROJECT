@@ -494,6 +494,36 @@ func run() -> void:
 	for frame in range(300):
 		await physics_frame
 	check(visit.inside_hokage and visit.player.position.distance_to(interior_position) < 0.2, "standing inside for five seconds does not disappear or exit")
+	# The secretary opens the existing WelcomeMission journal, while the two
+	# guards remain approachable and non-blocking.
+	visit.player.reset_at(visit.hokage_interior.secretary_zone.global_position)
+	for frame in range(8):
+		await physics_frame
+	check(visit.hokage_interior.secretary_overlaps(visit.player), "secretary interaction zone is reachable from the hall")
+	visit.interact()
+	await process_frame
+	check(visit.hud.blocked and visit.hud.menu_title.text.contains("Secrétaire des Missions"), "secretary opens the existing mission menu")
+	visit.resume_visit()
+	visit.player.reset_at(visit.hokage_interior.guard_zones[0].global_position)
+	for frame in range(8):
+		await physics_frame
+	check(visit.hokage_interior.guard_overlaps(visit.player), "guard interaction zone is reachable without a physical blocker")
+	visit.interact()
+	await process_frame
+	check(visit.hud.blocked and visit.hud.menu_title.text == "Garde de la Résidence", "guard has a simple welcome interaction")
+	visit.resume_visit()
+	# The stair is exercised as CharacterBody3D movement, never as a transition.
+	visit.player.reset_at(Vector3(7.0, 0.25, 7.1))
+	Input.action_press("move_forward")
+	for frame in range(180):
+		await physics_frame
+	Input.action_release("move_forward")
+	check(visit.player.position.y > 1.0, "player climbs the physical stair to the first level")
+	Input.action_press("move_back")
+	for frame in range(180):
+		await physics_frame
+	Input.action_release("move_back")
+	check(visit.player.position.y < 1.0, "player can descend the physical stair to the hall")
 	# TEST 3/4: crossing the interior exit immediately returns outside, then
 	# the debounce keeps the exterior spawn from re-entering by itself.
 	visit.player.reset_at(visit.hokage_interior.exit_trigger.global_position)
