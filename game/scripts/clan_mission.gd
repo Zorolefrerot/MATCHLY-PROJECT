@@ -8,6 +8,7 @@ const STAR_COUNT: int = 10
 const STATUSES: Array[String] = [
 	"NOT_STARTED", "ACCEPTED", "IN_PROGRESS", "TIME_EXPIRED", "REPORT_PENDING", "COMPLETED"
 ]
+const EVENTS: Array[String] = ["accept", "start", "expire", "report_pending", "report"]
 
 static func blank() -> Dictionary:
 	return {
