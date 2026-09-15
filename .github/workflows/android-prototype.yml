@@ -2,7 +2,7 @@ name: Android - Prototype IDREM ZENKAI
 
 on:
   push:
-    branches: [arena/01a094b6-matchly-project]
+    branches: [arena/01a0a556-matchly-project]
     paths:
       - game/**
       - .github/workflows/android-prototype.yml
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   android:
-    if: github.ref == 'refs/heads/arena/01a094b6-matchly-project'
+    if: github.ref == 'refs/heads/arena/01a0a556-matchly-project'
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     env:
