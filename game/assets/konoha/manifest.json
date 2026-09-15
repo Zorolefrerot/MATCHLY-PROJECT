@@ -130,5 +130,98 @@
       "description": "Generated river water tile, repeated along the water segments without stretching."
     }
   ],
-  "rights": "Owner-provided references; original rights not independently verified. Derived textures are not claimed as wholly original artwork. Generated environment textures are limited to sky, earth and river surfaces."
+  "rights": "Owner-provided references; original rights not independently verified. Derived textures are not claimed as wholly original artwork. Generated environment textures are limited to sky, earth and river surfaces.",
+  "hokage_war_gallery_outputs": [
+    {
+      "file": "war_01_alliance.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "02bf75ed117528b630654b5c21762fb398e317b13bb199a6fb2e858d2c03359d",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_02_konoha_forces.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "ff2584b49e2a3f368bcf63570089a919612debf2fa64317c8967fe19e6ea31a2",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_03_naruto.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "12111941dabdfce7c682e5f231e784beb4beb97ec6be75c3b2ff0ee76df07f41",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_04_sasuke.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "513dcf8315fbee6a0fc853a145dfc315df777de46f096e8e3bd8f9791bca0c26",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_05_reanimated.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "d6d84168a142b093814b40f1d3b4e585bfb5dc547453ce67d3e3b12ff6bd59f7",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_06_madara.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "86b7276bfa970136c2263cf5a7423a7338e01773e83e3e6e61d5d8e70f119daf",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_07_obito.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "dbe8198024c15ae5e8253da64849fecd6b83415e0359b1b181c680270808945e",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_08_ten_tails.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "bb3c89355f4223ffad999cd24676bc371a69fc9f4b679a20284d0a6c7c7e5dbf",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_09_final_battle.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "b87f07af88d1315f6585a454aa7f557a3fc809bb538126d2dc5148555ff5f419",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_10_peace.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "a84913421ac802730d23f32a7b820d6ac18e31447d3a875b3ebec1e6223181a9",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    }
+  ],
+  "hokage_war_gallery_rights": "Illustrations originales générées localement pour ce projet; aucune source tierce incorporée, aucune licence tierce revendiquée. À distribuer selon les droits du projet et à remplacer si une provenance externe est introduite."
 }

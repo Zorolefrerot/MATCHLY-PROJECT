@@ -24,7 +24,7 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
     "secretary_overlaps",
     "guard_overlaps",
     "StaticBody3D.new()",
-    "ConvexPolygonShape3D.new()",
+    "BoxShape3D.new()",
     "OmniLight3D.new()",
   ])
     assert.match(interior, new RegExp(section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
