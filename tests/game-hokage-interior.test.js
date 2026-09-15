@@ -14,6 +14,8 @@ test("the Hokage residence is a deliberate, collidable two-floor visit", () => {
     "BALCON",
     "_portrait_card",
     "_stairs",
+    "stairwell opening",
+    "InteriorStairSlopeCollision",
     "_war_frame",
     "_office_door",
     "GALERIE · 4e GRANDE GUERRE NINJA",

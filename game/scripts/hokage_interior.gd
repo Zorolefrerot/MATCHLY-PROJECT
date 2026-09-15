@@ -116,9 +116,25 @@ func _build_ground_floor() -> void:
 func _build_first_floor() -> void:
 	# The upper floor sits on top of the same stair wedge. It has a compact
 	# central corridor, side doors and a wider official office at the back.
-	box(Vector3(20, 0.22, 17), Vector3(0, UPPER_FLOOR_Y, -1.8), Color("8b6248"), true)
-	for z in [-9.4, -7.4, -5.4, -3.4, -1.4, 0.6, 2.6, 4.6]:
+	# The former full slab is deliberately split around a stairwell opening:
+	# this preserves headroom all the way up the physical stair instead of
+	# turning the underside of the first floor into an invisible ceiling.
+	var floor_color := Color("8b6248")
+	box(Vector3(20.0, 0.22, 11.0), Vector3(0, UPPER_FLOOR_Y, -4.75), floor_color, true)
+	box(Vector3(15.0, 0.22, 5.95), Vector3(-2.5, UPPER_FLOOR_Y, 3.73), floor_color, true)
+	box(Vector3(0.5, 0.22, 5.95), Vector3(9.75, UPPER_FLOOR_Y, 3.73), floor_color, true)
+	# Safe landing at the stair head, flush with the corridor floor.
+	box(Vector3(4.5, 0.22, 0.90), Vector3(7.25, UPPER_FLOOR_Y, 1.20), floor_color, true)
+	# Visual floor seams stop at the stairwell edges; no floating strips cross
+	# the opening and no transparent-looking gap is left in the corridor.
+	for z in [-9.4, -7.4, -5.4, -3.4, -1.4]:
 		box(Vector3(19.2, 0.028, 0.07), Vector3(0, UPPER_FLOOR_Y + 0.14, z), Color("b3845a"))
+	for z in [0.6, 2.6, 4.6]:
+		box(Vector3(4.8, 0.028, 0.07), Vector3(-7.6, UPPER_FLOOR_Y + 0.14, z), Color("b3845a"))
+		box(Vector3(0.35, 0.028, 0.07), Vector3(9.7, UPPER_FLOOR_Y + 0.14, z), Color("b3845a"))
+	# Low trim around the stairwell reads as a finished architectural opening.
+	box(Vector3(0.12, 0.28, 5.9), Vector3(4.95, UPPER_FLOOR_Y + 0.18, 3.72), Color("c49b5e"))
+	box(Vector3(0.12, 0.28, 5.9), Vector3(9.45, UPPER_FLOOR_Y + 0.18, 3.72), Color("c49b5e"))
 	# Upper envelope and roof beams.
 	_wall(Vector3(-9.8, 6.2, -1.8), Vector3(0.35, 4.4, 17), Color("c9b18c"))
 	_wall(Vector3(9.8, 6.2, -1.8), Vector3(0.35, 4.4, 17), Color("c9b18c"))
@@ -156,7 +172,7 @@ func _build_first_floor() -> void:
 	var gallery_z := [2.0, 0.15, -1.7, -3.55, -4.65]
 	for i in range(5):
 		_war_frame(i, Vector3(-4.04, 6.35, gallery_z[i]), true)
-		_war_frame(i + 5, Vector3(4.04, 6.35, gallery_z[i]), false)
+		_war_frame(i + 5, Vector3(4.04, 6.35, gallery_z[i]), true)
 
 	# Open official door: strong frame and emblem, with a clear central passage.
 	_office_door(Vector3(0, 4.0, -5.35))
