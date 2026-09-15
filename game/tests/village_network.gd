@@ -160,12 +160,12 @@ func run() -> void:
 	a.chat_panel.input.text = "Bonjour [b]Konoha[/b]"
 	a.chat_panel._submit()
 	check(await wait_for(func() -> bool: return b.chat_panel.lines.size() == 1 and a.chat_panel.pending == -1),"nearby RP message and acknowledgement pass through real WSS")
-	check(b.chat_panel.lines[0].begins_with("[RP]") and not b.chat_panel.history.bbcode_enabled and b.chat_panel.history.text.contains("[b]Konoha[/b]"),"received content stays literal plaintext, never BBCode")
+	check(b.chat_panel.lines.size() > 0 and b.chat_panel.lines[0].begins_with("[RP]") and not b.chat_panel.history.bbcode_enabled and b.chat_panel.history.text.contains("[b]Konoha[/b]"),"received content stays literal plaintext, never BBCode")
 	a.chat_panel.channel.select(1)
 	a.chat_panel.input.text = "Pause hors personnage"
 	a.chat_panel._submit()
 	check(await wait_for(func() -> bool: return b.chat_panel.lines.size() == 2),"HRP uses the same proximity delivery with a distinct label")
-	check(b.chat_panel.lines[1].begins_with("[HRP]"),"HRP label is preserved")
+	check(b.chat_panel.lines.size() > 1 and b.chat_panel.lines[1].begins_with("[HRP]"),"HRP label is preserved")
 	a.resume_visit()
 	# Combat starts beside the market tower. This integration fixture validates
 	# transport proximity, not local scenery collision, so use a ghosted local

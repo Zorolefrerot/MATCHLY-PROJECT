@@ -107,11 +107,15 @@ try {
       )
       .run(id, JSON.stringify(appearance));
     const token = randomBytes(32).toString("hex");
+    // Jeton de fixture jetable : le scénario complet (trajets légaux aller-retour
+    // vers l'Académie inclus) dépasse 120 s ; au-delà, la boucle d'admission
+    // cesse de rafraîchir le lease et joinCombat/relais RP deviennent silencieux.
+    // La garde anti-blocage du harness (180 s) reste la vraie borne.
     await db
       .prepare(
         "INSERT INTO game_sessions(token,user_id,expires) VALUES (?,?,?)",
       )
-      .run(digest(token), id, Date.now() + 120000);
+      .run(digest(token), id, Date.now() + 600000);
     const allocation = await db
       .prepare("SELECT * FROM allocations WHERE user_id=?")
       .get(id);
