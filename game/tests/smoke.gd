@@ -517,8 +517,8 @@ func run() -> void:
 	visit.player.reset_at(Vector3(7.0, 0.25, 8.7))
 	var stair_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3(0, 5, -1.1), visit.player.global_position + Vector3(0, -1, -1.1), 1)
 	var stair_hit: Dictionary = visit.player.get_world_3d().direct_space_state.intersect_ray(stair_ray)
-	var stair_hit_name := str(stair_hit.get("collider").name) if not stair_hit.is_empty() else "NONE"
-	var stair_hit_y := stair_hit.get("position", Vector3.ZERO).y if not stair_hit.is_empty() else -999.0
+	var stair_hit_name: String = str(stair_hit.get("collider").name) if not stair_hit.is_empty() else "NONE"
+	var stair_hit_y: float = float(stair_hit.get("position", Vector3.ZERO).y) if not stair_hit.is_empty() else -999.0
 	check(false, "STAIR_DEBUG hit=%s y=%.2f bodies=%d layers=%d/%d" % [stair_hit_name, stair_hit_y, visit.hokage_interior.static_bodies.size(), visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 2].collision_layer, visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 1].collision_layer])
 	Input.action_press("move_forward")
 	for frame in range(180):
