@@ -492,6 +492,29 @@ func _stairs(point: Vector3, angle: float, width: float, count: int, rise: float
 	add_child(body)
 	static_bodies.append(body)
 
+	# A thin sloped box is kept alongside the convex wedge. CharacterBody3D
+	# follows this continuous physical surface reliably on desktop and Android,
+	# while the visible treads above preserve the Japanese stair silhouette.
+	var ramp_root := Node3D.new()
+	ramp_root.name = "InteriorStairSlope"
+	ramp_root.position = point
+	ramp_root.rotation.y = angle
+	add_child(ramp_root)
+	var slope_body := StaticBody3D.new()
+	slope_body.name = "InteriorStairSlopeCollision"
+	var hypotenuse := sqrt(length * length + total_height * total_height)
+	slope_body.position = Vector3(0, total_height * 0.5, hypotenuse * 0.5)
+	slope_body.rotation.x = -atan2(total_height, length)
+	slope_body.collision_layer = 1
+	slope_body.collision_mask = 0
+	var slope_shape := BoxShape3D.new()
+	slope_shape.size = Vector3(width, 0.24, hypotenuse)
+	var slope_collision := CollisionShape3D.new()
+	slope_collision.shape = slope_shape
+	slope_body.add_child(slope_collision)
+	ramp_root.add_child(slope_body)
+	static_bodies.append(slope_body)
+
 func label_3d(text: String, point: Vector3, size: int, angle: float = 0.0) -> void:
 	var label := Label3D.new()
 	label.text = text
