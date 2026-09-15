@@ -5,6 +5,7 @@ var identity: Label
 var mission_refresh: Button
 var text_scroll: ScrollContainer
 var combat_status: Label
+var clan_mission_status: Label
 var combat_active: bool = false
 
 func _build() -> void:
@@ -21,6 +22,13 @@ func _build() -> void:
 	combat_status = label("DUEL EN LIGNE · Deux joueurs admis nécessaires", 14)
 	combat_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	combat_status.add_theme_color_override("font_color", Color("ffe0a3"))
+	clan_mission_status = label("", 17)
+	clan_mission_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	clan_mission_status.add_theme_color_override("font_color", Color("ffe69b"))
+	clan_mission_status.add_theme_color_override("font_shadow_color", Color("3d2d23"))
+	clan_mission_status.add_theme_constant_override("shadow_offset_x", 2)
+	clan_mission_status.add_theme_constant_override("shadow_offset_y", 2)
+	clan_mission_status.hide()
 	feedback = label("", 18)
 	feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer = label("PROTO 0.11 · Mission personnelle · Position temporaire", 13)
@@ -115,6 +123,12 @@ func _set_combat_buttons(active: bool) -> void:
 func set_combat_message(message: String) -> void:
 	combat_status.text = message
 
+func set_clan_mission_hud(message: String, visible: bool) -> void:
+	if not is_instance_valid(clan_mission_status):
+		return
+	clan_mission_status.text = message
+	clan_mission_status.visible = visible
+
 func set_clan_techniques(value: Array) -> void:
 	for i in range(mini(4, value.size())):
 		if not value[i] is Dictionary:
@@ -195,6 +209,8 @@ func _layout() -> void:
 	combat_status.size = Vector2(640,30)
 	objective.position = Vector2(w/2-325,112)
 	objective.size = Vector2(650,44)
+	clan_mission_status.position = Vector2(w/2-325,154)
+	clan_mission_status.size = Vector2(650,76)
 	feedback.position = Vector2(w/2-320,h-235)
 	feedback.size = Vector2(640,48)
 	footer.position = Vector2(260,h-30)

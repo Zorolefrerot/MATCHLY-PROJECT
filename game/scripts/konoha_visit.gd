@@ -5,8 +5,11 @@ signal closed
 var account_profile: Dictionary = {}
 var api: CharacterAccountAPI
 var mission: Dictionary = {}
+var clan_mission: Dictionary = ClanMission.blank()
+var clan_manager: ClanMissionManager
 var menu_event: String = ""
 var request_kind: String = ""
+var clan_pending_event: String = ""
 var sync_error: String = ""
 var journal_open: bool = false
 var viewport: SubViewport
@@ -146,6 +149,12 @@ func _ready() -> void:
 	hud.set_clan_techniques(ClanTechniques.for_clan(str(identity["clan"])))
 	hud.action_requested.connect(_action)
 	hud.resume_requested.connect(resume_visit)
+	clan_manager = ClanMissionManager.new()
+	clan_manager.name = "ClanMissionManager"
+	world.add_child(clan_manager)
+	clan_manager.configure(player, hud, account_profile)
+	clan_manager.expiration_requested.connect(_clan_expiration_requested)
+	clan_manager.collection_feedback.connect(func(text: String) -> void: hud.notice(text))
 	_build_loading_overlay()
 	if not InputMap.has_action("village_interact"):
 		InputMap.add_action("village_interact")
@@ -319,10 +328,14 @@ func _physics_process(delta: float) -> void:
 	_update_camera()
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
-	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
+	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "PARLER AU CHEF" if nearest == -5 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
 	# The residence has no entry or exit control: crossing its open hall moves
 	# the player between the exterior and the virtual interior automatically.
-	hud.objective.text = WelcomeMission.objective(mission)
+	var clan_status := str(clan_mission.get("status", "NOT_STARTED"))
+	var clan_available: bool = mission.get("status", "") == "completed" or clan_status != "NOT_STARTED"
+	hud.objective.text = ClanMission.objective(clan_mission) if clan_available else WelcomeMission.objective(mission)
+	if clan_status in ["IN_PROGRESS", "TIME_EXPIRED", "REPORT_PENDING"]:
+		hud.objective.text = ClanMission.objective(clan_mission)
 	if not request_kind.is_empty():
 		hud.objective.text = "Connexion en cours · Ne ferme pas l’application pour confirmer l’étape."
 	elif not sync_error.is_empty():
@@ -402,6 +415,8 @@ func nearest_interaction() -> int:
 		return -2
 	if is_instance_valid(hokage_entry_trigger) and hokage_entry_trigger.get_overlapping_bodies().has(player):
 		return -2
+	if is_instance_valid(clan_manager) and clan_manager.is_near_own_leader():
+		return -5
 	if _reachable(guide.position):
 		return -1
 	for i in range(KonohaMap.LANDMARKS.size()):
@@ -417,6 +432,10 @@ func interact() -> void:
 		hud.notice("Approche-toi d’un interlocuteur ou d’un panneau pour interagir.")
 		return
 	_clear_inputs()
+	if nearest == -5:
+		var clan_event := clan_manager.interaction_event()
+		_dialogue(clan_manager.interaction_title(), clan_manager.interaction_text(), clan_event)
+		return
 	if nearest == -3:
 		open_journal("Secrétaire des Missions · Tableau", "Bonjour, shinobi. Que puis-je faire pour toi ?")
 		return
@@ -496,7 +515,7 @@ func _dialogue(title: String, text: String, event: String = "") -> void:
 	hud.primary.disabled = not request_kind.is_empty()
 	hud.mission_refresh.hide()
 	hud.text_scroll.scroll_vertical = 0
-	var button: String = "ACCEPTER LA MISSION" if event == "accept" else "REMETTRE MON RAPPORT" if event == "report" else "VALIDER LA LECTURE" if not event.is_empty() else "CONTINUER LA VISITE"
+	var button: String = "ACCEPTER LA MISSION" if event in ["accept", "clan_accept"] else "FAIRE LE RAPPORT" if event == "clan_report" else "REMETTRE MON RAPPORT" if event == "report" else "VALIDER LA LECTURE" if not event.is_empty() else "CONTINUER LA VISITE"
 	hud.show_menu(title,text,button,true)
 
 func _sync_mission() -> void:
@@ -508,10 +527,17 @@ func _sync_mission() -> void:
 	if WelcomeMission.valid_state(value):
 		mission = value.duplicate(true)
 		guide_met = mission["status"] != "available"
+		if is_instance_valid(clan_manager):
+			clan_manager.set_welcome_completed(mission["status"] == "completed")
 		visited.clear()
 		for i in range(WelcomeMission.PLACES.size()):
 			if WelcomeMission.PLACES[i] in mission["visited"]:
 				visited[i] = true
+	var clan_value: Variant = profile.get("clanMission")
+	if ClanMission.valid_state(clan_value):
+		clan_mission = clan_value.duplicate(true)
+		if is_instance_valid(clan_manager):
+			clan_manager.sync_state(clan_mission)
 
 func open_journal(title: String = "Journal · Mission d’accueil", introduction: String = "") -> void:
 	_close_chat()
@@ -544,6 +570,17 @@ func _confirm_mission() -> void:
 	if not sync_error.is_empty():
 		open_journal()
 		return
+	if menu_event in ["clan_accept", "clan_report"]:
+		if not is_instance_valid(clan_manager) or not clan_manager.is_near_own_leader() or api.profile.is_empty():
+			sync_error = "Approche de ton propre chef de clan avec une session active."
+			open_journal("Mission de clan")
+			return
+		clan_pending_event = "accept" if menu_event == "clan_accept" else "report"
+		request_kind = "clanMission"
+		hud.primary.disabled = true
+		hud.primary.text = "ENREGISTREMENT…"
+		api.clan_mission_event(clan_pending_event)
+		return
 	# No free checkpoint buttons in the journal: remain at the actual interaction.
 	var nearest: int = nearest_interaction()
 	var expected: int = -1 if menu_event in ["accept", "report"] else WelcomeMission.PLACES.find(menu_event.trim_prefix("read_"))
@@ -567,6 +604,52 @@ func _refresh_mission() -> void:
 func _mission_response(operation: String, success: bool, message: String) -> void:
 	if ending or operation != request_kind:
 		return
+	if operation == "clanMission":
+		var event := clan_pending_event
+		if not success:
+			request_kind = ""
+			clan_pending_event = ""
+			sync_error = message
+			_sync_mission()
+			if hud.blocked: open_journal("Mission de clan")
+			else: hud.notice("Mission de clan non confirmée : consulte le JOURNAL.")
+			return
+		_sync_mission()
+		if event == "accept":
+			# ACCEPTED and IN_PROGRESS are separate persisted states. The start
+			# request immediately follows the accepted response, never on village entry.
+			clan_pending_event = "start"
+			api.clan_mission_event("start")
+			return
+		if event == "start":
+			request_kind = ""
+			clan_pending_event = ""
+			menu_event = ""
+			# _sync_mission already activated the local stars from the server timestamp.
+			hud.hide_menu()
+			hud.notice("Mission lancée · 5:00 · 10 étoiles privées apparaissent dans le village.")
+			return
+		if event == "expire":
+			clan_pending_event = "report_pending"
+			api.clan_mission_event("report_pending")
+			return
+		if event == "report_pending":
+			request_kind = ""
+			clan_pending_event = ""
+			menu_event = ""
+			_sync_mission()
+			hud.notice("Retourne voir ton chef pour faire ton rapport.")
+			return
+		if event == "report":
+			request_kind = ""
+			clan_pending_event = ""
+			menu_event = ""
+			_sync_mission()
+			hud.hide_menu()
+			var reward: Dictionary = clan_mission.get("reward", {})
+			hud.notice("Mission terminée · %d étoile(s) · récompense enregistrée : %d IDREM GOLD, niveau %d." % [int(clan_mission.get("score", 0)), int(reward.get("idremGold", 0)), int(reward.get("level", 0))])
+			return
+		return
 	request_kind = ""
 	_sync_mission()
 	sync_error = "" if success else message
@@ -575,6 +658,13 @@ func _mission_response(operation: String, success: bool, message: String) -> voi
 		open_journal()
 	else:
 		hud.notice("Mission actualisée sur ton compte." if success else "Mission non confirmée : consulte le JOURNAL.")
+
+func _clan_expiration_requested(value: int) -> void:
+	if ending or api == null or api.busy or not clan_pending_event.is_empty():
+		return
+	request_kind = "clanMission"
+	clan_pending_event = "expire"
+	api.clan_mission_event("expire", value)
 
 func _action(action: String) -> void:
 	match action:

@@ -36,6 +36,11 @@ const CLAN_SANCTUARIES: Array[PackedScene] = [
 ]
 
 const BOUNDS := Vector2(150.0, 160.0)
+# Shared sanctuary layout data is consumed by ClanMissionManager rather than
+# duplicated coordinate checks. The gate opens onto a real walled courtyard.
+const SANCTUARY_HALF_DEPTH: float = 17.0
+const CLAN_SANCTUARY_OFFSET := Vector3(0, 0, -18.0)
+const CLAN_GATE_WIDTH: float = 6.0
 const SPAWN := Vector3(0, 0.25, 78)
 const GUIDE := Vector3(-4.0, -0.05, 65)
 const LANDMARKS: Array[Dictionary] = [
@@ -381,7 +386,7 @@ func _build_districts() -> void:
 		if kind == "clan":
 			# The sanctuary owns the rear half of the domain. Homes stay on the
 			# opposite side so no former plot or house cuts through the Blender asset.
-			var sanctuary_point := point + Vector3(0,0,-18.0)
+			var sanctuary_point: Vector3 = point + CLAN_SANCTUARY_OFFSET
 			_sanctuary_domain(sanctuary_point, str(data["name"]), clan_variant)
 			for i in range(4):
 				var angle := float(i)*TAU/4.0 + 0.4
@@ -409,14 +414,14 @@ func _sanctuary_domain(point: Vector3, title: String, variant: int) -> void:
 	# Every sanctuary gets its own walled courtyard. The front is split into
 	# two solid fence sections so the central gate remains genuinely passable.
 	var half_width := 13.5
-	var half_depth := 17.0
+	var half_depth: float = SANCTUARY_HALF_DEPTH
 	var wall_height := 2.7
 	var wall_color := Color("80624d")
 	var trim_color := Color("b98a55")
 	box(Vector3(0.55,wall_height,half_depth*2.0), point+Vector3(-half_width,wall_height*0.5,0), wall_color, true)
 	box(Vector3(0.55,wall_height,half_depth*2.0), point+Vector3(half_width,wall_height*0.5,0), wall_color, true)
 	box(Vector3(half_width*2.0,wall_height,0.55), point+Vector3(0,wall_height*0.5,-half_depth), wall_color, true)
-	var gate_gap := 6.0
+	var gate_gap: float = CLAN_GATE_WIDTH
 	var segment_width := (half_width*2.0-gate_gap)*0.5
 	for side in [-1,1]:
 		box(Vector3(segment_width,wall_height,0.55), point+Vector3(side*(gate_gap*0.5+segment_width*0.5),wall_height*0.5,half_depth), wall_color, true)
@@ -462,15 +467,15 @@ func _build_blender_sanctuary(point: Vector3, variant: int) -> void:
 	add_child(sanctuary)
 	architecture.register_external_sanctuary()
 	# Use the same simple Godot block collider as the other exterior houses.
-	# It sits behind the open courtyard gate, so it prevents traversal through
-	# the sanctuary without putting an invisible obstacle in the approach.
+	# It sits behind the open courtyard gate, so the player can physically enter
+	# the court while the rear hall remains closed by one simple collider.
 	var body := StaticBody3D.new()
 	body.name = "SanctuaryFootprint_%02d" % (variant+1)
-	body.position = point + Vector3(0,3.7,1.4)
+	body.position = point + Vector3(0,3.7,4.5)
 	body.collision_layer = 1
 	body.collision_mask = 0
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(18.0,7.4,19.0)
+	shape.size = Vector3(18.0,7.4,9.0)
 	var collision := CollisionShape3D.new()
 	collision.shape = shape
 	body.add_child(collision)

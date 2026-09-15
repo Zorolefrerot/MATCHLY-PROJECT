@@ -73,6 +73,18 @@ func mission_event(event: String) -> void:
 		return
 	_send("mission", HTTPClient.METHOD_POST, "/missions/welcome/events", {"event": event, "expectedRevision": state["revision"]})
 
+func clan_mission_event(event: String, score: int = -1) -> void:
+	if busy:
+		return
+	var state: Variant = profile.get("clanMission")
+	if event not in ClanMission.EVENTS or not ClanMission.valid_state(state):
+		completed.emit("clanMission", false, "Actualise la mission de clan après la mise à jour du serveur.")
+		return
+	var body: Dictionary = {"event": event, "expectedRevision": state["revision"]}
+	if event == "expire":
+		body["score"] = maxi(0, score)
+	_send("clanMission", HTTPClient.METHOD_POST, "/missions/clan/events", body)
+
 func _remember_device_session() -> void:
 	if _token.is_empty() or _origin.is_empty() or _expires_at <= 0:
 		return
@@ -125,6 +137,12 @@ static func valid_profile(value: Variant) -> bool:
 			return false
 	if value.has("welcomeMission") and not WelcomeMission.valid_state(value["welcomeMission"]):
 		return false
+	if value.has("clanMission") and not ClanMission.valid_state(value["clanMission"]):
+		return false
+	if value.has("progress"):
+		var progress: Variant = value["progress"]
+		if not progress is Dictionary or typeof(progress.get("idremGold")) not in [TYPE_INT, TYPE_FLOAT] or typeof(progress.get("level")) not in [TYPE_INT, TYPE_FLOAT] or progress["idremGold"] < 0 or progress["level"] < 0:
+			return false
 	var identity: Variant = value.get("character")
 	var revision: Variant = value.get("revision")
 	if not identity is Dictionary or typeof(revision) not in [TYPE_INT, TYPE_FLOAT]:

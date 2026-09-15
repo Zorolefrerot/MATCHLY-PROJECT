@@ -68,6 +68,8 @@ export async function removeAcceptedAccount(
       "game_sessions",
       "resets",
       "welcome_missions",
+      "clan_missions",
+      "player_progress",
       "character_appearances",
       "allocation_seats",
       "allocations",
