@@ -515,7 +515,7 @@ func run() -> void:
 	# The stair is exercised as CharacterBody3D movement, never as a transition.
 	# Start just before the first tread, not inside a step collision.
 	visit.player.reset_at(Vector3(7.0, 0.25, 8.7))
-	var stair_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3(0, 5, -1.1), visit.player.global_position + Vector3(0, -1, -1.1), 1)
+	var stair_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3(0, 5, -1.3), visit.player.global_position + Vector3(0, -1, -1.3), 1)
 	var stair_hit: Dictionary = visit.player.get_world_3d().direct_space_state.intersect_ray(stair_ray)
 	var stair_hit_name: String = str(stair_hit.get("collider").name) if not stair_hit.is_empty() else "NONE"
 	var stair_hit_y: float = float(stair_hit.get("position", Vector3.ZERO).y) if not stair_hit.is_empty() else -999.0
