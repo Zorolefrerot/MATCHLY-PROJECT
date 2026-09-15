@@ -65,7 +65,8 @@ test("secondary missions are global, locked until clan reward, and always have t
       index: -1,
     });
     assert.equal(
-      accepted.missions.find((mission) => mission.slot === target.slot).status,
+      accepted.state.missions.find((mission) => mission.slot === target.slot)
+        .status,
       "accepted",
     );
     await assert.rejects(
@@ -109,7 +110,8 @@ test("secondary missions are global, locked until clan reward, and always have t
       index: -1,
     });
     assert.equal(
-      completed.missions.find((mission) => mission.slot === target.slot).status,
+      completed.state.missions.find((mission) => mission.slot === target.slot)
+        .status,
       "cooldown",
     );
     assert.equal(
@@ -120,6 +122,12 @@ test("secondary missions are global, locked until clan reward, and always have t
       ).idrem_gold,
       SECONDARY_REWARD,
     );
+    // The acknowledgement carries the server-read balance so the HUD badge can
+    // display the authoritative total without recomputing anything.
+    assert.deepEqual(completed.wallet, {
+      idremGold: SECONDARY_REWARD,
+      level: 0,
+    });
     await assert.rejects(() =>
       service.action(one, {
         action: "complete",
@@ -145,6 +153,131 @@ test("secondary missions are global, locked until clan reward, and always have t
       .missions.find((mission) => mission.slot === target.slot);
     assert.equal(renewed.status, "available");
     assert.notEqual(renewed.missionId, target.missionId);
+  } finally {
+    await db.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("one active secondary mission at a time, abandonable and re-bookable", async () => {
+  const { db, dir } = await fixture();
+  try {
+    const service = new SecondaryMissionService(db);
+    await service.refresh();
+    const one = { id: 1, secondaryUnlocked: true, state: { p: [0, 0.55, 78] } };
+    const state = service.stateForPeer(one);
+    const [first, second] = state.missions;
+
+    await service.action(one, {
+      action: "accept",
+      slot: first.slot,
+      missionId: first.missionId,
+      revision: first.revision,
+      index: -1,
+    });
+
+    // A second acceptance is refused while the first mission is active, even
+    // on another slot with a fresh revision.
+    const secondSlot = await assert.rejects(
+      () =>
+        service.action(one, {
+          action: "accept",
+          slot: second.slot,
+          missionId: second.missionId,
+          revision: second.revision,
+          index: -1,
+        }),
+      (error) => {
+        assert.equal(error.gameCode, "SECONDARY_ALREADY_ACTIVE");
+        return true;
+      },
+    );
+    assert.equal(secondSlot, undefined);
+
+    // Partial progress is kept while active, then dropped by the abandon.
+    const objective = JSON.parse(
+      (
+        await db
+          .prepare("SELECT objective FROM secondary_missions WHERE slot=?")
+          .get(first.slot)
+      ).objective,
+    );
+    if (objective.targets.length > 1) {
+      one.state.p = objective.targets[0];
+      const collected = await service.action(one, {
+        action: "collect",
+        slot: first.slot,
+        missionId: first.missionId,
+        revision: first.revision,
+        index: 0,
+      });
+      assert.deepEqual(
+        collected.state.missions.find((mission) => mission.slot === first.slot)
+          .progress,
+        [0],
+      );
+    }
+
+    const active = await db
+      .prepare("SELECT * FROM secondary_missions WHERE slot=?")
+      .get(first.slot);
+    const abandoned = await service.action(one, {
+      action: "abandon",
+      slot: first.slot,
+      missionId: first.missionId,
+      revision: Number(active.revision),
+      index: -1,
+    });
+    const freed = abandoned.state.missions.find(
+      (mission) => mission.slot === first.slot,
+    );
+    assert.equal(freed.status, "available");
+    assert.deepEqual(freed.progress, []);
+    assert.ok(Number(freed.revision) > Number(active.revision));
+    // No reward and no cooldown are written by an abandon.
+    const progressRow = await db
+      .prepare("SELECT idrem_gold FROM player_progress WHERE user_id=1")
+      .get();
+    assert.equal(progressRow, undefined);
+    assert.deepEqual(abandoned.wallet, { idremGold: 0, level: 0 });
+    const freedRow = await db
+      .prepare(
+        "SELECT status,available_at FROM secondary_missions WHERE slot=?",
+      )
+      .get(first.slot);
+    assert.equal(freedRow.status, "AVAILABLE");
+    assert.ok(Number(freedRow.available_at) <= Date.now());
+    const audit = await db
+      .prepare("SELECT action FROM audit WHERE actor=1 ORDER BY id DESC")
+      .get();
+    assert.equal(audit.action, "secondary_mission_abandoned");
+
+    // Abandoning twice, or abandoning someone else's mission, is refused.
+    await assert.rejects(
+      () =>
+        service.action(one, {
+          action: "abandon",
+          slot: first.slot,
+          missionId: first.missionId,
+          revision: Number(freed.revision),
+          index: -1,
+        }),
+      /active pour toi/i,
+    );
+
+    // The freed slot, and any other slot, can be accepted again immediately.
+    const rebooked = await service.action(one, {
+      action: "accept",
+      slot: second.slot,
+      missionId: second.missionId,
+      revision: second.revision,
+      index: -1,
+    });
+    assert.equal(
+      rebooked.state.missions.find((mission) => mission.slot === second.slot)
+        .status,
+      "accepted",
+    );
   } finally {
     await db.close();
     rmSync(dir, { recursive: true, force: true });

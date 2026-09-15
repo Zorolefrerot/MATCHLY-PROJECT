@@ -553,7 +553,39 @@ func run() -> void:
 	check(not visit.inside_hokage and not visit.hokage_loading, "leaving the residence leaves no pending transition")
 	check(visit.player.get_world_3d() != game.player.get_world_3d(), "Konoha uses its own physics world, not the training arena")
 	check(root.disable_3d and game.process_mode == Node.PROCESS_MODE_DISABLED and not game.hud.is_processing_input(), "training rendering, simulation and input are suspended during the visit")
-	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("IG : 25") and visit.hud.identity.text.contains("NIVEAU : 1") and not visit.hud.identity.text.contains("Genin Test"), "Konoha displays account currency and level instead of the redundant identity banner")
+	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("IG : 25") and visit.hud.level_value.text.contains("NIVEAU : 1") and not visit.hud.identity.text.contains("Genin Test"), "Konoha displays account currency and level instead of the redundant identity banner")
+	check(visit.hud.gold_icon.texture != null and visit.hud.gold_icon.texture.get_width() == 128 and visit.hud.gold_icon.texture.get_height() == 128, "the IG coin badge is a baked 128 px square")
+	check(visit.hud.level_icon.texture != null and visit.hud.level_icon.texture.get_width() == 128 and visit.hud.level_icon.texture.get_height() == 128, "the LVL badge is a baked 128 px square")
+	check(visit.hud.gold_icon.size.x <= 40 and visit.hud.level_icon.size.x <= 40 and visit.hud.gold_icon.position.y + visit.hud.gold_icon.size.y <= visit.hud.top_panel.position.y + visit.hud.top_panel.size.y, "progress badges stay inside the top panel and never overflow")
+	var arrow: Node3D = visit.secondary_manager.arrow
+	check(arrow != null and arrow.get_parent() == visit.player and not arrow.visible, "the secondary guidance arrow rides above the player and stays hidden without an active mission")
+	var fake_npc: Dictionary = SecondaryMission.NPCS[0]
+	var other_npc: Dictionary = SecondaryMission.NPCS[1]
+	var fake_state: Dictionary = {"schemaVersion":1,"unlocked":true,"message":"Test","missions":[{"missionId":"smoke-secondary","slot":0,"revision":2,"typeId":"parcel_delivery","npcId":fake_npc["id"],"status":"accepted","npcPosition":[fake_npc["position"].x,fake_npc["position"].y,fake_npc["position"].z],"returnPosition":[fake_npc["position"].x,fake_npc["position"].y,fake_npc["position"].z],"targets":[[-23,0.65,40]],"progress":[],"required":1,"title":"Colis","icon":"*","objective":"Livrer.","progressLabel":"Colis remis","dialogue":"d","acceptedDialogue":"m","availableAt":0}]}
+	visit.secondary_manager.apply_state(fake_state)
+	check(visit.secondary_manager.active_mission().get("missionId") == "smoke-secondary", "an accepted server mission becomes the single active mission")
+	var target_point: Dictionary = visit.secondary_manager.arrow_target()
+	check(not target_point.is_empty() and absf(float(target_point["point"].z) - 40.0) < 0.01, "the red arrow targets the server objective point")
+	visit.secondary_manager.update_hud(0.016)
+	check(arrow.visible, "the red arrow appears above the player while a mission is active")
+	# A second, available mission must not open an acceptance while one runs.
+	fake_state["missions"].append({"missionId":"smoke-second","slot":1,"revision":1,"typeId":"lost_cat","npcId":other_npc["id"],"status":"available","npcPosition":[other_npc["position"].x,other_npc["position"].y,other_npc["position"].z],"returnPosition":[other_npc["position"].x,other_npc["position"].y,other_npc["position"].z],"targets":[[62,0.65,30]],"progress":[],"required":1,"title":"Chat","icon":"*","objective":"Retrouver.","progressLabel":"Chat retrouvé","dialogue":"d","acceptedDialogue":"m","availableAt":0})
+	visit.secondary_manager.apply_state(fake_state)
+	visit.player.reset_at(other_npc["position"])
+	for frame in range(6):
+		await physics_frame
+	visit.secondary_manager.interact()
+	check(visit.secondary_manager.pending.is_empty() and visit.hud.feedback.text.contains("Une seule mission"), "a second mission cannot be accepted while one is active")
+	visit.hud.show_secondary_status("Mission en cours", "texte")
+	check(visit.hud.abandon_button.visible, "the ongoing-mission menu exposes the abandon choice")
+	visit.hud.abandon_button.pressed.emit()
+	check(not visit.secondary_manager.active_mission().is_empty() and visit.hud.feedback.text.contains("hors connexion"), "abandon only travels through the verified link")
+	check(not visit.hud.overlay.visible, "the abandon menu closes when the choice is confirmed")
+	visit.secondary_manager.apply_state({"schemaVersion":1,"unlocked":false,"message":"","missions":[]})
+	check(visit.secondary_manager.active_mission().is_empty() and not arrow.visible, "clearing the board hides the arrow again")
+	visit.player.reset_at(KonohaMap.SPAWN)
+	for frame in range(6):
+		await physics_frame
 	check(visit.hud.skill_buttons.is_empty() and not visit.hud.buttons.has("melee"), "village does not expose training combat or test jutsu")
 	var architecture: KonohaArchitecture = visit.world.architecture
 	check(architecture.house_count >= 80 and architecture.palace_built, "the full village has dense homes, varied houses, apartments and the red Hokage residence")

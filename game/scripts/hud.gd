@@ -52,6 +52,10 @@ const INK := Color("132327")
 const CREAM := Color("eee6d1")
 const CONTROL_ATLAS: Texture2D = preload("res://assets/ui/control_atlas.png")
 const TECHNIQUE_ATLAS: Texture2D = preload("res://assets/ui/combat_technique_atlas.png")
+# Baked once by game/tools/generate_progress_badges.py: exact 128 px squares
+# with transparent padding, so the HUD rows never stretch or overflow them.
+const GOLD_BADGE: Texture2D = preload("res://assets/ui/progress_gold_badge.png")
+const LEVEL_BADGE: Texture2D = preload("res://assets/ui/progress_level_badge.png")
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS

@@ -12,6 +12,11 @@ var unlocked: bool = false
 var pending: Dictionary = {}
 var last_state_signature: String = ""
 var last_notice_signature: String = ""
+# Red guidance arrow floating above the player's head. It points at the next
+# objective to collect, or at the giver once everything is collected.
+var arrow: Node3D
+var arrow_clock: float = 0.0
+var arrow_allowed: bool = true
 
 func configure(value_player: TrainingFighter, value_hud: KonohaHUD) -> void:
 	player = value_player
@@ -23,6 +28,7 @@ func configure(value_player: TrainingFighter, value_hud: KonohaHUD) -> void:
 		giver.configure_giver(str(data["kind"]), str(data["name"]), data["position"], _tint(str(data["id"])))
 		givers[data["id"]] = giver
 		giver.set_mission_available(false)
+	_build_arrow()
 
 func set_link(value: VillageLink) -> void:
 	village_link = value
@@ -84,7 +90,15 @@ func interaction_caption() -> String:
 		return "APPROCHE-TOI"
 	return "AIDER · %s" % str(mission.get("title", "MISSION"))
 
+func active_mission() -> Dictionary:
+	for npc_id: String in missions:
+		var mission: Dictionary = missions[npc_id]
+		if mission.get("status") == "accepted":
+			return mission
+	return {}
+
 func interact() -> bool:
+	var own := active_mission()
 	var mission := nearest_mission()
 	if mission.is_empty():
 		for npc_id: String in missions:
@@ -100,6 +114,12 @@ func interact() -> bool:
 		return false
 	_clear_inputs()
 	if mission.get("status") == "available":
+		if not own.is_empty():
+			# One single active secondary mission: finish it or give it back
+			# before talking to another inhabitant. The server enforces the
+			# same rule; this is only the visible explanation on the handset.
+			hud.notice("Une seule mission secondaire à la fois : termine « %s » ou abandonne-la auprès de %s." % [str(own.get("title", "ta mission en cours")), str(own.get("npcName", "son donneur"))])
+			return true
 		pending = mission.duplicate(true)
 		hud.show_secondary_prompt(str(mission.get("npcName", "Habitant")), "%s\n\n%s\n\nObjectif : %s\nRécompense : +5 IDREM GOLD" % [str(mission.get("dialogue", "Excuse-moi, shinobi !")), str(mission.get("acceptedDialogue", "Merci pour ton aide.")), str(mission.get("objective", "Aider un habitant."))])
 	else:
@@ -115,7 +135,19 @@ func interact() -> bool:
 			else:
 				hud.notice("Retourne voir %s pour terminer la mission." % str(mission.get("npcName", "le PNJ")))
 		else:
-			hud.notice("%s %d / %d" % [str(mission.get("progressLabel", "Objectif réalisé")), progress.size(), int(mission.get("required", 1))])
+			_open_status_prompt(mission, progress)
+	return true
+
+func _open_status_prompt(mission: Dictionary, progress: Array) -> void:
+	var line := "%s %d / %d" % [str(mission.get("progressLabel", "Objectif réalisé")), progress.size(), int(mission.get("required", 1))]
+	hud.show_secondary_status("Mission en cours · %s" % str(mission.get("npcName", "Habitant")), "%s\n\n%s\n\nUne seule mission secondaire peut être active : tant que celle-ci n’est pas terminée ou abandonnée, les autres habitants ne peuvent pas te confier la leur." % [str(mission.get("objective", "Aider un habitant.")), line])
+
+func abandon_active() -> bool:
+	var own := active_mission()
+	if own.is_empty():
+		return false
+	hud.hide_menu()
+	_send_action("abandon", own, -1)
 	return true
 
 func confirm_pending() -> bool:
@@ -138,14 +170,24 @@ func handle_network_event(event: Dictionary) -> void:
 	match str(event.get("type", "")):
 		"secondary_state": apply_state(event)
 		"secondary_action_ack":
+			var wallet: Variant = event.get("wallet")
+			if wallet is Dictionary and is_instance_valid(hud):
+				# Server-read balance: the handset displays it, never computes it.
+				hud.set_account_progress(int(wallet.get("idremGold", 0)), int(wallet.get("level", 0)))
 			var state: Variant = event.get("state")
 			if state is Dictionary:
 				apply_state(state)
 			if event.get("action") == "complete":
 				hud.notice("MISSION TERMINÉE · Récompense : +5 IDREM GOLD")
 				_refresh_objective()
+			elif event.get("action") == "abandon":
+				hud.notice("Mission abandonnée · elle retourne au tableau du village.")
+				_refresh_objective()
 
-func update_hud() -> void:
+func update_hud(delta: float = 0.016) -> void:
+	# The arrow is refreshed even while locked: clearing the board must hide it
+	# on the same frame, not after the next server snapshot.
+	_tick_arrow(delta)
 	if not unlocked:
 		return
 	_refresh_objective()
@@ -184,14 +226,10 @@ func _rebuild_objective_markers() -> void:
 			objective_markers["%d:%d" % [int(mission.get("slot", 0)), index]] = marker
 
 func _refresh_objective() -> void:
-	var own: Dictionary = {}
-	for npc_id: String in missions:
-		var mission: Dictionary = missions[npc_id]
-		if mission.get("status") == "accepted":
-			own = mission
-			break
+	var own := active_mission()
 	if own.is_empty():
 		hud.set_secondary_objective("", false)
+		_update_arrow()
 		return
 	var progress: Array = own.get("progress", [])
 	var required := int(own.get("required", 1))
@@ -199,6 +237,109 @@ func _refresh_objective() -> void:
 	if progress.size() >= required:
 		line = "✓ Objectif terminé · Retourner voir %s" % str(own.get("npcName", "le propriétaire"))
 	hud.set_secondary_objective("MISSION SECONDAIRE\n%s\n%s" % [str(own.get("icon", "•")) + " " + str(own.get("title", "Mission")), line], true)
+	_update_arrow()
+
+func arrow_target() -> Dictionary:
+	## Server-provided point the red arrow must indicate: the nearest objective
+	## still to collect, then the giver (delivery, report) once all are done.
+	var own := active_mission()
+	if own.is_empty() or not is_instance_valid(player):
+		return {}
+	var progress: Array = own.get("progress", [])
+	var targets: Array = own.get("targets", [])
+	var best := -1
+	var best_distance := INF
+	for index in range(targets.size()):
+		if progress.has(index):
+			continue
+		var point: Array = targets[index]
+		if point.size() != 3:
+			continue
+		var candidate := Vector3(float(point[0]), float(point[1]), float(point[2]))
+		var distance := player.global_position.distance_to(candidate)
+		if distance < best_distance:
+			best_distance = distance
+			best = index
+	if best >= 0:
+		var target: Array = targets[best]
+		return {"point": Vector3(float(target[0]), float(target[1]) + 1.3, float(target[2])), "returning": false}
+	var return_point: Variant = own.get("returnPosition", [])
+	if return_point is Array and return_point.size() == 3:
+		return {"point": Vector3(float(return_point[0]), float(return_point[1]) + 1.7, float(return_point[2])), "returning": true}
+	var giver: Node3D = givers.get(str(own.get("npcId", "")))
+	if is_instance_valid(giver):
+		return {"point": giver.global_position + Vector3(0, 1.7, 0), "returning": true}
+	return {}
+
+func _build_arrow() -> void:
+	arrow = Node3D.new()
+	arrow.name = "SecondaryObjectiveArrow"
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color("d92b36")
+	material.emission_enabled = true
+	material.emission = Color("ff2f3d")
+	material.emission_energy_multiplier = 1.6
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var shaft := MeshInstance3D.new()
+	shaft.name = "ArrowShaft"
+	var shaft_mesh := BoxMesh.new()
+	shaft_mesh.size = Vector3(0.10, 0.055, 0.62)
+	shaft.mesh = shaft_mesh
+	shaft.position = Vector3(0, 0, -0.26)
+	shaft.material_override = material
+	arrow.add_child(shaft)
+	var head := MeshInstance3D.new()
+	head.name = "ArrowHead"
+	head.mesh = _arrow_head_mesh()
+	head.position = Vector3(0, 0, -0.57)
+	head.material_override = material
+	arrow.add_child(head)
+	arrow.visible = false
+	if is_instance_valid(player):
+		player.add_child(arrow)
+	else:
+		add_child(arrow)
+
+func _arrow_head_mesh() -> ArrayMesh:
+	# Explicit wedge pointing along -Z: four side triangles plus a base quad,
+	# double-sided material, so the heading is readable from any camera angle.
+	var vertices := PackedVector3Array([
+		Vector3(0, 0, -0.42),
+		Vector3(-0.26, 0.06, 0.0),
+		Vector3(0.26, 0.06, 0.0),
+		Vector3(0.26, -0.06, 0.0),
+		Vector3(-0.26, -0.06, 0.0),
+	])
+	var indices := PackedInt32Array([0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 1, 4, 1, 2, 3, 1, 3, 4])
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+func _update_arrow() -> void:
+	if not is_instance_valid(arrow):
+		return
+	var target := arrow_target()
+	if target.is_empty() or not arrow_allowed or not is_instance_valid(player):
+		arrow.visible = false
+		return
+	var point: Vector3 = target["point"]
+	var base := player.global_position + Vector3(0, 2.95, 0)
+	var flat := Vector3(point.x - base.x, 0.0, point.z - base.z)
+	if flat.length_squared() < 0.36:
+		arrow.visible = false
+		return
+	arrow.visible = true
+	arrow.position = Vector3(0, 2.95 + 0.06 * sin(arrow_clock * 2.6), 0)
+	arrow.rotation.y = lerp_angle(arrow.rotation.y, atan2(flat.x, flat.z), 0.30)
+
+func _tick_arrow(delta: float) -> void:
+	arrow_clock += delta
+	_update_arrow()
 
 func _nearest_uncollected_target(mission: Dictionary, progress: Array, targets: Array) -> int:
 	for index in range(targets.size()):

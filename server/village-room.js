@@ -1158,7 +1158,7 @@ export class VillageRoom {
       this.secondary &&
       exact(message, "action,index,missionId,revision,slot,type") &&
       message.type === "secondary_action" &&
-      ["accept", "collect", "complete"].includes(message.action) &&
+      ["accept", "abandon", "collect", "complete"].includes(message.action) &&
       typeof message.missionId === "string" &&
       message.missionId.length <= 80 &&
       Number.isSafeInteger(message.revision) &&
@@ -1172,12 +1172,15 @@ export class VillageRoom {
     ) {
       void this.secondary
         .action(peer, message)
-        .then((state) => {
+        .then((result) => {
           this.broadcastSecondary();
+          // The reward balance is read by the server inside the same
+          // transaction; the client displays it and never recomputes it.
           this.send(peer, {
             type: "secondary_action_ack",
             action: message.action,
-            state,
+            state: result.state,
+            wallet: result.wallet,
           });
         })
         .catch((error) => {

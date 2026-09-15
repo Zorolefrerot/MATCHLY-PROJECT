@@ -543,11 +543,11 @@ export class SecondaryMissionService {
           reject(
             409,
             "SECONDARY_ALREADY_ACTIVE",
-            "Termine déjà ta mission secondaire en cours.",
+            "Une seule mission secondaire à la fois : termine-la ou abandonne-la auprès du PNJ avant d’en accepter une autre.",
           );
-        await this.db
+        const accepted = await this.db
           .prepare(
-            "UPDATE secondary_missions SET status='ACCEPTED',accepted_by=?,accepted_at=?,progress='[]',updated=? WHERE slot=? AND mission_id=? AND revision=?",
+            "UPDATE secondary_missions SET status='ACCEPTED',accepted_by=?,accepted_at=?,progress='[]',updated=? WHERE slot=? AND mission_id=? AND revision=? AND status='AVAILABLE'",
           )
           .run(
             peer.id,
@@ -556,6 +556,15 @@ export class SecondaryMissionService {
             message.slot,
             message.missionId,
             message.revision,
+          );
+        // The guard above is not enough on its own: two simultaneous accepts
+        // must leave exactly one reserved row, so the write is conditional and
+        // its row count is checked inside the same transaction.
+        if (Number(accepted.changes || 0) !== 1)
+          reject(
+            409,
+            "SECONDARY_NOT_AVAILABLE",
+            "Cette mission n’est plus disponible.",
           );
       } else {
         if (
@@ -568,7 +577,44 @@ export class SecondaryMissionService {
             "Cette mission est déjà prise ou n’est pas active pour toi.",
           );
         const progress = JSON.parse(row.progress || "[]");
-        if (message.action === "collect") {
+        if (message.action === "abandon") {
+          // Leaving a mission is an explicit, confirmed player choice. The slot
+          // returns to the shared board immediately: same mission, same NPC and
+          // same objectives, emptied progress and a bumped revision so a stale
+          // client cannot act on the previous reservation. No reward, no
+          // cooldown and no penalty is written.
+          const abandoned = await this.db
+            .prepare(
+              "UPDATE secondary_missions SET status='AVAILABLE',accepted_by=NULL,accepted_at=NULL,progress='[]',revision=revision+1,updated=? WHERE slot=? AND mission_id=? AND revision=? AND status='ACCEPTED' AND accepted_by=?",
+            )
+            .run(
+              rowTime(),
+              message.slot,
+              message.missionId,
+              message.revision,
+              peer.id,
+            );
+          if (Number(abandoned.changes || 0) !== 1)
+            reject(
+              409,
+              "SECONDARY_NOT_OWNER",
+              "Cette mission n’est plus active pour toi.",
+            );
+          await this.db
+            .prepare(
+              "INSERT INTO audit(actor,action,target,detail) VALUES (?,?,?,?)",
+            )
+            .run(
+              peer.id,
+              "secondary_mission_abandoned",
+              peer.id,
+              JSON.stringify({
+                missionId: row.mission_id,
+                typeId: row.type_id,
+                abandonedProgress: progress.length,
+              }),
+            );
+        } else if (message.action === "collect") {
           if (
             !Number.isSafeInteger(message.index) ||
             message.index < 0 ||
@@ -649,14 +695,26 @@ export class SecondaryMissionService {
             "Action de mission secondaire inconnue.",
           );
       }
-      return this.db
+      const rows = await this.db
         .prepare("SELECT * FROM secondary_missions ORDER BY slot")
         .all();
+      // Authoritative balance, read inside the same transaction as the reward.
+      // It is display-only: no client computes or submits a wallet.
+      const walletRow = await this.db
+        .prepare("SELECT idrem_gold,level FROM player_progress WHERE user_id=?")
+        .get(peer.id);
+      return {
+        rows,
+        wallet: {
+          idremGold: Number(walletRow?.idrem_gold || 0),
+          level: Number(walletRow?.level || 0),
+        },
+      };
     });
-    this.rows = result;
+    this.rows = result.rows;
     this.lastPublic = "";
     this.onChange?.();
-    return this.stateForPeer(peer);
+    return { state: this.stateForPeer(peer), wallet: result.wallet };
   }
 }
 

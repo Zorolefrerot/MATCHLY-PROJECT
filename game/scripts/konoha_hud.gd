@@ -2,12 +2,16 @@ class_name KonohaHUD
 extends TrainingHUD
 ## Shared Konoha visit: mission controls plus an explicit two-player test duel.
 var identity: Label
+var level_value: Label
+var gold_icon: TextureRect
+var level_icon: TextureRect
 var mission_refresh: Button
 var text_scroll: ScrollContainer
 var combat_status: Label
 var clan_mission_status: Label
 var secondary_status: Label
 var secondary_decline: Button
+var abandon_button: Button
 var combat_active: bool = false
 
 func _build() -> void:
@@ -15,7 +19,22 @@ func _build() -> void:
 	top_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_panel.add_theme_stylebox_override("panel", panel_style(Color(0.06,0.13,0.15,0.90)))
 	add_child(top_panel)
-	identity = label("IG : 0\nNIVEAU : 0", 20)
+	gold_icon = TextureRect.new()
+	gold_icon.name = "GoldBadge"
+	gold_icon.texture = GOLD_BADGE
+	gold_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	gold_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	gold_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(gold_icon)
+	identity = label("IG : 0", 20)
+	level_icon = TextureRect.new()
+	level_icon.name = "LevelBadge"
+	level_icon.texture = LEVEL_BADGE
+	level_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	level_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	level_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(level_icon)
+	level_value = label("NIVEAU : 0", 20)
 	objective = label("Bienvenue. Approche-toi du guide Aoi.", 17)
 	objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective.add_theme_color_override("font_shadow_color", Color("172a2b"))
@@ -120,6 +139,13 @@ func _build() -> void:
 	secondary_decline.pressed.connect(func() -> void: action_requested.emit("secondary_decline"))
 	column.add_child(secondary_decline)
 	secondary_decline.hide()
+	abandon_button = Button.new()
+	abandon_button.text = "ABANDONNER LA MISSION"
+	abandon_button.custom_minimum_size.y = 42
+	abandon_button.add_theme_color_override("font_color", Color("ffb3ad"))
+	abandon_button.pressed.connect(func() -> void: action_requested.emit("secondary_abandon"))
+	column.add_child(abandon_button)
+	abandon_button.hide()
 	mission_refresh = Button.new()
 	mission_refresh.text = "ACTUALISER LA MISSION"
 	mission_refresh.custom_minimum_size.y = 44
@@ -146,8 +172,12 @@ func set_combat_message(message: String) -> void:
 	combat_status.text = message
 
 func set_account_progress(idrem_gold: int, level: int) -> void:
-	identity.text = "IG : %d\nNIVEAU : %d" % [maxi(0, idrem_gold), maxi(0, level)]
+	# The values are server-provided; the HUD only displays them beside the
+	# baked coin and level badges.
+	identity.text = "IG : %d" % maxi(0, idrem_gold)
+	level_value.text = "NIVEAU : %d" % maxi(0, level)
 	identity.show()
+	level_value.show()
 
 func set_clan_mission_hud(message: String, visible: bool) -> void:
 	if not is_instance_valid(clan_mission_status):
@@ -168,9 +198,19 @@ func show_secondary_prompt(title: String, text: String) -> void:
 	secondary_decline.show()
 	primary.disabled = false
 
+func show_secondary_status(title: String, text: String) -> void:
+	# Ongoing mission recap: the player keeps playing (CONTINUER) or gives the
+	# mission back to the village board (ABANDONNER). No other acceptance is
+	# possible while this menu's mission is active.
+	show_menu(title, text, "CONTINUER LA MISSION", false)
+	abandon_button.show()
+	primary.disabled = false
+
 func hide_menu() -> void:
 	if is_instance_valid(secondary_decline):
 		secondary_decline.hide()
+	if is_instance_valid(abandon_button):
+		abandon_button.hide()
 	super.hide_menu()
 
 func set_clan_techniques(value: Array) -> void:
@@ -213,9 +253,17 @@ func _layout() -> void:
 	var w: float = size.x
 	var h: float = size.y
 	top_panel.position = Vector2(20,20)
-	top_panel.size = Vector2(230,78)
-	identity.position = Vector2(34,28)
-	identity.size = Vector2(196,60)
+	top_panel.size = Vector2(252,84)
+	# Two compact rows: baked badge then server-provided value, each clipped to
+	# its own box so a long total can never overlap the other row or the panel.
+	gold_icon.position = Vector2(30,26)
+	gold_icon.size = Vector2(32,32)
+	identity.position = Vector2(68,28)
+	identity.size = Vector2(176,28)
+	level_icon.position = Vector2(30,58)
+	level_icon.size = Vector2(32,32)
+	level_value.position = Vector2(68,60)
+	level_value.size = Vector2(176,28)
 	buttons["music"].position = Vector2(20,108)
 	buttons["music"].size = Vector2(192,44)
 	buttons["chat"].position = Vector2(20,164)

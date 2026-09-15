@@ -4,6 +4,12 @@
 
 Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
+## Missions secondaires — guidage, abandon et badges de progression
+
+- **Une seule mission secondaire à la fois** : le menu d'acceptation ne s'ouvre pas chez un autre habitant tant qu'une mission est active ; le récapitulatif d'état (parler à son propre donneur) propose **ABANDONNER LA MISSION**, envoyé seulement par le lien WSS vérifié. Le serveur refuse et valide de son côté chaque étape.
+- **Flèche rouge au-dessus de la tête** du joueur : elle pointe le prochain objectif restant à collecter, puis le donneur pour le retour du colis ou du rapport ; masquée dans la résidence du Hokage, pendant les chargements et menus ouverts. Aucune destination inventée côté client.
+- **Badges gravés du HUD** : pièce d'or « IG » et plaque « LVL », carrés 128 px recadrés avec marge transparente (`assets/ui/progress_*_badge.png`, manifeste et script de reproduction `tools/generate_progress_badges.py`). Le total d'IG et le niveau affichés viennent de l'acquittement serveur, jamais d'un calcul du téléphone.
+
 ## Sources 0.11 — village partagé, APK compilée, essai téléphone à faire
 
 Tout compte joueur accepté peut entrer dans le monde, même si son attribution de clan est encore différée ; une identité de départ neutre est utilisée dans ce cas. Plusieurs comptes admis peuvent ensuite se connecter séparément au même quartier, avec leur nom affiché au-dessus de l’avatar, leur apparence sauvegardée, marche/course/saut et chat de proximité **RP/HRP** via le même serveur HTTPS/WSS. Le bouton **DÉFIER EN DUEL** ouvre un test à deux joueurs : chaque clan reçoit quatre techniques particulières, Uchiwa reste le seul Katon et Senju le seul Mokuton ; le serveur décide des dégâts, recharges, chakra, niveau de test, ultime clanique, esquive et KO. Reconnexion et départ restent gérés ; le duel est éphémère et aucune progression n’est enregistrée. **45 tests Node, 10 tests PostgreSQL, 2 parcours navigateur, Vite et le contrôle Godot/Android 0.11 passent.** Le test physique sur deux téléphones reste à faire. [Détails et limites](../docs/VILLAGE_PARTAGE.md).

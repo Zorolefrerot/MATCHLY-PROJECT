@@ -337,7 +337,10 @@ func _physics_process(delta: float) -> void:
 	hud.buttons["interact"].disabled = nearest == -2
 	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "PARLER AU CHEF" if nearest == -5 else "AIDER · MISSION" if nearest == -6 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
 	if is_instance_valid(secondary_manager):
-		secondary_manager.update_hud()
+		# The guidance arrow belongs to the exterior village only: the private
+		# residence pocket and the menus must not display a world direction.
+		secondary_manager.arrow_allowed = not inside_hokage and not hokage_loading and not hud.blocked
+		secondary_manager.update_hud(delta)
 	# The residence has no entry or exit control: crossing its open hall moves
 	# the player between the exterior and the virtual interior automatically.
 	var clan_status := str(clan_mission.get("status", "NOT_STARTED"))
@@ -704,6 +707,8 @@ func _action(action: String) -> void:
 			if not secondary_manager.confirm_pending(): _confirm_mission()
 		"secondary_decline":
 			secondary_manager.decline_pending()
+		"secondary_abandon":
+			secondary_manager.abandon_active()
 		"mission_refresh": _refresh_mission()
 		"combat_join":
 			if is_instance_valid(village_link): village_link.combat_join()

@@ -1,0 +1,30 @@
+{
+  "tool": "game/tools/generate_progress_badges.py",
+  "provenance": "original procedural drawing; no external artwork, no AI service, no network",
+  "font": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+  "supersampling": 4,
+  "transparent_padding_px": 3,
+  "pillow": "12.3.0",
+  "entries": [
+    {
+      "output": "game/assets/ui/progress_gold_badge.png",
+      "sha256": "8f27b8931c9db70a987f8326658981fc75cc22eb28032a0805a22f30dfcce878",
+      "bytes": 25433,
+      "size": [
+        128,
+        128
+      ],
+      "ink_coverage": 0.6179
+    },
+    {
+      "output": "game/assets/ui/progress_level_badge.png",
+      "sha256": "ec6cd2ba00caaeab33e8207770c7a4c7e31a3234bc14cb4a6f52993e6326a743",
+      "bytes": 10140,
+      "size": [
+        128,
+        128
+      ],
+      "ink_coverage": 0.6885
+    }
+  ]
+}
