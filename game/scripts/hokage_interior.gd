@@ -474,29 +474,11 @@ func _stairs(point: Vector3, angle: float, width: float, count: int, rise: float
 		# surface and prevents each riser from becoming a 0.5 m invisible wall.
 		var tread := box(Vector3(width, height, run), point + forward * (run * (float(i) + 0.5)) + Vector3.UP * (height * 0.5), Color("8e684c"))
 		tread.rotation.y = angle
-	var wedge := ConvexPolygonShape3D.new()
 	var length := run * float(count)
 	var total_height := rise * float(count)
-	wedge.points = PackedVector3Array([
-		Vector3(-width * 0.5, 0, 0), Vector3(width * 0.5, 0, 0),
-		Vector3(-width * 0.5, 0, length), Vector3(width * 0.5, 0, length),
-		Vector3(-width * 0.5, total_height, length), Vector3(width * 0.5, total_height, length)
-	])
-	var body := StaticBody3D.new()
-	body.name = "InteriorStairRamp"
-	body.position = point
-	body.rotation.y = angle
-	body.collision_layer = 1
-	body.collision_mask = 0
-	var collision := CollisionShape3D.new()
-	collision.shape = wedge
-	body.add_child(collision)
-	add_child(body)
-	static_bodies.append(body)
-
-	# A thin sloped box is kept alongside the convex wedge. CharacterBody3D
-	# follows this continuous physical surface reliably on desktop and Android,
-	# while the visible treads above preserve the Japanese stair silhouette.
+	# A thin sloped box is the sole walkable collision surface. CharacterBody3D
+	# follows it continuously on desktop and Android, while the visible treads
+	# above preserve the Japanese stair silhouette without blocking each riser.
 	var ramp_root := Node3D.new()
 	ramp_root.name = "InteriorStairSlope"
 	ramp_root.position = point
