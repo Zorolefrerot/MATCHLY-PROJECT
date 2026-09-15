@@ -518,6 +518,11 @@ func run() -> void:
 	var stair_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3(0, 5, 0), visit.player.global_position - Vector3(0, 1, 0), 1)
 	var stair_hit: Dictionary = visit.player.get_world_3d().direct_space_state.intersect_ray(stair_ray)
 	check(not stair_hit.is_empty(), "physical stair collider is active")
+	var slope_probe := PhysicsRayQueryParameters3D.create(visit.hokage_interior.global_position + Vector3(7, 5, 7.1), visit.hokage_interior.global_position + Vector3(7, -1, 7.1), 1)
+	var slope_hit: Dictionary = visit.player.get_world_3d().direct_space_state.intersect_ray(slope_probe)
+	var slope_name: String = str(slope_hit.get("collider").name) if not slope_hit.is_empty() else "NONE"
+	var slope_y: float = float(slope_hit.get("position", Vector3.ZERO).y) if not slope_hit.is_empty() else -999.0
+	check(false, "STAIR_SURFACE_DEBUG hit=%s y=%.2f" % [slope_name, slope_y])
 	Input.action_press("move_forward")
 	for frame in range(180):
 		await physics_frame
