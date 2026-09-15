@@ -189,7 +189,11 @@ try {
       process.stdout.write(chunk);
       logs = (logs + chunk).slice(-2000000);
     });
-  const timeout = setTimeout(() => child.kill("SIGKILL"), 90000);
+  // Garde-fou anti-blocage. Le trajet légal aller-retour vers l'Académie
+  // (pas de 1,3 m validés par le budget anti-téléportation du serveur) ajoute
+  // ~35 s réelles au scénario ; 180 s laissent une marge large sans masquer un
+  // vrai blocage.
+  const timeout = setTimeout(() => child.kill("SIGKILL"), 180000);
   timeout.unref();
   let code;
   try {
