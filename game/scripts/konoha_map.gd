@@ -149,19 +149,69 @@ func _build_ground_and_walls() -> void:
 	for x in [-120, -60, 0, 60, 120]:
 		box(Vector3(54, 5.2, 1.3), Vector3(x, 2.45, -161), Color("778f78"), true)
 		box(Vector3(54, 5.2, 1.3), Vector3(x, 2.45, 161), Color("778f78"), true)
-	# Gate towers mark the main entrance on the eastern side and three smaller exits.
-	_gate(Vector3(148.7, 0, 2), 0.0, "PORTE PRINCIPALE")
-	_gate(Vector3(-148.7, 0, 2), PI, "PORTE OUEST")
-	_gate(Vector3(0, 0, 158.5), PI/2, "PORTE SUD")
-	_gate(Vector3(0, 0, -158.5), -PI/2, "PORTE NORD")
+	# Four closed Konoha gates define the cardinal boundary. They are visual,
+	# solid architectural landmarks only: no exterior transition is connected.
+	_gate(Vector3(148.7, 0, 2), 0.0, "PORTE EST DE KONOHA")
+	_gate(Vector3(-148.7, 0, 2), PI, "PORTE OUEST DE KONOHA")
+	_gate(Vector3(0, 0, 158.5), PI/2, "PORTE SUD DE KONOHA")
+	_gate(Vector3(0, 0, -158.5), -PI/2, "PORTE NORD DE KONOHA")
+
+func _gate_box(size: Vector3, point: Vector3, yaw: float, color: Color, solid: bool = false) -> MeshInstance3D:
+	var node := box(size, point, color, solid)
+	node.rotation.y = yaw
+	return node
 
 func _gate(point: Vector3, angle: float, title: String) -> void:
-	var side := Vector3(cos(angle), 0, -sin(angle))
-	for offset in [-4.7, 4.7]:
-		box(Vector3(1.25, 7.5, 1.4), point + side*offset + Vector3.UP*3.75, Color("725344"), true)
-		box(Vector3(0.75, 5.8, 0.8), point + side*offset + Vector3.UP*3.0, Color("b86450"))
-	box(Vector3(11.0, 0.85, 2.0), point + Vector3.UP*7.4, Color("3d706b"))
-	_sign(title, point + Vector3.UP*6.1, 24, angle + PI/2)
+	# `angle` remains part of the gate description for the four cardinal
+	# placements; the point itself gives the exact outward normal on the ring.
+	var normal := Vector3.ZERO
+	if absf(point.x) > absf(point.z):
+		normal = Vector3(signf(point.x), 0, 0)
+	else:
+		normal = Vector3(0, 0, signf(point.z))
+	var tangent := Vector3(-normal.z, 0, normal.x)
+	var yaw := atan2(normal.x, normal.z)
+	var inner := point - normal * 0.65
+	var up := Vector3.UP
+	var tower_color := Color("b57645")
+	var plaster_color := Color("dbc89e")
+	var roof_color := Color("c27a32")
+	var roof_dark := Color("75462d")
+	var door_color := Color("527f68")
+	var door_trim := Color("315847")
+
+	# Two heavy timber towers and the white plaster lintel echo the reference
+	# image while remaining simple, shared-material Android geometry.
+	for side in [-1.0, 1.0]:
+		var tower_point := inner + tangent * side * 4.75
+		_gate_box(Vector3(1.15, 6.2, 1.55), tower_point + up * 3.1, yaw, tower_color, true)
+		_gate_box(Vector3(0.78, 5.25, 0.92), tower_point + up * 3.0 - normal * 0.10, yaw, plaster_color)
+		_gate_box(Vector3(1.55, 0.26, 1.95), tower_point + up * 6.25 - normal * 0.08, yaw, roof_dark)
+
+	# Broad roof with stepped eaves, a ridge and warm tile tones.
+	_gate_box(Vector3(12.4, 0.34, 3.35), inner - normal * 0.70 + up * 6.85, yaw, roof_dark)
+	_gate_box(Vector3(11.7, 0.38, 3.00), inner - normal * 0.80 + up * 7.15, yaw, roof_color)
+	_gate_box(Vector3(10.2, 0.34, 2.35), inner - normal * 0.88 + up * 7.48, yaw, Color("d18a36"))
+	_gate_box(Vector3(6.2, 0.30, 1.20), inner - normal * 0.95 + up * 7.78, yaw, Color("9a5a2c"))
+	_gate_box(Vector3(12.9, 0.16, 0.22), inner - normal * 1.02 + up * 6.63, yaw, Color("e0a04d"))
+
+	# White signboard above a closed double door.
+	_gate_box(Vector3(8.0, 1.35, 0.38), inner - normal * 0.15 + up * 5.35, yaw, plaster_color, true)
+	_gate_box(Vector3(8.35, 0.18, 0.52), inner - normal * 0.38 + up * 6.08, yaw, roof_dark)
+	_gate_box(Vector3(8.35, 0.18, 0.52), inner - normal * 0.38 + up * 4.63, yaw, roof_dark)
+
+	# The two green leaves meet in the middle and are collidable: the outside
+	# is intentionally not accessible yet, even though the gate reads clearly.
+	for side in [-1.0, 1.0]:
+		var leaf := inner + tangent * side * 1.78 - normal * 0.38 + up * 2.25
+		_gate_box(Vector3(3.45, 4.25, 0.20), leaf, yaw, door_color, true)
+		_gate_box(Vector3(3.52, 4.34, 0.08), leaf - normal * 0.12, yaw, door_trim)
+		_sign("木", leaf - normal * 0.20 + up * 0.10, 56, yaw + PI)
+	_gate_box(Vector3(0.12, 4.25, 0.28), inner - normal * 0.55 + up * 2.25, yaw, Color("243b31"), true)
+
+	_sign("◎  KONOHA  ◎", inner - normal * 0.42 + up * 5.38, 22, yaw + PI)
+	_sign(title, inner - normal * 0.44 + up * 4.78, 13, yaw + PI)
+	_sign("ACCÈS EXTÉRIEUR FERMÉ", inner - normal * 0.45 + up * 0.45, 11, yaw + PI)
 
 func _build_roads_and_water() -> void:
 	# A clean central cross and a wide outer ring leave every house plot off the asphalt.

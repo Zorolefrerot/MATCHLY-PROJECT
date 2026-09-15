@@ -188,6 +188,9 @@ test("Konoha is a separate account-avatar visit, not a renamed training arena", 
   for (const name of ["Académie", "Marché", "Résidence du Hokage"])
     assert.ok(map.includes(name));
   assert.doesNotMatch(map, /super\.build\(/);
+  assert.equal((map.match(/\t_gate\(/g) || []).length, 4);
+  assert.match(map, /Four closed Konoha gates/);
+  assert.match(map, /ACCÈS EXTÉRIEUR FERMÉ/);
   assert.match(
     read("game/scripts/training.gd"),
     /village_entry_pending = true\s+account_api\.refresh\(\)/,
