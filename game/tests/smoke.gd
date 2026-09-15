@@ -703,7 +703,10 @@ func run() -> void:
 	for frame in range(6):
 		await physics_frame
 	visit.hud.move_vector = Vector2(0,-1)
-	for frame in range(220):
+	# Marge large : la montée de la rampe à 22° réduit la composante
+	# horizontale de la vitesse (4.1 m/s) ; ~230 frames suffisent, 320 laissent
+	# le temps d'atteindre le palier même avec l'accélération initiale.
+	for frame in range(320):
 		await physics_frame
 	visit._clear_inputs()
 	check(visit.player.position.y > 3.6 and visit.player.is_on_floor() and academy.inside, "the physical staircase reaches the upper floor without teleporting")
@@ -726,7 +729,9 @@ func run() -> void:
 		await physics_frame
 	check(not academy.unlocked and academy.barrier_visible(), "the seal follows the mission state in both directions")
 	visit.player.reset_at(KonohaMap.SPAWN)
-	for frame in range(8):
+	# Le filet de sécurité rectangulaire attend la fin du transition_lock (0.9 s)
+	# après la dernière bascule de porte : 70 frames couvrent ce délai réel.
+	for frame in range(70):
 		await physics_frame
 	check(not academy.inside, "leaving the academy footprint clears the shared interior state")
 	# --- Système d'équipes de l'Académie : portraits procéduraux, état de la
