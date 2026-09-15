@@ -95,6 +95,9 @@ func _ready() -> void:
 	player = TrainingFighter.new()
 	world.add_child(player)
 	player.configure(Color("385962"), 2, 120)
+	# The residence ramp is a 31-degree physical slope; retain a generous
+	# walkable floor angle so CharacterBody3D follows it on Android as well.
+	player.floor_max_angle = deg_to_rad(65.0)
 	var appearance: Variant = account_profile.get("appearance")
 	player.apply_appearance(appearance if appearance is Dictionary else CharacterAppearance.DEFAULTS)
 	player.reset_at(KonohaMap.SPAWN)
