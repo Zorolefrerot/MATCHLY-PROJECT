@@ -522,7 +522,7 @@ func run() -> void:
 	for frame in range(180):
 		await physics_frame
 	Input.action_release("move_forward")
-	check(visit.player.position.y > 1.0, "player climbs the physical stair to the first level")
+	check(visit.player.position.y > 1.0, "player climbs the physical stair to the first level (position=%s)" % visit.player.position)
 	Input.action_press("move_back")
 	for frame in range(180):
 		await physics_frame
