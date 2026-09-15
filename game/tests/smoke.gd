@@ -519,7 +519,8 @@ func run() -> void:
 	var stair_hit: Dictionary = visit.player.get_world_3d().direct_space_state.intersect_ray(stair_ray)
 	var stair_hit_name: String = str(stair_hit.get("collider").name) if not stair_hit.is_empty() else "NONE"
 	var stair_hit_y: float = float(stair_hit.get("position", Vector3.ZERO).y) if not stair_hit.is_empty() else -999.0
-	check(false, "STAIR_DEBUG hit=%s y=%.2f bodies=%d layers=%d/%d" % [stair_hit_name, stair_hit_y, visit.hokage_interior.static_bodies.size(), visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 2].collision_layer, visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 1].collision_layer])
+	var slope_body: StaticBody3D = visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 1]
+	check(false, "STAIR_DEBUG hit=%s y=%.2f bodies=%d layers=%d/%d slope_pos=%s slope_rot=%s" % [stair_hit_name, stair_hit_y, visit.hokage_interior.static_bodies.size(), visit.hokage_interior.static_bodies[visit.hokage_interior.static_bodies.size() - 2].collision_layer, slope_body.collision_layer, slope_body.global_position, slope_body.global_rotation])
 	Input.action_press("move_forward")
 	for frame in range(180):
 		await physics_frame
