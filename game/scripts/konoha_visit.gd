@@ -145,7 +145,8 @@ func _ready() -> void:
 	hud = KonohaHUD.new()
 	add_child(hud)
 	var identity: Dictionary = account_profile["character"]
-	hud.identity.text = "KONOHA · QUARTIER D’ACCUEIL\n%s · %s" % [identity["name"], identity["clan"]]
+	var account_progress: Dictionary = account_profile.get("progress", {})
+	hud.set_account_progress(int(account_progress.get("idremGold", 0)), int(account_progress.get("level", 0)))
 	hud.set_clan_techniques(ClanTechniques.for_clan(str(identity["clan"])))
 	hud.action_requested.connect(_action)
 	hud.resume_requested.connect(resume_visit)
@@ -523,6 +524,9 @@ func _sync_mission() -> void:
 	mission = {}
 	if profile.get("character", {}).get("id") != account_profile["character"]["id"]:
 		return
+	var account_progress: Dictionary = profile.get("progress", {})
+	if is_instance_valid(hud):
+		hud.set_account_progress(int(account_progress.get("idremGold", 0)), int(account_progress.get("level", 0)))
 	var value: Variant = profile.get("welcomeMission")
 	if WelcomeMission.valid_state(value):
 		mission = value.duplicate(true)

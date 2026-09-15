@@ -40,6 +40,25 @@ func _material(color: Color, emissive: bool = false) -> StandardMaterial3D:
 	return mat
 
 func _part(mesh: PrimitiveMesh, size: Vector3, point: Vector3, color: Color, scale_value: Vector3 = Vector3.ONE) -> void:
+	# Keep every chief recognisably human: the common ninja kit is built from
+	# small fitted meshes, while the clan accessory only changes the silhouette.
+	if mesh is BoxMesh:
+		(mesh as BoxMesh).size = size
+	elif mesh is CylinderMesh:
+		(mesh as CylinderMesh).top_radius = size.x
+		(mesh as CylinderMesh).bottom_radius = size.x
+		(mesh as CylinderMesh).height = size.y
+		(mesh as CylinderMesh).radial_segments = 8
+	elif mesh is SphereMesh:
+		(mesh as SphereMesh).radius = size.x
+		(mesh as SphereMesh).height = size.y * 2.0
+		(mesh as SphereMesh).radial_segments = 10
+		(mesh as SphereMesh).rings = 5
+	elif mesh is TorusMesh:
+		(mesh as TorusMesh).inner_radius = size.x * 0.62
+		(mesh as TorusMesh).outer_radius = size.x
+		(mesh as TorusMesh).rings = 12
+		(mesh as TorusMesh).ring_segments = 8
 	var item := MeshInstance3D.new()
 	item.mesh = mesh
 	item.position = point
@@ -54,6 +73,13 @@ func _build_accessory() -> void:
 	var accent: Color = data["accent"]
 	var dark: Color = data["dark"]
 	var accessory: String = data["accessory"]
+	# Shared headband, belt and shin guards establish a human ninja silhouette
+	# for every clan. Colours and the accessory below remain clan-specific.
+	_part(BoxMesh.new(), Vector3(0.48, 0.10, 0.055), Vector3(0, 1.72, -0.215), accent)
+	_part(BoxMesh.new(), Vector3(0.09, 0.18, 0.06), Vector3(0.22, 1.72, -0.235), dark)
+	_part(BoxMesh.new(), Vector3(0.62, 0.10, 0.42), Vector3(0, 0.73, 0), dark)
+	_part(BoxMesh.new(), Vector3(0.10, 0.42, 0.12), Vector3(-0.23, 0.40, -0.18), accent)
+	_part(BoxMesh.new(), Vector3(0.10, 0.42, 0.12), Vector3(0.23, 0.40, -0.18), accent)
 	match accessory:
 		"fan":
 			_part(CylinderMesh.new(), Vector3(0.46, 0.10, 0.46), Vector3(0,1.25,0.33), accent, Vector3(1.0,1.0,0.35))

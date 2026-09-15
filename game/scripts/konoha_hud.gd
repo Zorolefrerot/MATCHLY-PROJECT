@@ -13,7 +13,7 @@ func _build() -> void:
 	top_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top_panel.add_theme_stylebox_override("panel", panel_style(Color(0.06,0.13,0.15,0.90)))
 	add_child(top_panel)
-	identity = label("KONOHA · QUARTIER D’ACCUEIL", 20)
+	identity = label("IG : 0\nNIVEAU : 0", 20)
 	objective = label("Bienvenue. Approche-toi du guide Aoi.", 17)
 	objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective.add_theme_color_override("font_shadow_color", Color("172a2b"))
@@ -123,6 +123,10 @@ func _set_combat_buttons(active: bool) -> void:
 func set_combat_message(message: String) -> void:
 	combat_status.text = message
 
+func set_account_progress(idrem_gold: int, level: int) -> void:
+	identity.text = "IG : %d\nNIVEAU : %d" % [maxi(0, idrem_gold), maxi(0, level)]
+	identity.show()
+
 func set_clan_mission_hud(message: String, visible: bool) -> void:
 	if not is_instance_valid(clan_mission_status):
 		return
@@ -169,9 +173,9 @@ func _layout() -> void:
 	var w: float = size.x
 	var h: float = size.y
 	top_panel.position = Vector2(20,20)
-	top_panel.size = Vector2(480,78)
+	top_panel.size = Vector2(230,78)
 	identity.position = Vector2(34,28)
-	identity.size = Vector2(458,60)
+	identity.size = Vector2(196,60)
 	buttons["music"].position = Vector2(20,108)
 	buttons["music"].size = Vector2(192,44)
 	buttons["chat"].position = Vector2(20,164)

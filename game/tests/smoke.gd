@@ -414,7 +414,7 @@ func run() -> void:
 	game.account_panel.password_field.text = "not-a-real-password"
 	game.account_panel.login_button.pressed.emit()
 	check(game.account_panel.password_field.text.is_empty() and not game.account_api.busy and game.account_api.sent.is_empty(), "invalid origin is refused before any request and password field is cleared")
-	var online: Dictionary = {"protocol": 1, "schemaVersion": 1, "character": {"id": 123, "name": "Genin Test", "clan": "Hyūga", "affinity": "Raiton", "mokuton": false, "rank": "Genin", "village": "Konoha"}, "appearance": null, "revision": 0}
+	var online: Dictionary = {"protocol": 1, "schemaVersion": 1, "character": {"id": 123, "name": "Genin Test", "clan": "Hyūga", "affinity": "Raiton", "mokuton": false, "rank": "Genin", "village": "Konoha"}, "appearance": null, "revision": 0, "progress": {"idremGold": 25, "level": 1}}
 	check(CharacterAccountAPI.valid_profile(online), "server profile contract is recognized without fabricating an appearance")
 	var incompatible: Dictionary = online.duplicate(true)
 	incompatible["protocol"] = 99
@@ -553,7 +553,7 @@ func run() -> void:
 	check(not visit.inside_hokage and not visit.hokage_loading, "leaving the residence leaves no pending transition")
 	check(visit.player.get_world_3d() != game.player.get_world_3d(), "Konoha uses its own physics world, not the training arena")
 	check(root.disable_3d and game.process_mode == Node.PROCESS_MODE_DISABLED and not game.hud.is_processing_input(), "training rendering, simulation and input are suspended during the visit")
-	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("Genin Test"), "Konoha uses the account identity and saved appearance")
+	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("IG : 25") and visit.hud.identity.text.contains("NIVEAU : 1") and not visit.hud.identity.text.contains("Genin Test"), "Konoha displays account currency and level instead of the redundant identity banner")
 	check(visit.hud.skill_buttons.is_empty() and not visit.hud.buttons.has("melee"), "village does not expose training combat or test jutsu")
 	var architecture: KonohaArchitecture = visit.world.architecture
 	check(architecture.house_count >= 80 and architecture.palace_built, "the full village has dense homes, varied houses, apartments and the red Hokage residence")
