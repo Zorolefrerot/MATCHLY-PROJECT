@@ -538,6 +538,10 @@ func _sync_mission() -> void:
 		clan_mission = clan_value.duplicate(true)
 		if is_instance_valid(clan_manager):
 			clan_manager.sync_state(clan_mission)
+		if clan_mission.get("status") == "TIME_EXPIRED" and api != null and not api.busy and request_kind.is_empty():
+			request_kind = "clanMission"
+			clan_pending_event = "report_pending"
+			api.clan_mission_event("report_pending")
 
 func open_journal(title: String = "Journal · Mission d’accueil", introduction: String = "") -> void:
 	_close_chat()

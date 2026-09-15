@@ -26,9 +26,9 @@ const CLAN_DATA: Dictionary = {
 # All points lie on documented streets, plazas or public landmarks in the
 # Konoha map. They are local SpawnPoints, never networked objects.
 const STAR_SPAWN_POINTS: Array[Vector3] = [
-	Vector3(-86, 0.65, 92), Vector3(-45, 0.65, 72), Vector3(-8, 0.65, 55), Vector3(43, 0.65, 72), Vector3(88, 0.65, 92),
-	Vector3(-112, 0.65, 35), Vector3(-96, 0.65, -18), Vector3(-56, 0.65, -44), Vector3(0, 0.65, -38), Vector3(52, 0.65, -44),
-	Vector3(96, 0.65, -18), Vector3(112, 0.65, 35), Vector3(-48, 0.65, 8), Vector3(44, 0.65, 12), Vector3(-22, 0.65, 28),
+	Vector3(-60, 0.65, 105), Vector3(-45, 0.65, 72), Vector3(-8, 0.65, 55), Vector3(43, 0.65, 72), Vector3(60, 0.65, 105),
+	Vector3(-128, 0.65, 20), Vector3(-92, 0.65, 15), Vector3(-56, 0.65, -44), Vector3(0, 0.65, -38), Vector3(52, 0.65, -44),
+	Vector3(92, 0.65, 15), Vector3(128, 0.65, 20), Vector3(-48, 0.65, 8), Vector3(44, 0.65, 12), Vector3(-22, 0.65, 28),
 	Vector3(20, 0.65, 28), Vector3(-75, 0.65, -72), Vector3(75, 0.65, -72), Vector3(0, 0.65, 92), Vector3(0, 0.65, 18),
 ]
 
@@ -95,6 +95,7 @@ func _build_sanctuary_leaders() -> void:
 		var leader := ClanMissionLeader.new()
 		leader.name = "ClanLeader_" + str(clan_data["clan_id"])
 		leader.position = sanctuary_point + Vector3(0, 0.0, 10.0)
+		leader.rotation.y = PI # Chiefs face the identifiable courtyard entrance.
 		leader.configure(clan_data)
 		add_child(leader)
 		leaders[clan_data["clan_id"]] = leader
@@ -244,9 +245,15 @@ func _spawn_initial_stars() -> void:
 		_spawn_next_star(-1 if i == 0 else -1)
 
 func _valid_spawn(point: Vector3) -> bool:
-	if absf(point.x) > KonohaMap.BOUNDS.x-8.0 or absf(point.z) > KonohaMap.BOUNDS.y-8.0:
+	if absf(point.x) > KonohaMap.BOUNDS.x-8.0 or absf(point.z) > KonohaMap.BOUNDS.y-8.0 or point.y <= 0.0:
 		return false
-	return point.y > 0.0
+	# SpawnPoints are public routes, never a courtyard/building footprint.
+	for district: Dictionary in KonohaMap.DISTRICTS:
+		if str(district.get("kind", "")) == "clan":
+			var sanctuary_point: Vector3 = district["point"] + KonohaMap.CLAN_SANCTUARY_OFFSET
+			if Vector2(point.x, point.z).distance_to(Vector2(sanctuary_point.x, sanctuary_point.z)) < 18.0:
+				return false
+	return true
 
 func _spawn_next_star(previous_slot: int) -> void:
 	if not running or active_stars.size() >= ClanMission.STAR_COUNT:
