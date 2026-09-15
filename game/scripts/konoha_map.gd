@@ -183,7 +183,7 @@ func _gate(point: Vector3, angle: float, title: String) -> void:
 	# Two heavy timber towers and the white plaster lintel echo the reference
 	# image while remaining simple, shared-material Android geometry.
 	for side in [-1.0, 1.0]:
-		var tower_point := inner + tangent * side * 4.75
+		var tower_point: Vector3 = inner + tangent * float(side) * 4.75
 		_gate_box(Vector3(1.15, 6.2, 1.55), tower_point + up * 3.1, yaw, tower_color, true)
 		_gate_box(Vector3(0.78, 5.25, 0.92), tower_point + up * 3.0 - normal * 0.10, yaw, plaster_color)
 		_gate_box(Vector3(1.55, 0.26, 1.95), tower_point + up * 6.25 - normal * 0.08, yaw, roof_dark)
@@ -203,7 +203,7 @@ func _gate(point: Vector3, angle: float, title: String) -> void:
 	# The two green leaves meet in the middle and are collidable: the outside
 	# is intentionally not accessible yet, even though the gate reads clearly.
 	for side in [-1.0, 1.0]:
-		var leaf := inner + tangent * side * 1.78 - normal * 0.38 + up * 2.25
+		var leaf: Vector3 = inner + tangent * float(side) * 1.78 - normal * 0.38 + up * 2.25
 		_gate_box(Vector3(3.45, 4.25, 0.20), leaf, yaw, door_color, true)
 		_gate_box(Vector3(3.52, 4.34, 0.08), leaf - normal * 0.12, yaw, door_trim)
 		_sign("木", leaf - normal * 0.20 + up * 0.10, 56, yaw + PI)
