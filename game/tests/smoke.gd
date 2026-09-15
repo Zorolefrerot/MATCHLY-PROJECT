@@ -515,17 +515,14 @@ func run() -> void:
 	# The stair is exercised as CharacterBody3D movement, never as a transition.
 	# Start just before the first tread, not inside a step collision.
 	visit.player.reset_at(Vector3(7.0, 0.25, 8.7))
-	var stair_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3(0, 5, -1.6), visit.player.global_position + Vector3(0, -1, -1.6), 1)
+	var stair_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3(0, 5, 0), visit.player.global_position - Vector3(0, 1, 0), 1)
 	var stair_hit: Dictionary = visit.player.get_world_3d().direct_space_state.intersect_ray(stair_ray)
-	var stair_hit_name: String = str(stair_hit.get("collider").name) if not stair_hit.is_empty() else "NONE"
-	var stair_hit_y: float = float(stair_hit.get("position", Vector3.ZERO).y) if not stair_hit.is_empty() else -999.0
-	var slope_body: StaticBody3D = visit.hokage_interior.get_node("InteriorStairSlope/InteriorStairSlopeCollision")
-	check(false, "STAIR_DEBUG hit=%s y=%.2f bodies=%d slope_layer=%d slope_pos=%s slope_rot=%s" % [stair_hit_name, stair_hit_y, visit.hokage_interior.static_bodies.size(), slope_body.collision_layer, slope_body.global_position, slope_body.global_rotation])
+	check(not stair_hit.is_empty(), "physical stair collider is active")
 	Input.action_press("move_forward")
 	for frame in range(180):
 		await physics_frame
 	Input.action_release("move_forward")
-	check(visit.player.position.y > 1.0, "player climbs the physical stair to the first level (position=%s)" % visit.player.position)
+	check(visit.player.position.y > 1.0, "player climbs the physical stair to the first level")
 	Input.action_press("move_back")
 	for frame in range(180):
 		await physics_frame

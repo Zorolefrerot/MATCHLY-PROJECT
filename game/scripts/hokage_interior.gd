@@ -503,7 +503,9 @@ func _stairs(point: Vector3, angle: float, width: float, count: int, rise: float
 	var slope_body := StaticBody3D.new()
 	slope_body.name = "InteriorStairSlopeCollision"
 	var hypotenuse := sqrt(length * length + total_height * total_height)
-	slope_body.position = Vector3(0, total_height * 0.5, hypotenuse * 0.5)
+	# The box's horizontal projection is `length`, so its centre stays at
+	# half the run rather than half the slanted hypotenuse.
+	slope_body.position = Vector3(0, total_height * 0.5, length * 0.5)
 	slope_body.rotation.x = -atan2(total_height, length)
 	slope_body.collision_layer = 1
 	slope_body.collision_mask = 0
