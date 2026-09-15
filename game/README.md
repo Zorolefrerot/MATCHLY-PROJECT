@@ -4,6 +4,15 @@
 
 Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
+## La grande Académie Ninja — bâtiment partagé à deux étages
+
+- **Nouveau script `scripts/academy.gd`** (`class_name Academy`, instancié par `KonohaVisit` dans le monde partagé, jamais une poche privée) : bâtiment 28 × 32 m au nord-ouest du village (x [-60,-32], z [-50,-18]) avec cour, parvis, allée, arbres, bancs, bannières et petit espace d'entraînement extérieur. L'ancienne maison « ACADÉMIE » devient l'**INTERNAT DES ÉLÈVES** et le panneau repère de la mission d'Aoi suit l'académie dans la cour — la mission d'accueil fonctionne à l'identique.
+- **Déblocage réel** : la porte est scellée tant que la 2e mission de clan n'est pas récompensée (`secondaryMissions.unlocked` du serveur, déjà utilisé par les missions secondaires) ; notification unique « 🏫 L'Académie Ninja est maintenant accessible. » à l'ouverture.
+- **Entrée/sortie fiables** : grande porte de 6 m, zones `AcademyEntrance`/`AcademyExit` + marqueurs `AcademyInteriorSpawn`/`AcademyExteriorSpawn`, verrou anti-ré-déclenchement 0,9 s ; les marqueurs ne rattrapent que les positions invalides (chute, désync), jamais la marche normale. Escalier physique RDC → étage (aucun téléport entre étages).
+- **Intérieur** : hall d'accueil, réception (PNJ « Réceptionniste de l'Académie », interaction informations générales), salle des informations (carte de Konoha, règlement, portraits), zone d'entraînement (mannequins, cibles, tatamis), administration, couloir, 3 salles de cours, salle des professeurs et **grande salle des équipes** avec estrade « OUVERTURE À VENIR » (espace réservé, aucune logique de candidature/équipe activée). 7 PNJ fixes aux apparences variées.
+- **Android** : 3 OmniLight seulement, fenêtres/lanternes émissives unshaded, cache de matériaux, collisions primitives, décor léger non solide, aucun asset ajouté.
+- **Tests** : 12 assertions dédiées dans `tests/smoke.gd` (scellement, blocage physique, ouverture par l'état réel des missions, marche jusqu'au hall, murs solides, escalier, sortie exacte, ré-entrée immédiate) + deux clients WSS qui se voient dans le hall partagé (`tests/village_network.gd`). Détails : [../docs/ACADEMIE.md](../docs/ACADEMIE.md).
+
 ## Missions secondaires — guidage, abandon et badges de progression
 
 - **Une seule mission secondaire à la fois** : le menu d'acceptation ne s'ouvre pas chez un autre habitant tant qu'une mission est active ; le récapitulatif d'état (parler à son propre donneur) propose **ABANDONNER LA MISSION**, envoyé seulement par le lien WSS vérifié. Le serveur refuse et valide de son côté chaque étape.

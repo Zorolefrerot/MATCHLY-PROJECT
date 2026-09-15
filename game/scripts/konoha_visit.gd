@@ -8,6 +8,7 @@ var mission: Dictionary = {}
 var clan_mission: Dictionary = ClanMission.blank()
 var clan_manager: ClanMissionManager
 var secondary_manager: SecondaryMissionManager
+var academy: Academy
 var menu_event: String = ""
 var request_kind: String = ""
 var clan_pending_event: String = ""
@@ -161,6 +162,15 @@ func _ready() -> void:
 	secondary_manager.name = "SecondaryMissionManager"
 	world.add_child(secondary_manager)
 	secondary_manager.configure(player, hud)
+	# La grande Académie Ninja : espace partagé extérieur + intérieur, construit
+	# dans les coordonnées absolues du village (jamais une poche privée).
+	academy = Academy.new()
+	world.add_child(academy)
+	academy.player = player
+	academy.build()
+	academy.unlocked_now.connect(func() -> void: hud.notice("🏫 L’Académie Ninja est maintenant accessible."))
+	academy.entered.connect(func() -> void: hud.notice("Académie Ninja · hall d’accueil partagé."))
+	academy.exited.connect(func() -> void: hud.notice("Tu quittes l’Académie Ninja."))
 	_build_loading_overlay()
 	if not InputMap.has_action("village_interact"):
 		InputMap.add_action("village_interact")
@@ -315,6 +325,11 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("ultimate"): _combat_action("ultimate")
 	player.simulate(delta, direction, hud.sprinting or Input.is_action_pressed("sprint"))
 	_update_hokage_portal(delta)
+	if is_instance_valid(academy) and not inside_hokage:
+		# Le déblocage suit l'état réel des missions : la 2e mission de clan
+		# récompensée ouvre secondary_manager.unlocked, aucune condition parallèle.
+		academy.set_unlocked(is_instance_valid(secondary_manager) and secondary_manager.unlocked)
+		academy.update(player.position, delta)
 	# Crossing the outer ring must stop at the wall, not silently teleport the player
 	# back to the arrival point. Horizontal travel stays continuous across districts.
 	# Only a genuine fall through the world respawns.
@@ -335,7 +350,7 @@ func _physics_process(delta: float) -> void:
 	_update_camera()
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
-	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "PARLER AU CHEF" if nearest == -5 else "AIDER · MISSION" if nearest == -6 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
+	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "PARLER AU CHEF" if nearest == -5 else "AIDER · MISSION" if nearest == -6 else "PARLER À LA RÉCEPTION" if nearest == -7 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
 	if is_instance_valid(secondary_manager):
 		# The guidance arrow belongs to the exterior village only: the private
 		# residence pocket and the menus must not display a world direction.
@@ -431,6 +446,8 @@ func nearest_interaction() -> int:
 		return -5
 	if is_instance_valid(secondary_manager) and secondary_manager.interaction_available():
 		return -6
+	if is_instance_valid(academy) and academy.reception_overlaps(player):
+		return -7
 	if _reachable(guide.position):
 		return -1
 	for i in range(KonohaMap.LANDMARKS.size()):
@@ -448,6 +465,9 @@ func interact() -> void:
 	_clear_inputs()
 	if nearest == -6:
 		secondary_manager.interact()
+		return
+	if nearest == -7:
+		_dialogue("Réception de l’Académie", "Bienvenue à l’Académie Ninja, %s.\nLe hall dessert la réception, la salle des informations et la zone d’entraînement au nord.\nL’escalier mène aux trois salles de cours et à la grande salle des équipes.\nLes candidatures, la recherche de coéquipiers et la formation des équipes seront annoncées ici même, à l’ouverture du système." % account_profile["character"]["name"])
 		return
 	if nearest == -5:
 		var clan_event := clan_manager.interaction_event()

@@ -106,6 +106,25 @@ func run() -> void:
 	a._clear_inputs()
 	check(await wait_for(func() -> bool: return remote.motion == "idle"),"stopping reaches the other native client")
 	check(await wait_for(func() -> bool: return remote.position.distance_to(a.player.position) < 0.6),"remote interpolation converges without simulating local collisions")
+	# L'Académie Ninja est un espace partagé : les deux clients s'y voient
+	# normalement, sans instance privée. Positions fantômes (mask 0) comme pour
+	# le test de proximité plus bas : la route serveur fait foi.
+	var academy_hall := Vector3(-46,0.4,-24)
+	check(a.academy.built and b.academy.built and a.academy.unlocked == a.secondary_manager.unlocked and b.academy.unlocked == b.secondary_manager.unlocked,"the shared academy follows the real mission state on both native clients")
+	a.player.collision_mask = 0
+	b.player.collision_mask = 0
+	a.player.reset_at(academy_hall)
+	a.village_link.pose = {"p":[-46.0,0.4,-24.0],"yaw":0.0,"motion":"idle"}
+	b.player.reset_at(academy_hall+Vector3(2.5,0,0))
+	b.village_link.pose = {"p":[-43.5,0.4,-24.0],"yaw":0.0,"motion":"idle"}
+	check(await wait_for(func() -> bool: return b.remote_avatars[aid].position.distance_to(academy_hall) < 1.2 and a.remote_avatars[bid].position.distance_to(academy_hall+Vector3(2.5,0,0)) < 1.2),"two players see each other inside the shared academy hall")
+	a._clear_inputs()
+	b._clear_inputs()
+	a.player.reset_at(KonohaMap.SPAWN)
+	b.player.reset_at(KonohaMap.SPAWN+Vector3(2,0,0))
+	a.player.collision_mask = 7
+	b.player.collision_mask = 7
+	await create_timer(0.2).timeout
 	# The same two native clients can now opt into the ephemeral server duel.
 	a._action("combat_join")
 	b._action("combat_join")

@@ -669,6 +669,66 @@ func run() -> void:
 	check(visit.player.position == stopped, "dialogue freezes village movement")
 	visit.resume_visit()
 	check(not Input.is_action_pressed("move_left") and not visit.hud.blocked, "resuming a visit clears held movement")
+	# --- La grande Académie Ninja : scellement réel, marche physique, escalier,
+	# --- sortie exacte et ré-entrée immédiate. Aucun téléport à coordonnées fixes.
+	var academy: Academy = visit.academy
+	check(academy.built and not academy.unlocked and academy.barrier_visible(), "the academy starts sealed while the second clan mission reward is unclaimed")
+	visit.player.reset_at(academy.door_point()+Vector3(0,0.2,3.5))
+	for frame in range(6):
+		await physics_frame
+	visit.hud.move_vector = Vector2(0,-1)
+	for frame in range(120):
+		await physics_frame
+	visit._clear_inputs()
+	check(visit.player.position.z > -18.0 and not academy.inside, "the sealed barrier physically blocks the great door")
+	# Le déblocage suit l'état réel des missions secondaires (2e mission de clan
+	# récompensée), jamais une condition parallèle.
+	visit.secondary_manager.apply_state({"schemaVersion":1,"unlocked":true,"message":"","missions":[]})
+	for frame in range(4):
+		await physics_frame
+	check(academy.unlocked and not academy.barrier_visible() and visit.hud.feedback.text.contains("maintenant accessible"), "the claimed clan reward unlocks the academy with one notification")
+	visit.player.reset_at(academy.door_point()+Vector3(0,0.2,3.0))
+	for frame in range(6):
+		await physics_frame
+	visit.hud.move_vector = Vector2(0,-1)
+	for frame in range(140):
+		await physics_frame
+	visit._clear_inputs()
+	check(academy.inside and visit.player.position.z < -19.0 and visit.player.position.y > 0.0 and visit.player.is_on_floor(), "walking crosses the doorway into the shared hall without any scripted teleport")
+	var wall_ray := PhysicsRayQueryParameters3D.create(Vector3(-58,1.2,-24), Vector3(-62,1.2,-24), 1)
+	check(not visit.world.get_world_3d().direct_space_state.intersect_ray(wall_ray).is_empty(), "the academy west wall stays solid from inside")
+	var door_ray := PhysicsRayQueryParameters3D.create(Vector3(-46,1.2,-20), Vector3(-46,1.2,-15), 1)
+	check(visit.world.get_world_3d().direct_space_state.intersect_ray(door_ray).is_empty(), "the unlocked doorway ray reaches the courtyard")
+	visit.player.reset_at(Vector3(-35.5,0.4,-32.0))
+	for frame in range(6):
+		await physics_frame
+	visit.hud.move_vector = Vector2(0,-1)
+	for frame in range(220):
+		await physics_frame
+	visit._clear_inputs()
+	check(visit.player.position.y > 3.6 and visit.player.is_on_floor() and academy.inside, "the physical staircase reaches the upper floor without teleporting")
+	visit.player.reset_at(academy.interior_spawn.position)
+	for frame in range(6):
+		await physics_frame
+	check(academy.inside, "the interior spawn marker sits inside the shared footprint")
+	visit.hud.move_vector = Vector2(0,1)
+	for frame in range(170):
+		await physics_frame
+	visit._clear_inputs()
+	check(not academy.inside and visit.player.position.z > -17.0 and visit.player.position.z < -6.0 and visit.player.is_on_floor(), "walking out lands exactly in the courtyard, never through a wall")
+	visit.hud.move_vector = Vector2(0,-1)
+	for frame in range(160):
+		await physics_frame
+	visit._clear_inputs()
+	check(academy.inside and visit.player.position.z < -18.4, "an immediate re-entry works with no transition loop")
+	visit.secondary_manager.apply_state({"schemaVersion":1,"unlocked":false,"message":"","missions":[]})
+	for frame in range(4):
+		await physics_frame
+	check(not academy.unlocked and academy.barrier_visible(), "the seal follows the mission state in both directions")
+	visit.player.reset_at(KonohaMap.SPAWN)
+	for frame in range(8):
+		await physics_frame
+	check(not academy.inside, "leaving the academy footprint clears the shared interior state")
 	for data in KonohaMap.LANDMARKS:
 		visit.player.reset_at(data["point"]+Vector3(0,0.3,2))
 		for frame in range(5):

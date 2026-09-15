@@ -4,7 +4,11 @@
 
 Site de candidature pour un jeu RP Android privé, limité à **20 joueurs**. Un [prototype Android avec entraînement, créateur, compte, village partagé et intérieur visitable de la résidence du Hokage](game/README.md) est disponible pour les joueurs acceptés ; le jeu complet reste en développement.
 
-## Lot en cours — missions secondaires des habitants
+## Lot en cours — la grande Académie Ninja
+
+Une **grande Académie Ninja** de deux niveaux (28 × 32 m, toiture traditionnelle, grande porte, emblème, portique, cour avec bannières) est construite au nord-ouest de Konoha, dans le monde partagé du village : **hall d'accueil, réception avec PNJ dédiée, salle des informations, zone d'entraînement, administration, escalier 100 % physique, couloir, trois salles de cours, salle des professeurs et grande salle des équipes** — espace réservé au futur système de candidatures/équipes, **rien d'activé**. L'accès s'ouvre **exactement à la récompense réclamée de la 2e mission de clan** (état serveur réel réutilisé, aucune condition parallèle) ; avant, une barrière scellée bloque la porte. Entrée/sortie par zones `AcademyEntrance`/`AcademyExit` avec marqueurs de spawn et anti-ré-déclenchement : aucun téléport à coordonnées fixes. Transition physique, collisions complètes, 3 lumières dynamiques seulement, matériaux en cache. [Rapport complet, tests et points d'extension](docs/ACADEMIE.md).
+
+## Lot précédent — missions secondaires des habitants
 
 Suite du tableau global des PNJ (commit `016e00b`) prolongée sur cette branche : **une seule mission secondaire active par joueur**, à terminer ou à abandonner auprès du donneur ; **flèche rouge au-dessus de la tête** vers le prochain objectif serveur, puis vers le donneur pour le retour ; **total d'IG et niveau affichés à côté de badges gravés** (pièce d'or « IG », plaque « LVL », carrés 128 px recadrés, génération reproductible hors ligne). L'abandon rend la mission au tableau sans récompense ni cooldown, et l'acquittement serveur renvoie le solde exact affiché par le HUD. **56 tests Node passent** ; la compilation Godot/Android se déclenche sur push de cette branche. [Contrat, sécurité et limites](docs/MISSIONS_SECONDAIRES.md).
 
