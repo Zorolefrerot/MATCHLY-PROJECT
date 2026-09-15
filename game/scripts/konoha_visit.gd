@@ -8,6 +8,7 @@ var mission: Dictionary = {}
 var clan_mission: Dictionary = ClanMission.blank()
 var clan_manager: ClanMissionManager
 var secondary_manager: SecondaryMissionManager
+var team_manager: TeamManager
 var academy: Academy
 var menu_event: String = ""
 var request_kind: String = ""
@@ -171,6 +172,13 @@ func _ready() -> void:
 	academy.unlocked_now.connect(func() -> void: hud.notice("🏫 L’Académie Ninja est maintenant accessible."))
 	academy.entered.connect(func() -> void: hud.notice("Académie Ninja · hall d’accueil partagé."))
 	academy.exited.connect(func() -> void: hud.notice("Tu quittes l’Académie Ninja."))
+	# Candidatures et équipes de trois : présentation uniquement, le serveur
+	# valide tout (comptoir de la réception, composition, numéro, Sensei).
+	team_manager = TeamManager.new()
+	team_manager.name = "TeamManager"
+	world.add_child(team_manager)
+	team_manager.configure(player, hud)
+	team_manager.focus_requested.connect(_close_chat)
 	_build_loading_overlay()
 	if not InputMap.has_action("village_interact"):
 		InputMap.add_action("village_interact")
@@ -208,6 +216,8 @@ func _ready() -> void:
 		village_link.received.connect(_network_event)
 		village_link.disconnected.connect(_clear_remote)
 		secondary_manager.set_link(village_link)
+		if is_instance_valid(team_manager):
+			team_manager.set_link(village_link)
 		add_child(village_link)
 
 func _build_hokage_transition_nodes() -> void:
@@ -458,6 +468,9 @@ func nearest_interaction() -> int:
 func interact() -> void:
 	if not initialized or ending or hud.blocked:
 		return
+	if is_instance_valid(team_manager) and team_manager.panel_open():
+		team_manager.close_panel()
+		return
 	var nearest: int = nearest_interaction()
 	if nearest == -2:
 		hud.notice("Approche-toi d’un interlocuteur ou d’un panneau pour interagir.")
@@ -467,7 +480,12 @@ func interact() -> void:
 		secondary_manager.interact()
 		return
 	if nearest == -7:
-		_dialogue("Réception de l’Académie", "Bienvenue à l’Académie Ninja, %s.\nLe hall dessert la réception, la salle des informations et la zone d’entraînement au nord.\nL’escalier mène aux trois salles de cours et à la grande salle des équipes.\nLes candidatures, la recherche de coéquipiers et la formation des équipes seront annoncées ici même, à l’ouverture du système." % account_profile["character"]["name"])
+		# La réceptionniste ouvre le menu des candidatures : déposer, consulter
+		# les candidats (portraits), suivre son groupe ou son équipe officielle.
+		if is_instance_valid(team_manager):
+			team_manager.interact()
+		else:
+			_dialogue("Réception de l’Académie", "Bienvenue à l’Académie Ninja, %s.\nLe hall dessert la réception, la salle des informations et la zone d’entraînement au nord." % account_profile["character"]["name"])
 		return
 	if nearest == -5:
 		var clan_event := clan_manager.interaction_event()
@@ -512,6 +530,7 @@ func interact() -> void:
 func _enter_hokage_residence() -> void:
 	if not is_instance_valid(hokage_interior) or not is_instance_valid(hokage_interior.interior_spawn):
 		return
+	_close_team_panel()
 	inside_hokage = true
 	hokage_interior.set_active(true)
 	# HokageInteriorSpawn is inside the hall, well behind the distinct exit
@@ -547,6 +566,7 @@ func _exit_hokage_residence() -> void:
 
 func _dialogue(title: String, text: String, event: String = "") -> void:
 	_close_chat()
+	_close_team_panel()
 	journal_open = false
 	menu_event = event
 	hud.primary.disabled = not request_kind.is_empty()
@@ -585,9 +605,13 @@ func _sync_mission() -> void:
 	var secondary_value: Variant = profile.get("secondaryMissions")
 	if is_instance_valid(secondary_manager) and secondary_value is Dictionary:
 		secondary_manager.apply_state(secondary_value)
+	var team_value: Variant = profile.get("team")
+	if is_instance_valid(team_manager) and team_value is Dictionary:
+		team_manager.apply_profile(team_value)
 
 func open_journal(title: String = "Journal · Mission d’accueil", introduction: String = "") -> void:
 	_close_chat()
+	_close_team_panel()
 	if not initialized or ending:
 		return
 	_clear_inputs()
@@ -931,6 +955,8 @@ func _network_event(event: Dictionary) -> void:
 	match event["type"]:
 		"secondary_state", "secondary_action_ack":
 			if is_instance_valid(secondary_manager): secondary_manager.handle_network_event(event)
+		"team_state", "team_action_ack":
+			if is_instance_valid(team_manager): team_manager.handle_network_event(event)
 		"welcome", "correction":
 			# The server only knows the exterior village coordinate space. While
 			# loading or inside the private pocket, its spawn/correction must never
@@ -1017,6 +1043,9 @@ func _network_event(event: Dictionary) -> void:
 		"error":
 			chat_panel.uncertain()
 			chat_panel.status.text = event["error"]
+			# Refus serveur du système d'équipes : explication visible immédiate.
+			if str(event.get("code","")).begins_with("TEAM_") and is_instance_valid(team_manager):
+				team_manager.notify_error(str(event["error"]))
 
 func _send_chat(channel: String, text: String) -> void:
 	if is_instance_valid(village_link):
@@ -1026,6 +1055,7 @@ func open_chat() -> void:
 	if ending or not initialized:
 		return
 	_clear_inputs()
+	_close_team_panel()
 	unread = 0
 	hud.buttons["chat"].text = "CHAT RP / HRP"
 	hud.show_menu("", "", "", false)
@@ -1035,3 +1065,9 @@ func open_chat() -> void:
 func _close_chat() -> void:
 	if is_instance_valid(chat_panel): chat_panel.close_panel()
 	if is_instance_valid(hud): hud.menu_panel.show()
+
+func _close_team_panel() -> void:
+	# Jamais appelé depuis focus_requested (le panneau d'équipes vient de
+	# s'ouvrir) : seulement des autres menus, du journal, du chat et des
+	# transitions, pour qu'aucune interface ne se superpose.
+	if is_instance_valid(team_manager): team_manager.close_panel()

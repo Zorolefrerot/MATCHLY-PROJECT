@@ -729,6 +729,64 @@ func run() -> void:
 	for frame in range(8):
 		await physics_frame
 	check(not academy.inside, "leaving the academy footprint clears the shared interior state")
+	# --- Système d'équipes de l'Académie : portraits procéduraux, état de la
+	# --- réception, carte d'invitation non bloquante et cérémonie du Sensei.
+	# --- Les données serveur sont fabriquées ici uniquement pour valider la
+	# --- présentation client ; en jeu, tout vient du village (WSS/HTTPS).
+	var team_manager: TeamManager = visit.team_manager
+	check(not TeamManager.valid_state({"schemaVersion":2,"unlocked":true,"candidates":[],"invites":[]}), "team state rejects an unknown schema version")
+	check(not TeamManager.valid_state({"schemaVersion":1,"unlocked":"yes","candidates":[],"invites":[]}), "team state rejects a malformed unlock flag")
+	check(not TeamManager.valid_state({"schemaVersion":1,"unlocked":true,"candidates":{},"invites":[]}), "team state rejects a malformed candidate list")
+	check(TeamManager.valid_state({"schemaVersion":1,"unlocked":true,"revision":0,"candidates":[],"invites":[],"self":null,"team":null}), "an empty server team state validates")
+	var kaito_appearance: Dictionary = {"model":0,"hair":2,"hair_color":6,"eyes":4,"skin":1,"top":0,"top_color":5,"bottom":1,"bottom_color":0}
+	var renji_appearance: Dictionary = {"model":0,"hair":0,"hair_color":5,"eyes":1,"skin":2,"top":0,"top_color":1,"bottom":0,"bottom_color":4}
+	var kaito_portrait := NinjaPortrait.texture(kaito_appearance)
+	var renji_portrait := NinjaPortrait.texture(renji_appearance)
+	check(kaito_portrait != null and renji_portrait != null and kaito_portrait != renji_portrait, "each NPC candidate gets a unique generated portrait")
+	check(NinjaPortrait.texture(kaito_appearance) == kaito_portrait, "portraits are cached by appearance signature, never redrawn per panel")
+	check(NinjaPortrait.texture(CharacterAppearance.DEFAULTS) != kaito_portrait, "a player portrait differs from the NPC portraits")
+	check(NinjaPortrait.texture(kaito_appearance, true) != kaito_portrait, "the sensei portrait style is visually distinct")
+	var team_candidate := func(key: String, kind: String, cname: String, cclan: String, level: int, appearance: Dictionary) -> Dictionary:
+		return {"key":key,"kind":kind,"name":cname,"clan":cclan,"level":level,"affinity":"Suiton","style":"Soutien défensif","personality":"Calme","idle":"","appearance":appearance,"status":"recherche","teamNumber":0}
+	team_manager.apply_state({"schemaVersion":1,"unlocked":true,"revision":3,"message":"","nearReception":true,
+		"self":team_candidate.call("p1","player","Genin1","Uchiwa",5,{}),
+		"candidates":[team_candidate.call("p1","player","Genin1","Uchiwa",5,{}),team_candidate.call("nkaito","npc","Kaito","Senju",8,kaito_appearance),team_candidate.call("nrenji","npc","Renji","Hyuga",9,renji_appearance)],
+		"invites":[{"teamId":7,"fromKey":"p2","fromName":"Genin2","fromClan":"Hyuga","fromLevel":6,"fromAppearance":renji_appearance}],
+		"team":null})
+	await process_frame
+	check(team_manager.unlocked and team_manager.candidates.size() == 3, "the reception state registers the player and both test NPC candidates")
+	check(team_manager.invite_card.visible, "a pending invitation raises its portrait card")
+	team_manager.interact()
+	await process_frame
+	check(team_manager.panel_open(), "talking to the receptionist opens the candidacy menu")
+	team_manager._open_view("list")
+	await process_frame
+	check(team_manager.panel_list.visible and team_manager.panel_list_column.get_child_count() == 3, "every candidate is listed with a portrait row")
+	var member := func(key: String, cname: String, appearance: Dictionary) -> Dictionary:
+		return {"key":key,"kind":"player","name":cname,"clan":"Uchiwa","level":5,"affinity":"","style":"","personality":"","idle":"","appearance":appearance,"status":"forming","teamNumber":0}
+	team_manager.apply_state({"schemaVersion":1,"unlocked":true,"revision":9,"message":"","nearReception":true,
+		"self":member.call("p1","Genin1",{}),
+		"candidates":[],
+		"invites":[],
+		"team":{"id":11,"number":1,"label":"ÉQUIPE 001","status":"official","senseiId":"daichi","members":[member.call("p1","Genin1",{}),member.call("p2","Genin2",{}),member.call("nkaito","Kaito",kaito_appearance)],
+			"ceremony":{"senseiId":"daichi","senseiName":"Daichi Kurogane","senseiTitle":"Sensei · Défense et discipline","senseiPersonality":"Calme","senseiAppearance":{"model":0,"hair":0,"hair_color":0,"eyes":1,"skin":3,"top":0,"top_color":4,"bottom":0,"bottom_color":1},"lines":["Vous êtes donc les membres de l’équipe 001.","Je serai votre Sensei."],"x":-37.5,"z":-21.4,"at":0}}})
+	for frame in range(4):
+		await physics_frame
+	check(team_manager.sensei_node != null and is_instance_valid(team_manager.sensei_node.fighter), "the official creation walks its distinct sensei into the scene")
+	var sensei_start: Vector3 = team_manager.sensei_node.position
+	for frame in range(12):
+		await physics_frame
+	check(team_manager.sensei_node.position.distance_to(sensei_start) > 0.05, "the sensei physically approaches the new team, never teleports")
+	team_manager.apply_state({"schemaVersion":1,"unlocked":true,"revision":10,"message":"","nearReception":false,"self":member.call("p1","Genin1",{}),"candidates":[],"invites":[],
+		"team":{"id":11,"number":1,"label":"ÉQUIPE 001","status":"official","senseiId":"daichi","members":[],"ceremony":null}})
+	await process_frame
+	check(not team_manager.invite_card.visible, "the invitation card follows the server state")
+	team_manager.close_panel()
+	check(not team_manager.panel_open(), "the reception panel closes on demand")
+	if is_instance_valid(team_manager.sensei_node):
+		team_manager.sensei_node.queue_free()
+		team_manager.sensei_node = null
+	await process_frame
 	for data in KonohaMap.LANDMARKS:
 		visit.player.reset_at(data["point"]+Vector3(0,0.3,2))
 		for frame in range(5):

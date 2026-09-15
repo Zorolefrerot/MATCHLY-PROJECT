@@ -550,19 +550,20 @@ func _build_team_area() -> void:
 	var gold := Color(0.72, 0.58, 0.24)
 	# Cloison est-ouest séparant la salle des équipes (x < -46).
 	_wall_z(NORTH, -33.2, -46.0, UPPER_Y, UPPER_WALL_H, 0.3)
-	# Espace réservé au futur système d'équipes : RIEN n'est activé ici.
-	# Estrade d'enregistrement des candidatures.
+	# Grande salle des équipes : estrade d'enregistrement et panneaux d'annonce.
+	# Les candidatures se déposent au comptoir de la réception (rez-de-chaussée) ;
+	# cette salle affiche le décor officiel du système d'équipes de trois.
 	box(Vector3(7.0, 0.3, 3.0), Vector3(-53.0, UPPER_Y + 0.15, -47.5), Color(0.55, 0.38, 0.22))
 	box(Vector3(7.0, 2.6, 0.15), Vector3(-53.0, UPPER_Y + 1.6, -49.6), teal)
 	cylinder(0.7, 0.1, Vector3(-53.0, UPPER_Y + 2.35, -49.45), gold, 14, false, Vector3(PI * 0.5, 0, 0))
 	label_3d("忍", Vector3(-53.0, UPPER_Y + 2.35, -49.35), 62, Color(0.9, 0.82, 0.5))
 	label_3d("ENREGISTREMENT DES ÉQUIPES", Vector3(-53.0, UPPER_Y + 1.35, -49.45), 24, Color(0.95, 0.9, 0.8))
-	label_3d("OUVERTURE À VENIR", Vector3(-53.0, UPPER_Y + 0.75, -49.45), 17, Color(0.8, 0.72, 0.5))
-	# Panneaux d'annonce (listes de candidats, activités : affichage futur).
+	label_3d("CANDIDATURES À LA RÉCEPTION", Vector3(-53.0, UPPER_Y + 0.75, -49.45), 17, Color(0.8, 0.72, 0.5))
+	# Panneaux d'annonce (listes de candidats, équipes officielles).
 	box(Vector3(0.1, 2.0, 3.0), Vector3(WEST + 0.3, UPPER_Y + 1.6, -43.0), Color(0.95, 0.93, 0.85), false)
-	label_3d("LISTE DES CANDIDATS\n· À VENIR ·", Vector3(WEST + 0.38, UPPER_Y + 1.6, -43.0), 15, Color(0.3, 0.25, 0.2), PI * 0.5)
+	label_3d("LISTE DES CANDIDATS\n· OUVERTE À LA RÉCEPTION ·", Vector3(WEST + 0.38, UPPER_Y + 1.6, -43.0), 15, Color(0.3, 0.25, 0.2), PI * 0.5)
 	box(Vector3(0.1, 2.0, 3.0), Vector3(WEST + 0.3, UPPER_Y + 1.6, -38.0), Color(0.95, 0.93, 0.85), false)
-	label_3d("ANNONCES\n· À VENIR ·", Vector3(WEST + 0.38, UPPER_Y + 1.6, -38.0), 15, Color(0.3, 0.25, 0.2), PI * 0.5)
+	label_3d("ÉQUIPES OFFICIELLES\n· TROIS MEMBRES · UN SENSEI ·", Vector3(WEST + 0.38, UPPER_Y + 1.6, -38.0), 15, Color(0.3, 0.25, 0.2), PI * 0.5)
 	# Bancs d'attente latéraux : l'allée centrale porte→estrade reste libre.
 	for z in [-36.0, -39.0]:
 		_bench(Vector3(-58.0, UPPER_Y, z), PI * 0.5)

@@ -1,9 +1,11 @@
 # La grande Académie Ninja de Konoha
 
 Lot « Académie » : un bâtiment majeur, partageable en ligne, construit entièrement
-en code dans la scène du village. **Aucun système de candidature, de recherche de
-coéquipier, d'équipe numérotée ou de Sensei n'est activé** : seuls l'espace
-physique, les panneaux et les repères nommés sont réservés pour le lot suivant.
+en code dans la scène du village. À l'origine, seuls l'espace physique, les
+panneaux et les repères nommés étaient réservés ; **le lot suivant est livré** :
+candidatures, équipes de trois numérotées et Sensei sont désormais activés à la
+réception — voir [`docs/EQUIPES.md`](EQUIPES.md). La géométrie décrite ici est
+inchangée.
 
 ## 1. Condition de déblocage (état réel, jamais parallèle)
 

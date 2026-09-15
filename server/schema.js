@@ -69,6 +69,52 @@ CREATE TABLE IF NOT EXISTS secondary_missions(
  updated TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS secondary_missions_available ON secondary_missions(status,available_at);
+-- Candidatures et équipes de trois de l'Académie Ninja. Clé candidat :
+-- 'p<userId>' pour un joueur (identité lue en base, jamais envoyée par le
+-- client) ou 'n<npcId>' pour le petit vivier PNJ. L'apparence stockée est la
+-- référence de portrait : dictionnaire d'indices cosmétiques validé.
+CREATE TABLE IF NOT EXISTS team_candidates(
+ key TEXT PRIMARY KEY,
+ kind TEXT NOT NULL CHECK (kind IN ('player','npc')),
+ user_id INTEGER REFERENCES users(id),
+ npc_id TEXT,
+ name TEXT NOT NULL,
+ clan TEXT NOT NULL,
+ level INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1),
+ appearance TEXT NOT NULL DEFAULT '{}',
+ affinity TEXT NOT NULL DEFAULT '',
+ style TEXT NOT NULL DEFAULT '',
+ personality TEXT NOT NULL DEFAULT '',
+ idle TEXT NOT NULL DEFAULT '',
+ status TEXT NOT NULL DEFAULT 'recherche' CHECK (status IN ('recherche','groupe')),
+ created_at BIGINT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS teams(
+ id ${id},
+ number INTEGER UNIQUE,
+ status TEXT NOT NULL DEFAULT 'forming' CHECK (status IN ('forming','official')),
+ sensei_id TEXT,
+ ceremony_at BIGINT,
+ ceremony_x REAL,
+ ceremony_z REAL,
+ created_at BIGINT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS team_members(
+ team_id INTEGER NOT NULL REFERENCES teams(id),
+ key TEXT NOT NULL,
+ accepted_at BIGINT NOT NULL,
+ PRIMARY KEY (team_id,key)
+);
+CREATE INDEX IF NOT EXISTS team_members_key ON team_members(key);
+-- Une seule invitation en attente par destinataire (UNIQUE to_key) : les
+-- invitations doubles incompatibles sont impossibles au niveau de la base.
+CREATE TABLE IF NOT EXISTS team_invites(
+ id ${id},
+ team_id INTEGER NOT NULL REFERENCES teams(id),
+ from_key TEXT NOT NULL,
+ to_key TEXT UNIQUE NOT NULL,
+ created_at BIGINT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS resets(token TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), expires BIGINT NOT NULL);
 CREATE TABLE IF NOT EXISTS applications(
  id ${id}, user_id INTEGER UNIQUE NOT NULL REFERENCES users(id),

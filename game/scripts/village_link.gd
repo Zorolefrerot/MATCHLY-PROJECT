@@ -219,6 +219,12 @@ func secondary_action(action: String, slot: int, mission_id: String, revision: i
 	if connected and action in ["accept", "abandon", "collect", "complete"] and slot >= 0 and slot < 3 and not mission_id.is_empty() and revision >= 1 and index >= -1:
 		_send({"type":"secondary_action","action":action,"slot":slot,"missionId":mission_id,"revision":revision,"index":index})
 
+func team_action(action: String, target_key: String = "", revision: int = 0) -> void:
+	# Clés exactes exigées par le serveur ; targetKey reste une référence de
+	# candidat validée côté serveur, jamais une identité fabriquée.
+	if connected and action in ["apply", "withdraw", "invite", "accept", "decline", "form"] and target_key.length() <= 24 and revision >= 0:
+		_send({"type":"team_action","action":action,"targetKey":target_key,"revision":revision})
+
 func combat_join() -> void:
 	if connected:
 		_send({"type":"combat_join"})
@@ -288,6 +294,12 @@ func _accept(value: Variant) -> bool:
 		var wallet: Variant = value.get("wallet")
 		if wallet != null and (not wallet is Dictionary or not integer(wallet.get("idremGold")) or not integer(wallet.get("level")) or wallet.size() != 2):
 			return false
+	elif kind == "team_state":
+		if not TeamManager.valid_state(value):
+			return false
+	elif kind == "team_action_ack":
+		if value.get("action") not in ["apply", "withdraw", "invite", "accept", "decline", "form"] or not TeamManager.valid_state(value.get("state")):
+			return false
 	elif kind == "combat_waiting":
 		if not value.get("players") is Array or value["players"].size() > 2 or not integer(value.get("needed"),1) or value["needed"] > 2:
 			return false
@@ -339,7 +351,7 @@ func _accept(value: Variant) -> bool:
 		if not plain(value.get("reason"),120):
 			return false
 	elif kind == "error":
-		if not value.get("code") is String or value["code"] not in ["CHAT_RATE","COMBAT_BUSY","COMBAT_ACTION","SECONDARY_LOCKED","SECONDARY_CONFLICT","SECONDARY_NOT_AVAILABLE","SECONDARY_ALREADY_ACTIVE","SECONDARY_NOT_OWNER","SECONDARY_OBJECTIVE_INVALID","SECONDARY_TOO_FAR","SECONDARY_NOT_COMPLETE","INVALID_SECONDARY_ACTION"] or not plain(value.get("error"),240):
+		if not value.get("code") is String or value["code"] not in ["CHAT_RATE","COMBAT_BUSY","COMBAT_ACTION","SECONDARY_LOCKED","SECONDARY_CONFLICT","SECONDARY_NOT_AVAILABLE","SECONDARY_ALREADY_ACTIVE","SECONDARY_NOT_OWNER","SECONDARY_OBJECTIVE_INVALID","SECONDARY_TOO_FAR","SECONDARY_NOT_COMPLETE","INVALID_SECONDARY_ACTION","TEAM_LOCKED","TEAM_ACTION_INVALID","TEAM_NOT_AT_RECEPTION","TEAM_ALREADY_CANDIDATE","TEAM_NOT_CANDIDATE","TEAM_OFFICIAL","TEAM_TARGET_INVALID","TEAM_TARGET_UNKNOWN","TEAM_TARGET_BUSY","TEAM_INVITE_CONFLICT","TEAM_FULL","TEAM_NO_INVITE","TEAM_ALREADY_MEMBER","TEAM_INVITE_STALE","TEAM_INCOMPLETE","TEAM_FORM_RACE","TEAM_ACTION","TEAM_DB"] or not plain(value.get("error"),240):
 			return false
 	else:
 		return false

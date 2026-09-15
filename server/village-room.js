@@ -648,9 +648,10 @@ const clonePosition = (p) => [Number(p[0]), Number(p[1]), Number(p[2])];
 // One ephemeral room in one Render process. Presence and combat are deliberately
 // not written to the database: this is an online test arena, not progression.
 export class VillageRoom {
-  constructor({ now = Date.now, secondary = null } = {}) {
+  constructor({ now = Date.now, secondary = null, teams = null } = {}) {
     this.now = now;
     this.secondary = secondary;
+    this.teams = teams;
     this.peers = new Map();
     this.frame = 0;
     this.combatFrame = 0;
@@ -677,6 +678,14 @@ export class VillageRoom {
       this.send(peer, {
         type: "secondary_state",
         ...this.secondary.stateForPeer(peer),
+      });
+  }
+  broadcastTeams() {
+    if (!this.teams) return;
+    for (const peer of this.peers.values())
+      this.send(peer, {
+        type: "team_state",
+        ...this.teams.stateForPeer(peer, this.peers),
       });
   }
   roster() {
@@ -733,6 +742,11 @@ export class VillageRoom {
       this.send(peer, {
         type: "secondary_state",
         ...this.secondary.stateForPeer(peer),
+      });
+    if (this.teams)
+      this.send(peer, {
+        type: "team_state",
+        ...this.teams.stateForPeer(peer, this.peers),
       });
     this.tick();
     return peer;
@@ -1188,6 +1202,37 @@ export class VillageRoom {
             peer,
             error.gameCode || "SECONDARY_ACTION",
             error.message || "Mission secondaire refusée.",
+          );
+        });
+      return;
+    }
+    if (
+      this.teams &&
+      message.type === "team_action" &&
+      exact(message, "action,revision,targetKey,type") &&
+      ["apply", "withdraw", "invite", "accept", "decline", "form"].includes(
+        message.action,
+      ) &&
+      Number.isSafeInteger(message.revision) &&
+      message.revision >= 0 &&
+      typeof message.targetKey === "string" &&
+      message.targetKey.length <= 24
+    ) {
+      void this.teams
+        .action(peer, message)
+        .then((result) => {
+          this.broadcastTeams();
+          this.send(peer, {
+            type: "team_action_ack",
+            action: message.action,
+            state: result.state,
+          });
+        })
+        .catch((error) => {
+          this.reject(
+            peer,
+            error.gameCode || "TEAM_ACTION",
+            error.message || "Action d’équipe refusée.",
           );
         });
       return;

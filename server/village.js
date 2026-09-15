@@ -6,6 +6,7 @@ import {
   SecondaryMissionService,
   secondaryUnlocked,
 } from "./secondary-mission.js";
+import { TeamService } from "./team-system.js";
 
 const accessSQL = `FROM game_sessions s
   JOIN users u ON u.id=s.user_id AND u.role='player'
@@ -57,13 +58,18 @@ export function installVillage(
   } = {},
 ) {
   const secondary = new SecondaryMissionService(db);
-  const room = new VillageRoom({ secondary });
+  const teams = new TeamService(db);
+  const room = new VillageRoom({ secondary, teams });
   secondary.onChange = () => room.broadcastSecondary();
+  teams.onChange = () => room.broadcastTeams();
   // The database timestamp, not a handset clock, controls the ten-minute
   // renewal. Refreshing once a second is cheap and keeps every connected
   // client in the same global state.
   const secondaryTimer = setInterval(() => {
-    if (room.peers.size) void secondary.refresh();
+    if (room.peers.size) {
+      void secondary.refresh();
+      void teams.refresh();
+    }
   }, 1000);
   secondaryTimer.unref();
   const wss = new WebSocketServer({
@@ -225,7 +231,10 @@ export function installVillage(
           peer.secondaryUnlocked = unlocked;
           // Slow/failed DB queries never extend the original access lease.
           peer.leaseUntil = started + VILLAGE.leaseMs;
-          if (unlockChanged) room.broadcastSecondary();
+          if (unlockChanged) {
+            room.broadcastSecondary();
+            room.broadcastTeams();
+          }
         }
       }
     } catch {
