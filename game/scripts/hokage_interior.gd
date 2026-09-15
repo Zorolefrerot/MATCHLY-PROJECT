@@ -470,7 +470,9 @@ func _stairs(point: Vector3, angle: float, width: float, count: int, rise: float
 	var forward := Vector3(sin(angle), 0, cos(angle))
 	for i in range(count):
 		var height := rise * float(i + 1)
-		var tread := box(Vector3(width, height, run), point + forward * (run * (float(i) + 0.5)) + Vector3.UP * (height * 0.5), Color("8e684c"), true)
+		# Treads are visual; the continuous slope collision below is the walkable
+		# surface and prevents each riser from becoming a 0.5 m invisible wall.
+		var tread := box(Vector3(width, height, run), point + forward * (run * (float(i) + 0.5)) + Vector3.UP * (height * 0.5), Color("8e684c"))
 		tread.rotation.y = angle
 	var wedge := ConvexPolygonShape3D.new()
 	var length := run * float(count)
