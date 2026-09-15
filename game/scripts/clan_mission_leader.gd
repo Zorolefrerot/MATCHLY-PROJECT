@@ -100,10 +100,12 @@ func _build_accessory() -> void:
 		"flower":
 			for angle in range(5):
 				_part(SphereMesh.new(), Vector3(0.13,0.13,0.13), Vector3(cos(float(angle)*TAU/5.0)*0.22,1.94,sin(float(angle)*TAU/5.0)*0.22), accent)
-		"beetle":
-			_part(SphereMesh.new(), Vector3(0.28,0.38,0.20), Vector3(0,1.08,0.34), dark)
-			_part(CylinderMesh.new(), Vector3(0.04,0.55,0.04), Vector3(-0.22,1.75,0.18), accent)
-			_part(CylinderMesh.new(), Vector3(0.04,0.55,0.04), Vector3(0.22,1.75,0.18), accent)
+		"visor":
+			# Aburame distinction is a human tactical visor and shoulder kit,
+			# never an insect body or antenna silhouette.
+			_part(BoxMesh.new(), Vector3(0.56,0.08,0.06), Vector3(0,1.66,-0.30), accent)
+			_part(BoxMesh.new(), Vector3(0.10,0.34,0.16), Vector3(-0.34,1.22,-0.10), dark)
+			_part(BoxMesh.new(), Vector3(0.10,0.34,0.16), Vector3(0.34,1.22,-0.10), dark)
 		"fangs":
 			_part(CylinderMesh.new(), Vector3(0.10,0.50,0.10), Vector3(-0.23,1.56,-0.31), accent)
 			_part(CylinderMesh.new(), Vector3(0.10,0.50,0.10), Vector3(0.23,1.56,-0.31), accent)
