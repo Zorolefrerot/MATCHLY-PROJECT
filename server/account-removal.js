@@ -63,6 +63,11 @@ export async function removeAcceptedAccount(
         "Recopie exactement le nom du personnage pour confirmer.",
       );
     await mapAllocationSeats(db);
+    await db
+      .prepare(
+        "UPDATE secondary_missions SET status='COOLDOWN',accepted_by=NULL,accepted_at=NULL,available_at=?,updated=? WHERE accepted_by=? AND status='ACCEPTED'",
+      )
+      .run(Date.now() + 10 * 60 * 1000, new Date().toISOString(), userId);
     for (const table of [
       "sessions",
       "game_sessions",

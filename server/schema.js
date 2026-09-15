@@ -47,6 +47,28 @@ CREATE TABLE IF NOT EXISTS player_progress(
  level INTEGER NOT NULL DEFAULT 0 CHECK (level >= 0),
  updated TEXT NOT NULL
 );
+-- Global, server-authoritative secondary missions. Three durable slots are
+-- shared by all players; cooldowns survive reconnects and process restarts.
+CREATE TABLE IF NOT EXISTS secondary_missions(
+ slot INTEGER PRIMARY KEY CHECK (slot BETWEEN 0 AND 2),
+ mission_id TEXT UNIQUE NOT NULL,
+ type_id TEXT NOT NULL,
+ npc_id TEXT NOT NULL,
+ zone TEXT NOT NULL,
+ objective TEXT NOT NULL,
+ progress TEXT NOT NULL DEFAULT '[]',
+ status TEXT NOT NULL CHECK (status IN ('AVAILABLE','ACCEPTED','COOLDOWN')),
+ accepted_by INTEGER REFERENCES users(id),
+ accepted_at BIGINT,
+ completed_at BIGINT,
+ available_at BIGINT NOT NULL,
+ revision INTEGER NOT NULL CHECK (revision >= 1),
+ last_type TEXT,
+ last_npc TEXT,
+ last_zone TEXT,
+ updated TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS secondary_missions_available ON secondary_missions(status,available_at);
 CREATE TABLE IF NOT EXISTS resets(token TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), expires BIGINT NOT NULL);
 CREATE TABLE IF NOT EXISTS applications(
  id ${id}, user_id INTEGER UNIQUE NOT NULL REFERENCES users(id),

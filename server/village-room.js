@@ -648,8 +648,9 @@ const clonePosition = (p) => [Number(p[0]), Number(p[1]), Number(p[2])];
 // One ephemeral room in one Render process. Presence and combat are deliberately
 // not written to the database: this is an online test arena, not progression.
 export class VillageRoom {
-  constructor({ now = Date.now } = {}) {
+  constructor({ now = Date.now, secondary = null } = {}) {
     this.now = now;
+    this.secondary = secondary;
     this.peers = new Map();
     this.frame = 0;
     this.combatFrame = 0;
@@ -669,6 +670,14 @@ export class VillageRoom {
   }
   broadcast(event) {
     for (const peer of this.peers.values()) this.send(peer, event);
+  }
+  broadcastSecondary() {
+    if (!this.secondary) return;
+    for (const peer of this.peers.values())
+      this.send(peer, {
+        type: "secondary_state",
+        ...this.secondary.stateForPeer(peer),
+      });
   }
   roster() {
     this.broadcast({
@@ -707,6 +716,7 @@ export class VillageRoom {
       distanceBudget: 2,
       lastRespawn: now - 5000,
       combat: null,
+      secondaryUnlocked: Boolean(identity.secondaryUnlocked),
     };
     this.peers.set(peer.id, peer);
     // The old socket's later close callback cannot remove this replacement.
@@ -719,6 +729,11 @@ export class VillageRoom {
       radius: VILLAGE.radius,
     });
     this.roster();
+    if (this.secondary)
+      this.send(peer, {
+        type: "secondary_state",
+        ...this.secondary.stateForPeer(peer),
+      });
     this.tick();
     return peer;
   }
@@ -1137,6 +1152,41 @@ export class VillageRoom {
           this.send(other, event);
       }
       this.send(peer, { type: "chat_ack", seq: message.seq });
+      return;
+    }
+    if (
+      this.secondary &&
+      exact(message, "action,index,missionId,revision,slot,type") &&
+      message.type === "secondary_action" &&
+      ["accept", "collect", "complete"].includes(message.action) &&
+      typeof message.missionId === "string" &&
+      message.missionId.length <= 80 &&
+      Number.isSafeInteger(message.revision) &&
+      message.revision >= 1 &&
+      Number.isSafeInteger(message.slot) &&
+      message.slot >= 0 &&
+      message.slot < 3 &&
+      Number.isSafeInteger(message.index) &&
+      message.index >= -1 &&
+      message.index < 32
+    ) {
+      void this.secondary
+        .action(peer, message)
+        .then((state) => {
+          this.broadcastSecondary();
+          this.send(peer, {
+            type: "secondary_action_ack",
+            action: message.action,
+            state,
+          });
+        })
+        .catch((error) => {
+          this.reject(
+            peer,
+            error.gameCode || "SECONDARY_ACTION",
+            error.message || "Mission secondaire refusée.",
+          );
+        });
       return;
     }
     if (exact(message, "type") && message.type === "combat_join") {

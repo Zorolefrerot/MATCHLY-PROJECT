@@ -139,6 +139,8 @@ static func valid_profile(value: Variant) -> bool:
 		return false
 	if value.has("clanMission") and not ClanMission.valid_state(value["clanMission"]):
 		return false
+	if value.has("secondaryMissions") and not SecondaryMission.valid_state(value["secondaryMissions"]):
+		return false
 	if value.has("progress"):
 		var progress: Variant = value["progress"]
 		if not progress is Dictionary or typeof(progress.get("idremGold")) not in [TYPE_INT, TYPE_FLOAT] or typeof(progress.get("level")) not in [TYPE_INT, TYPE_FLOAT] or progress["idremGold"] < 0 or progress["level"] < 0:

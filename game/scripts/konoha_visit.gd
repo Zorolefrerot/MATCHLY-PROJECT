@@ -7,6 +7,7 @@ var api: CharacterAccountAPI
 var mission: Dictionary = {}
 var clan_mission: Dictionary = ClanMission.blank()
 var clan_manager: ClanMissionManager
+var secondary_manager: SecondaryMissionManager
 var menu_event: String = ""
 var request_kind: String = ""
 var clan_pending_event: String = ""
@@ -156,6 +157,10 @@ func _ready() -> void:
 	clan_manager.configure(player, hud, account_profile)
 	clan_manager.expiration_requested.connect(_clan_expiration_requested)
 	clan_manager.collection_feedback.connect(func(text: String) -> void: hud.notice(text))
+	secondary_manager = SecondaryMissionManager.new()
+	secondary_manager.name = "SecondaryMissionManager"
+	world.add_child(secondary_manager)
+	secondary_manager.configure(player, hud)
 	_build_loading_overlay()
 	if not InputMap.has_action("village_interact"):
 		InputMap.add_action("village_interact")
@@ -192,6 +197,7 @@ func _ready() -> void:
 		village_link.status_changed.connect(_network_status)
 		village_link.received.connect(_network_event)
 		village_link.disconnected.connect(_clear_remote)
+		secondary_manager.set_link(village_link)
 		add_child(village_link)
 
 func _build_hokage_transition_nodes() -> void:
@@ -329,7 +335,9 @@ func _physics_process(delta: float) -> void:
 	_update_camera()
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
-	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "PARLER AU CHEF" if nearest == -5 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
+	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "PARLER AU CHEF" if nearest == -5 else "AIDER · MISSION" if nearest == -6 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
+	if is_instance_valid(secondary_manager):
+		secondary_manager.update_hud()
 	# The residence has no entry or exit control: crossing its open hall moves
 	# the player between the exterior and the virtual interior automatically.
 	var clan_status := str(clan_mission.get("status", "NOT_STARTED"))
@@ -418,6 +426,8 @@ func nearest_interaction() -> int:
 		return -2
 	if is_instance_valid(clan_manager) and clan_manager.is_near_own_leader():
 		return -5
+	if is_instance_valid(secondary_manager) and secondary_manager.interaction_available():
+		return -6
 	if _reachable(guide.position):
 		return -1
 	for i in range(KonohaMap.LANDMARKS.size()):
@@ -433,6 +443,9 @@ func interact() -> void:
 		hud.notice("Approche-toi d’un interlocuteur ou d’un panneau pour interagir.")
 		return
 	_clear_inputs()
+	if nearest == -6:
+		secondary_manager.interact()
+		return
 	if nearest == -5:
 		var clan_event := clan_manager.interaction_event()
 		_dialogue(clan_manager.interaction_title(), clan_manager.interaction_text(), clan_event)
@@ -546,6 +559,9 @@ func _sync_mission() -> void:
 			request_kind = "clanMission"
 			clan_pending_event = "report_pending"
 			api.clan_mission_event("report_pending")
+	var secondary_value: Variant = profile.get("secondaryMissions")
+	if is_instance_valid(secondary_manager) and secondary_value is Dictionary:
+		secondary_manager.apply_state(secondary_value)
 
 func open_journal(title: String = "Journal · Mission d’accueil", introduction: String = "") -> void:
 	_close_chat()
@@ -684,7 +700,10 @@ func _action(action: String) -> void:
 		"music":
 			music_enabled = not music_enabled
 			_update_music()
-		"mission_confirm": _confirm_mission()
+		"mission_confirm":
+			if not secondary_manager.confirm_pending(): _confirm_mission()
+		"secondary_decline":
+			secondary_manager.decline_pending()
 		"mission_refresh": _refresh_mission()
 		"combat_join":
 			if is_instance_valid(village_link): village_link.combat_join()
@@ -885,6 +904,8 @@ func _network_event(event: Dictionary) -> void:
 	if ending:
 		return
 	match event["type"]:
+		"secondary_state", "secondary_action_ack":
+			if is_instance_valid(secondary_manager): secondary_manager.handle_network_event(event)
 		"welcome", "correction":
 			# The server only knows the exterior village coordinate space. While
 			# loading or inside the private pocket, its spawn/correction must never

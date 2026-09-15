@@ -12,6 +12,7 @@ import {
   advanceClanMission,
   rewardForStars,
 } from "./clan-mission.js";
+import { secondaryStateForUser } from "./secondary-mission.js";
 
 // Versioned cosmetic IDs from the prototype, never equipment or combat data.
 export const appearanceLimits = Object.freeze({
@@ -103,7 +104,10 @@ export function installGameRoutes(app, db, limit) {
         id: row.id,
         name: row.character,
         clan,
-        clan_id: clan.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
+        clan_id: clan
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, ""),
         affinity: row.affinity || "Chakra",
         mokuton: Boolean(row.mokuton),
         rank: "Genin",
@@ -120,6 +124,7 @@ export function installGameRoutes(app, db, limit) {
           .get(userId),
       ),
       clanMission: clanMissionState(clanMission),
+      secondaryMissions: await secondaryStateForUser(db, userId),
       progress: {
         idremGold: Number(progress?.idrem_gold || 0),
         level: Number(progress?.level || 0),
@@ -300,9 +305,10 @@ export function installGameRoutes(app, db, limit) {
     limit,
     guard(async (req, res) => {
       const body = req.body || {};
-      const expectedKeys = body.event === "expire"
-        ? "event,expectedRevision,score"
-        : "event,expectedRevision";
+      const expectedKeys =
+        body.event === "expire"
+          ? "event,expectedRevision,score"
+          : "event,expectedRevision";
       if (
         Object.keys(body).sort().join(",") !== expectedKeys ||
         !clanMissionEvents.includes(body.event) ||
@@ -310,7 +316,9 @@ export function installGameRoutes(app, db, limit) {
         body.expectedRevision < 0 ||
         body.expectedRevision > 5 ||
         (body.event === "expire" &&
-          (!Number.isSafeInteger(body.score) || body.score < 0 || body.score > 1000000))
+          (!Number.isSafeInteger(body.score) ||
+            body.score < 0 ||
+            body.score > 1000000))
       )
         throw fail(
           400,
@@ -363,9 +371,16 @@ export function installGameRoutes(app, db, limit) {
                 `INSERT INTO player_progress(user_id,idrem_gold,level,updated) VALUES (?,?,?,?)
               ON CONFLICT(user_id) DO UPDATE SET idrem_gold=player_progress.idrem_gold+excluded.idrem_gold,level=CASE WHEN player_progress.level > excluded.level THEN player_progress.level ELSE excluded.level END,updated=excluded.updated`,
               )
-              .run(userId, reward.idremGold, reward.level, new Date().toISOString());
+              .run(
+                userId,
+                reward.idremGold,
+                reward.level,
+                new Date().toISOString(),
+              );
             await db
-              .prepare("INSERT INTO audit(actor,action,target,detail) VALUES (?,?,?,?)")
+              .prepare(
+                "INSERT INTO audit(actor,action,target,detail) VALUES (?,?,?,?)",
+              )
               .run(
                 userId,
                 "clan_mission_reward",

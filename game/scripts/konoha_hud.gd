@@ -6,6 +6,8 @@ var mission_refresh: Button
 var text_scroll: ScrollContainer
 var combat_status: Label
 var clan_mission_status: Label
+var secondary_status: Label
+var secondary_decline: Button
 var combat_active: bool = false
 
 func _build() -> void:
@@ -29,6 +31,20 @@ func _build() -> void:
 	clan_mission_status.add_theme_constant_override("shadow_offset_x", 2)
 	clan_mission_status.add_theme_constant_override("shadow_offset_y", 2)
 	clan_mission_status.hide()
+	var secondary_panel := Panel.new()
+	secondary_panel.name = "SecondaryMissionPanel"
+	secondary_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	secondary_panel.add_theme_stylebox_override("panel", panel_style(Color(0.08,0.13,0.14,0.88), Color("8d624f")))
+	add_child(secondary_panel)
+	secondary_status = Label.new()
+	secondary_status.text = ""
+	secondary_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	secondary_status.add_theme_font_size_override("font_size", 14)
+	secondary_status.add_theme_color_override("font_color", Color("ffe69b"))
+	secondary_status.position = Vector2(10,7)
+	secondary_status.size = Vector2(280,68)
+	secondary_panel.add_child(secondary_status)
+	secondary_panel.hide()
 	feedback = label("", 18)
 	feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer = label("PROTO 0.11 · Mission personnelle · Position temporaire", 13)
@@ -98,6 +114,12 @@ func _build() -> void:
 	primary.custom_minimum_size.y = 48
 	primary.pressed.connect(func() -> void: action_requested.emit("mission_confirm"))
 	column.add_child(primary)
+	secondary_decline = Button.new()
+	secondary_decline.text = "REFUSER"
+	secondary_decline.custom_minimum_size.y = 42
+	secondary_decline.pressed.connect(func() -> void: action_requested.emit("secondary_decline"))
+	column.add_child(secondary_decline)
+	secondary_decline.hide()
 	mission_refresh = Button.new()
 	mission_refresh.text = "ACTUALISER LA MISSION"
 	mission_refresh.custom_minimum_size.y = 44
@@ -132,6 +154,24 @@ func set_clan_mission_hud(message: String, visible: bool) -> void:
 		return
 	clan_mission_status.text = message
 	clan_mission_status.visible = visible
+
+func set_secondary_objective(message: String, visible: bool) -> void:
+	if not is_instance_valid(secondary_status):
+		return
+	secondary_status.text = message
+	var panel: Panel = get_node_or_null("SecondaryMissionPanel") as Panel
+	if panel != null:
+		panel.visible = visible
+
+func show_secondary_prompt(title: String, text: String) -> void:
+	show_menu(title, text, "ACCEPTER", false)
+	secondary_decline.show()
+	primary.disabled = false
+
+func hide_menu() -> void:
+	if is_instance_valid(secondary_decline):
+		secondary_decline.hide()
+	super.hide_menu()
 
 func set_clan_techniques(value: Array) -> void:
 	for i in range(mini(4, value.size())):
@@ -211,6 +251,11 @@ func _layout() -> void:
 	buttons["combat_ultimate"].size = Vector2(110,76)
 	combat_status.position = Vector2(w/2-320,78)
 	combat_status.size = Vector2(640,30)
+	var secondary_panel: Panel = get_node_or_null("SecondaryMissionPanel") as Panel
+	if secondary_panel != null:
+		secondary_panel.position = Vector2(20,220)
+		secondary_panel.size = Vector2(300,84)
+		secondary_status.size = Vector2(280,68)
 	objective.position = Vector2(w/2-325,112)
 	objective.size = Vector2(650,44)
 	clan_mission_status.position = Vector2(w/2-325,154)
