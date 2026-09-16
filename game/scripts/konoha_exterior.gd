@@ -14,7 +14,7 @@ signal returned_to_konoha
 
 const REGION_MIN_X: float = -126.0
 const REGION_MAX_X: float = 126.0
-const REGION_START_Z: float = 162.0
+const REGION_START_Z: float = 158.0
 const REGION_FAR_Z: float = 428.0
 const GATE_LANE_HALF_WIDTH: float = 7.0
 const GATE_Z: float = 160.5
