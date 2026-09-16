@@ -101,6 +101,7 @@ var shopping_count: int = 0
 var environment_texture_count: int = 0
 var collision_focus: Node3D
 var collision_lod_bodies: Array[StaticBody3D] = []
+var collision_lod_last_position := Vector3(INF, INF, INF)
 var collision_lod_clock: float = 0.0
 const COLLISION_LOD_ENABLE_RADIUS: float = 58.0
 const COLLISION_LOD_DISABLE_RADIUS: float = 72.0
@@ -127,6 +128,12 @@ func set_collision_focus(node: Node3D) -> void:
 	collision_focus = node
 	_update_collision_lod()
 
+func refresh_collision_focus() -> void:
+	# Teleports used by mission interactions must refresh the near-collision
+	# budget immediately instead of waiting for the 0.35 s movement tick.
+	if is_instance_valid(collision_focus) and collision_focus.global_position.distance_squared_to(collision_lod_last_position) > 4.0:
+		_update_collision_lod()
+
 func _cache_collision_lod_bodies() -> void:
 	collision_lod_bodies.clear()
 	for node: Node in find_children("*", "StaticBody3D", true, false):
@@ -147,6 +154,7 @@ func _update_collision_lod() -> void:
 	if not is_instance_valid(collision_focus):
 		return
 	var focus_position := collision_focus.global_position
+	collision_lod_last_position = focus_position
 	for body: StaticBody3D in collision_lod_bodies:
 		if not is_instance_valid(body) or body.get_meta("always_collision", false):
 			continue

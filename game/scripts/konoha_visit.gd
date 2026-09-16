@@ -398,6 +398,7 @@ func _physics_process(delta: float) -> void:
 				player.position.z = clampf(player.position.z, -edge_z, edge_z)
 				player.velocity.z = 0.0
 	_update_camera()
+	world.refresh_collision_focus()
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
 	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "RÉCEPTION · ÉQUIPES" if nearest == -7 else "PARLER AU CHEF" if nearest == -5 else "AIDER · MISSION" if nearest == -6 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
