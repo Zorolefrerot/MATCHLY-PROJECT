@@ -227,12 +227,16 @@ func _build_ground_and_walls() -> void:
 			box(Vector3(1.3, 5.2, 54), Vector3(side*151, 2.45, z), Color("778f78"), true)
 	for x in [-120, -60, 0, 60, 120]:
 		box(Vector3(54, 5.2, 1.3), Vector3(x, 2.45, -161), Color("778f78"), true)
+	# Keep the south wall solid except for the single existing main gate lane.
+	# KonohaExterior continues the same floor on the other side of this opening.
+	for x in [-120, -60, 60, 120]:
 		box(Vector3(54, 5.2, 1.3), Vector3(x, 2.45, 161), Color("778f78"), true)
-	# Four closed Konoha gates define the cardinal boundary. They are visual,
-	# solid architectural landmarks only: no exterior transition is connected.
+	# Four closed Konoha gates are the original architectural set; the south
+	# main gate keeps that architecture but opens only its central passage, while
+	# the other three remain closed.
 	_gate(Vector3(148.7, 0, 2), 0.0, "PORTE EST DE KONOHA")
 	_gate(Vector3(-148.7, 0, 2), PI, "PORTE OUEST DE KONOHA")
-	_gate(Vector3(0, 0, 158.5), PI/2, "PORTE SUD DE KONOHA")
+	_gate(Vector3(0, 0, 158.5), PI/2, "PORTE SUD DE KONOHA", true)
 	_gate(Vector3(0, 0, -158.5), -PI/2, "PORTE NORD DE KONOHA")
 
 func _gate_box(size: Vector3, point: Vector3, yaw: float, color: Color, solid: bool = false) -> MeshInstance3D:
@@ -240,7 +244,7 @@ func _gate_box(size: Vector3, point: Vector3, yaw: float, color: Color, solid: b
 	node.rotation.y = yaw
 	return node
 
-func _gate(point: Vector3, angle: float, title: String) -> void:
+func _gate(point: Vector3, angle: float, title: String, open_passage: bool = false) -> void:
 	# `angle` remains part of the gate description for the four cardinal
 	# placements; the point itself gives the exact outward normal on the ring.
 	var normal := Vector3.ZERO
@@ -279,18 +283,23 @@ func _gate(point: Vector3, angle: float, title: String) -> void:
 	_gate_box(Vector3(8.35, 0.18, 0.52), inner - normal * 0.38 + up * 6.08, yaw, roof_dark)
 	_gate_box(Vector3(8.35, 0.18, 0.52), inner - normal * 0.38 + up * 4.63, yaw, roof_dark)
 
-	# The two green leaves meet in the middle and are collidable: the outside
-	# is intentionally not accessible yet, even though the gate reads clearly.
+	# The south leaves are visibly open and non-collidable; the other three
+	# gates keep the original closed double-leaf barrier.
 	for side in [-1.0, 1.0]:
 		var leaf: Vector3 = inner + tangent * float(side) * 1.78 - normal * 0.38 + up * 2.25
-		_gate_box(Vector3(3.45, 4.25, 0.20), leaf, yaw, door_color, true)
-		_gate_box(Vector3(3.52, 4.34, 0.08), leaf - normal * 0.12, yaw, door_trim)
-		_sign("木", leaf - normal * 0.20 + up * 0.10, 56, yaw + PI)
-	_gate_box(Vector3(0.12, 4.25, 0.28), inner - normal * 0.55 + up * 2.25, yaw, Color("243b31"), true)
+		var leaf_point := leaf + (normal * 2.15 if open_passage else Vector3.ZERO)
+		_gate_box(Vector3(3.45, 4.25, 0.20), leaf_point, yaw, door_color, not open_passage)
+		_gate_box(Vector3(3.52, 4.34, 0.08), leaf_point - normal * 0.12, yaw, door_trim)
+		_sign("木", leaf_point - normal * 0.20 + up * 0.10, 56, yaw + PI)
+	if not open_passage:
+		_gate_box(Vector3(0.12, 4.25, 0.28), inner - normal * 0.55 + up * 2.25, yaw, Color("243b31"), true)
 
 	_sign("◎  KONOHA  ◎", inner - normal * 0.42 + up * 5.38, 22, yaw + PI)
 	_sign(title, inner - normal * 0.44 + up * 4.78, 13, yaw + PI)
-	_sign("ACCÈS EXTÉRIEUR FERMÉ", inner - normal * 0.45 + up * 0.45, 11, yaw + PI)
+	if not open_passage:
+		_sign("ACCÈS EXTÉRIEUR FERMÉ", inner - normal * 0.45 + up * 0.45, 11, yaw + PI)
+	else:
+		_sign("ROUTE SUD · SORTIE OUVERTE", inner - normal * 0.45 + up * 0.45, 11, yaw + PI)
 
 func _build_roads_and_water() -> void:
 	# A clean central cross and a wide outer ring leave every house plot off the asphalt.

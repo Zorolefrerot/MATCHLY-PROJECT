@@ -473,6 +473,39 @@ func run() -> void:
 	visit.music_enabled = true
 	visit._update_music()
 	check(visit.music.playing and game.audio.music.stream_paused, "village music starts without overlapping the suspended combat loop")
+	check(is_instance_valid(visit.exterior) and visit.exterior.built, "the first exterior region is built inside the existing Konoha world")
+	check(visit.exterior.mission_markers.has("AmbushCenter") and visit.exterior.mission_markers.has("ZoneC_ForestSpawn") and visit.exterior.mission_markers.has("ZoneE_ContinuationSpawn"), "exterior mission markers reserve the forest, ambush and continuation spaces")
+	check(visit.exterior.exit_trigger.name == "KonohaExitTrigger" and visit.exterior.return_trigger.name == "KonohaReturnTrigger" and visit.exterior.exit_trigger != visit.exterior.return_trigger, "exterior entry and return triggers are distinct")
+	# TEST EXTERIOR 1: leave the existing south gate on foot. The avatar crosses
+	# the same floor and remains the same networked body; no reset is involved.
+	visit.player.reset_at(Vector3(0, 0.25, 157.0))
+	Input.action_press("move_back")
+	for frame in range(90):
+		await physics_frame
+	Input.action_release("move_back")
+	check(visit.exterior.outside and visit.player.position.z > 164.0, "the south gate opens onto a continuous exterior spawn lane")
+	var exterior_distance := visit.player.position.distance_to(visit.exterior.exterior_spawn.global_position)
+	check(exterior_distance < 8.0, "the physical exit reaches the named KonohaExteriorSpawn without a visible teleport")
+	# TEST EXTERIOR 2: the main path, forest and clearing share the same floor.
+	visit.player.position = KonohaExterior.AMBUSH_ZONE + Vector3(0, 0.25, 0)
+	visit.player.velocity = Vector3.ZERO
+	await physics_frame
+	var clearing_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3.UP * 3.0, visit.player.global_position - Vector3.UP * 2.0, 1)
+	check(not visit.player.get_world_3d().direct_space_state.intersect_ray(clearing_ray).is_empty(), "the ambush clearing has a physical walkable floor")
+	check(visit.exterior.outside and visit.player.position.distance_to(KonohaExterior.AMBUSH_ZONE) < 1.0, "the shared player can stand in the future three-player ambush clearing")
+	# TEST EXTERIOR 3: return by walking back through the separated return
+	# trigger, not by a region reset or an automatic loop.
+	visit.player.reset_at(Vector3(0, 0.25, 172.0))
+	visit.exterior.outside = true
+	Input.action_press("move_forward")
+	for frame in range(180):
+		await physics_frame
+	Input.action_release("move_forward")
+	check(not visit.exterior.outside and visit.player.position.z < 160.5, "the real south route returns to Konoha through the gate")
+	check(VillageLink.point([0, 0.25, 420]) and not VillageLink.point([0, 0.25, 429]), "multiplayer validation includes only the compact exterior bounds")
+	visit.player.reset_at(KonohaMap.SPAWN)
+	for frame in range(12):
+		await physics_frame
 	visit.hud.buttons["music"].pressed.emit()
 	check(not visit.music.playing and not visit.music_enabled, "village music can be muted with its touch button")
 	visit.hud.buttons["music"].pressed.emit()

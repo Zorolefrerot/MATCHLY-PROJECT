@@ -17,6 +17,7 @@ var sync_error: String = ""
 var journal_open: bool = false
 var viewport: SubViewport
 var world: KonohaMap
+var exterior: KonohaExterior
 var hokage_interior: HokageInterior
 var hokage_exterior_spawn: Marker3D
 var hokage_entry_trigger: Area3D
@@ -166,6 +167,13 @@ func _ready() -> void:
 	player.apply_appearance(appearance if appearance is Dictionary else CharacterAppearance.DEFAULTS)
 	player.reset_at(KonohaMap.SPAWN)
 	world.set_collision_focus(player)
+	exterior = KonohaExterior.new()
+	exterior.name = "KonohaExterior"
+	world.add_child(exterior)
+	exterior.build()
+	exterior.set_player(player)
+	exterior.left_konoha.connect(func() -> void: hud.notice("Tu franchis la porte sud. La région extérieure de Konoha est ouverte."))
+	exterior.returned_to_konoha.connect(func() -> void: hud.notice("Retour à Konoha par le chemin sud."))
 	var local_nameplate := Label3D.new()
 	local_nameplate.name = "LocalNameplate"
 	local_nameplate.text = account_profile["character"]["name"]
@@ -395,6 +403,8 @@ func _physics_process(delta: float) -> void:
 		if Input.is_action_just_pressed("skill_%d" % i): _combat_action("skill_%d" % i)
 	if Input.is_action_just_pressed("ultimate"): _combat_action("ultimate")
 	player.simulate(delta, direction, hud.sprinting or Input.is_action_pressed("sprint"))
+	if is_instance_valid(exterior):
+		exterior.update(player.position, delta)
 	_update_hokage_portal(delta)
 	if is_instance_valid(academy) and not inside_hokage:
 		# The barrier follows the rewarded second clan mission; there is no
@@ -405,19 +415,25 @@ func _physics_process(delta: float) -> void:
 	# back to the arrival point. Horizontal travel stays continuous across districts.
 	# Only a genuine fall through the world respawns.
 	if player.position.y < -5.0:
-		player.reset_at(KonohaMap.SPAWN)
+		if is_instance_valid(exterior) and exterior.outside:
+			player.reset_at(exterior.exterior_spawn.global_position)
+		else:
+			player.reset_at(KonohaMap.SPAWN)
 		if is_instance_valid(village_link): village_link.respawn()
-		hud.notice("Retour au point d’arrivée du quartier après une chute.")
+		hud.notice("Retour au point d’arrivée après une chute.")
 	else:
 		if not inside_hokage:
-			var edge_x: float = KonohaMap.BOUNDS.x - 2.0
-			var edge_z: float = KonohaMap.BOUNDS.y - 2.0
-			if absf(player.position.x) > edge_x:
-				player.position.x = clampf(player.position.x, -edge_x, edge_x)
-				player.velocity.x = 0.0
-			if absf(player.position.z) > edge_z:
-				player.position.z = clampf(player.position.z, -edge_z, edge_z)
-				player.velocity.z = 0.0
+			if is_instance_valid(exterior) and exterior.outside:
+				exterior.clamp_player(player)
+			else:
+				var edge_x: float = KonohaMap.BOUNDS.x - 2.0
+				var edge_z: float = KonohaMap.BOUNDS.y - 2.0
+				if absf(player.position.x) > edge_x:
+					player.position.x = clampf(player.position.x, -edge_x, edge_x)
+					player.velocity.x = 0.0
+				if absf(player.position.z) > edge_z:
+					player.position.z = clampf(player.position.z, -edge_z, edge_z)
+					player.velocity.z = 0.0
 	_update_camera()
 	world.refresh_collision_focus()
 	var nearest: int = nearest_interaction()

@@ -622,12 +622,14 @@ const position = (p) =>
   Array.isArray(p) &&
   p.length === 3 &&
   p.every(Number.isFinite) &&
-  // Match the playable Konoha perimeter (BOUNDS - 2) so multiplayer
-  // movement is not rejected when a player leaves the arrival district.
+  // Match the playable Konoha perimeter plus the compact southern exterior.
+  // The wider z range is shared by every peer; the client still applies the
+  // visible terrain and cliff boundaries rather than hiding a teleport.
   Math.abs(p[0]) <= 148 &&
   p[1] >= -5 &&
   p[1] <= 12 &&
-  Math.abs(p[2]) <= 158;
+  p[2] >= -158 &&
+  p[2] <= 428;
 const direction = (p) =>
   Array.isArray(p) &&
   p.length === 3 &&

@@ -35,9 +35,9 @@ static func point(value: Variant) -> bool:
 	for axis: Variant in value:
 		if typeof(axis) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(axis)):
 			return false
-	# Match KonohaMap.BOUNDS - 2: the server accepts a multiplayer player across the whole
-	# village, not only the arrival district; the strict server packet stays finite and carries the full perimeter pose.
-	return absf(float(value[0])) <= 148 and float(value[1]) >= -5 and float(value[1]) <= 12 and absf(float(value[2])) <= 158
+	# Match the village perimeter plus the compact southern exterior. The strict
+	# packet remains finite and carries the same shared coordinate envelope.
+	return absf(float(value[0])) <= 148 and float(value[1]) >= -5 and float(value[1]) <= 12 and float(value[2]) >= -158 and float(value[2]) <= 428
 
 static func state(value: Variant) -> bool:
 	return value is Dictionary and integer(value.get("id"),1) and point(value.get("p")) and typeof(value.get("yaw")) in [TYPE_INT,TYPE_FLOAT] and is_finite(float(value["yaw"])) and absf(float(value["yaw"])) <= PI+0.00001 and value.get("motion") is String and value["motion"] in ["idle","walk","run","jump"]
