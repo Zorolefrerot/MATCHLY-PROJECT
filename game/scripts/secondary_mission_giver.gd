@@ -29,6 +29,9 @@ func _build_marker() -> void:
 	mission_marker.mesh = mesh
 	mission_marker.position = Vector3(0, 2.68, 0)
 	mission_marker.material_override = marker_material
+	mission_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mission_marker.visibility_range_end = 96.0
+	mission_marker.visibility_range_end_margin = 8.0
 	mission_marker.visible = false
 	add_child(mission_marker)
 

@@ -52,6 +52,8 @@ func _mesh(vertices: PackedVector3Array, normals: PackedVector3Array, uv: Packed
 	node.material_override = mat
 	node.position = point
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.visibility_range_end = 210.0
+	node.visibility_range_end_margin = 10.0
 	add_child(node)
 	return node
 
@@ -63,12 +65,15 @@ func _block(dimensions: Vector3, point: Vector3, mat: Material) -> MeshInstance3
 	node.position = point
 	node.material_override = mat
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.visibility_range_end = 210.0
+	node.visibility_range_end_margin = 10.0
 	add_child(node)
 	return node
 
 func _solid_box(dimensions: Vector3, point: Vector3, name: String) -> StaticBody3D:
 	var body := StaticBody3D.new()
 	body.name = name
+	body.set_meta("distance_lod", true)
 	body.position = point
 	body.collision_layer = 1
 	body.collision_mask = 0
@@ -92,6 +97,8 @@ func _sphere_part(point: Vector3, scale: Vector3, mat: Material, segments: int =
 	node.scale = scale
 	node.material_override = mat
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.visibility_range_end = 210.0
+	node.visibility_range_end_margin = 10.0
 	add_child(node)
 	return node
 
@@ -134,6 +141,7 @@ func lathe(profile: Array[Vector2], point: Vector3, stretch: Vector2, mat: Mater
 		var collision := CollisionShape3D.new()
 		collision.shape = shape
 		var body := StaticBody3D.new()
+		body.set_meta("distance_lod", true)
 		body.collision_layer = 1
 		body.collision_mask = 0
 		body.add_child(collision)
@@ -407,6 +415,8 @@ func main_door(point: Vector3) -> void:
 	entrance_label.modulate = Color("fff0c9")
 	entrance_label.outline_size = 4
 	entrance_label.outline_modulate = Color("39271f")
+	entrance_label.visibility_range_end = 165.0
+	entrance_label.visibility_range_end_margin = 12.0
 	add_child(entrance_label)
 	# A compact cyan landing seal marks the exact place where the player must
 	# remain still for three seconds before the virtual visit is loaded.

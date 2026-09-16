@@ -99,6 +99,16 @@ var animal_count: int = 0
 var discussion_count: int = 0
 var shopping_count: int = 0
 var environment_texture_count: int = 0
+var collision_focus: Node3D
+var collision_lod_bodies: Array[StaticBody3D] = []
+var collision_lod_clock: float = 0.0
+const COLLISION_LOD_ENABLE_RADIUS: float = 58.0
+const COLLISION_LOD_DISABLE_RADIUS: float = 72.0
+
+func _tree(point: Vector3, solid: bool = false) -> void:
+	# Decorative trees do not need individual colliders; removing hundreds of
+	# static bodies keeps Android physics broad-phase and ray casts stable.
+	super._tree(point, false)
 
 func build() -> void:
 	architecture = KonohaArchitecture.new()
@@ -111,6 +121,40 @@ func build() -> void:
 	_build_trees_and_gardens()
 	_build_village_life()
 	architecture.finish()
+	_cache_collision_lod_bodies()
+
+func set_collision_focus(node: Node3D) -> void:
+	collision_focus = node
+	_update_collision_lod()
+
+func _cache_collision_lod_bodies() -> void:
+	collision_lod_bodies.clear()
+	for node: Node in find_children("*", "StaticBody3D", true, false):
+		var body := node as StaticBody3D
+		if body != null and body.has_meta("distance_lod"):
+			collision_lod_bodies.append(body)
+
+func _process(delta: float) -> void:
+	if not is_instance_valid(collision_focus):
+		return
+	collision_lod_clock += delta
+	if collision_lod_clock < 0.35:
+		return
+	collision_lod_clock = 0.0
+	_update_collision_lod()
+
+func _update_collision_lod() -> void:
+	if not is_instance_valid(collision_focus):
+		return
+	var focus_position := collision_focus.global_position
+	for body: StaticBody3D in collision_lod_bodies:
+		if not is_instance_valid(body) or body.get_meta("always_collision", false):
+			continue
+		var distance_squared := body.global_position.distance_squared_to(focus_position)
+		if distance_squared > COLLISION_LOD_DISABLE_RADIUS * COLLISION_LOD_DISABLE_RADIUS:
+			body.collision_layer = 0
+		elif distance_squared < COLLISION_LOD_ENABLE_RADIUS * COLLISION_LOD_ENABLE_RADIUS:
+			body.collision_layer = 1
 
 func _build_environment() -> void:
 	var world := WorldEnvironment.new()
@@ -126,9 +170,13 @@ func _build_environment() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("f6e7c8")
 	env.ambient_light_energy = 0.62
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.glow_enabled = true
-	env.glow_intensity = 0.55
+	# Keep the panoramic sky and ambient light, but disable post-processing that
+	# is disproportionately expensive on Android Compatibility rendering.
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	env.glow_enabled = false
+	env.ssao_enabled = false
+	env.ssr_enabled = false
+	env.volumetric_fog_enabled = false
 	world.environment = env
 	add_child(world)
 	sun = DirectionalLight3D.new()
@@ -140,6 +188,8 @@ func _build_environment() -> void:
 
 func _build_ground_and_walls() -> void:
 	var ground := box(Vector3(308, 0.4, 328), Vector3(0, -0.25, 0), Color.WHITE, true)
+	if ground.get_child_count() > 0 and ground.get_child(0) is StaticBody3D:
+		ground.get_child(0).set_meta("always_collision", true)
 	var earth_material := TrainingFighter.material(Color.WHITE)
 	earth_material.albedo_texture = EARTH_ART
 	earth_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -450,8 +500,17 @@ func _sanctuary_flag(point: Vector3, variant: int) -> void:
 	emblem.outline_size = 6
 	emblem.outline_modulate = Color("271d1a")
 	emblem.rotation.y = PI
+	emblem.visibility_range_end = 165.0
+	emblem.visibility_range_end_margin = 12.0
 	add_child(emblem)
 	box(Vector3(0.48,0.48,0.14),point+Vector3(0,5.9,0),Color("d5ac5d"))
+
+func _set_geometry_visibility_end(root: Node, distance: float) -> void:
+	for node: Node in root.find_children("*", "GeometryInstance3D", true, false):
+		var geometry := node as GeometryInstance3D
+		if geometry != null:
+			geometry.visibility_range_end = distance
+			geometry.visibility_range_end_margin = 10.0
 
 func _build_blender_sanctuary(point: Vector3, variant: int) -> void:
 	var scene: PackedScene = CLAN_SANCTUARIES[clampi(variant, 0, CLAN_SANCTUARIES.size()-1)]
@@ -465,6 +524,7 @@ func _build_blender_sanctuary(point: Vector3, variant: int) -> void:
 	# torii and roof levels must read as a destination from the outer road.
 	sanctuary.scale = Vector3.ONE * 1.35
 	add_child(sanctuary)
+	_set_geometry_visibility_end(sanctuary, 210.0)
 	architecture.register_external_sanctuary()
 	# Use the same simple Godot block collider as the other exterior houses.
 	# It sits behind the open courtyard gate, so the player can physically enter
@@ -590,4 +650,6 @@ func _sign(text: String, point: Vector3, font_size: int, angle: float = 0) -> vo
 	label_node.modulate = Color("392f29")
 	label_node.outline_size = 3
 	label_node.outline_modulate = Color("e8d7ac")
+	label_node.visibility_range_end = 165.0
+	label_node.visibility_range_end_margin = 12.0
 	add_child(label_node)

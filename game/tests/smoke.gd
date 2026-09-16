@@ -463,6 +463,11 @@ func run() -> void:
 	for frame in range(22):
 		await physics_frame
 	check(visit.initialized and visit.player.is_on_floor(), "village avatar arrives on a real colliding floor")
+	check(visit.viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS and visit.viewport.scaling_3d_scale >= 0.60 and visit.viewport.scaling_3d_scale <= 0.96, "Konoha keeps its live SubViewport inside the adaptive 3D quality range")
+	var ambient_rigs_lightweight: bool = true
+	for ambient_npc: KonohaNPC in visit.world.npcs:
+		ambient_rigs_lightweight = ambient_rigs_lightweight and ambient_npc.fighter == null
+	check(ambient_rigs_lightweight, "ambient villagers use lightweight silhouettes instead of combat rigs")
 	check(is_instance_valid(visit.music) and visit.music.stream is AudioStreamOggVorbis and visit.music.stream.loop, "owner village recording is a loop separate from combat music")
 	check(visit.music.bus == TrainingAudio.BUS and is_equal_approx(visit.music.volume_db,-12.0), "village music respects existing master bus at a quiet background level")
 	visit.music_enabled = true

@@ -348,7 +348,7 @@ func _scroll(point: Vector3, scale_value: float) -> void:
 	node.mesh = mesh
 	node.position = point
 	node.rotation.z = PI / 2.0
-	node.material_override = TrainingFighter.material(Color("e6cb8c"))
+	node.material_override = TrainingArena.scenery_material(Color("e6cb8c"))
 	add_child(node)
 
 func _chair(point: Vector3, angle: float) -> void:
@@ -438,7 +438,7 @@ func box(size: Vector3, point: Vector3, color: Color, solid: bool = false) -> Me
 	mesh.size = size
 	node.mesh = mesh
 	node.position = point
-	node.material_override = TrainingFighter.material(color)
+	node.material_override = TrainingArena.scenery_material(color)
 	add_child(node)
 	if solid:
 		var body := StaticBody3D.new()
@@ -463,7 +463,7 @@ func cylinder(radius: float, height: float, point: Vector3, color: Color, segmen
 	mesh.radial_segments = segments
 	node.mesh = mesh
 	node.position = point
-	node.material_override = TrainingFighter.material(color)
+	node.material_override = TrainingArena.scenery_material(color)
 	add_child(node)
 	if solid:
 		var body := StaticBody3D.new()

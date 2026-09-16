@@ -36,24 +36,34 @@ func configure(kind: String, title: String, start: Vector3, points: Array, tint:
 		_add_label(title)
 
 func _build_person(tint: Color) -> void:
-	fighter = TrainingFighter.new()
-	add_child(fighter)
-	fighter.configure(tint, 0, 100)
+	# Ambient villagers are not playable characters. A six-part silhouette is
+	# enough at village distance and avoids spawning a full combat rig for every
+	# pedestrian on Android. Mission/academy logic remains unchanged.
+	_build_low_poly_person(tint)
+
+func _build_low_poly_person(tint: Color) -> void:
+	var root := Node3D.new()
+	root.name = "LowPolyVillager"
+	var scale_value: float = 0.68 if category in ["girl", "boy"] else 0.88 if category == "elder" else 1.0
+	root.scale = Vector3.ONE * scale_value
+	add_child(root)
 	var look: Dictionary = CharacterAppearance.DEFAULTS.duplicate()
 	look["model"] = 1 if category in ["woman", "girl"] else 0
 	look["hair"] = {"woman": 2, "girl": 1, "elder": 3, "man": 0, "boy": 1}.get(category, 0)
 	look["hair_color"] = absi(role.hash()) % CharacterAppearance.HAIR_COLORS.size()
-	look["eyes"] = absi((role + category).hash()) % CharacterAppearance.EYE_COLORS.size()
 	look["skin"] = absi((category + role).hash()) % CharacterAppearance.SKIN_COLORS.size()
-	look["top"] = 1 if category in ["elder", "merchant"] else 0
 	look["top_color"] = absi((role + "top").hash()) % CharacterAppearance.CLOTH_COLORS.size()
-	look["bottom_color"] = absi((role + "bottom").hash()) % CharacterAppearance.CLOTH_COLORS.size()
-	fighter.apply_appearance(look)
-	var scale_value: float = 0.68 if category in ["girl", "boy"] else 0.88 if category == "elder" else 1.0
-	fighter.scale = Vector3.ONE * scale_value
-	fighter.collision_layer = 0
-	fighter.collision_mask = 0
-	actor = fighter
+	var skin := TrainingFighter.material(CharacterAppearance.SKIN_COLORS[look["skin"]])
+	var cloth := TrainingFighter.material(tint.lerp(CharacterAppearance.CLOTH_COLORS[look["top_color"]], 0.35))
+	var hair := TrainingFighter.material(CharacterAppearance.HAIR_COLORS[look["hair_color"]])
+	var dark := TrainingFighter.material(Color("202a32"))
+	_mesh(root, SphereMesh.new(), Vector3(0.33, 0.52, 0.33), Vector3(0, 0.92, 0), cloth)
+	_mesh(root, SphereMesh.new(), Vector3(0.27, 0.30, 0.27), Vector3(0, 1.54, 0), skin)
+	_mesh(root, SphereMesh.new(), Vector3(0.29, 0.18, 0.29), Vector3(0, 1.76, 0.015), hair)
+	for x in [-0.22, 0.22]:
+		_mesh(root, CylinderMesh.new(), Vector3(0.085, 0.48, 0.085), Vector3(x, 0.37, 0), dark)
+		_mesh(root, CylinderMesh.new(), Vector3(0.085, 0.46, 0.085), Vector3(x * 1.65, 1.02, 0), cloth)
+	actor = root
 
 func _build_animal() -> void:
 	actor = Node3D.new()
@@ -100,6 +110,9 @@ func _mesh(parent: Node3D, shape: PrimitiveMesh, dimensions: Vector3, point: Vec
 	item.mesh = shape
 	item.position = point
 	item.material_override = material
+	item.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	item.visibility_range_end = 96.0
+	item.visibility_range_end_margin = 8.0
 	parent.add_child(item)
 	return item
 
@@ -140,6 +153,9 @@ func _set_pose(state: String) -> void:
 	if fighter == null:
 		if actor != null:
 			actor.position.y = 0.025 * sin(animation_clock * 0.8)
+		if activity_label != null:
+			var ambient_action := "..." if state == "talking" else "en mouvement" if state == "walking" else "au comptoir" if activity == "merchant" else "achète" if state == "shopping" else "en attente"
+			activity_label.text = "%s · %s" % [role, ambient_action]
 		return
 	var amplitude: float = 0.52 if state == "walking" else 0.12 if state == "talking" else 0.04
 	fighter.left_leg.rotation.x = sin(animation_clock) * amplitude

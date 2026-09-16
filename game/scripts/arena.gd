@@ -3,6 +3,14 @@ extends Node3D
 ## Low-poly scenery built in code: no ripped models and no online assets.
 
 var sun: DirectionalLight3D
+static var _scenery_materials: Dictionary = {}
+
+static func scenery_material(color: Color) -> StandardMaterial3D:
+	var key := color.to_html(true)
+	if not _scenery_materials.has(key):
+		var mat := TrainingFighter.material(color)
+		_scenery_materials[key] = mat
+	return _scenery_materials[key]
 
 func build() -> void:
 	var world := WorldEnvironment.new()
@@ -82,10 +90,14 @@ func box(dimensions: Vector3, point: Vector3, color: Color, solid: bool = false)
 	mesh.size = dimensions
 	result.mesh = mesh
 	result.position = point
-	result.material_override = TrainingFighter.material(color)
+	result.material_override = scenery_material(color)
+	result.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	result.visibility_range_end = 210.0
+	result.visibility_range_end_margin = 10.0
 	add_child(result)
 	if solid:
 		var body := StaticBody3D.new()
+		body.set_meta("distance_lod", true)
 		body.collision_layer = 1
 		body.collision_mask = 0
 		var shape := BoxShape3D.new()
@@ -105,10 +117,14 @@ func cylinder(radius: float, height: float, point: Vector3, color: Color, segmen
 	mesh.radial_segments = segments
 	result.mesh = mesh
 	result.position = point
-	result.material_override = TrainingFighter.material(color)
+	result.material_override = scenery_material(color)
+	result.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	result.visibility_range_end = 210.0
+	result.visibility_range_end_margin = 10.0
 	add_child(result)
 	if solid:
 		var body := StaticBody3D.new()
+		body.set_meta("distance_lod", true)
 		body.collision_layer = 1
 		body.collision_mask = 0
 		var shape := CylinderShape3D.new()
@@ -120,8 +136,8 @@ func cylinder(radius: float, height: float, point: Vector3, color: Color, segmen
 		result.add_child(body)
 	return result
 
-func _tree(point: Vector3) -> void:
-	cylinder(0.3, 3.3, point + Vector3(0, 1.65, 0), Color("766047"), 6, true)
+func _tree(point: Vector3, solid: bool = true) -> void:
+	cylinder(0.3, 3.3, point + Vector3(0, 1.65, 0), Color("766047"), 6, solid)
 	for offset in [Vector3(0, 3.7, 0), Vector3(-0.9, 3.1, 0.3)]:
 		var leaves := MeshInstance3D.new()
 		var mesh := SphereMesh.new()
@@ -131,5 +147,8 @@ func _tree(point: Vector3) -> void:
 		mesh.rings = 3
 		leaves.mesh = mesh
 		leaves.position = point + offset
-		leaves.material_override = TrainingFighter.material(Color("557a61"))
+		leaves.material_override = scenery_material(Color("557a61"))
+		leaves.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		leaves.visibility_range_end = 165.0
+		leaves.visibility_range_end_margin = 12.0
 		add_child(leaves)

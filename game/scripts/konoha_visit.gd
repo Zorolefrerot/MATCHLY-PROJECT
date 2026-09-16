@@ -64,8 +64,53 @@ var combat_effects: Node3D
 var combat_vfx: TrainingVFX
 var combat_state: Dictionary = {}
 var combat_level: int = 1
+var mobile_render_profile: bool = false
+var render_quality_clock: float = 0.0
+var render_low_fps_streak: int = 0
+var render_high_fps_streak: int = 0
+const MOBILE_VIEWPORT_SIZE := Vector2i(960, 540)
+const DESKTOP_VIEWPORT_SIZE := Vector2i(1152, 648)
+const MOBILE_RENDER_SCALE: float = 0.72
+const DESKTOP_RENDER_SCALE: float = 0.88
+const MIN_RENDER_SCALE: float = 0.60
+const MAX_RENDER_SCALE: float = 0.96
+const RENDER_QUALITY_SAMPLE_SECONDS: float = 0.75
 var presence_count: int = 1
 var unread: int = 0
+
+func _configure_render_profile() -> void:
+	mobile_render_profile = OS.has_feature("mobile") or OS.has_feature("android")
+	viewport.size = MOBILE_VIEWPORT_SIZE if mobile_render_profile else DESKTOP_VIEWPORT_SIZE
+	# Disable multisample and screen-space AA on the 3D target. The HUD stays
+	# full-resolution because it is a separate Control tree over this viewport.
+	viewport.msaa_3d = 0
+	viewport.screen_space_aa = 0
+	viewport.scaling_3d_scale = MOBILE_RENDER_SCALE if mobile_render_profile else DESKTOP_RENDER_SCALE
+
+func _update_render_quality(delta: float) -> void:
+	if not is_instance_valid(viewport):
+		return
+	render_quality_clock += delta
+	if render_quality_clock < RENDER_QUALITY_SAMPLE_SECONDS:
+		return
+	render_quality_clock = 0.0
+	var fps := Engine.get_frames_per_second()
+	if fps > 0 and fps < 28:
+		render_low_fps_streak += 1
+		render_high_fps_streak = 0
+	elif fps >= 52:
+		render_high_fps_streak += 1
+		render_low_fps_streak = 0
+	else:
+		render_low_fps_streak = 0
+		render_high_fps_streak = 0
+	if render_low_fps_streak >= 2:
+		viewport.scaling_3d_scale = maxf(MIN_RENDER_SCALE, viewport.scaling_3d_scale - 0.08)
+		render_low_fps_streak = 0
+		render_high_fps_streak = 0
+	elif render_high_fps_streak >= 8:
+		viewport.scaling_3d_scale = minf(MAX_RENDER_SCALE, viewport.scaling_3d_scale + 0.04)
+		render_high_fps_streak = 0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -79,8 +124,10 @@ func _ready() -> void:
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(container)
 	viewport = SubViewport.new()
-	viewport.size = Vector2i(1280,720)
+	_configure_render_profile()
 	viewport.own_world_3d = true
+	# The 3D world always remains live during a visit. Only its internal
+	# resolution changes; the SubViewport is never hidden or disabled here.
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	container.add_child(viewport)
 	world = KonohaMap.new()
@@ -109,6 +156,7 @@ func _ready() -> void:
 	var appearance: Variant = account_profile.get("appearance")
 	player.apply_appearance(appearance if appearance is Dictionary else CharacterAppearance.DEFAULTS)
 	player.reset_at(KonohaMap.SPAWN)
+	world.set_collision_focus(player)
 	var local_nameplate := Label3D.new()
 	local_nameplate.name = "LocalNameplate"
 	local_nameplate.text = account_profile["character"]["name"]
@@ -144,7 +192,9 @@ func _ready() -> void:
 	pivot.add_child(arm)
 	var camera := Camera3D.new()
 	camera.fov = 67
-	camera.far = 235
+	# The outer districts remain in view, but trimming the unused far plane on
+	# mobile reduces vertex submission and depth-buffer work.
+	camera.far = 200.0 if mobile_render_profile else 235.0
 	arm.add_child(camera)
 	camera.current = true
 	hud = KonohaHUD.new()
@@ -519,6 +569,7 @@ func _enter_hokage_residence() -> void:
 	# HokageInteriorSpawn is inside the hall, well behind the distinct exit
 	# trigger. It is never placed on the doorway collider.
 	player.reset_at(hokage_interior.interior_spawn.global_position)
+	world.set_collision_focus(player)
 	player.face(Vector3(0,0,-1))
 	yaw = 0.0
 	pitch = -0.10
@@ -533,6 +584,7 @@ func _exit_hokage_residence() -> void:
 	# HokageExteriorSpawn is outside the closed façade and outside the entry
 	# trigger, so the return cannot start a second transition.
 	player.reset_at(hokage_exterior_spawn.global_position)
+	world.set_collision_focus(player)
 	player.face(Vector3(0,0,1))
 	yaw = 0.0
 	pitch = -0.06
@@ -851,9 +903,10 @@ func _village_pose_position() -> Vector3:
 	return Vector3(float(village_link.pose["p"][0]),float(village_link.pose["p"][1]),float(village_link.pose["p"][2]))
 
 func _process(delta: float) -> void:
-	if not initialized or ending or not is_instance_valid(village_link):
+	if not initialized or ending:
 		return
-	if hokage_network_paused:
+	_update_render_quality(delta)
+	if not is_instance_valid(village_link) or hokage_network_paused:
 		return
 	var network_position := player.position
 	if hokage_network_release >= 0.0:
