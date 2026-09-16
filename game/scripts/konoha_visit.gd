@@ -530,7 +530,10 @@ func _academy_hint() -> String:
 	if secondary_manager.unlocked:
 		return "\n\nLes missions secondaires se prennent auprès des habitants signalés par un marqueur rouge. La Docteure Hana se trouve dans la cour d’entraînement de l’académie."
 	var status := str(clan_mission.get("status", "NOT_STARTED"))
-	var reward_claimed := clan_mission.get("rewardClaimed", false) == true
+	var reward_claimed: bool = false
+	var reward_value: Variant = clan_mission.get("rewardClaimed", false)
+	if reward_value is bool:
+		reward_claimed = reward_value
 	if status == "COMPLETED" and reward_claimed:
 		return "\n\nTa deuxième mission est bien récompensée. Le tableau secondaire n’est pas encore actualisé dans cette visite : ouvre le JOURNAL puis actualise la mission, ou reconnecte-toi au village."
 	if status in ["IN_PROGRESS", "TIME_EXPIRED", "REPORT_PENDING"]:
