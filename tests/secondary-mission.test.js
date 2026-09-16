@@ -172,6 +172,20 @@ test("a player can abandon an accepted mission so the global slot becomes availa
     const accepted = service
       .stateForPeer(peer)
       .missions.find((value) => value.slot === mission.slot);
+    const otherMission = service
+      .stateForPeer(peer)
+      .missions.find((value) => value.slot !== mission.slot);
+    await assert.rejects(
+      () =>
+        service.action(peer, {
+          action: "accept",
+          slot: otherMission.slot,
+          missionId: otherMission.missionId,
+          revision: otherMission.revision,
+          index: -1,
+        }),
+      /mission secondaire en cours/i,
+    );
     const abandoned = await service.action(peer, {
       action: "abandon",
       slot: mission.slot,
@@ -179,15 +193,44 @@ test("a player can abandon an accepted mission so the global slot becomes availa
       revision: accepted.revision,
       index: -1,
     });
-    assert.equal(
-      abandoned.missions.find((value) => value.slot === mission.slot).status,
-      "available",
+    const available = abandoned.missions.find(
+      (value) => value.slot === mission.slot,
     );
+    assert.equal(available.status, "available");
+    assert.equal(available.revision, accepted.revision + 1);
+    const row = await db
+      .prepare(
+        "SELECT status,accepted_by,accepted_at,progress,revision FROM secondary_missions WHERE slot=?",
+      )
+      .get(mission.slot);
+    assert.equal(row.status, "AVAILABLE");
+    assert.equal(row.accepted_by, null);
+    assert.equal(row.accepted_at, null);
+    assert.equal(row.progress, "[]");
+    assert.equal(Number(row.revision), accepted.revision + 1);
     assert.equal(
       await db
         .prepare("SELECT idrem_gold FROM player_progress WHERE user_id=1")
         .get(),
       undefined,
+    );
+    assert.equal(
+      await db
+        .prepare(
+          "SELECT 1 FROM audit WHERE actor=1 AND action='secondary_mission_reward'",
+        )
+        .get(),
+      undefined,
+    );
+    await service.action(
+      { ...peer, id: 2 },
+      {
+        action: "accept",
+        slot: mission.slot,
+        missionId: mission.missionId,
+        revision: available.revision,
+        index: -1,
+      },
     );
   } finally {
     await db.close();
