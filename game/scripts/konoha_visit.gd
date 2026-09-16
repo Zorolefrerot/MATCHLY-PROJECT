@@ -8,6 +8,8 @@ var mission: Dictionary = {}
 var clan_mission: Dictionary = ClanMission.blank()
 var clan_manager: ClanMissionManager
 var secondary_manager: SecondaryMissionManager
+var team_manager: TeamManager
+var academy: Academy
 var menu_event: String = ""
 var request_kind: String = ""
 var clan_pending_event: String = ""
@@ -31,7 +33,6 @@ const HOKAGE_PORTAL_RADIUS := 1.55
 const HOKAGE_PORTAL_HOLD_SECONDS := 3.0
 const HOKAGE_TELEPORT_DEBOUNCE_SECONDS := 0.85
 const HOKAGE_NETWORK_RELEASE_SECONDS := 0.9
-const ACADEMY_RECEPTION_POINT := Vector3(-34.0, 0.55, 12.0)
 var hokage_portal_hold: float = 0.0
 var hokage_loading: bool = false
 var hokage_network_paused: bool = false
@@ -57,13 +58,13 @@ var music_enabled: bool = true
 var app_active: bool = true
 var village_link: VillageLink
 var chat_panel: VillageChat
-var academy_receptionist: KonohaNPC
-var academy_recruitment: TeamRecruitment
 var remote_avatars: Dictionary = {}
 var combat_effects: Node3D
 var combat_vfx: TrainingVFX
 var combat_state: Dictionary = {}
 var combat_level: int = 1
+var graphics_settings: Dictionary = {}
+var render_scale_cap: float = 0.96
 var mobile_render_profile: bool = false
 var render_quality_clock: float = 0.0
 var render_low_fps_streak: int = 0
@@ -85,10 +86,18 @@ func _configure_render_profile() -> void:
 	# full-resolution because it is a separate Control tree over this viewport.
 	viewport.msaa_3d = 0
 	viewport.screen_space_aa = 0
-	viewport.scaling_3d_scale = MOBILE_RENDER_SCALE if mobile_render_profile else DESKTOP_RENDER_SCALE
+	var fallback := MOBILE_RENDER_SCALE if mobile_render_profile else DESKTOP_RENDER_SCALE
+	var requested := float(graphics_settings.get("render_scale", fallback))
+	# Manual settings are respected, but remain inside a safe range so one
+	# preference cannot allocate an unbounded Android render target.
+	requested = clampf(requested, MIN_RENDER_SCALE, MAX_RENDER_SCALE)
+	render_scale_cap = requested
+	viewport.scaling_3d_scale = requested
 
 func _update_render_quality(delta: float) -> void:
-	if not is_instance_valid(viewport):
+	if not is_instance_valid(viewport) or str(graphics_settings.get("preset", "economy")) != "economy":
+		# Economy is the only adaptive option. Balanced, Quality and Manuel keep
+		# the player's explicit render scale instead of silently changing it.
 		return
 	render_quality_clock += delta
 	if render_quality_clock < RENDER_QUALITY_SAMPLE_SECONDS:
@@ -109,7 +118,7 @@ func _update_render_quality(delta: float) -> void:
 		render_low_fps_streak = 0
 		render_high_fps_streak = 0
 	elif render_high_fps_streak >= 8:
-		viewport.scaling_3d_scale = minf(MAX_RENDER_SCALE, viewport.scaling_3d_scale + 0.04)
+		viewport.scaling_3d_scale = minf(render_scale_cap, viewport.scaling_3d_scale + 0.04)
 		render_high_fps_streak = 0
 
 func _ready() -> void:
@@ -133,7 +142,7 @@ func _ready() -> void:
 	world = KonohaMap.new()
 	viewport.add_child(world)
 	world.build()
-	_build_academy_reception()
+	world.apply_graphics(graphics_settings)
 	# The interior is already provided by hokage_interior.gd. Keep one world and
 	# one player, but place this virtual pocket outside Konoha's ground/wall
 	# colliders so it cannot look like a hidden building in another district.
@@ -194,7 +203,9 @@ func _ready() -> void:
 	camera.fov = 67
 	# The outer districts remain in view, but trimming the unused far plane on
 	# mobile reduces vertex submission and depth-buffer work.
-	camera.far = 200.0 if mobile_render_profile else 235.0
+	var far_default := 200.0 if mobile_render_profile else 235.0
+	var distance_scale := clampf(float(graphics_settings.get("view_distance", 0.78)), 0.60, 1.0)
+	camera.far = lerpf(150.0, far_default, distance_scale)
 	arm.add_child(camera)
 	camera.current = true
 	hud = KonohaHUD.new()
@@ -215,6 +226,21 @@ func _ready() -> void:
 	secondary_manager.name = "SecondaryMissionManager"
 	world.add_child(secondary_manager)
 	secondary_manager.configure(player, hud)
+	# Shared physical Academy: its own scene owns the building, courtyard,
+	# staircase, floors, staff, reception and locked entrance.
+	academy = Academy.new()
+	academy.name = "Academy"
+	world.add_child(academy)
+	academy.player = player
+	academy.build()
+	academy.unlocked_now.connect(func() -> void: hud.notice("🏫 L’Académie Ninja est maintenant accessible."))
+	academy.entered.connect(func() -> void: hud.notice("Académie Ninja · hall d’accueil partagé."))
+	academy.exited.connect(func() -> void: hud.notice("Tu quittes l’Académie Ninja."))
+	team_manager = TeamManager.new()
+	team_manager.name = "TeamManager"
+	world.add_child(team_manager)
+	team_manager.configure(player, hud)
+	team_manager.focus_requested.connect(_close_chat)
 	_build_loading_overlay()
 	if not InputMap.has_action("village_interact"):
 		InputMap.add_action("village_interact")
@@ -252,18 +278,8 @@ func _ready() -> void:
 		village_link.received.connect(_network_event)
 		village_link.disconnected.connect(_clear_remote)
 		secondary_manager.set_link(village_link)
+		team_manager.set_link(village_link)
 		add_child(village_link)
-		academy_recruitment = TeamRecruitment.new()
-		hud.add_child(academy_recruitment)
-		academy_recruitment.configure(player, hud, village_link)
-
-func _build_academy_reception() -> void:
-	# The receptionist is a real lightweight world actor at the desk position;
-	# the Academy panel is never exposed as a global menu button.
-	academy_receptionist = KonohaNPC.new()
-	academy_receptionist.name = "AcademyReceptionist"
-	world.add_child(academy_receptionist)
-	academy_receptionist.configure("woman", "RÉCEPTION · ÉQUIPES", ACADEMY_RECEPTION_POINT, [ACADEMY_RECEPTION_POINT], Color("557b75"), "discussion", 0.0)
 
 func _build_hokage_transition_nodes() -> void:
 	# Explicit points are the only destinations used by the transition.
@@ -380,6 +396,11 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("ultimate"): _combat_action("ultimate")
 	player.simulate(delta, direction, hud.sprinting or Input.is_action_pressed("sprint"))
 	_update_hokage_portal(delta)
+	if is_instance_valid(academy) and not inside_hokage:
+		# The barrier follows the rewarded second clan mission; there is no
+		# parallel client-only unlock or persistent shortcut.
+		academy.set_unlocked(is_instance_valid(secondary_manager) and secondary_manager.unlocked)
+		academy.update(player.position, delta)
 	# Crossing the outer ring must stop at the wall, not silently teleport the player
 	# back to the arrival point. Horizontal travel stays continuous across districts.
 	# Only a genuine fall through the world respawns.
@@ -401,7 +422,7 @@ func _physics_process(delta: float) -> void:
 	world.refresh_collision_focus()
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
-	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "RÉCEPTION · ÉQUIPES" if nearest == -7 else "PARLER AU CHEF" if nearest == -5 else "AIDER · MISSION" if nearest == -6 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
+	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "PARLER AU CHEF" if nearest == -5 else "AIDER · MISSION" if nearest == -6 else "PARLER À LA RÉCEPTION" if nearest == -7 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
 	if is_instance_valid(secondary_manager):
 		secondary_manager.update_hud()
 	# The residence has no entry or exit control: crossing its open hall moves
@@ -490,7 +511,7 @@ func nearest_interaction() -> int:
 		return -2
 	if is_instance_valid(hokage_entry_trigger) and hokage_entry_trigger.get_overlapping_bodies().has(player):
 		return -2
-	if is_instance_valid(academy_receptionist) and _reachable(academy_receptionist.position):
+	if is_instance_valid(academy) and academy.reception_overlaps(player):
 		return -7
 	if is_instance_valid(clan_manager) and clan_manager.is_near_own_leader():
 		return -5
@@ -506,14 +527,17 @@ func nearest_interaction() -> int:
 func interact() -> void:
 	if not initialized or ending or hud.blocked:
 		return
+	if is_instance_valid(team_manager) and team_manager.panel_open():
+		team_manager.close_panel()
+		return
 	var nearest: int = nearest_interaction()
 	if nearest == -2:
 		hud.notice("Approche-toi d’un interlocuteur ou d’un panneau pour interagir.")
 		return
 	_clear_inputs()
 	if nearest == -7:
-		if is_instance_valid(academy_recruitment):
-			academy_recruitment.open()
+		if is_instance_valid(team_manager):
+			team_manager.interact()
 		else:
 			hud.notice("La réception de l’Académie attend la connexion au village.")
 		return
@@ -618,6 +642,7 @@ func _academy_hint() -> String:
 
 func _dialogue(title: String, text: String, event: String = "") -> void:
 	_close_chat()
+	_close_team_panel()
 	journal_open = false
 	menu_event = event
 	hud.primary.disabled = not request_kind.is_empty()
@@ -659,9 +684,13 @@ func _sync_mission() -> void:
 			secondary_manager.apply_state(secondary_value)
 		else:
 			secondary_manager.clear_state()
+	var team_value: Variant = profile.get("team")
+	if is_instance_valid(team_manager) and team_value is Dictionary:
+		team_manager.apply_profile(team_value)
 
 func open_journal(title: String = "Journal · Mission d’accueil", introduction: String = "") -> void:
 	_close_chat()
+	_close_team_panel()
 	if not initialized or ending:
 		return
 	_clear_inputs()
@@ -884,7 +913,6 @@ func finish() -> void:
 		hokage_interior.set_active(false)
 	inside_hokage = false
 	_close_chat()
-	if is_instance_valid(academy_recruitment): academy_recruitment.close()
 	if is_instance_valid(village_link): village_link.stop()
 	if is_instance_valid(music):
 		music.stop()
@@ -1012,6 +1040,8 @@ func _network_event(event: Dictionary) -> void:
 	match event["type"]:
 		"secondary_state", "secondary_action_ack":
 			if is_instance_valid(secondary_manager): secondary_manager.handle_network_event(event)
+		"team_state", "team_action_ack":
+			if is_instance_valid(team_manager): team_manager.handle_network_event(event)
 		"welcome", "correction":
 			# The server only knows the exterior village coordinate space. While
 			# loading or inside the private pocket, its spawn/correction must never
@@ -1099,9 +1129,8 @@ func _network_event(event: Dictionary) -> void:
 			var code := str(event.get("code", ""))
 			if code.begins_with("SECONDARY_") or code == "INVALID_SECONDARY_ACTION":
 				if is_instance_valid(secondary_manager): secondary_manager.handle_network_error(str(event.get("error", "Mission secondaire refusée.")))
-			elif code.begins_with("ACADEMY_") or code == "INVALID_ACADEMY_ACTION":
-				# TeamRecruitment receives the same validated event and presents it in the reception panel.
-				pass
+			elif code.begins_with("TEAM_") and is_instance_valid(team_manager):
+				team_manager.notify_error(str(event.get("error", "Action d’équipe refusée.")))
 			else:
 				chat_panel.uncertain()
 				chat_panel.status.text = event["error"]
@@ -1114,6 +1143,7 @@ func open_chat() -> void:
 	if ending or not initialized:
 		return
 	_clear_inputs()
+	_close_team_panel()
 	unread = 0
 	hud.buttons["chat"].text = "CHAT RP / HRP"
 	hud.show_menu("", "", "", false)
@@ -1123,3 +1153,6 @@ func open_chat() -> void:
 func _close_chat() -> void:
 	if is_instance_valid(chat_panel): chat_panel.close_panel()
 	if is_instance_valid(hud): hud.menu_panel.show()
+
+func _close_team_panel() -> void:
+	if is_instance_valid(team_manager): team_manager.close_panel()

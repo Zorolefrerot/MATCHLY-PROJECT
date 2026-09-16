@@ -280,6 +280,12 @@ func secondary_action(action: String, slot: int, mission_id: String, revision: i
 		return _send({"type":"secondary_action","action":action,"slot":slot,"missionId":mission_id,"revision":revision,"index":index})
 	return false
 
+func team_action(action: String, target_key: String = "", revision: int = 0) -> bool:
+	# Team actions carry only a server-issued candidate key and revision.
+	if not connected or action not in ["apply", "withdraw", "invite", "accept", "decline", "form"] or target_key.length() > 24 or revision < 0:
+		return false
+	return _send({"type":"team_action", "action":action, "targetKey":target_key, "revision":revision})
+
 func secondary_refresh() -> bool:
 	if not connected:
 		return false
@@ -379,6 +385,12 @@ func _accept(value: Variant) -> bool:
 	elif kind == "secondary_action_ack":
 		if value.get("action") not in ["accept", "collect", "complete", "abandon"] or not SecondaryMission.valid_state(value.get("state")) or not account_progress(value.get("progress")):
 			return false
+	elif kind == "team_state":
+		if not TeamManager.valid_state(value):
+			return false
+	elif kind == "team_action_ack":
+		if value.get("action") not in ["apply", "withdraw", "invite", "accept", "decline", "form"] or not TeamManager.valid_state(value.get("state")):
+			return false
 	elif kind == "combat_waiting":
 		if not value.get("players") is Array or value["players"].size() > 2 or not integer(value.get("needed"),1) or value["needed"] > 2:
 			return false
@@ -431,7 +443,7 @@ func _accept(value: Variant) -> bool:
 			return false
 	elif kind == "error":
 		var error_code := str(value.get("code", ""))
-		var known_error := error_code in ["CHAT_RATE","COMBAT_BUSY","COMBAT_ACTION","SECONDARY_LOCKED","SECONDARY_CONFLICT","SECONDARY_NOT_AVAILABLE","SECONDARY_ALREADY_ACTIVE","SECONDARY_NOT_OWNER","SECONDARY_OBJECTIVE_INVALID","SECONDARY_TOO_FAR","SECONDARY_NOT_COMPLETE","INVALID_SECONDARY_ACTION","SECONDARY_ACTION"] or error_code.begins_with("ACADEMY_") or error_code == "INVALID_ACADEMY_ACTION"
+		var known_error := error_code in ["CHAT_RATE","COMBAT_BUSY","COMBAT_ACTION","SECONDARY_LOCKED","SECONDARY_CONFLICT","SECONDARY_NOT_AVAILABLE","SECONDARY_ALREADY_ACTIVE","SECONDARY_NOT_OWNER","SECONDARY_OBJECTIVE_INVALID","SECONDARY_TOO_FAR","SECONDARY_NOT_COMPLETE","INVALID_SECONDARY_ACTION","SECONDARY_ACTION","TEAM_LOCKED","TEAM_ACTION_INVALID","TEAM_NOT_AT_RECEPTION","TEAM_ALREADY_CANDIDATE","TEAM_NOT_CANDIDATE","TEAM_OFFICIAL","TEAM_TARGET_INVALID","TEAM_TARGET_UNKNOWN","TEAM_TARGET_BUSY","TEAM_INVITE_CONFLICT","TEAM_FULL","TEAM_NO_INVITE","TEAM_ALREADY_MEMBER","TEAM_INVITE_STALE","TEAM_INCOMPLETE","TEAM_FORM_RACE","TEAM_ACTION","TEAM_DB"] or error_code.begins_with("ACADEMY_") or error_code == "INVALID_ACADEMY_ACTION"
 		if not plain(error_code, 64) or not known_error or not plain(value.get("error"),240):
 			return false
 	else:

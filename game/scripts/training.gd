@@ -136,12 +136,14 @@ func _ready() -> void:
 	hud.creator_requested.connect(open_creator)
 	hud.restart_requested.connect(start_round)
 	hud.quality_changed.connect(_quality)
+	hud.graphics_changed.connect(_graphics)
 	hud.volume_changed.connect(audio.set_volume)
+	_graphics(hud.get_graphics_settings())
 	hud.ambience_changed.connect(audio.set_ambience)
 	hud.opponent_changed.connect(func(active: bool) -> void: enemy_enabled = active)
 	_reset_positions()
 	hud.refresh(player, enemy, rules, target_locked, elapsed)
-	hud.show_menu("Ta voie ninja commence ici.", "Une arène, quatre techniques et un adversaire programmé.\nModèles provisoires. Entraînement solo, sans compte en ligne.", "LANCER L’ENTRAÎNEMENT", false)
+	hud.show_menu("Ta voie ninja commence ici.", "Une arène, quatre techniques et un adversaire programmé.\nModèles provisoires. Entraînement solo, sans compte en ligne.", "ENTRAÎNEMENT HORS LIGNE", false)
 	get_tree().paused = true
 
 func _register_inputs() -> void:
@@ -214,9 +216,21 @@ func _resume() -> void:
 		hud.hide_menu()
 
 func _quality(standard: bool) -> void:
+	# Kept for compatibility with existing HUD callers; the complete manual
+	# settings arrive through graphics_changed below.
 	vfx.standard = standard
 	arena.sun.shadow_enabled = standard
 	get_viewport().msaa_3d = Viewport.MSAA_2X if standard else Viewport.MSAA_DISABLED
+
+func _graphics(settings: Dictionary) -> void:
+	var scale := clampf(float(settings.get("render_scale", 0.82)), 0.60, 0.96)
+	get_viewport().scaling_3d_scale = scale
+	var shadows := bool(settings.get("shadows", false))
+	vfx.standard = shadows
+	arena.sun.shadow_enabled = shadows
+	# Compatibility renderer: leave MSAA off even for Quality on Android; the
+	# player controls the meaningful cost (render scale and shadows) manually.
+	get_viewport().msaa_3d = Viewport.MSAA_DISABLED
 
 func pause_round() -> void:
 	if village != null:
@@ -270,6 +284,7 @@ func _open_village() -> void:
 	village.account_profile = account_api.profile.duplicate(true)
 	village.api = account_api
 	village.music_enabled = audio.ambience_enabled
+	village.graphics_settings = hud.get_graphics_settings()
 	village.closed.connect(_leave_village)
 	village_layer.add_child(village)
 	# Only the new visit runs. Physics remains active in its separate World3D.

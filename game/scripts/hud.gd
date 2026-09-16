@@ -8,6 +8,7 @@ signal account_requested
 signal creator_requested
 signal restart_requested
 signal quality_changed(standard: bool)
+signal graphics_changed(settings: Dictionary)
 signal opponent_changed(active: bool)
 signal volume_changed(value: float)
 signal ambience_changed(enabled: bool)
@@ -45,6 +46,15 @@ var creator_button: Button
 var restart_button: Button
 var volume_slider: HSlider
 var ambience_toggle: CheckButton
+var graphics_button: Button
+var graphics_popup: PopupPanel
+var graphics_preset: OptionButton
+var graphics_scale: HSlider
+var graphics_scale_value: Label
+var graphics_shadows: CheckButton
+var graphics_effects: CheckButton
+var graphics_settings: Dictionary = {}
+const GRAPHICS_SAVE_PATH := "user://graphics-settings.cfg"
 var notice_seconds: float = 0.0
 
 const RED := Color("ed6567")
@@ -57,6 +67,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_load_graphics_settings()
 	_build()
 	resized.connect(_layout)
 	_layout()
@@ -232,13 +243,13 @@ func _build_menu() -> void:
 	help_text.add_theme_font_size_override("font_size", 14)
 	help_text.add_theme_color_override("font_color", Color("c5bfa9"))
 	column.add_child(help_text)
-	var quality := OptionButton.new()
-	quality.add_item("Graphismes : Économie (conseillé)")
-	quality.add_item("Graphismes : Standard (ombres)")
-	quality.custom_minimum_size.y = 42
-	quality.add_theme_font_size_override("font_size", 16)
-	quality.item_selected.connect(func(index: int) -> void: quality_changed.emit(index == 1))
-	column.add_child(quality)
+	graphics_button = Button.new()
+	graphics_button.text = "GRAPHISMES · %s" % _graphics_summary()
+	graphics_button.custom_minimum_size.y = 42
+	graphics_button.add_theme_font_size_override("font_size", 16)
+	graphics_button.pressed.connect(_toggle_graphics_popup)
+	column.add_child(graphics_button)
+	_build_graphics_popup()
 	var opponent := CheckButton.new()
 	opponent.text = "Adversaire actif (décocher pour viser sans danger)"
 	opponent.button_pressed = true
@@ -298,6 +309,156 @@ func _build_menu() -> void:
 	disclaimer.add_theme_font_size_override("font_size", 12)
 	disclaimer.add_theme_color_override("font_color", Color("9aaea5"))
 	column.add_child(disclaimer)
+
+func _default_graphics_settings() -> Dictionary:
+	return {
+		"preset": "economy",
+		"render_scale": 0.72 if (OS.has_feature("mobile") or OS.has_feature("android")) else 0.86,
+		"shadows": false,
+		"effects": false,
+		"view_distance": 0.78,
+	}
+
+func _load_graphics_settings() -> void:
+	graphics_settings = _default_graphics_settings()
+	var config := ConfigFile.new()
+	if config.load(GRAPHICS_SAVE_PATH) == OK:
+		for key: String in graphics_settings:
+			if config.has_section_key("graphics", key):
+				graphics_settings[key] = config.get_value("graphics", key, graphics_settings[key])
+	graphics_settings["render_scale"] = clampf(float(graphics_settings.get("render_scale", 0.8)), 0.60, 0.96)
+	graphics_settings["view_distance"] = clampf(float(graphics_settings.get("view_distance", 0.78)), 0.60, 1.0)
+	graphics_settings["shadows"] = bool(graphics_settings.get("shadows", false))
+	graphics_settings["effects"] = bool(graphics_settings.get("effects", false))
+	if str(graphics_settings.get("preset", "")) not in ["economy", "balanced", "quality", "manual"]:
+		graphics_settings["preset"] = "manual"
+
+func _save_graphics_settings() -> void:
+	var config := ConfigFile.new()
+	for key: String in graphics_settings:
+		config.set_value("graphics", key, graphics_settings[key])
+	config.save(GRAPHICS_SAVE_PATH)
+
+func get_graphics_settings() -> Dictionary:
+	return graphics_settings.duplicate(true)
+
+func _graphics_summary() -> String:
+	var preset: String = str(graphics_settings.get("preset", "economy"))
+	var name: String = str({"economy":"Économie automatique", "balanced":"Équilibré", "quality":"Qualité", "manual":"Manuel"}.get(preset, "Manuel"))
+	return "%s · %d%%" % [name, roundi(float(graphics_settings.get("render_scale", 0.8)) * 100.0)]
+
+func _set_graphics_value(key: String, value: Variant) -> void:
+	graphics_settings[key] = value
+	_save_graphics_settings()
+	if is_instance_valid(graphics_button):
+		graphics_button.text = "GRAPHISMES · %s" % _graphics_summary()
+	graphics_changed.emit(get_graphics_settings())
+	quality_changed.emit(bool(graphics_settings.get("shadows", false)))
+
+func _apply_graphics_preset(preset: String) -> void:
+	var values: Dictionary = {
+		"economy": {"render_scale": 0.72, "shadows": false, "effects": false, "view_distance": 0.72},
+		"balanced": {"render_scale": 0.82, "shadows": false, "effects": false, "view_distance": 0.86},
+		"quality": {"render_scale": 0.94, "shadows": true, "effects": true, "view_distance": 1.0},
+	}
+	if not values.has(preset):
+		return
+	graphics_settings["preset"] = preset
+	for key: String in values[preset]:
+		graphics_settings[key] = values[preset][key]
+	_save_graphics_settings()
+	if is_instance_valid(graphics_preset):
+		graphics_preset.select(["economy", "balanced", "quality", "manual"].find(preset))
+	if is_instance_valid(graphics_scale):
+		graphics_scale.value = float(graphics_settings["render_scale"])
+	if is_instance_valid(graphics_scale_value):
+		graphics_scale_value.text = "Échelle de rendu 3D : %d%%" % roundi(float(graphics_settings["render_scale"]) * 100.0)
+	if is_instance_valid(graphics_shadows):
+		graphics_shadows.button_pressed = bool(graphics_settings["shadows"])
+	if is_instance_valid(graphics_effects):
+		graphics_effects.button_pressed = bool(graphics_settings["effects"])
+	if is_instance_valid(graphics_button):
+		graphics_button.text = "GRAPHISMES · %s" % _graphics_summary()
+	graphics_changed.emit(get_graphics_settings())
+	quality_changed.emit(bool(graphics_settings.get("shadows", false)))
+
+func _toggle_graphics_popup() -> void:
+	if not is_instance_valid(graphics_popup):
+		return
+	if graphics_popup.visible:
+		graphics_popup.hide()
+	else:
+		graphics_popup.popup_centered(Vector2i(430, 330))
+
+func _build_graphics_popup() -> void:
+	graphics_popup = PopupPanel.new()
+	graphics_popup.name = "GraphicsSettingsPopup"
+	graphics_popup.transient = false
+	add_child(graphics_popup)
+	var margin := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 16)
+	graphics_popup.add_child(margin)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	margin.add_child(column)
+	var title := Label.new()
+	title.text = "RÉGLAGES GRAPHISMES HORS LIGNE"
+	title.add_theme_font_size_override("font_size", 20)
+	column.add_child(title)
+	var hint := Label.new()
+	hint.text = "Ces choix sont enregistrés sur cet appareil et s’appliquent avant l’entraînement et à Konoha."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 13)
+	column.add_child(hint)
+	graphics_preset = OptionButton.new()
+	graphics_preset.add_item("Économie automatique · Android moins puissant")
+	graphics_preset.add_item("Équilibré")
+	graphics_preset.add_item("Qualité")
+	graphics_preset.add_item("Manuel")
+	graphics_preset.custom_minimum_size.y = 38
+	graphics_preset.item_selected.connect(func(index: int) -> void:
+		if index < 3:
+			_apply_graphics_preset(["economy", "balanced", "quality"][index])
+		else:
+			_set_graphics_value("preset", "manual"))
+	column.add_child(graphics_preset)
+	graphics_scale_value = Label.new()
+	graphics_scale_value.text = "Échelle de rendu 3D"
+	column.add_child(graphics_scale_value)
+	graphics_scale = HSlider.new()
+	graphics_scale.min_value = 0.60
+	graphics_scale.max_value = 0.96
+	graphics_scale.step = 0.02
+	graphics_scale.value = float(graphics_settings.get("render_scale", 0.8))
+	graphics_scale.custom_minimum_size = Vector2(360, 32)
+	graphics_scale.value_changed.connect(func(value: float) -> void:
+		graphics_settings["preset"] = "manual"
+		graphics_scale_value.text = "Échelle de rendu 3D : %d%%" % roundi(value * 100.0)
+		_set_graphics_value("render_scale", value))
+	column.add_child(graphics_scale)
+	graphics_shadows = CheckButton.new()
+	graphics_shadows.text = "Ombres 3D (plus coûteuses sur Android)"
+	graphics_shadows.button_pressed = bool(graphics_settings.get("shadows", false))
+	graphics_shadows.toggled.connect(func(value: bool) -> void:
+		graphics_settings["preset"] = "manual"
+		_set_graphics_value("shadows", value))
+	column.add_child(graphics_shadows)
+	graphics_effects = CheckButton.new()
+	graphics_effects.text = "Effets visuels et distance étendue"
+	graphics_effects.button_pressed = bool(graphics_settings.get("effects", false))
+	graphics_effects.toggled.connect(func(value: bool) -> void:
+		graphics_settings["preset"] = "manual"
+		graphics_settings["view_distance"] = 1.0 if value else 0.78
+		_set_graphics_value("effects", value))
+	column.add_child(graphics_effects)
+	var close := Button.new()
+	close.text = "FERMER · CHOIX ENREGISTRÉS"
+	close.custom_minimum_size.y = 40
+	close.pressed.connect(graphics_popup.hide)
+	column.add_child(close)
+	graphics_preset.select({"economy":0, "balanced":1, "quality":2, "manual":3}.get(str(graphics_settings.get("preset", "economy")), 3))
+	graphics_scale_value.text = "Échelle de rendu 3D : %d%%" % roundi(float(graphics_settings.get("render_scale", 0.8)) * 100.0)
 
 func _layout() -> void:
 	var width: float = size.x

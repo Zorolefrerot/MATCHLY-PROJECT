@@ -689,6 +689,27 @@ export class VillageRoom {
         .then((state) => this.send(peer, { type: "academy_state", ...state }))
         .catch(() => {});
   }
+  broadcastTeams() {
+    if (!this.teams) return;
+    for (const peer of this.peers.values()) {
+      const result = this.teams.stateForPeer(peer, this.peers);
+      if (result && typeof result.then === "function") {
+        result.then((state) => this.send(peer, { type: "academy_state", ...state })).catch(() => {});
+      } else {
+        this.send(peer, { type: "team_state", ...result });
+      }
+    }
+  }
+
+  sendTeamState(peer) {
+    if (!this.teams) return;
+    const result = this.teams.stateForPeer(peer, this.peers);
+    if (result && typeof result.then === "function") {
+      result.then((state) => this.send(peer, { type: "academy_state", ...state })).catch(() => {});
+    } else {
+      this.send(peer, { type: "team_state", ...result });
+    }
+  }
   roster() {
     this.broadcast({
       type: "roster",
@@ -744,11 +765,7 @@ export class VillageRoom {
         type: "secondary_state",
         ...this.secondary.stateForPeer(peer),
       });
-    if (this.teams)
-      void this.teams
-        .stateForPeer(peer)
-        .then((state) => this.send(peer, { type: "academy_state", ...state }))
-        .catch(() => {});
+    if (this.teams) this.sendTeamState(peer);
     this.tick();
     return peer;
   }
@@ -1186,6 +1203,26 @@ export class VillageRoom {
             error.gameCode || "ACADEMY_ACTION",
             error.message || "Action d’Académie refusée.",
           );
+        });
+      return;
+    }
+    if (
+      this.teams &&
+      message.type === "team_action" &&
+      exact(message, "action,revision,targetKey,type") &&
+      ["apply", "withdraw", "invite", "accept", "decline", "form"].includes(message.action) &&
+      Number.isSafeInteger(message.revision) &&
+      message.revision >= 0 &&
+      typeof message.targetKey === "string" &&
+      message.targetKey.length <= 24
+    ) {
+      void Promise.resolve(this.teams.action(peer, message))
+        .then((result) => {
+          this.broadcastTeams();
+          this.send(peer, { type: "team_action_ack", action: message.action, state: result.state });
+        })
+        .catch((error) => {
+          this.reject(peer, error.gameCode || "TEAM_ACTION", error.message || "Action d’équipe refusée.");
         });
       return;
     }

@@ -13,6 +13,7 @@ import {
   rewardForStars,
 } from "./clan-mission.js";
 import { secondaryStateForUser } from "./secondary-mission.js";
+import { teamStateForUser } from "./team-system.js";
 
 // Versioned cosmetic IDs from the prototype, never equipment or combat data.
 export const appearanceLimits = Object.freeze({
@@ -125,6 +126,7 @@ export function installGameRoutes(app, db, limit) {
       ),
       clanMission: clanMissionState(clanMission),
       secondaryMissions: await secondaryStateForUser(db, userId),
+      team: await teamStateForUser(db, userId),
       progress: {
         idremGold: Number(progress?.idrem_gold || 0),
         level: Number(progress?.level || 0),

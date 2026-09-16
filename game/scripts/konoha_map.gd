@@ -43,8 +43,11 @@ const CLAN_SANCTUARY_OFFSET := Vector3(0, 0, -18.0)
 const CLAN_GATE_WIDTH: float = 6.0
 const SPAWN := Vector3(0, 0.25, 78)
 const GUIDE := Vector3(-4.0, -0.05, 65)
+# Keep the Academy footprint free from the village LOD scenery and the legacy
+# small academy house. The shared Academy scene owns this whole physical site.
+const ACADEMY_CLEAR := Rect2(Vector2(-62.5, -53.0), Vector2(33.0, 49.5))
 const LANDMARKS: Array[Dictionary] = [
-	{"name": "Académie", "point": Vector3(-34, 0, 7), "text": "L’Académie de Konoha accueille les jeunes ninjas. Les terrains d’examen s’étendent derrière les salles de cours."},
+	{"name": "Académie", "point": Vector3(-46, 0, -13), "text": "La grande Académie Ninja forme les shinobi de Konoha : hall d’accueil, réception, salle des informations, zone d’entraînement, salles de cours et grande salle des équipes à l’étage."},
 	{"name": "Marché", "point": Vector3(-20, 0, 17), "text": "Le marché central rassemble les marchands, les familles et les voyageurs. Les habitants négocient ici leurs achats quotidiens."},
 	{"name": "Résidence du Hokage", "point": Vector3(0, 0, -68), "text": "La résidence agrandie du Hokage domine l’axe central, face aux grands visages de la montagne."}
 ]
@@ -92,6 +95,7 @@ const DISTRICTS: Array[Dictionary] = [
 ]
 
 var architecture: KonohaArchitecture
+var world_environment: WorldEnvironment
 var npcs: Array[KonohaNPC] = []
 var npc_count: int = 0
 var moving_npc_count: int = 0
@@ -166,6 +170,7 @@ func _update_collision_lod() -> void:
 
 func _build_environment() -> void:
 	var world := WorldEnvironment.new()
+	world_environment = world
 	var env := Environment.new()
 	var sky := Sky.new()
 	var sky_mat := PanoramaSkyMaterial.new()
@@ -193,6 +198,17 @@ func _build_environment() -> void:
 	sun.light_energy = 1.1
 	sun.shadow_enabled = false
 	add_child(sun)
+
+func apply_graphics(settings: Dictionary) -> void:
+	# The economy preset keeps all post-processing off. Manual/quality choices
+	# can opt in without changing geometry or allocating new assets at runtime.
+	var effects := bool(settings.get("effects", false))
+	if is_instance_valid(world_environment) and world_environment.environment != null:
+		world_environment.environment.glow_enabled = effects
+		world_environment.environment.ssao_enabled = false
+		world_environment.environment.ssr_enabled = false
+	if is_instance_valid(sun):
+		sun.shadow_enabled = bool(settings.get("shadows", false))
 
 func _build_ground_and_walls() -> void:
 	var ground := box(Vector3(308, 0.4, 328), Vector3(0, -0.25, 0), Color.WHITE, true)
@@ -384,7 +400,7 @@ func _steps(point: Vector3, angle: float, width: float, count: int, rise: float,
 
 func _build_landmarks() -> void:
 	# Four close-up buildings preserve the detailed round-house silhouette from the arrival view.
-	_house(Vector3(-34,0,2), "ACADÉMIE")
+	_house(Vector3(-34,0,2), "INTERNAT DES ÉLÈVES")
 	_house(Vector3(-7,0,25), "MARCHÉ")
 	_house(Vector3(-35,0,-12), "QUARTIER RÉSIDENTIEL")
 	_house(Vector3(29,0,20), "MAISON DU QUARTIER")
@@ -571,9 +587,14 @@ func _forest_pocket(center: Vector3, radius: float, count: int) -> void:
 	for i in range(count):
 		var angle := float(i)*TAU/float(count)
 		var local_radius := radius*(0.55+float((i*7)%10)/20.0)
-		_tree(center+Vector3(cos(angle)*local_radius,0,sin(angle)*local_radius))
+		var spot := center+Vector3(cos(angle)*local_radius,0,sin(angle)*local_radius)
+		if ACADEMY_CLEAR.has_point(Vector2(spot.x, spot.z)):
+			continue
+		_tree(spot)
 		if i%4 == 0:
-			box(Vector3(1.2,0.35,0.8), center+Vector3(cos(angle)*local_radius*0.72,0.18,sin(angle)*local_radius*0.72), Color("777564"))
+			var rock := center+Vector3(cos(angle)*local_radius*0.72,0.18,sin(angle)*local_radius*0.72)
+			if not ACADEMY_CLEAR.has_point(Vector2(rock.x, rock.z)):
+				box(Vector3(1.2,0.35,0.8), rock, Color("777564"))
 
 func _build_village_life() -> void:
 	# Main roads: adults and elders make long circuits through the districts.
