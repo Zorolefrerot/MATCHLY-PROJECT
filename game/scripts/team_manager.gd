@@ -10,6 +10,7 @@ extends Node3D
 
 signal focus_requested
 
+# The reception refresh closes the spawn-time gap before the list is opened.
 const DOOR_INSIDE := Vector3(-46.0, 0.35, -19.0)
 const DOOR_OUTSIDE := Vector3(-46.0, 0.35, -17.0)
 const CEREMONY_STAND_SECONDS := 120.0
