@@ -483,7 +483,7 @@ func run() -> void:
 	for frame in range(90):
 		await physics_frame
 	Input.action_release("move_back")
-	check(visit.exterior.outside and visit.player.position.z > 164.0, "the south gate opens onto a continuous exterior spawn lane")
+	check(visit.exterior.outside and visit.player.position.z > KonohaExterior.REGION_START_Z, "the south gate opens onto a continuous exterior spawn lane")
 	var exterior_distance := visit.player.position.distance_to(visit.exterior.exterior_spawn.global_position)
 	check(exterior_distance < 8.0, "the physical exit reaches the named KonohaExteriorSpawn without a visible teleport")
 	# TEST EXTERIOR 2: the main path, forest and clearing share the same floor.
