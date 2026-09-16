@@ -1161,8 +1161,13 @@ export class VillageRoom {
     ) {
       void this.secondary
         .refreshPeer(peer)
-        .then((state) => {
-          this.send(peer, { type: "secondary_state", ...state });
+        .then(async (state) => {
+          const progress = await this.secondary.progressForPeer(peer);
+          this.send(peer, {
+            type: "secondary_state",
+            ...state,
+            progress,
+          });
         })
         .catch(() => {
           this.reject(
@@ -1193,11 +1198,13 @@ export class VillageRoom {
         .action(peer, message)
         .then(async () => {
           const state = await this.secondary.refreshPeer(peer);
+          const progress = await this.secondary.progressForPeer(peer);
           this.broadcastSecondary();
           this.send(peer, {
             type: "secondary_action_ack",
             action: message.action,
             state,
+            progress,
           });
         })
         .catch((error) => {

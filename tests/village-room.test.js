@@ -95,6 +95,7 @@ test("secondary refresh reconciles a clan reward completed during the same visit
       peer.secondaryUnlocked = true;
       return secondary.stateForPeer(peer);
     },
+    progressForPeer: async () => ({ idremGold: 5, level: 0 }),
   };
   let now = 10000;
   const room = new VillageRoom({ now: () => now, secondary });
@@ -117,6 +118,7 @@ test("secondary refresh reconciles a clan reward completed during the same visit
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(events.at(-1).type, "secondary_state");
   assert.equal(events.at(-1).unlocked, true);
+  assert.deepEqual(events.at(-1).progress, { idremGold: 5, level: 0 });
 });
 test("one socket per account; late departure cannot erase its replacement", () => {
   const { room, join } = fixture();

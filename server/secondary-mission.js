@@ -518,6 +518,16 @@ export class SecondaryMissionService {
     return this.stateForPeer(peer);
   }
 
+  async progressForPeer(peer) {
+    const row = await this.db
+      .prepare("SELECT idrem_gold,level FROM player_progress WHERE user_id=?")
+      .get(peer.id);
+    return {
+      idremGold: Number(row?.idrem_gold || 0),
+      level: Number(row?.level || 0),
+    };
+  }
+
   stateForPeer(peer) {
     if (!peer.secondaryUnlocked || !this.hasUnlockedPlayer)
       return {

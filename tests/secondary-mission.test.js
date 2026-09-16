@@ -131,6 +131,10 @@ test("secondary missions are global, locked until clan reward, and always have t
       ).idrem_gold,
       SECONDARY_REWARD,
     );
+    assert.deepEqual(await service.progressForPeer(one), {
+      idremGold: SECONDARY_REWARD,
+      level: 0,
+    });
     await assert.rejects(() =>
       service.action(one, {
         action: "complete",

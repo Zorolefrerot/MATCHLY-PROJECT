@@ -78,6 +78,7 @@ func clear_state() -> void:
 func apply_state(value: Dictionary) -> void:
 	if not SecondaryMission.valid_state(value):
 		return
+	_apply_account_progress(value.get("progress"))
 	unlocked = bool(value["unlocked"])
 	missions.clear()
 	for mission: Dictionary in value["missions"]:
@@ -201,6 +202,7 @@ func handle_network_event(event: Dictionary) -> void:
 		"secondary_state": apply_state(event)
 		"secondary_action_ack":
 			action_pending = false
+			_apply_account_progress(event.get("progress"))
 			var state: Variant = event.get("state")
 			if state is Dictionary:
 				apply_state(state)
@@ -209,6 +211,17 @@ func handle_network_event(event: Dictionary) -> void:
 			elif event.get("action") == "abandon":
 				hud.notice("Mission secondaire abandonnée. Elle est de nouveau disponible pour le village.")
 			_refresh_objective()
+
+func _apply_account_progress(value: Variant) -> void:
+	if not value is Dictionary or not is_instance_valid(hud):
+		return
+	var gold: Variant = value.get("idremGold")
+	var level: Variant = value.get("level")
+	if typeof(gold) not in [TYPE_INT, TYPE_FLOAT] or typeof(level) not in [TYPE_INT, TYPE_FLOAT]:
+		return
+	if not is_finite(float(gold)) or not is_finite(float(level)):
+		return
+	hud.set_account_progress(int(gold), int(level))
 
 func handle_network_error(message: String) -> void:
 	if not action_pending:

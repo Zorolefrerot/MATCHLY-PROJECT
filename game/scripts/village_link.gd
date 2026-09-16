@@ -58,6 +58,14 @@ static func combat_technique(value: Variant) -> bool:
 			return false
 	return true
 
+static func account_progress(value: Variant) -> bool:
+	if not value is Dictionary:
+		return false
+	for key: String in ["idremGold", "level"]:
+		if not integer(value.get(key)):
+			return false
+	return true
+
 static func identity(value: Variant) -> bool:
 	if not value is Dictionary or not integer(value.get("id"),1) or not plain(value.get("name"),50):
 		return false
@@ -286,10 +294,10 @@ func _accept(value: Variant) -> bool:
 		if not integer(value.get("seq")):
 			return false
 	elif kind == "secondary_state":
-		if not SecondaryMission.valid_state(value):
+		if not SecondaryMission.valid_state(value) or (value.has("progress") and not account_progress(value["progress"])):
 			return false
 	elif kind == "secondary_action_ack":
-		if value.get("action") not in ["accept", "collect", "complete", "abandon"] or not SecondaryMission.valid_state(value.get("state")):
+		if value.get("action") not in ["accept", "collect", "complete", "abandon"] or not SecondaryMission.valid_state(value.get("state")) or not account_progress(value.get("progress")):
 			return false
 	elif kind == "combat_waiting":
 		if not value.get("players") is Array or value["players"].size() > 2 or not integer(value.get("needed"),1) or value["needed"] > 2:
