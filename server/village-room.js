@@ -1158,7 +1158,7 @@ export class VillageRoom {
       this.secondary &&
       exact(message, "action,index,missionId,revision,slot,type") &&
       message.type === "secondary_action" &&
-      ["accept", "collect", "complete"].includes(message.action) &&
+      ["accept", "collect", "complete", "abandon"].includes(message.action) &&
       typeof message.missionId === "string" &&
       message.missionId.length <= 80 &&
       Number.isSafeInteger(message.revision) &&

@@ -704,6 +704,8 @@ func _action(action: String) -> void:
 			if not secondary_manager.confirm_pending(): _confirm_mission()
 		"secondary_decline":
 			secondary_manager.decline_pending()
+		"secondary_abandon":
+			secondary_manager.abandon_active()
 		"mission_refresh": _refresh_mission()
 		"combat_join":
 			if is_instance_valid(village_link): village_link.combat_join()

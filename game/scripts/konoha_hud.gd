@@ -8,6 +8,7 @@ var combat_status: Label
 var clan_mission_status: Label
 var secondary_status: Label
 var secondary_decline: Button
+var secondary_abandon: Button
 var combat_active: bool = false
 
 func _build() -> void:
@@ -68,6 +69,8 @@ func _build() -> void:
 		var attack: Button = _button("%s\n%d chakra" % [data["name"], int(data["cost"])], "combat_skill_%d" % i)
 		attack.add_theme_color_override("font_color", data["color"])
 	_button("ULTIME\n70 chakra", "combat_ultimate")
+	secondary_abandon = _button("ABANDONNER LA MISSION", "secondary_abandon")
+	secondary_abandon.visible = false
 	set_button_icon("pause", 5)
 	set_button_icon("journal", 6)
 	set_button_icon("music", 7)
@@ -162,6 +165,8 @@ func set_secondary_objective(message: String, visible: bool) -> void:
 	var panel: Panel = get_node_or_null("SecondaryMissionPanel") as Panel
 	if panel != null:
 		panel.visible = visible
+	if is_instance_valid(secondary_abandon):
+		secondary_abandon.visible = visible
 
 func show_secondary_prompt(title: String, text: String) -> void:
 	show_menu(title, text, "ACCEPTER", false)
@@ -256,6 +261,8 @@ func _layout() -> void:
 		secondary_panel.position = Vector2(20,220)
 		secondary_panel.size = Vector2(300,84)
 		secondary_status.size = Vector2(280,68)
+	secondary_abandon.position = Vector2(20,312)
+	secondary_abandon.size = Vector2(300,38)
 	objective.position = Vector2(w/2-325,112)
 	objective.size = Vector2(650,44)
 	clan_mission_status.position = Vector2(w/2-325,154)

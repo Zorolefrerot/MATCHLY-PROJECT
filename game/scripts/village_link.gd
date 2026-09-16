@@ -216,7 +216,7 @@ func chat(channel: String, text: String) -> int:
 	return seq
 
 func secondary_action(action: String, slot: int, mission_id: String, revision: int, index: int = -1) -> void:
-	if connected and action in ["accept", "collect", "complete"] and slot >= 0 and slot < 3 and not mission_id.is_empty() and revision >= 1 and index >= -1:
+	if connected and action in ["accept", "collect", "complete", "abandon"] and slot >= 0 and slot < 3 and not mission_id.is_empty() and revision >= 1 and index >= -1:
 		_send({"type":"secondary_action","action":action,"slot":slot,"missionId":mission_id,"revision":revision,"index":index})
 
 func combat_join() -> void:
@@ -283,7 +283,7 @@ func _accept(value: Variant) -> bool:
 		if not SecondaryMission.valid_state(value):
 			return false
 	elif kind == "secondary_action_ack":
-		if value.get("action") not in ["accept", "collect", "complete"] or not SecondaryMission.valid_state(value.get("state")):
+		if value.get("action") not in ["accept", "collect", "complete", "abandon"] or not SecondaryMission.valid_state(value.get("state")):
 			return false
 	elif kind == "combat_waiting":
 		if not value.get("players") is Array or value["players"].size() > 2 or not integer(value.get("needed"),1) or value["needed"] > 2:

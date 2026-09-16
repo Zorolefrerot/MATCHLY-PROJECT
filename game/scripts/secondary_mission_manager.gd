@@ -5,6 +5,8 @@ extends Node3D
 var player: TrainingFighter
 var hud: KonohaHUD
 var village_link: VillageLink
+var direction_arrow: Node3D
+var arrow_material: StandardMaterial3D
 var givers: Dictionary = {}
 var objective_markers: Dictionary = {}
 var missions: Dictionary = {}
@@ -16,6 +18,7 @@ var last_notice_signature: String = ""
 func configure(value_player: TrainingFighter, value_hud: KonohaHUD) -> void:
 	player = value_player
 	hud = value_hud
+	_build_direction_arrow()
 	for data: Dictionary in SecondaryMission.NPCS:
 		var giver := SecondaryMissionGiver.new()
 		giver.name = "SecondaryNPC_" + str(data["id"])
@@ -23,6 +26,38 @@ func configure(value_player: TrainingFighter, value_hud: KonohaHUD) -> void:
 		giver.configure_giver(str(data["kind"]), str(data["name"]), data["position"], _tint(str(data["id"])))
 		givers[data["id"]] = giver
 		giver.set_mission_available(false)
+
+func _build_direction_arrow() -> void:
+	direction_arrow = Node3D.new()
+	direction_arrow.name = "SecondaryMissionDirectionArrow"
+	direction_arrow.position = Vector3(0, 2.85, 0)
+	direction_arrow.visible = false
+	player.add_child(direction_arrow)
+	arrow_material = StandardMaterial3D.new()
+	arrow_material.albedo_color = Color("f0444b")
+	arrow_material.emission_enabled = true
+	arrow_material.emission = Color("ff2638")
+	arrow_material.emission_energy_multiplier = 1.4
+	var shaft_mesh := BoxMesh.new()
+	shaft_mesh.size = Vector3(0.09, 0.07, 0.58)
+	var shaft := MeshInstance3D.new()
+	shaft.name = "ArrowShaft"
+	shaft.position = Vector3(0, 0, -0.22)
+	shaft.mesh = shaft_mesh
+	shaft.material_override = arrow_material
+	direction_arrow.add_child(shaft)
+	var head_mesh := CylinderMesh.new()
+	head_mesh.top_radius = 0.0
+	head_mesh.bottom_radius = 0.20
+	head_mesh.height = 0.30
+	head_mesh.radial_segments = 4
+	var head := MeshInstance3D.new()
+	head.name = "ArrowHead"
+	head.position = Vector3(0, 0, -0.60)
+	head.rotation.x = -PI / 2.0
+	head.mesh = head_mesh
+	head.material_override = arrow_material
+	direction_arrow.add_child(head)
 
 func set_link(value: VillageLink) -> void:
 	village_link = value
@@ -134,6 +169,14 @@ func decline_pending() -> bool:
 	hud.hide_menu()
 	return true
 
+func abandon_active() -> void:
+	for npc_id: String in missions:
+		var mission: Dictionary = missions[npc_id]
+		if mission.get("status") == "accepted":
+			_send_action("abandon", mission, -1)
+			return
+	hud.notice("Aucune mission secondaire active à abandonner.")
+
 func handle_network_event(event: Dictionary) -> void:
 	match str(event.get("type", "")):
 		"secondary_state": apply_state(event)
@@ -143,12 +186,50 @@ func handle_network_event(event: Dictionary) -> void:
 				apply_state(state)
 			if event.get("action") == "complete":
 				hud.notice("MISSION TERMINÉE · Récompense : +5 IDREM GOLD")
-				_refresh_objective()
+			elif event.get("action") == "abandon":
+				hud.notice("Mission secondaire abandonnée. Elle est de nouveau disponible pour le village.")
+			_refresh_objective()
 
 func update_hud() -> void:
 	if not unlocked:
+		_set_direction_arrow({}, [])
 		return
 	_refresh_objective()
+	var own: Dictionary = _own_active_mission()
+	_set_direction_arrow(own, own.get("progress", []))
+
+func _own_active_mission() -> Dictionary:
+	for npc_id: String in missions:
+		var mission: Dictionary = missions[npc_id]
+		if mission.get("status") == "accepted":
+			return mission
+	return {}
+
+func _set_direction_arrow(mission: Dictionary, progress: Array) -> void:
+	if not is_instance_valid(direction_arrow) or mission.is_empty() or not is_instance_valid(player):
+		if is_instance_valid(direction_arrow): direction_arrow.visible = false
+		return
+	var target := Vector3.ZERO
+	var targets: Array = mission.get("targets", [])
+	for index in range(targets.size()):
+		if progress.has(index): continue
+		var point: Array = targets[index]
+		target = Vector3(float(point[0]), player.global_position.y + 2.85, float(point[2]))
+		break
+	if target == Vector3.ZERO:
+		var return_point: Array = mission.get("returnPosition", [])
+		if return_point.size() == 3:
+			target = Vector3(float(return_point[0]), player.global_position.y + 2.85, float(return_point[2]))
+	if target == Vector3.ZERO:
+		direction_arrow.visible = false
+		return
+	var horizontal := Vector3(target.x, player.global_position.y + 2.85, target.z) - direction_arrow.global_position
+	if horizontal.length_squared() < 0.04:
+		direction_arrow.visible = false
+		return
+	direction_arrow.visible = true
+	direction_arrow.look_at(Vector3(target.x, direction_arrow.global_position.y, target.z), Vector3.UP)
+	direction_arrow.scale = Vector3.ONE * (1.0 + 0.06 * sin(Time.get_ticks_msec() / 180.0))
 
 func _rebuild_objective_markers() -> void:
 	for marker: MeshInstance3D in objective_markers.values():

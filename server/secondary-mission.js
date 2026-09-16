@@ -557,6 +557,21 @@ export class SecondaryMissionService {
             message.missionId,
             message.revision,
           );
+      } else if (message.action === "abandon") {
+        if (
+          row.status !== "ACCEPTED" ||
+          Number(row.accepted_by) !== Number(peer.id)
+        )
+          reject(
+            409,
+            "SECONDARY_NOT_OWNER",
+            "Cette mission n’est pas active pour toi.",
+          );
+        await this.db
+          .prepare(
+            "UPDATE secondary_missions SET status='AVAILABLE',accepted_by=NULL,accepted_at=NULL,progress='[]',revision=revision+1,updated=? WHERE slot=? AND mission_id=? AND status='ACCEPTED' AND accepted_by=?",
+          )
+          .run(rowTime(), message.slot, message.missionId, peer.id);
       } else {
         if (
           row.status !== "ACCEPTED" ||

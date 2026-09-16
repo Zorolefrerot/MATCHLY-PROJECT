@@ -151,6 +151,50 @@ test("secondary missions are global, locked until clan reward, and always have t
   }
 });
 
+test("a player can abandon an accepted mission so the global slot becomes available again", async () => {
+  const { db, dir } = await fixture();
+  try {
+    const service = new SecondaryMissionService(db);
+    await service.refresh();
+    const peer = {
+      id: 1,
+      secondaryUnlocked: true,
+      state: { p: [0, 0.55, 78] },
+    };
+    const mission = service.stateForPeer(peer).missions[0];
+    await service.action(peer, {
+      action: "accept",
+      slot: mission.slot,
+      missionId: mission.missionId,
+      revision: mission.revision,
+      index: -1,
+    });
+    const accepted = service
+      .stateForPeer(peer)
+      .missions.find((value) => value.slot === mission.slot);
+    const abandoned = await service.action(peer, {
+      action: "abandon",
+      slot: mission.slot,
+      missionId: mission.missionId,
+      revision: accepted.revision,
+      index: -1,
+    });
+    assert.equal(
+      abandoned.missions.find((value) => value.slot === mission.slot).status,
+      "available",
+    );
+    assert.equal(
+      await db
+        .prepare("SELECT idrem_gold FROM player_progress WHERE user_id=1")
+        .get(),
+      undefined,
+    );
+  } finally {
+    await db.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("unrewarded clan completion does not expose secondary missions", async () => {
   const { db, dir } = await fixture();
   try {
