@@ -26,6 +26,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
+LOCAL PROJECT ARTWORK — HOKAGE WAR GALLERY
+
+Files:
+ game/assets/konoha/hokage/war_01_alliance.png
+ game/assets/konoha/hokage/war_02_konoha_forces.png
+ game/assets/konoha/hokage/war_03_naruto.png
+ game/assets/konoha/hokage/war_04_sasuke.png
+ game/assets/konoha/hokage/war_05_reanimated.png
+ game/assets/konoha/hokage/war_06_madara.png
+ game/assets/konoha/hokage/war_07_obito.png
+ game/assets/konoha/hokage/war_08_ten_tails.png
+ game/assets/konoha/hokage/war_09_final_battle.png
+ game/assets/konoha/hokage/war_10_peace.png
+
+Provenance:
+ These ten 640 x 360 PNG panels were generated locally as original museum-style
+ illustrations for this project. They contain no downloaded image, no embedded
+ URL and no runtime network dependency. war_10_peace.png was generated from an
+ original local illustration workflow. The narrative labels are authored in
+ game/scripts/hokage_interior.gd.
+
+Rights:
+ No third-party licence is claimed for these files. They are project artwork and
+ must be distributed only under the project's applicable rights. The checksums
+ and the complete provenance note are recorded in game/assets/konoha/manifest.json
+ and game/assets/konoha/hokage/README.md. Replace the files and update both records
+ if external or reference-derived artwork is introduced later.
+
+
 BUNDLED COMPONENT NOTICES (official Godot source distribution)
 
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/

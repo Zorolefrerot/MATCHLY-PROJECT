@@ -2952,6 +2952,20 @@ textarea {
 .download-panel .button {
   margin: 12px 0;
 }
+.download-panel .button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.download-panel .button-row .button {
+  margin: 0;
+}
+.download-panel .text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
 .account-danger {
   margin-top: 28px;
   border: 1px solid #b34343;

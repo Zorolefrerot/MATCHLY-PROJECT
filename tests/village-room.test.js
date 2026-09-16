@@ -49,7 +49,7 @@ test("room publishes only server identity, bounded positions and distinct moveme
     b = join(2);
   assert.deepEqual(
     a.events.find((e) => e.type === "welcome").spawn,
-    [0, 0.25, 22],
+    [0, 0.25, 78],
   );
   assert.deepEqual(
     b.events.find((e) => e.type === "roster").players.map((p) => p.id),
@@ -59,7 +59,7 @@ test("room publishes only server identity, bounded positions and distinct moveme
     advance(100);
     room.receive(
       a.peer,
-      move(i, [0, motion === "jump" ? 1 : 0.25, 22 - (i + 1) * 0.4], motion),
+      move(i, [0, motion === "jump" ? 1 : 0.25, 78 - (i + 1) * 0.4], motion),
     );
     room.tick();
     assert.equal(b.events.at(-1).players[0].motion, motion);
@@ -76,13 +76,47 @@ test("room publishes only server identity, bounded positions and distinct moveme
     "password",
   ])
     assert.ok(!serialized.includes(secret));
-  room.receive(a.peer, move(0, [0, 0.25, 22]));
+  room.receive(a.peer, move(0, [0, 0.25, 78]));
   assert.equal(a.peer.seq, 3);
   room.receive(a.peer, move(5, [20, 0.25, 22]));
   assert.equal(a.events.at(-1).type, "correction");
   assert.ok(a.peer.state.p[0] === 0);
-  room.receive(a.peer, { ...move(6, [0, 0.25, 22]), id: 2 });
+  room.receive(a.peer, { ...move(6, [0, 0.25, 78]), id: 2 });
   assert.equal(a.closes.at(-1)[0], 1008);
+});
+test("secondary refresh reconciles a clan reward completed during the same visit", async () => {
+  const secondary = {
+    stateForPeer: (peer) => ({
+      schemaVersion: 2,
+      unlocked: Boolean(peer.secondaryUnlocked),
+      missions: [],
+    }),
+    refreshPeer: async (peer) => {
+      peer.secondaryUnlocked = true;
+      return secondary.stateForPeer(peer);
+    },
+  };
+  let now = 10000;
+  const room = new VillageRoom({ now: () => now, secondary });
+  const events = [];
+  const peer = room.join(
+    {
+      id: 1,
+      name: "Genin 1",
+      appearance: null,
+      tokenHash: "secret1",
+      expires: 1000000,
+      secondaryUnlocked: false,
+    },
+    {
+      send: (event) => events.push(structuredClone(event)),
+      close: () => {},
+    },
+  );
+  room.receive(peer, { type: "secondary_refresh" });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(events.at(-1).type, "secondary_state");
+  assert.equal(events.at(-1).unlocked, true);
 });
 test("one socket per account; late departure cannot erase its replacement", () => {
   const { room, join } = fixture();
@@ -130,7 +164,7 @@ test("finite/strict packets, flood ceiling, expiry, capacity and shutdown fail c
   for (const bad of [
     move(0, [NaN, 0, 0]),
     move(0, [0, Infinity, 0]),
-    move(0, [32, 0, 0]),
+    move(0, [149, 0, 0]),
     move(-1, [0, 0, 0]),
     chat(0, "x".repeat(241)),
     chat(0, "unsafe\u2028text"),
@@ -149,7 +183,7 @@ test("finite/strict packets, flood ceiling, expiry, capacity and shutdown fail c
   const { room, join, advance } = fixture();
   const a = join(1);
   for (let i = 0; i < 41; i++)
-    room.receive(a.peer, move(i, [0, 0.25, 22], "idle"));
+    room.receive(a.peer, move(i, [0, 0.25, 78], "idle"));
   assert.equal(a.closes.at(-1)[0], 1008);
   const b = join(2);
   advance(VILLAGE.leaseMs);
@@ -187,7 +221,7 @@ test("inactivity idles then removes presence; respawn and UTF-16 text limits rem
   room.tick();
   assert.equal(a.peer.state.motion, "idle");
   room.receive(a.peer, { type: "respawn" });
-  assert.deepEqual(a.peer.state.p, [0, 0.25, 22]);
+  assert.deepEqual(a.peer.state.p, [0, 0.25, 78]);
   assert.equal(a.events.at(-1).type, "correction");
   a.peer.state.p = [1, 0.25, 22];
   room.receive(a.peer, { type: "respawn" });
@@ -204,11 +238,11 @@ test("lease loss is retryable even when a packet precedes the next tick; expiry 
   const a = join(1),
     b = join(2);
   advance(VILLAGE.leaseMs);
-  room.receive(a.peer, move(0, [0, 0.25, 22]));
+  room.receive(a.peer, move(0, [0, 0.25, 78]));
   assert.equal(a.closes.at(-1)[0], 1013);
   assert.equal(room.peers.has(1), false);
   b.peer.expires = 0;
-  room.receive(b.peer, move(0, [0, 0.25, 22]));
+  room.receive(b.peer, move(0, [0, 0.25, 78]));
   assert.equal(b.closes.at(-1)[0], 4003);
   assert.equal(room.peers.size, 0);
 });

@@ -43,7 +43,7 @@ Le protocole de profil existant reste `1`, avec un champ additionnel `welcomeMis
 - Authentification et admission/attribution recontrôlées **dans la même transaction**, y compris pour les doublons. Révision attendue pour chaque nouvelle étape ; 409 pour conflit, ordre invalide ou rapport incomplet.
 - Doublon déjà enregistré : retour de l’état courant sans incrément ni changement de date. Deux nouvelles lectures simultanées avec la même révision donnent un succès et un conflit. Le verrou PostgreSQL existant protège aussi les accès par plusieurs pools ; SQLite utilise sa transaction existante.
 - Table additive `welcome_missions`, clé joueur, phase, masque borné des trois lectures, révision bornée, date serveur. Contraintes SQL cohérentes avec les transitions ; aucune nouvelle table de récompenses ou de statistiques.
-- HTTPS, sessions RAM de 2 h, limite partagée des opérations sensibles et refus des cookies administrateur conservés. Pas d’appel réseau à chaque déplacement ni de polling du journal.
+- HTTPS, sessions natives opaques de 30 jours, limite partagée des opérations sensibles et refus des cookies administrateur conservés. Pas d’appel réseau à chaque déplacement ni de polling du journal.
 
 **Limite d’autorité importante :** le serveur contrôle le propriétaire de la progression, les événements possibles et leur ordre, **pas la présence physique devant un panneau**. Les distances et obstacles sont vérifiés dans le client solo ; un client modifié peut déclarer ses lectures. Ce statut ne doit donc pas servir de preuve anti-triche pour accorder ultérieurement un avantage économique/combat sans validation de monde autoritaire.
 

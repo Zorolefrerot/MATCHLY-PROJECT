@@ -9,6 +9,7 @@
     225
   ],
   "head_count": 4,
+  "texture_scope": "environment-only-generated-art",
   "sources": [
     {
       "file": "images (74).jpeg",
@@ -97,8 +98,130 @@
         512
       ],
       "sha256": "e0d05d629b3f67348b6fa2de4bcba62e179e0df119f55eb9fc823cd359566e1d",
-      "description": "Cropped first four faces from the provided seven-face image, with a warm-stone skyline alpha mask. Textured scenery, not sculpted face geometry."
+      "description": "Cropped first four faces retained as the large, fixed image backdrop; no 3D face geometry is generated."
     }
   ],
-  "rights": "Owner-provided references; original rights not independently verified. Derived textures are not claimed as wholly original artwork."
+  "environment_outputs": [
+    {
+      "file": "sky_mountain_panorama.png",
+      "size": [
+        1376,
+        768
+      ],
+      "sha256": "d1e3f7e1b00c94ecb2aad1779ccb153ddc7081759c2ad06a05fafbfbd4ee5571",
+      "description": "Generated panoramic sky and mountain backdrop, used only by the world environment."
+    },
+    {
+      "file": "earth_ground_texture.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "b3a40cd2cf9ac89473cf53d846a404a30706d09f5ab04e7ad27a7dd939e929dc",
+      "description": "Generated earth and grass tile, repeated on the ground with mipmaps."
+    },
+    {
+      "file": "river_water_texture.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "a35c9f533ebeec0d6011ae50d68fb4b45601838d1690cc97527050fd837e5d0c",
+      "description": "Generated river water tile, repeated along the water segments without stretching."
+    }
+  ],
+  "rights": "Owner-provided references; original rights not independently verified. Derived textures are not claimed as wholly original artwork. Generated environment textures are limited to sky, earth and river surfaces.",
+  "hokage_war_gallery_outputs": [
+    {
+      "file": "war_01_alliance.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "02bf75ed117528b630654b5c21762fb398e317b13bb199a6fb2e858d2c03359d",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_02_konoha_forces.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "ff2584b49e2a3f368bcf63570089a919612debf2fa64317c8967fe19e6ea31a2",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_03_naruto.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "12111941dabdfce7c682e5f231e784beb4beb97ec6be75c3b2ff0ee76df07f41",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_04_sasuke.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "513dcf8315fbee6a0fc853a145dfc315df777de46f096e8e3bd8f9791bca0c26",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_05_reanimated.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "d6d84168a142b093814b40f1d3b4e585bfb5dc547453ce67d3e3b12ff6bd59f7",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_06_madara.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "86b7276bfa970136c2263cf5a7423a7338e01773e83e3e6e61d5d8e70f119daf",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_07_obito.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "dbe8198024c15ae5e8253da64849fecd6b83415e0359b1b181c680270808945e",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_08_ten_tails.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "bb3c89355f4223ffad999cd24676bc371a69fc9f4b679a20284d0a6c7c7e5dbf",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_09_final_battle.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "b87f07af88d1315f6585a454aa7f557a3fc809bb538126d2dc5148555ff5f419",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    },
+    {
+      "file": "war_10_peace.png",
+      "size": [
+        640,
+        360
+      ],
+      "sha256": "a84913421ac802730d23f32a7b820d6ac18e31447d3a875b3ebec1e6223181a9",
+      "description": "Illustration originale générée localement pour la galerie de la Quatrième Grande Guerre Ninja; aucune URL runtime."
+    }
+  ],
+  "hokage_war_gallery_rights": "Illustrations originales générées localement pour ce projet; aucune source tierce incorporée, aucune licence tierce revendiquée. À distribuer selon les droits du projet et à remplacer si une provenance externe est introduite."
 }

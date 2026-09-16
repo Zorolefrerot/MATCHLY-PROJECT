@@ -414,7 +414,7 @@ func run() -> void:
 	game.account_panel.password_field.text = "not-a-real-password"
 	game.account_panel.login_button.pressed.emit()
 	check(game.account_panel.password_field.text.is_empty() and not game.account_api.busy and game.account_api.sent.is_empty(), "invalid origin is refused before any request and password field is cleared")
-	var online: Dictionary = {"protocol": 1, "schemaVersion": 1, "character": {"id": 123, "name": "Genin Test", "clan": "Hyūga", "affinity": "Raiton", "mokuton": false, "rank": "Genin", "village": "Konoha"}, "appearance": null, "revision": 0}
+	var online: Dictionary = {"protocol": 1, "schemaVersion": 1, "character": {"id": 123, "name": "Genin Test", "clan": "Hyūga", "affinity": "Raiton", "mokuton": false, "rank": "Genin", "village": "Konoha"}, "appearance": null, "revision": 0, "progress": {"idremGold": 25, "level": 1}}
 	check(CharacterAccountAPI.valid_profile(online), "server profile contract is recognized without fabricating an appearance")
 	var incompatible: Dictionary = online.duplicate(true)
 	incompatible["protocol"] = 99
@@ -475,13 +475,90 @@ func run() -> void:
 	check(visit.music.stream_paused, "village background music pauses on focus loss")
 	visit.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_IN)
 	check(visit.music.playing and not visit.music.stream_paused, "village music resumes when the app regains focus")
+	check(is_instance_valid(visit.hokage_entry_trigger) and visit.hokage_entry_trigger.name == "HokageExteriorEntryTrigger", "Hokage exterior has one dedicated entry trigger")
+	check(is_instance_valid(visit.hokage_interior.exit_trigger) and visit.hokage_interior.exit_trigger.name == "HokageInteriorExitTrigger", "Hokage interior has a distinct exit trigger")
+	# TEST 1: hold still on the exterior seal for three seconds, then finish the
+	# loading transition at the named interior spawn.
+	visit.player.reset_at(visit.hokage_entry_trigger.global_position)
+	for frame in range(190):
+		await physics_frame
+	check(visit.hokage_loading or visit.inside_hokage, "exterior seal starts exactly one Hokage transition after the three-second hold")
+	for frame in range(100):
+		await physics_frame
+	var first_entry_distance := visit.player.position.distance_to(visit.hokage_interior.interior_spawn.global_position)
+	# CharacterBody3D settles by its capsule bottom on the floor, so the
+	# vertical origin is naturally a few tenths below the Marker3D.
+	check(visit.inside_hokage and first_entry_distance < 0.4, "exterior enters the residence at HokageInteriorSpawn")
+	# TEST 2: five seconds at the interior spawn must not invoke the exit.
+	var interior_position := visit.player.position
+	for frame in range(300):
+		await physics_frame
+	check(visit.inside_hokage and visit.player.position.distance_to(interior_position) < 0.2, "standing inside for five seconds does not disappear or exit")
+	# The secretary opens the existing WelcomeMission journal, while the two
+	# guards remain approachable and non-blocking.
+	visit.player.reset_at(visit.hokage_interior.secretary_zone.global_position)
+	for frame in range(8):
+		await physics_frame
+	check(visit.hokage_interior.secretary_overlaps(visit.player), "secretary interaction zone is reachable from the hall")
+	visit.interact()
+	await process_frame
+	check(visit.hud.blocked and visit.hud.menu_title.text.contains("Secrétaire des Missions"), "secretary opens the existing mission menu")
+	visit.resume_visit()
+	visit.player.reset_at(visit.hokage_interior.guard_zones[0].global_position)
+	for frame in range(8):
+		await physics_frame
+	check(visit.hokage_interior.guard_overlaps(visit.player), "guard interaction zone is reachable without a physical blocker")
+	visit.interact()
+	await process_frame
+	check(visit.hud.blocked and visit.hud.menu_title.text == "Garde de la Résidence", "guard has a simple welcome interaction")
+	visit.resume_visit()
+	# The stair is exercised as CharacterBody3D movement, never as a transition.
+	# Start just before the first tread, not inside a step collision.
+	visit.player.reset_at(visit.hokage_interior.global_position + Vector3(7.0, 0.25, 8.7))
+	var stair_ray := PhysicsRayQueryParameters3D.create(visit.player.global_position + Vector3(0, 5, 0), visit.player.global_position - Vector3(0, 1, 0), 1)
+	var stair_hit: Dictionary = visit.player.get_world_3d().direct_space_state.intersect_ray(stair_ray)
+	check(not stair_hit.is_empty(), "physical stair collider is active")
+	Input.action_press("move_forward")
+	for frame in range(180):
+		await physics_frame
+	Input.action_release("move_forward")
+	check(visit.player.position.y > 1.0, "player climbs the physical stair to the first level (position=%s)" % visit.player.position)
+	Input.action_press("move_back")
+	for frame in range(180):
+		await physics_frame
+	Input.action_release("move_back")
+	check(visit.player.position.y < 1.0, "player can descend the physical stair to the hall")
+	# TEST 3/4: crossing the interior exit immediately returns outside, then
+	# the debounce keeps the exterior spawn from re-entering by itself.
+	visit.player.reset_at(visit.hokage_interior.exit_trigger.global_position)
+	for frame in range(8):
+		await physics_frame
+	check(not visit.inside_hokage and visit.player.position.distance_to(visit.hokage_exterior_spawn.global_position) < 0.4, "interior exit returns to HokageExteriorSpawn")
+	for frame in range(70):
+		await physics_frame
+	check(not visit.inside_hokage, "immediate exit cannot bounce back through the entry trigger")
+	# TEST 5/6: a second complete entry/exit works without creating a loop.
+	visit.player.reset_at(visit.hokage_entry_trigger.global_position)
+	for frame in range(290):
+		await physics_frame
+	check(visit.inside_hokage, "the residence can be entered repeatedly")
+	visit.player.reset_at(visit.hokage_interior.exit_trigger.global_position)
+	for frame in range(90):
+		await physics_frame
+	var second_exit_distance := visit.player.position.distance_to(visit.hokage_exterior_spawn.global_position)
+	check(not visit.inside_hokage and second_exit_distance < 0.4, "second entry/exit completes without an exterior-interior loop")
+	visit.player.reset_at(KonohaMap.SPAWN)
+	for frame in range(70):
+		await physics_frame
+	check(not visit.inside_hokage and not visit.hokage_loading, "leaving the residence leaves no pending transition")
 	check(visit.player.get_world_3d() != game.player.get_world_3d(), "Konoha uses its own physics world, not the training arena")
 	check(root.disable_3d and game.process_mode == Node.PROCESS_MODE_DISABLED and not game.hud.is_processing_input(), "training rendering, simulation and input are suspended during the visit")
-	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("Genin Test"), "Konoha uses the account identity and saved appearance")
+	check(visit.player.appearance == CharacterAppearance.sanitize(online["appearance"]) and visit.hud.identity.text.contains("IG : 25") and visit.hud.identity.text.contains("NIVEAU : 1") and not visit.hud.identity.text.contains("Genin Test"), "Konoha displays account currency and level instead of the redundant identity banner")
 	check(visit.hud.skill_buttons.is_empty() and not visit.hud.buttons.has("melee"), "village does not expose training combat or test jutsu")
 	var architecture: KonohaArchitecture = visit.world.architecture
-	check(architecture.house_count == 4 and architecture.palace_built, "four stepped round houses and the red palace replace the block buildings")
-	check(architecture.curved_meshes > 40, "architecture uses actual curved surface profiles, not textures on cubes")
+	check(architecture.house_count >= 80 and architecture.palace_built, "the full village has dense homes, varied houses, apartments and the red Hokage residence")
+	check(architecture.sanctuary_count >= 14, "each clan has a large exterior sanctuary")
+	check(architecture.curved_meshes > 150, "architecture uses many curved forms, not a few repeated cubes")
 	var geometry_ok: bool = true
 	var vertex_count: int = 0
 	for child in architecture.get_children():
@@ -494,10 +571,13 @@ func run() -> void:
 			geometry_ok = geometry_ok and vertices.size() == normals.size() and vertices.size() == uv.size()
 			for i in range(vertices.size()):
 				geometry_ok = geometry_ok and vertices[i].is_finite() and normals[i].is_finite() and uv[i].is_finite() and normals[i].length() > 0.99
-	check(geometry_ok and vertex_count < 50000, "curved architecture has finite UVs/normals and a bounded vertex budget")
-	check(architecture.details.mesh.get_surface_count() == 1 and architecture.details.mesh.surface_get_array_len(0) > 800, "facade windows and doors share one draw surface")
+	check(geometry_ok and vertex_count < 250000, "full-village curved architecture has finite UVs/normals and a bounded vertex budget")
+	check(architecture.details.mesh.get_surface_count() == 1 and architecture.details.mesh.surface_get_array_len(0) > 1800, "all district facade windows and doors share one draw surface")
 	var cliff_bounds: AABB = architecture.cliff.get_aabb()
-	check(absf(cliff_bounds.size.x / cliff_bounds.size.y - 382.0/225.0) < 0.001 and cliff_bounds.end.z < -33, "four-head backdrop restores source proportions and stays beyond the playable perimeter")
+	check(absf(cliff_bounds.size.x / cliff_bounds.size.y - 382.0/225.0) < 0.001 and cliff_bounds.end.z < -33, "four-head backdrop restores source proportions and stays beyond the full village perimeter")
+	check(visit.world.npc_count >= 29 and visit.world.moving_npc_count >= 24 and visit.world.animal_count >= 6, "full village populates active pedestrians, children, elders and domestic animals")
+	check(visit.world.discussion_count >= 6 and visit.world.shopping_count >= 5, "villagers pause to converse and shoppers circulate through the market")
+	check(visit.world.environment_texture_count >= 8, "generated sky, earth and non-stretched river textures are placed on the environment")
 	var materials_ok: bool = true
 	for key: String in KonohaArchitecture.TEXTURES:
 		var mat: StandardMaterial3D = architecture.materials[key]
@@ -527,18 +607,18 @@ func run() -> void:
 	touch(81, visit.hud.joystick_center, false)
 	touch(82, Vector2(700,320), false)
 	check(visit.hud.move_vector == Vector2.ZERO, "village touch release clears movement")
-	visit.player.reset_at(Vector3(27.5,0.1,0))
+	visit.player.reset_at(Vector3(KonohaMap.BOUNDS.x-1.0,0.1,0))
 	Input.action_press("move_right")
 	for frame in range(30):
 		await physics_frame
 	Input.action_release("move_right")
-	check(visit.player.position.x < 28.5, "village perimeter collision prevents walking out")
-	visit.player.reset_at(Vector3(17,0.1,20))
+	check(visit.player.position.x < KonohaMap.BOUNDS.x+1.0, "full village perimeter collision prevents walking out")
+	visit.player.reset_at(Vector3(-35,0.1,7))
 	Input.action_press("move_forward")
 	for frame in range(45):
 		await physics_frame
 	Input.action_release("move_forward")
-	check(visit.player.position.z > 18.5, "rounded house convex hull blocks walking through the closed facade")
+	check(visit.player.position.z > -9.0, "rounded academy house convex hull blocks walking through the closed facade")
 	visit.player.reset_at(Vector3(20.7,0.1,18.1))
 	for frame in range(5):
 		await physics_frame
@@ -565,9 +645,9 @@ func run() -> void:
 		check(visit.hud.blocked and visit.hud.menu_title.text == data["name"], "each landmark has an approachable readable sign: " + data["name"])
 		visit.resume_visit()
 	check(visit.visited.size() == 3, "local orientation counts each of the three landmarks once")
-	visit.player.reset_at(Vector3(15,0.1,-0.5))
+	visit.player.reset_at(KonohaMap.LANDMARKS[0]["point"]+Vector3(0,0.2,5))
 	await physics_frame
-	check(not visit._reachable(Vector3(15,0,-3)), "walls block interaction rays")
+	check(not visit._reachable(KonohaMap.LANDMARKS[0]["point"]+Vector3(0,0,-5)), "district buildings block interaction rays")
 	game.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	check(visit.hud.blocked, "losing focus pauses the Konoha visit")
 	game.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
@@ -712,11 +792,11 @@ func run() -> void:
 	quit(0 if failures == 0 else 1)
 
 func network_protocol_checks() -> void:
-	var pose: Dictionary = {"id":1,"p":[0,0.25,22],"yaw":0,"motion":"idle"}
+	var pose: Dictionary = {"id":1,"p":[0,0.25,78],"yaw":0,"motion":"idle"}
 	check(VillageLink.state(JSON.parse_string(JSON.stringify(pose))), "network pose accepts finite JSON numbers")
 	for value: Variant in [null,[],{"id":"1"}, {"id":1,"p":[NAN,0,0],"yaw":0,"motion":"idle"}, {"id":1,"p":[0,0,0],"yaw":"0","motion":"idle"}, {"id":1,"p":[0,0,0],"yaw":0,"motion":"attack"}]:
 		check(not VillageLink.state(value), "network rejects malformed pose without unsafe variant comparison")
-	check(not VillageLink.point([32,0,0]) and not VillageLink.point([0,13,0]), "network pose is bounded to the welcome quarter")
+	check(not VillageLink.point([149,0,0]) and not VillageLink.point([0,13,0]), "network pose is bounded to the full Konoha perimeter")
 	check(VillageLink.plain("Bonjour [b]ami[/b]",240), "network plaintext can contain literal markup")
 	check(not VillageLink.plain("faux\nnom",240) and not VillageLink.plain("test\u202e",240) and not VillageLink.plain("test\u2028",240), "network rejects newlines and invisible formatting")
 	check(VillageLink.plain("😀".repeat(120),240) and not VillageLink.plain("😀".repeat(121),240), "chat length agrees with server UTF-16 bounds for emoji")
@@ -726,8 +806,8 @@ func network_protocol_checks() -> void:
 	var link := VillageLink.new()
 	link.api = account
 	check(not link._accept({"type":"snapshot","frame":1,"players":[pose]}), "server frames require an authenticated welcome first")
-	check(not link._accept({"type":"welcome","protocol":"1","self":1,"spawn":[0,0.25,22],"radius":12}), "welcome rejects string protocol versions")
-	check(link._accept({"type":"welcome","protocol":1,"self":1,"spawn":[0,0.25,22],"radius":12}), "welcome binds presence to the current account")
+	check(not link._accept({"type":"welcome","protocol":"1","self":1,"spawn":[0,0.25,78],"radius":18}), "welcome rejects string protocol versions")
+	check(link._accept({"type":"welcome","protocol":1,"self":1,"spawn":[0,0.25,78],"radius":18}), "welcome binds presence to the current account")
 	check(not link._accept({"type":"snapshot","frame":1,"players":[pose,pose]}), "duplicate account IDs in a frame are refused")
 	check(not link._accept({"type":"error","code":123,"error":"test"}), "network error codes are type checked")
 	check(link._accept({"type":"snapshot","frame":5,"players":[pose]}) and link._accept({"type":"snapshot","frame":3,"players":[pose]}) and link.last_frame == 5, "older snapshots cannot rewind interpolation")

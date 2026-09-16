@@ -2,11 +2,15 @@ import { WebSocketServer, WebSocket } from "ws";
 import { digest, transaction } from "./store.js";
 import { validAppearance } from "./game.js";
 import { VillageRoom, VILLAGE } from "./village-room.js";
+import {
+  SecondaryMissionService,
+  secondaryUnlocked,
+} from "./secondary-mission.js";
 
 const accessSQL = `FROM game_sessions s
   JOIN users u ON u.id=s.user_id AND u.role='player'
   JOIN applications a ON a.user_id=u.id AND a.status='accepted'
-  JOIN allocations l ON l.user_id=u.id
+  LEFT JOIN allocations l ON l.user_id=u.id
   WHERE s.expires>? AND NOT EXISTS(SELECT 1 FROM deleted_accounts d WHERE d.user_id=u.id)`;
 export async function villageIdentity(db, authorization, now = Date.now()) {
   const token = /^Bearer ([a-f0-9]{64})$/.exec(authorization || "")?.[1];
@@ -14,8 +18,10 @@ export async function villageIdentity(db, authorization, now = Date.now()) {
   const tokenHash = digest(token);
   const row = await db
     .prepare(
-      `SELECT u.id,a.character AS name,s.expires,
-    (SELECT appearance FROM character_appearances WHERE user_id=u.id) AS appearance
+      `SELECT u.id,a.character AS name,l.clan,s.expires,
+    (SELECT appearance FROM character_appearances WHERE user_id=u.id) AS appearance,
+    (SELECT status FROM clan_missions WHERE user_id=u.id) AS clan_mission_status,
+    (SELECT reward_claimed FROM clan_missions WHERE user_id=u.id) AS clan_reward_claimed
     ${accessSQL} AND s.token=?`,
     )
     .get(now, tokenHash);
@@ -29,7 +35,12 @@ export async function villageIdentity(db, authorization, now = Date.now()) {
         .replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, "")
         .slice(0, 50)
         .toWellFormed() || "Genin",
+    clan: row.clan || "Uchiwa",
     appearance,
+    secondaryUnlocked: secondaryUnlocked({
+      status: row.clan_mission_status,
+      reward_claimed: row.clan_reward_claimed,
+    }),
     tokenHash,
     expires: Number(row.expires),
   };
@@ -45,7 +56,16 @@ export function installVillage(
     publicOrigin = process.env.PUBLIC_ORIGIN,
   } = {},
 ) {
-  const room = new VillageRoom();
+  const secondary = new SecondaryMissionService(db);
+  const room = new VillageRoom({ secondary });
+  secondary.onChange = () => room.broadcastSecondary();
+  // The database timestamp, not a handset clock, controls the ten-minute
+  // renewal. Refreshing once a second is cheap and keeps every connected
+  // client in the same global state.
+  const secondaryTimer = setInterval(() => {
+    if (room.peers.size) void secondary.refresh();
+  }, 1000);
+  secondaryTimer.unref();
   const wss = new WebSocketServer({
     noServer: true,
     maxPayload: 1024,
@@ -146,6 +166,7 @@ export function installVillage(
             },
           };
           peer = room.join(identity, transport);
+          if (peer) void secondary.refresh();
           ws.on("close", () => room.leave(peer));
           ws.on("message", (bytes, binary) => {
             if (!peer) return;
@@ -176,20 +197,35 @@ export function installVillage(
     try {
       const rows = await db
         .prepare(
-          `SELECT s.token,s.expires ${accessSQL}
+          `SELECT s.token,s.expires,
+        (SELECT CASE WHEN status='COMPLETED' AND reward_claimed=1 THEN 1 ELSE 0 END FROM clan_missions WHERE user_id=s.user_id) AS secondary_unlocked
+        ${accessSQL}
         AND s.token IN (${peers.map(() => "?").join(",")})`,
         )
         .all(started, ...peers.map((p) => p.tokenHash));
       if (stopped) return;
-      const current = new Map(rows.map((r) => [r.token, Number(r.expires)]));
+      const current = new Map(
+        rows.map((r) => [
+          r.token,
+          {
+            expires: Number(r.expires),
+            secondary_unlocked: r.secondary_unlocked,
+          },
+        ]),
+      );
       for (const peer of peers) {
         if (room.peers.get(peer.id) !== peer) continue;
         if (!current.has(peer.tokenHash))
           room.leave(peer, 4003, "Session ou admission retirée");
         else {
-          peer.expires = current.get(peer.tokenHash);
+          const row = current.get(peer.tokenHash);
+          peer.expires = row.expires;
+          const unlocked = Boolean(Number(row.secondary_unlocked || 0));
+          const unlockChanged = peer.secondaryUnlocked !== unlocked;
+          peer.secondaryUnlocked = unlocked;
           // Slow/failed DB queries never extend the original access lease.
           peer.leaseUntil = started + VILLAGE.leaseMs;
+          if (unlockChanged) room.broadcastSecondary();
         }
       }
     } catch {
@@ -213,6 +249,7 @@ export function installVillage(
     close() {
       stopped = true;
       clearInterval(timer);
+      clearInterval(secondaryTimer);
       server.off("upgrade", upgrade);
       for (const socket of pending) socket.destroy();
       room.close();

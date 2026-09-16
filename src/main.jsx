@@ -49,6 +49,7 @@ import {
   Compass,
   Smartphone,
   Crown,
+  Building2,
 } from "lucide-react";
 import "@fontsource/barlow-condensed/latin-600.css";
 import "@fontsource/barlow-condensed/latin-700.css";
@@ -565,7 +566,7 @@ function Home() {
             ],
             [
               "Est-ce que je peux déjà jouer sur Android ?",
-              "Un prototype Android est disponible pour les joueurs acceptés, depuis leur espace personnel : entraînement, quartier de Konoha et mission d’accueil. Il ne s’agit pas encore du jeu multijoueur complet. Le lien de chaque compilation est temporaire.",
+              "Un prototype Android est disponible pour les joueurs acceptés, depuis leur espace personnel : entraînement, quartier de Konoha, résidence du Hokage, mission d’accueil et musique du village. Le lien de chaque compilation est temporaire.",
             ],
             [
               "Comment sont choisis les 20 joueurs ?",
@@ -1318,7 +1319,7 @@ function Account() {
             <span className="step-circle">4</span>
             <p>
               Rejoindre les tests Android
-              <small>Date à annoncer · APK indisponible</small>
+              <small>APK temporaire disponible après admission</small>
             </p>
           </div>
         </aside>
@@ -1398,29 +1399,26 @@ function Account() {
             <h2>Installer IDREM ZENKAI</h2>
           </div>
           <p>
-            Version Android vérifiée {account.download?.version || "—"} ·
-            entraînement, Konoha, mission d’accueil et musique du village.
+              Version Android vérifiée {account.download?.version || "—"} ·
+            entraînement, Konoha, résidence du Hokage, mission d’accueil et musique du village.
           </p>
           {account.download?.available ? (
             <>
               <a className="button" href="/api/game-download">
-                Télécharger l’application · ZIP{" "}
+                Télécharger l’application · APK{" "}
                 {Math.round(account.download.bytes / 1000000)} Mo{" "}
                 <ArrowUpRight size={18} />
               </a>
               <p>
-                Une connexion GitHub gratuite est nécessaire pour ce fichier.
-                Extrais le ZIP, puis ouvre{" "}
-                <strong>idrem-zenkai-training-debug.apk</strong>.
+                Téléchargement public sécurisé par ton compte accepté : aucune
+                connexion GitHub n’est nécessaire. Ouvre directement{" "}
+                <strong>idrem-zenkai-training-debug.apk</strong> après le téléchargement.
               </p>
               <p className="fine-print">
-                Lien valable jusqu’au{" "}
-                {new Date(account.download.expiresAt).toLocaleDateString(
-                  "fr-FR",
-                )}
-                . Android 7 minimum, ARM64/ARMv7. Si une réinstallation est
-                nécessaire, les choix locaux sont effacés, pas l’apparence et
-                les étapes déjà sauvegardées sur ton compte.
+                Téléchargement public permanent · Android 7 minimum,
+                ARM64/ARMv7. Si une réinstallation est nécessaire, les choix
+                locaux sont effacés, pas l’apparence et les étapes déjà
+                sauvegardées sur ton compte.
               </p>
             </>
           ) : (
@@ -1439,6 +1437,38 @@ function Account() {
             APK de test, hors Play Store. N’autorise l’installation que depuis
             ton gestionnaire de fichiers de confiance ; ne désactive pas les
             protections générales du téléphone.
+          </p>
+        </section>
+      )}
+      {a?.status === "accepted" && account.sanctuaryAssets && (
+        <section
+          className="panel download-panel"
+          aria-label="Télécharger les sanctuaires Blender"
+        >
+          <div className="panel-heading">
+            <Building2 size={22} />
+            <h2>Sanctuaires claniques · Blender</h2>
+          </div>
+          <p>
+            La maquette 3D des 14 domaines claniques, construite à partir des
+            images de référence. Les fichiers sont séparés de l’APK et ne
+            modifient pas encore le jeu installé.
+          </p>
+          <div className="button-row">
+            <a className="button" href={account.sanctuaryAssets.glb.url}>
+              Télécharger le GLB <ArrowUpRight size={18} />
+            </a>
+            <a className="button secondary" href={account.sanctuaryAssets.blend.url}>
+              Télécharger la scène Blender <ArrowUpRight size={18} />
+            </a>
+          </div>
+          <a className="text-link" href={account.sanctuaryAssets.preview.url}>
+            Voir l’aperçu PNG du rendu Blender <ArrowRight size={16} />
+          </a>
+          <p className="fine-print">
+            Le GLB est lisible dans Blender, Godot et les visionneuses 3D
+            compatibles. La scène Blender reste une première maquette de
+            validation avant intégration dans l’APK.
           </p>
         </section>
       )}

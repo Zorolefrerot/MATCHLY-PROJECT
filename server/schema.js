@@ -29,6 +29,46 @@ CREATE TABLE IF NOT EXISTS welcome_missions(
  CHECK ((phase='active' AND revision=1+(visited & 1)+((visited >> 1) & 1)+((visited >> 2) & 1)) OR
         (phase='completed' AND visited=7 AND revision=5))
 );
+-- One generic durable mission record per account for the clan mission. The
+-- existing welcome_missions table remains untouched for Aoi's first mission.
+CREATE TABLE IF NOT EXISTS clan_missions(
+ user_id INTEGER PRIMARY KEY REFERENCES users(id),
+ mission_id TEXT NOT NULL DEFAULT 'clan_stars' CHECK (mission_id='clan_stars'),
+ status TEXT NOT NULL CHECK (status IN ('NOT_STARTED','ACCEPTED','IN_PROGRESS','TIME_EXPIRED','REPORT_PENDING','COMPLETED')),
+ score INTEGER CHECK (score IS NULL OR (score >= 0 AND score <= 1000000)),
+ revision INTEGER NOT NULL CHECK (revision BETWEEN 0 AND 5),
+ started_at BIGINT,
+ reward_claimed INTEGER NOT NULL DEFAULT 0 CHECK (reward_claimed IN (0,1)),
+ updated TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS player_progress(
+ user_id INTEGER PRIMARY KEY REFERENCES users(id),
+ idrem_gold INTEGER NOT NULL DEFAULT 0 CHECK (idrem_gold >= 0),
+ level INTEGER NOT NULL DEFAULT 0 CHECK (level >= 0),
+ updated TEXT NOT NULL
+);
+-- Global, server-authoritative secondary missions. Three durable slots are
+-- shared by all players; cooldowns survive reconnects and process restarts.
+CREATE TABLE IF NOT EXISTS secondary_missions(
+ slot INTEGER PRIMARY KEY CHECK (slot BETWEEN 0 AND 2),
+ mission_id TEXT UNIQUE NOT NULL,
+ type_id TEXT NOT NULL,
+ npc_id TEXT NOT NULL,
+ zone TEXT NOT NULL,
+ objective TEXT NOT NULL,
+ progress TEXT NOT NULL DEFAULT '[]',
+ status TEXT NOT NULL CHECK (status IN ('AVAILABLE','ACCEPTED','COOLDOWN')),
+ accepted_by INTEGER REFERENCES users(id),
+ accepted_at BIGINT,
+ completed_at BIGINT,
+ available_at BIGINT NOT NULL,
+ revision INTEGER NOT NULL CHECK (revision >= 1),
+ last_type TEXT,
+ last_npc TEXT,
+ last_zone TEXT,
+ updated TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS secondary_missions_available ON secondary_missions(status,available_at);
 CREATE TABLE IF NOT EXISTS resets(token TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), expires BIGINT NOT NULL);
 CREATE TABLE IF NOT EXISTS applications(
  id ${id}, user_id INTEGER UNIQUE NOT NULL REFERENCES users(id),

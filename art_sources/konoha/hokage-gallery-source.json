@@ -1,0 +1,19 @@
+{
+  "source": "https://www.peakpx.com/en/hd-wallpaper-desktop-pttge",
+  "file": "hokage-gallery-source.jpg",
+  "retrieved_for": "Hokage residence interior gallery",
+  "license_verified": false,
+  "panels": [
+    "Hashirama Senju",
+    "Tobirama Senju",
+    "Hiruzen Sarutobi",
+    "Minato Namikaze",
+    "Tsunade",
+    "Kakashi Hatake",
+    "Naruto Uzumaki"
+  ],
+  "output_directory": "game/assets/konoha/hokage",
+  "output_size": [144, 528],
+  "inner_size": [128, 512],
+  "border_px": 8
+}

@@ -4,11 +4,11 @@
 
 Prototype avec **entraînement solo hors ligne**, **compte connecté** et **premier quartier de Konoha à explorer en solo**. Godot **4.5.1 Standard**, GDScript, rendu Compatibility/OpenGL ES 3. Les personnages restent procéduraux et provisoires. Les nouveaux bâtiments sont construits en code ; leurs surfaces et la falaise utilisent aussi les références fournies par le propriétaire, pas des modèles définitifs du jeu Naruto.
 
-## Sources 0.11 — village partagé, validation moteur à faire
+## Sources 0.11 — village partagé, APK compilée, essai téléphone à faire
 
-Deux comptes admis, avatars avec apparence sauvegardée, marche/course/saut et chat de proximité **RP/HRP** sont raccordés en code via le même serveur HTTPS/WSS. Reconnexion et départ gérés, sans combat ni économie réseau. **41 tests Node, 10 tests PostgreSQL, 2 parcours navigateur et Vite passent.** Les tests natifs de protocole et le scénario à deux clients Godot sont préparés, **pas encore exécutés**. Pas d’APK 0.11 annoncée. [Détails et limites](../docs/VILLAGE_PARTAGE.md).
+Tout compte joueur accepté peut entrer dans le monde, même si son attribution de clan est encore différée ; une identité de départ neutre est utilisée dans ce cas. Plusieurs comptes admis peuvent ensuite se connecter séparément au même quartier, avec leur nom affiché au-dessus de l’avatar, leur apparence sauvegardée, marche/course/saut et chat de proximité **RP/HRP** via le même serveur HTTPS/WSS. Le bouton **DÉFIER EN DUEL** ouvre un test à deux joueurs : chaque clan reçoit quatre techniques particulières, Uchiwa reste le seul Katon et Senju le seul Mokuton ; le serveur décide des dégâts, recharges, chakra, niveau de test, ultime clanique, esquive et KO. Reconnexion et départ restent gérés ; le duel est éphémère et aucune progression n’est enregistrée. **45 tests Node, 10 tests PostgreSQL, 2 parcours navigateur, Vite et le contrôle Godot/Android 0.11 passent.** Le test physique sur deux téléphones reste à faire. [Détails et limites](../docs/VILLAGE_PARTAGE.md).
 
-Le propriétaire confirme **0.10 fonctionnelle sur son téléphone**. Cette version demeure la seule proposée au téléchargement jusqu’à validation complète du lot réseau.
+Le propriétaire confirme **0.10 fonctionnelle sur son téléphone**. L’APK **0.11.0** du village complet densifié, avec maisons, escaliers, forêts et sanctuaires construits en 3D, utilise désormais seulement des textures générées pour le ciel, la terre et l’eau ; le code du site pointe vers son artefact temporaire et le déploiement Render doit encore être effectué pour rendre cette nouvelle version visible en production.
 
 ## Lot 0.10 — musique du village et ajouts au site
 
@@ -16,8 +16,8 @@ La musique fournie joue en fond dans Konoha, avec **MUSIQUE : OUI/NON**, le volu
 
 **238 assertions Godot**, 31 tests Node, 9 tests PostgreSQL et 2 parcours Playwright réussis. APK debug exporté, signature et permissions vérifiées ; arrivée et journal inspectés. **Fonctionnement sur téléphone ensuite confirmé par le propriétaire.** Le multijoueur n’est pas inclus dans 0.10. [Détails](../docs/AJOUTS_SITE_MUSIQUE.md).
 
-- [ZIP `idrem-zenkai-android-19` — environ 68 Mo](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231/artifacts/10264293080), jusqu’au **18 septembre 2026** ; connexion GitHub nécessaire.
-- [Exécution verte](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34601493231). Extraire **`idrem-zenkai-training-debug.apk`**, pas les journaux.
+- [ZIP `idrem-zenkai-android-60` — environ 74 Mo](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34751157241/artifacts/10315533005), jusqu’au **20 septembre 2026 à 10:12 UTC** ; connexion GitHub nécessaire.
+- [Exécution verte 0.11](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/34751157241). Extraire **`idrem-zenkai-training-debug.apk`**, pas les journaux.
 - Même fichier proposé par **Installer IDREM ZENKAI** dans l’espace des joueurs acceptés après déploiement du site.
 
 ![Konoha 0.10, capture ordinateur réelle](../docs/images/konoha-10-arrival.jpg)
@@ -50,6 +50,12 @@ Une seule version réunit le lot demandé : **accepter la mission auprès d’Ao
 
 Sources, méthode et limites : [`assets/konoha/README.md`](assets/konoha/README.md).
 
+## Village complet — carte, quartiers et vie locale
+
+Le quartier d’accueil est devenu une carte complète de Konoha : mur circulaire et quatre portes, routes et rivière avec ponts, forêt de la Mort, mémorial, résidence du Hokage, académie, marché, hôpital, poste de police, stade, sources chaudes et quartiers Shun, Hattori, Hyūga, Uzumaki, Uchiwa, Nara, Akimichi, Yamanaka, Inuzuka, Aburame et Hatake. Les maisons rondes et les toits utilisent les textures de référence préparées dans `assets/konoha/`.
+
+La scène peuple aussi les rues de femmes, hommes, anciens, filles, garçons, chiens, chats, porc et poules. Certains suivent des itinéraires, certains discutent par paires, et des marchands/acheteurs animent le marché. Cette vie est locale et décorative : aucune monnaie, transaction ou progression d’inventaire n’est encore persistée. Voir [la fiche technique du village complet](../docs/KONOHA_VILLAGE_ENTIER.md).
+
 ## Parcours 0.7.0 conservé — première zone de Konoha
 
 - **MON COMPTE → connexion → ENTRER À KONOHA · PREMIÈRE ZONE SOLO**. Entrée distincte du retour à l’entraînement, avec nouvelle vérification de la session et chargement de l’apparence du compte.
@@ -66,11 +72,11 @@ Détails, contrôles et limites : [première zone de Konoha](../docs/KONOHA_PREM
 - Bouton **MON COMPTE** à l’accueil/pause. Connexion par l’adresse HTTPS exacte du site et les identifiants d’un joueur admis. Le compte administrateur n’est pas un personnage joueur.
 - Nom, clan, affinité et potentiel Mokuton lus depuis les attributions existantes, **sans relancer le tirage**. Genin à Konoha pour cet incrément, sans progression persistante de combat.
 - **MODIFIER L’APPARENCE → ENREGISTRER SUR MON COMPTE** sauvegarde sur le serveur. Retrouver les choix après reconnexion/réinstallation. Un conflit n’écrase pas une version plus récente.
-- Mot de passe et jeton seulement en mémoire ; session 2 h, nouvelle connexion invalidant la précédente. Seule l’origine publique du serveur est mémorisée. Pas de secret Neon dans l’APK.
+- Le mot de passe n’est jamais enregistré. Après la première connexion, l’appareil mémorise seulement l’origine publique et un jeton opaque de session de 30 jours pour restaurer automatiquement le personnage ; déconnexion, réinitialisation, suppression ou révocation invalident ce jeton. Pas de secret Neon dans l’APK.
 - **APPARENCE HORS LIGNE** garde une sauvegarde distincte, sans requête réseau. Les choix du compte ne remplacent pas le combattant local ni ses quatre techniques de test.
 - Une réinstallation efface les choix **locaux** des versions précédentes, qui ne sont pas automatiquement transférés sur le compte. Les modèles, sons et combats validés sont conservés. Affichage **PROTO 0.6**.
 
-**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Compte et mission 0.9 confirmés par le propriétaire ; déploiement des ajouts site 0.10 encore à effectuer, sans vérification indépendante de la production par l’agent. Le quartier 0.7 est une visite solo avec ce profil, pas un monde multijoueur ou une zone de combat partagée.
+**Activation, API et limites : [Compte du jeu](../docs/COMPTE_JEU.md).** Compte et mission 0.9 confirmés par le propriétaire ; déploiement des ajouts site 0.10 encore à effectuer, sans vérification indépendante de la production par l’agent. Le quartier conserve la mission personnelle, mais sa présence partagée et son duel réseau restent un mode de test limité à deux joueurs admis ; ce n’est pas encore le serveur RP complet.
 
 ## Créateur 0.5 conservé — apparence hors ligne
 

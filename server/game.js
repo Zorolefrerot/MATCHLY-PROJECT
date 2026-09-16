@@ -6,6 +6,13 @@ import {
   welcomeEvents,
   advanceWelcome,
 } from "./welcome-mission.js";
+import {
+  clanMissionState,
+  clanMissionEvents,
+  advanceClanMission,
+  rewardForStars,
+} from "./clan-mission.js";
+import { secondaryStateForUser } from "./secondary-mission.js";
 
 // Versioned cosmetic IDs from the prototype, never equipment or combat data.
 export const appearanceLimits = Object.freeze({
@@ -36,7 +43,10 @@ export function validAppearance(value) {
 }
 const fail = (status, code, message) =>
   Object.assign(new Error(message), { status, gameCode: code });
-const TTL = 2 * 60 * 60 * 1000;
+// The device session is an opaque bearer token, never a password. A remembered
+// device may return without asking for the website credentials again; logout,
+// password reset, account deletion and admission revocation still invalidate it.
+const TTL = 30 * 24 * 60 * 60 * 1000;
 
 export function installGameRoutes(app, db, limit) {
   const dummy = hashPassword(randomBytes(24).toString("hex"));
@@ -71,24 +81,34 @@ export function installGameRoutes(app, db, limit) {
         "ADMISSION_REQUIRED",
         "Ta candidature doit être acceptée sur le site.",
       );
-    if (!row.clan)
-      throw fail(
-        409,
-        "ALLOCATION_REQUIRED",
-        "Effectue d’abord ton attribution unique dans ton espace sur le site.",
-      );
+    // Admission is enough to enter the world. If the owner has not yet
+    // assigned a clan, use a neutral starter identity and let the player
+    // enter Konoha immediately instead of blocking the native session.
     const saved = await db
       .prepare(
         "SELECT appearance,revision FROM character_appearances WHERE user_id=?",
       )
+      .get(userId);
+    const clan = row.clan || "Uchiwa";
+    const clanMission = await db
+      .prepare(
+        "SELECT mission_id,status,score,revision,started_at,reward_claimed FROM clan_missions WHERE user_id=?",
+      )
+      .get(userId);
+    const progress = await db
+      .prepare("SELECT idrem_gold,level FROM player_progress WHERE user_id=?")
       .get(userId);
     return {
       protocol: 1,
       character: {
         id: row.id,
         name: row.character,
-        clan: row.clan,
-        affinity: row.affinity,
+        clan,
+        clan_id: clan
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, ""),
+        affinity: row.affinity || "Chakra",
         mokuton: Boolean(row.mokuton),
         rank: "Genin",
         village: "Konoha",
@@ -103,6 +123,12 @@ export function installGameRoutes(app, db, limit) {
           )
           .get(userId),
       ),
+      clanMission: clanMissionState(clanMission),
+      secondaryMissions: await secondaryStateForUser(db, userId),
+      progress: {
+        idremGold: Number(progress?.idrem_gold || 0),
+        level: Number(progress?.level || 0),
+      },
     };
   }
   async function authenticate(req) {
@@ -249,7 +275,7 @@ export function installGameRoutes(app, db, limit) {
         );
       const data = await transaction(db, async () => {
         const userId = await authenticate(req);
-        await profile(userId); // Recheck admission/allocation under the same lock.
+        await profile(userId); // Recheck admission under the same lock.
         const row = await db
           .prepare(
             "SELECT phase,visited,revision FROM welcome_missions WHERE user_id=?",
@@ -269,6 +295,100 @@ export function installGameRoutes(app, db, limit) {
               next.revision,
               new Date().toISOString(),
             );
+        return profile(userId);
+      });
+      res.json(data);
+    }),
+  );
+  app.post(
+    "/api/game/missions/clan/events",
+    limit,
+    guard(async (req, res) => {
+      const body = req.body || {};
+      const expectedKeys =
+        body.event === "expire"
+          ? "event,expectedRevision,score"
+          : "event,expectedRevision";
+      if (
+        Object.keys(body).sort().join(",") !== expectedKeys ||
+        !clanMissionEvents.includes(body.event) ||
+        !Number.isSafeInteger(body.expectedRevision) ||
+        body.expectedRevision < 0 ||
+        body.expectedRevision > 5 ||
+        (body.event === "expire" &&
+          (!Number.isSafeInteger(body.score) ||
+            body.score < 0 ||
+            body.score > 1000000))
+      )
+        throw fail(
+          400,
+          "INVALID_CLAN_MISSION_EVENT",
+          "Étape de mission de clan invalide. Mets à jour l’application.",
+        );
+      const data = await transaction(db, async () => {
+        const userId = await authenticate(req);
+        await profile(userId); // Recheck admission and the account clan on every write.
+        const welcome = await db
+          .prepare("SELECT phase FROM welcome_missions WHERE user_id=?")
+          .get(userId);
+        if (welcome?.phase !== "completed")
+          throw fail(
+            403,
+            "CLAN_MISSION_LOCKED",
+            "Termine d’abord la mission d’accueil d’Aoi.",
+          );
+        const row = await db
+          .prepare(
+            "SELECT mission_id,status,score,revision,started_at,reward_claimed FROM clan_missions WHERE user_id=?",
+          )
+          .get(userId);
+        const next = advanceClanMission(
+          row,
+          body.event,
+          body.expectedRevision,
+          body.event === "expire" ? body.score : null,
+        );
+        if (next) {
+          await db
+            .prepare(
+              `INSERT INTO clan_missions(user_id,mission_id,status,score,revision,started_at,reward_claimed,updated) VALUES (?,?,?,?,?,?,?,?)
+          ON CONFLICT(user_id) DO UPDATE SET mission_id=excluded.mission_id,status=excluded.status,score=excluded.score,revision=excluded.revision,started_at=excluded.started_at,reward_claimed=excluded.reward_claimed,updated=excluded.updated`,
+            )
+            .run(
+              userId,
+              "clan_stars",
+              next.status,
+              next.score,
+              next.revision,
+              next.started_at,
+              next.reward_claimed,
+              new Date().toISOString(),
+            );
+          if (body.event === "report") {
+            const reward = rewardForStars(Number(next.score));
+            await db
+              .prepare(
+                `INSERT INTO player_progress(user_id,idrem_gold,level,updated) VALUES (?,?,?,?)
+              ON CONFLICT(user_id) DO UPDATE SET idrem_gold=player_progress.idrem_gold+excluded.idrem_gold,level=CASE WHEN player_progress.level > excluded.level THEN player_progress.level ELSE excluded.level END,updated=excluded.updated`,
+              )
+              .run(
+                userId,
+                reward.idremGold,
+                reward.level,
+                new Date().toISOString(),
+              );
+            await db
+              .prepare(
+                "INSERT INTO audit(actor,action,target,detail) VALUES (?,?,?,?)",
+              )
+              .run(
+                userId,
+                "clan_mission_reward",
+                userId,
+                JSON.stringify({ score: next.score, reward }),
+              );
+          }
+        }
         return profile(userId);
       });
       res.json(data);

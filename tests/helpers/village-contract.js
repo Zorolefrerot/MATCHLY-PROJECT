@@ -82,6 +82,7 @@ export async function villageContract(db, secondDb = db) {
   const before = await db
     .prepare("SELECT * FROM allocations ORDER BY user_id")
     .all();
+  const firstClan = before.find((row) => row.user_id === ids[0]).clan;
   const app = createApp(db);
   const server = app.listen(0, "127.0.0.1");
   const village = installVillage(server, db, {
@@ -140,10 +141,18 @@ export async function villageContract(db, secondDb = db) {
     ws.terminate();
   };
   try {
+    const noClanIdentity = await villageIdentity(db, "Bearer " + tokens[3]);
+    assert.equal(noClanIdentity.id, ids[3]);
+    assert.equal(noClanIdentity.clan, "Uchiwa");
     await denied(null, 401, { Cookie: "iz_session=ws-owner-cookie" });
     await denied(tokens[2], 401); // pending
-    await denied(tokens[3], 401); // accepted but attribution not performed
     await denied(ownerToken, 401);
+    // The same accepted account can complete a real WSS handshake before a clan draw.
+    const noClan = connect(tokens[3]);
+    await noClan.wait("welcome");
+    const noClanClosed = once(noClan.ws, "close");
+    noClan.ws.close(1000, "test");
+    await noClanClosed;
     await denied(tokens[0], 403, { Origin: "https://foreign.test" });
     await denied(tokens[0], 403, { "X-Forwarded-Proto": "http" });
     await denied(tokens[0], 400, {}, `?token=${tokens[0]}`);
@@ -166,7 +175,7 @@ export async function villageContract(db, secondDb = db) {
       JSON.stringify({
         type: "move",
         seq: 0,
-        p: [0, 1, 21],
+        p: [0, 1, 77],
         yaw: 1,
         motion: "jump",
       }),
@@ -186,6 +195,66 @@ export async function villageContract(db, secondDb = db) {
     const message = await b.wait("chat");
     assert.equal(message.sender, ids[0]);
     assert.equal(message.name, "Genin WS 0");
+    // Exercise the same WSS path used by the Godot visit, not only the pure room.
+    a.ws.send(JSON.stringify({ type: "combat_join" }));
+    await a.wait("combat_waiting");
+    a.ws.send(JSON.stringify({ type: "combat_level", level: 10 }));
+    b.ws.send(JSON.stringify({ type: "combat_join" }));
+    const combat = await a.wait("combat_state", (e) => e.status === "active");
+    assert.equal(combat.players.length, 2);
+    assert.equal(
+      combat.players.find((player) => player.id === ids[0]).level,
+      10,
+    );
+    await b.wait("combat_started");
+    a.ws.send(
+      JSON.stringify({
+        type: "combat_action",
+        seq: 0,
+        kind: "skill_0",
+        direction: [1, 0, 0],
+      }),
+    );
+    const hit = await b.wait("combat_hit", (e) => e.kind === "skill_0");
+    assert.equal(hit.target, ids[1]);
+    assert.equal(hit.damage, 26);
+    a.ws.send(
+      JSON.stringify({
+        type: "combat_action",
+        seq: 1,
+        kind: "ultimate",
+        direction: [1, 0, 0],
+      }),
+    );
+    const ultimate = await b.wait(
+      "combat_action",
+      (e) => e.kind === "ultimate",
+    );
+    const expectedUltimate = {
+      Uchiwa: "Envol du brasier",
+      Uzumaki: "Spirale du grand sceau",
+      Senju: "Rempart des mille rocs",
+      Hyūga: "Couronne des paumes",
+      Akimichi: "Poing du géant",
+      Yamanaka: "Floraison de l’esprit",
+      Aburame: "Nuée d’éclipse",
+      Inuzuka: "Crocs des deux ombres",
+      Fushiguro: "Procession des ombres",
+      Itadori: "Impact du cœur noir",
+      Kurosaki: "Croissant spirituel",
+      Shunsui: "Danse des pétales d’ombre",
+      Yeager: "Colosse de chakra",
+      Ackerman: "Lames de l’orage",
+    };
+    assert.equal(ultimate.ultimate.clan, firstClan);
+    assert.equal(ultimate.ultimate.name, expectedUltimate[firstClan]);
+    const ultimateHit = await b.wait(
+      "combat_hit",
+      (e) => e.kind === "ultimate",
+    );
+    assert.equal(ultimateHit.damage, 82);
+    a.ws.send(JSON.stringify({ type: "combat_leave" }));
+    await b.wait("combat_end");
     const replaced = once(a.ws, "close");
     const again = connect(tokens[0]);
     await again.wait("welcome");

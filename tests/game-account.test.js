@@ -74,9 +74,12 @@ test("cosmetic schema v1 matches Godot catalogs and rejects unsupported values",
   );
   assert.match(api, /max_redirects = 0/);
   assert.match(api, /body_size_limit = 32768/);
+  assert.match(api, /SESSION_PATH: String = "user:\/\/game-device-session\.cfg"/);
+  assert.match(api, /_restore_device_session/);
+  assert.match(api, /_remember_device_session/);
   assert.doesNotMatch(
     api,
-    /FileAccess|ConfigFile|TLSOptions\.client_unsafe|print\(/,
+    /password.*set_value|set_value\([^\n]*password|TLSOptions\.client_unsafe|print\(/i,
   );
   const creator = readFileSync(
     new URL("../game/scripts/creator.gd", import.meta.url),

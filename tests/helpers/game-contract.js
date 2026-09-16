@@ -90,7 +90,10 @@ export async function gameContract(db) {
     assert.equal((await request("/game/profile")).status, 401);
     for (const name of ["pending", "waiting", "rejected", "owner"])
       assert.equal((await login(name)).status, 403);
-    assert.equal((await login("noDraw")).body.code, "ALLOCATION_REQUIRED");
+    const noDraw = await login("noDraw");
+    assert.equal(noDraw.status, 200);
+    assert.equal(noDraw.body.profile.character.clan, "Uchiwa");
+    await request("/game/logout", { token: noDraw.body.token, body: {} });
     assert.equal(
       (
         await request("/game/login", {
@@ -119,8 +122,8 @@ export async function gameContract(db) {
     assert.equal(stored.token, digest(token));
     assert.notEqual(stored.token, token);
     assert.ok(
-      Number(stored.expires) > Date.now() &&
-        Number(stored.expires) < Date.now() + 7210000,
+      Number(stored.expires) > Date.now() + 29 * 24 * 60 * 60 * 1000 &&
+        Number(stored.expires) < Date.now() + 31 * 24 * 60 * 60 * 1000,
     );
     assert.equal(
       (await request("/me", { token })).body.user,
