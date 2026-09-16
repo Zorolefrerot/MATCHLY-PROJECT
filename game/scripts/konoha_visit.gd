@@ -31,6 +31,7 @@ const HOKAGE_PORTAL_RADIUS := 1.55
 const HOKAGE_PORTAL_HOLD_SECONDS := 3.0
 const HOKAGE_TELEPORT_DEBOUNCE_SECONDS := 0.85
 const HOKAGE_NETWORK_RELEASE_SECONDS := 0.9
+const ACADEMY_RECEPTION_POINT := Vector3(-34.0, 0.55, 12.0)
 var hokage_portal_hold: float = 0.0
 var hokage_loading: bool = false
 var hokage_network_paused: bool = false
@@ -56,6 +57,8 @@ var music_enabled: bool = true
 var app_active: bool = true
 var village_link: VillageLink
 var chat_panel: VillageChat
+var academy_receptionist: KonohaNPC
+var academy_recruitment: TeamRecruitment
 var remote_avatars: Dictionary = {}
 var combat_effects: Node3D
 var combat_vfx: TrainingVFX
@@ -83,6 +86,7 @@ func _ready() -> void:
 	world = KonohaMap.new()
 	viewport.add_child(world)
 	world.build()
+	_build_academy_reception()
 	# The interior is already provided by hokage_interior.gd. Keep one world and
 	# one player, but place this virtual pocket outside Konoha's ground/wall
 	# colliders so it cannot look like a hidden building in another district.
@@ -199,6 +203,17 @@ func _ready() -> void:
 		village_link.disconnected.connect(_clear_remote)
 		secondary_manager.set_link(village_link)
 		add_child(village_link)
+		academy_recruitment = TeamRecruitment.new()
+		hud.add_child(academy_recruitment)
+		academy_recruitment.configure(player, hud, village_link)
+
+func _build_academy_reception() -> void:
+	# The receptionist is a real lightweight world actor at the desk position;
+	# the Academy panel is never exposed as a global menu button.
+	academy_receptionist = KonohaNPC.new()
+	academy_receptionist.name = "AcademyReceptionist"
+	world.add_child(academy_receptionist)
+	academy_receptionist.configure("woman", "RÉCEPTION · ÉQUIPES", ACADEMY_RECEPTION_POINT, [ACADEMY_RECEPTION_POINT], Color("557b75"), "discussion", 0.0)
 
 func _build_hokage_transition_nodes() -> void:
 	# Explicit points are the only destinations used by the transition.
@@ -335,7 +350,7 @@ func _physics_process(delta: float) -> void:
 	_update_camera()
 	var nearest: int = nearest_interaction()
 	hud.buttons["interact"].disabled = nearest == -2
-	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "PARLER AU CHEF" if nearest == -5 else "AIDER · MISSION" if nearest == -6 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
+	hud.buttons["interact"].text = "PARLER À AOI" if nearest == -1 else "RÉCEPTION · ÉQUIPES" if nearest == -7 else "PARLER AU CHEF" if nearest == -5 else "AIDER · MISSION" if nearest == -6 else "LIRE LE PANNEAU" if nearest >= 0 else "APPROCHE-TOI"
 	if is_instance_valid(secondary_manager):
 		secondary_manager.update_hud()
 	# The residence has no entry or exit control: crossing its open hall moves
@@ -424,6 +439,8 @@ func nearest_interaction() -> int:
 		return -2
 	if is_instance_valid(hokage_entry_trigger) and hokage_entry_trigger.get_overlapping_bodies().has(player):
 		return -2
+	if is_instance_valid(academy_receptionist) and _reachable(academy_receptionist.position):
+		return -7
 	if is_instance_valid(clan_manager) and clan_manager.is_near_own_leader():
 		return -5
 	if is_instance_valid(secondary_manager) and secondary_manager.interaction_available():
@@ -443,6 +460,12 @@ func interact() -> void:
 		hud.notice("Approche-toi d’un interlocuteur ou d’un panneau pour interagir.")
 		return
 	_clear_inputs()
+	if nearest == -7:
+		if is_instance_valid(academy_recruitment):
+			academy_recruitment.open()
+		else:
+			hud.notice("La réception de l’Académie attend la connexion au village.")
+		return
 	if nearest == -6:
 		secondary_manager.interact()
 		return
@@ -808,6 +831,7 @@ func finish() -> void:
 		hokage_interior.set_active(false)
 	inside_hokage = false
 	_close_chat()
+	if is_instance_valid(academy_recruitment): academy_recruitment.close()
 	if is_instance_valid(village_link): village_link.stop()
 	if is_instance_valid(music):
 		music.stop()
@@ -1021,6 +1045,9 @@ func _network_event(event: Dictionary) -> void:
 			var code := str(event.get("code", ""))
 			if code.begins_with("SECONDARY_") or code == "INVALID_SECONDARY_ACTION":
 				if is_instance_valid(secondary_manager): secondary_manager.handle_network_error(str(event.get("error", "Mission secondaire refusée.")))
+			elif code.begins_with("ACADEMY_") or code == "INVALID_ACADEMY_ACTION":
+				# TeamRecruitment receives the same validated event and presents it in the reception panel.
+				pass
 			else:
 				chat_panel.uncertain()
 				chat_panel.status.text = event["error"]

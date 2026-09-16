@@ -54,7 +54,9 @@ export async function openPostgres(connectionString) {
     let text = postgresSql(sql);
     const returnsId =
       mode === "run" &&
-      /^\s*INSERT\s+INTO\s+(users|applications|audit)\b/i.test(text) &&
+      /^\s*INSERT\s+INTO\s+(users|applications|audit|academy_groups|academy_teams|academy_invitations)\b/i.test(
+        text,
+      ) &&
       !/\bRETURNING\b/i.test(text);
     if (returnsId) text = text.replace(/;\s*$/, "") + " RETURNING id";
     const result = await query(text, params);

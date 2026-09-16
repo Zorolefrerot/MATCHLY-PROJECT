@@ -6,6 +6,7 @@ import {
   SecondaryMissionService,
   secondaryUnlocked,
 } from "./secondary-mission.js";
+import { TeamRecruitmentService } from "./team-recruitment.js";
 
 const accessSQL = `FROM game_sessions s
   JOIN users u ON u.id=s.user_id AND u.role='player'
@@ -57,8 +58,10 @@ export function installVillage(
   } = {},
 ) {
   const secondary = new SecondaryMissionService(db);
-  const room = new VillageRoom({ secondary });
+  const teams = new TeamRecruitmentService(db);
+  const room = new VillageRoom({ secondary, teams });
   secondary.onChange = () => room.broadcastSecondary();
+  teams.onChange = () => room.broadcastAcademy();
   // The database timestamp, not a handset clock, controls the ten-minute
   // renewal. Refreshing once a second is cheap and keeps every connected
   // client in the same global state.

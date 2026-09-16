@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { validAcademyAction } from "./team-recruitment.js";
 
 export const VILLAGE = Object.freeze({
   protocol: 1,
@@ -648,9 +649,10 @@ const clonePosition = (p) => [Number(p[0]), Number(p[1]), Number(p[2])];
 // One ephemeral room in one Render process. Presence and combat are deliberately
 // not written to the database: this is an online test arena, not progression.
 export class VillageRoom {
-  constructor({ now = Date.now, secondary = null } = {}) {
+  constructor({ now = Date.now, secondary = null, teams = null } = {}) {
     this.now = now;
     this.secondary = secondary;
+    this.teams = teams;
     this.peers = new Map();
     this.frame = 0;
     this.combatFrame = 0;
@@ -678,6 +680,14 @@ export class VillageRoom {
         type: "secondary_state",
         ...this.secondary.stateForPeer(peer),
       });
+  }
+  broadcastAcademy() {
+    if (!this.teams) return;
+    for (const peer of this.peers.values())
+      void this.teams
+        .stateForPeer(peer)
+        .then((state) => this.send(peer, { type: "academy_state", ...state }))
+        .catch(() => {});
   }
   roster() {
     this.broadcast({
@@ -734,6 +744,11 @@ export class VillageRoom {
         type: "secondary_state",
         ...this.secondary.stateForPeer(peer),
       });
+    if (this.teams)
+      void this.teams
+        .stateForPeer(peer)
+        .then((state) => this.send(peer, { type: "academy_state", ...state }))
+        .catch(() => {});
     this.tick();
     return peer;
   }
@@ -1152,6 +1167,26 @@ export class VillageRoom {
           this.send(other, event);
       }
       this.send(peer, { type: "chat_ack", seq: message.seq });
+      return;
+    }
+    if (
+      this.teams &&
+      validAcademyAction(message) &&
+      message.type === "academy_action"
+    ) {
+      void this.teams
+        .action(peer, message)
+        .then((state) => {
+          this.broadcastAcademy();
+          this.send(peer, { type: "academy_state", ...state });
+        })
+        .catch((error) => {
+          this.reject(
+            peer,
+            error.gameCode || "ACADEMY_ACTION",
+            error.message || "Action d’Académie refusée.",
+          );
+        });
       return;
     }
     if (
