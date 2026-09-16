@@ -57,6 +57,9 @@ test("secondary missions are global, locked until clan reward, and always have t
     );
 
     const target = state.missions[0];
+    assert.equal("targets" in target, false);
+    assert.equal("returnPosition" in target, false);
+    assert.equal("npcPosition" in target, false);
     const accepted = await service.action(one, {
       action: "accept",
       slot: target.slot,

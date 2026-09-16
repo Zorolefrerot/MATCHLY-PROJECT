@@ -833,6 +833,7 @@ func _network_status(message: String) -> void:
 		hud.footer.text = "VISITE LOCALE · Ouvre le CHAT pour l’état de connexion"
 
 func _clear_remote() -> void:
+	if is_instance_valid(secondary_manager): secondary_manager.reset_network_action()
 	for avatar: VillageAvatar in remote_avatars.values():
 		avatar.queue_free()
 	remote_avatars.clear()
@@ -992,8 +993,12 @@ func _network_event(event: Dictionary) -> void:
 				hud.buttons["chat"].text = "CHAT RP / HRP (%d)" % unread
 		"chat_ack": chat_panel.acknowledge(int(event["seq"]))
 		"error":
-			chat_panel.uncertain()
-			chat_panel.status.text = event["error"]
+			var code := str(event.get("code", ""))
+			if code.begins_with("SECONDARY_") or code == "INVALID_SECONDARY_ACTION":
+				if is_instance_valid(secondary_manager): secondary_manager.handle_network_error(str(event.get("error", "Mission secondaire refusée.")))
+			else:
+				chat_panel.uncertain()
+				chat_panel.status.text = event["error"]
 
 func _send_chat(channel: String, text: String) -> void:
 	if is_instance_valid(village_link):

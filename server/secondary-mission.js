@@ -1,6 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
 
-export const SECONDARY_MISSION_SCHEMA = 1;
+export const SECONDARY_MISSION_SCHEMA = 2;
 export const SECONDARY_REWARD = 5;
 export const SECONDARY_RENEWAL_MS = 10 * 60 * 1000;
 export const SECONDARY_SLOTS = 3;
@@ -332,9 +332,6 @@ function publicMission(row, viewerId) {
     npcName: npc.name,
     npcKind: npc.kind,
     zone: npc.zone,
-    npcPosition: [...npc.position],
-    targets: JSON.parse(row.objective).targets,
-    returnPosition: JSON.parse(row.objective).returnPosition,
     status:
       row.status === "AVAILABLE"
         ? "available"

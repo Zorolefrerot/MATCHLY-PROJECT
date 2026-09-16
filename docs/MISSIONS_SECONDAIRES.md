@@ -28,7 +28,7 @@ Pendant une mission active, une flèche 3D rouge émissive, attachée au joueur,
 
 ## Sécurité
 
-Les messages WebSocket ne contiennent jamais de coordonnées d'objectif. Le serveur conserve les objectifs, les étapes validées et le propriétaire de la mission. Il valide :
+Les messages WebSocket ne contiennent jamais de coordonnées d'objectif ni de retour. Le client utilise uniquement le catalogue local fixe pour afficher le guidage ; le serveur conserve les coordonnées privées, les étapes validées et le propriétaire de la mission. Il valide :
 
 - l'accès après récompense de mission de clan ;
 - le slot, l'identifiant et la révision ;

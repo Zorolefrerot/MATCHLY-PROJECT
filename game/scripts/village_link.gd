@@ -215,9 +215,10 @@ func chat(channel: String, text: String) -> int:
 		return -1
 	return seq
 
-func secondary_action(action: String, slot: int, mission_id: String, revision: int, index: int = -1) -> void:
+func secondary_action(action: String, slot: int, mission_id: String, revision: int, index: int = -1) -> bool:
 	if connected and action in ["accept", "collect", "complete", "abandon"] and slot >= 0 and slot < 3 and not mission_id.is_empty() and revision >= 1 and index >= -1:
-		_send({"type":"secondary_action","action":action,"slot":slot,"missionId":mission_id,"revision":revision,"index":index})
+		return _send({"type":"secondary_action","action":action,"slot":slot,"missionId":mission_id,"revision":revision,"index":index})
+	return false
 
 func combat_join() -> void:
 	if connected:
@@ -336,7 +337,7 @@ func _accept(value: Variant) -> bool:
 		if not plain(value.get("reason"),120):
 			return false
 	elif kind == "error":
-		if not value.get("code") is String or value["code"] not in ["CHAT_RATE","COMBAT_BUSY","COMBAT_ACTION","SECONDARY_LOCKED","SECONDARY_CONFLICT","SECONDARY_NOT_AVAILABLE","SECONDARY_ALREADY_ACTIVE","SECONDARY_NOT_OWNER","SECONDARY_OBJECTIVE_INVALID","SECONDARY_TOO_FAR","SECONDARY_NOT_COMPLETE","INVALID_SECONDARY_ACTION"] or not plain(value.get("error"),240):
+		if not value.get("code") is String or value["code"] not in ["CHAT_RATE","COMBAT_BUSY","COMBAT_ACTION","SECONDARY_LOCKED","SECONDARY_CONFLICT","SECONDARY_NOT_AVAILABLE","SECONDARY_ALREADY_ACTIVE","SECONDARY_NOT_OWNER","SECONDARY_OBJECTIVE_INVALID","SECONDARY_TOO_FAR","SECONDARY_NOT_COMPLETE","INVALID_SECONDARY_ACTION","SECONDARY_ACTION"] or not plain(value.get("error"),240):
 			return false
 	else:
 		return false

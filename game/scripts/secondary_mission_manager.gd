@@ -12,6 +12,7 @@ var objective_markers: Dictionary = {}
 var missions: Dictionary = {}
 var unlocked: bool = false
 var pending: Dictionary = {}
+var action_pending: bool = false
 var last_state_signature: String = ""
 var last_notice_signature: String = ""
 
@@ -69,9 +70,10 @@ func apply_state(value: Dictionary) -> void:
 	missions.clear()
 	for mission: Dictionary in value["missions"]:
 		missions[mission["npcId"]] = mission
+	var active := _own_active_mission()
 	for npc_id: String in givers:
 		var mission: Dictionary = missions.get(npc_id, {})
-		givers[npc_id].set_mission_available(unlocked and mission.get("status") == "available")
+		givers[npc_id].set_mission_available(unlocked and active.is_empty() and mission.get("status") == "available")
 	_rebuild_objective_markers()
 	var signature := JSON.stringify(value)
 	if signature == last_state_signature:
@@ -87,8 +89,11 @@ func nearest_mission() -> Dictionary:
 		return {}
 	var nearest: Dictionary = {}
 	var best := 4.4
+	var active := _own_active_mission()
 	for npc_id: String in missions:
 		var mission: Dictionary = missions[npc_id]
+		if not active.is_empty() and mission.get("status") != "accepted":
+			continue
 		if mission.get("status") not in ["available", "accepted"]:
 			continue
 		var giver: SecondaryMissionGiver = givers.get(npc_id)
@@ -108,7 +113,7 @@ func interaction_available() -> bool:
 		if mission.get("status") != "accepted":
 			continue
 		var progress: Array = mission.get("progress", [])
-		var targets: Array = mission.get("targets", [])
+		var targets: Array = SecondaryMission.target_points(str(mission.get("typeId", "")))
 		if _nearest_uncollected_target(mission, progress, targets) >= 0:
 			return true
 	return false
@@ -127,7 +132,7 @@ func interact() -> bool:
 			if candidate.get("status") != "accepted":
 				continue
 			var progress: Array = candidate.get("progress", [])
-			var targets: Array = candidate.get("targets", [])
+			var targets: Array = SecondaryMission.target_points(str(candidate.get("typeId", "")))
 			var target_index := _nearest_uncollected_target(candidate, progress, targets)
 			if target_index >= 0:
 				_send_action("collect", candidate, target_index)
@@ -139,7 +144,7 @@ func interact() -> bool:
 		hud.show_secondary_prompt(str(mission.get("npcName", "Habitant")), "%s\n\n%s\n\nObjectif : %s\nRécompense : +5 IDREM GOLD" % [str(mission.get("dialogue", "Excuse-moi, shinobi !")), str(mission.get("acceptedDialogue", "Merci pour ton aide.")), str(mission.get("objective", "Aider un habitant."))])
 	else:
 		var progress: Array = mission.get("progress", [])
-		var targets: Array = mission.get("targets", [])
+		var targets: Array = SecondaryMission.target_points(str(mission.get("typeId", "")))
 		var collect_index := _nearest_uncollected_target(mission, progress, targets)
 		if collect_index >= 0:
 			_send_action("collect", mission, collect_index)
@@ -170,6 +175,8 @@ func decline_pending() -> bool:
 	return true
 
 func abandon_active() -> void:
+	if action_pending:
+		return
 	for npc_id: String in missions:
 		var mission: Dictionary = missions[npc_id]
 		if mission.get("status") == "accepted":
@@ -181,6 +188,7 @@ func handle_network_event(event: Dictionary) -> void:
 	match str(event.get("type", "")):
 		"secondary_state": apply_state(event)
 		"secondary_action_ack":
+			action_pending = false
 			var state: Variant = event.get("state")
 			if state is Dictionary:
 				apply_state(state)
@@ -189,6 +197,19 @@ func handle_network_event(event: Dictionary) -> void:
 			elif event.get("action") == "abandon":
 				hud.notice("Mission secondaire abandonnée. Elle est de nouveau disponible pour le village.")
 			_refresh_objective()
+
+func handle_network_error(message: String) -> void:
+	if not action_pending:
+		return
+	action_pending = false
+	pending.clear()
+	if is_instance_valid(hud):
+		hud.hide_menu()
+		hud.notice(message)
+
+func reset_network_action() -> void:
+	action_pending = false
+	pending.clear()
 
 func update_hud() -> void:
 	if not unlocked:
@@ -210,16 +231,16 @@ func _set_direction_arrow(mission: Dictionary, progress: Array) -> void:
 		if is_instance_valid(direction_arrow): direction_arrow.visible = false
 		return
 	var target := Vector3.ZERO
-	var targets: Array = mission.get("targets", [])
+	var targets: Array = SecondaryMission.target_points(str(mission.get("typeId", "")))
 	for index in range(targets.size()):
 		if progress.has(index): continue
-		var point: Array = targets[index]
-		target = Vector3(float(point[0]), player.global_position.y + 2.85, float(point[2]))
+		var point: Vector3 = targets[index]
+		target = Vector3(point.x, player.global_position.y + 2.85, point.z)
 		break
 	if target == Vector3.ZERO:
-		var return_point: Array = mission.get("returnPosition", [])
-		if return_point.size() == 3:
-			target = Vector3(float(return_point[0]), player.global_position.y + 2.85, float(return_point[2]))
+		var return_point := SecondaryMission.return_point(str(mission.get("npcId", "")))
+		if return_point != Vector3.ZERO:
+			target = Vector3(return_point.x, player.global_position.y + 2.85, return_point.z)
 	if target == Vector3.ZERO:
 		direction_arrow.visible = false
 		return
@@ -239,13 +260,13 @@ func _rebuild_objective_markers() -> void:
 		return
 	for npc_id: String in missions:
 		var mission: Dictionary = missions[npc_id]
-		if mission.get("status") not in ["available", "accepted"]:
+		if mission.get("status") != "accepted":
 			continue
 		var progress: Array = mission.get("progress", [])
-		var targets: Array = mission.get("targets", [])
+		var targets: Array = SecondaryMission.target_points(str(mission.get("typeId", "")))
 		for index in range(targets.size()):
 			if progress.has(index): continue
-			var point: Array = targets[index]
+			var point: Vector3 = targets[index]
 			var mesh := CylinderMesh.new()
 			mesh.top_radius = 0.14
 			mesh.bottom_radius = 0.14
@@ -253,7 +274,7 @@ func _rebuild_objective_markers() -> void:
 			mesh.radial_segments = 8
 			var marker := MeshInstance3D.new()
 			marker.name = "SecondaryObjective_%s_%d" % [str(mission.get("slot", 0)), index]
-			marker.position = Vector3(float(point[0]), float(point[1]) + 0.10, float(point[2]))
+			marker.position = Vector3(point.x, point.y + 0.10, point.z)
 			marker.mesh = mesh
 			var material := StandardMaterial3D.new()
 			material.albedo_color = Color("e9b45f")
@@ -285,17 +306,22 @@ func _nearest_uncollected_target(mission: Dictionary, progress: Array, targets: 
 	for index in range(targets.size()):
 		if progress.has(index):
 			continue
-		var point: Array = targets[index]
-		var target := Vector3(float(point[0]), float(point[1]), float(point[2]))
+		var point: Vector3 = targets[index]
+		var target := point
 		if player.global_position.distance_to(target) <= 4.4:
 			return index
 	return -1
 
 func _send_action(action: String, mission: Dictionary, index: int) -> void:
+	if action_pending:
+		return
 	if not is_instance_valid(village_link) or not village_link.connected:
 		hud.notice("Mission secondaire indisponible hors connexion.")
 		return
-	village_link.secondary_action(action, int(mission.get("slot", -1)), str(mission.get("missionId", "")), int(mission.get("revision", 0)), index)
+	action_pending = true
+	if not village_link.secondary_action(action, int(mission.get("slot", -1)), str(mission.get("missionId", "")), int(mission.get("revision", 0)), index):
+		action_pending = false
+		hud.notice("Mission secondaire indisponible hors connexion.")
 
 func _clear_inputs() -> void:
 	if is_instance_valid(hud):
