@@ -1212,7 +1212,7 @@ export class VillageRoom {
       this.teams &&
       message.type === "team_action" &&
       exact(message, "action,revision,targetKey,type") &&
-      ["apply", "withdraw", "invite", "accept", "decline", "form"].includes(message.action) &&
+      ["refresh", "apply", "withdraw", "invite", "accept", "decline", "form"].includes(message.action) &&
       Number.isSafeInteger(message.revision) &&
       message.revision >= 0 &&
       typeof message.targetKey === "string" &&

@@ -16,6 +16,7 @@ var speed: float = 1.3
 var animation_clock: float = 0.0
 var fighter: TrainingFighter
 var name_label: Label3D
+var speech_bubble: Label3D
 var vest_root: Node3D
 
 func configure(sensei: Dictionary, from: Vector3, to: Vector3) -> void:
@@ -48,6 +49,28 @@ func _build() -> void:
 	name_label.outline_modulate = Color("263b35")
 	name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	add_child(name_label)
+	speech_bubble = Label3D.new()
+	speech_bubble.name = "DialogueBubble"
+	speech_bubble.position = Vector3(0, 3.55, 0)
+	speech_bubble.font_size = 20
+	speech_bubble.pixel_size = 0.0055
+	speech_bubble.modulate = Color("fff0c9")
+	speech_bubble.outline_size = 10
+	speech_bubble.outline_modulate = Color(0.07, 0.12, 0.13, 0.96)
+	speech_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	speech_bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	speech_bubble.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	speech_bubble.visible = false
+	add_child(speech_bubble)
+
+func show_dialogue(text: String) -> void:
+	if not is_instance_valid(speech_bubble):
+		return
+	var clean := text.replace("\n", " ").strip_edges()
+	if clean.length() > 180:
+		clean = clean.left(177) + "…"
+	speech_bubble.text = "❝ %s ❞" % clean
+	speech_bubble.visible = not clean.is_empty()
 
 func _dress_vest() -> void:
 	# Gilet vert de Konoha (Jonin) : torse, sangle centrale, col et poches.

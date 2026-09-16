@@ -451,9 +451,13 @@ export class TeamService {
       reject(409, "TEAM_LOCKED", "L’Académie n’est pas encore ouverte pour toi.");
     const action = String(message?.action || "");
     if (
-      !["apply", "withdraw", "invite", "accept", "decline", "form"].includes(action)
+      !["refresh", "apply", "withdraw", "invite", "accept", "decline", "form"].includes(action)
     )
       reject(400, "TEAM_ACTION_INVALID", "Action d’équipe inconnue.");
+    if (action === "refresh") {
+      await this.load();
+      return { state: this.stateForPeer(peer, null) };
+    }
     const result = await this.db.transaction(async () => {
       await this.load();
       const key = playerKey(peer.id);

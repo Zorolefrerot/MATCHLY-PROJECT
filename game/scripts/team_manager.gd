@@ -30,6 +30,7 @@ var last_signature: String = ""
 var first_state: bool = true
 var prev_own_status: String = "none"
 var seen_invites: Dictionary = {}
+var refresh_pending: bool = false
 var played_ceremonies: Dictionary = {}
 
 var root: Control
@@ -68,6 +69,8 @@ func _process(_delta: float) -> void:
 		near_reception = local_near
 		if view != "":
 			_render()
+		if near_reception:
+			_request_refresh()
 
 static func valid_state(value: Variant) -> bool:
 	if not value is Dictionary:
@@ -140,8 +143,11 @@ func apply_profile(value: Dictionary) -> void:
 
 func handle_network_event(event: Dictionary) -> void:
 	match str(event.get("type", "")):
-		"team_state": apply_state(event)
+		"team_state":
+			refresh_pending = false
+			apply_state(event)
 		"team_action_ack":
+			refresh_pending = false
 			var state: Variant = event.get("state")
 			if state is Dictionary:
 				apply_state(state)
@@ -202,8 +208,14 @@ func _refresh_invite_card() -> void:
 		invite_card.hide()
 		return
 	var invite: Dictionary = invites[0]
-	for child: Node in invite_card.get_node("Margin/VBox").get_children():
+	var card_column: VBoxContainer = invite_card.get_node("Margin/VBox")
+	for child: Node in card_column.get_children():
 		child.queue_free()
+	var heading := Label.new()
+	heading.text = "📱 NOTIFICATION · INVITATION D’ÉQUIPE"
+	heading.add_theme_font_size_override("font_size", 13)
+	heading.add_theme_color_override("font_color", Color("ffe0a3"))
+	card_column.add_child(heading)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	invite_card.get_node("Margin/VBox").add_child(row)
@@ -306,6 +318,8 @@ func _on_sensei_arrived() -> void:
 		hud.notice("%s · %s" % [str(ceremony_sensei.get("senseiName", "Sensei")), str(ceremony_sensei.get("senseiTitle", ""))])
 	if ceremony_lines.is_empty():
 		return
+	if is_instance_valid(sensei_node):
+		sensei_node.show_dialogue(str(ceremony_lines[0]))
 	_open_view("ceremony")
 
 # -------------------------------------------------------------------- actions
@@ -318,6 +332,7 @@ func interact() -> bool:
 		close_panel()
 		return true
 	_open_view("main")
+	_request_refresh()
 	return true
 
 func panel_open() -> bool:
@@ -325,12 +340,23 @@ func panel_open() -> bool:
 
 func close_panel() -> void:
 	view = ""
+	refresh_pending = false
 	if is_instance_valid(root):
 		root.hide()
 
+func _request_refresh() -> void:
+	if refresh_pending or not is_instance_valid(village_link) or not village_link.connected:
+		return
+	refresh_pending = true
+	if not village_link.team_refresh():
+		refresh_pending = false
+		if is_instance_valid(hud):
+			hud.notice("La réception attend la reconnexion au village.")
+
 func _send(action: String, target_key: String = "") -> void:
-	if is_instance_valid(village_link):
-		village_link.team_action(action, target_key, revision)
+	if is_instance_valid(village_link) and village_link.connected:
+		if not village_link.team_action(action, target_key, revision):
+			if is_instance_valid(hud): hud.notice("Action non envoyée · vérifie la connexion au village.")
 	elif is_instance_valid(hud):
 		hud.notice("Hors ligne : rejoins le village pour parler à la réception.")
 
@@ -685,9 +711,14 @@ func _render_ceremony() -> void:
 	var number := int(team.get("number", 0))
 	panel_title.text = "%s · %s" % [str(ceremony_sensei.get("senseiName", "Sensei")), team_label(number)]
 	if ceremony_index < ceremony_lines.size():
-		panel_text.text = str(ceremony_lines[ceremony_index])
+		var spoken_line := str(ceremony_lines[ceremony_index])
+		panel_text.text = "Le Sensei te parle dans une bulle au-dessus de lui.\n\n%s" % spoken_line
+		if is_instance_valid(sensei_node):
+			sensei_node.show_dialogue(spoken_line)
 	else:
 		panel_text.text = "Le Sensei prend ses fonctions auprès de %s." % team_label(number)
+		if is_instance_valid(sensei_node):
+			sensei_node.show_dialogue(panel_text.text)
 	panel_list.show()
 	var portrait := TextureRect.new()
 	portrait.texture = NinjaPortrait.texture(ceremony_sensei.get("senseiAppearance", {}), true)

@@ -282,9 +282,15 @@ func secondary_action(action: String, slot: int, mission_id: String, revision: i
 
 func team_action(action: String, target_key: String = "", revision: int = 0) -> bool:
 	# Team actions carry only a server-issued candidate key and revision.
-	if not connected or action not in ["apply", "withdraw", "invite", "accept", "decline", "form"] or target_key.length() > 24 or revision < 0:
+	if not connected or action not in ["refresh", "apply", "withdraw", "invite", "accept", "decline", "form"] or target_key.length() > 24 or revision < 0:
 		return false
 	return _send({"type":"team_action", "action":action, "targetKey":target_key, "revision":revision})
+
+func team_refresh() -> bool:
+	# The initial room snapshot is sent at the Konoha spawn, where the candidate
+	# list is intentionally empty. Refresh after the player reaches reception so
+	# the server recomputes physical proximity and returns the two test NPCs.
+	return team_action("refresh", "", 0)
 
 func secondary_refresh() -> bool:
 	if not connected:
@@ -389,7 +395,7 @@ func _accept(value: Variant) -> bool:
 		if not TeamManager.valid_state(value):
 			return false
 	elif kind == "team_action_ack":
-		if value.get("action") not in ["apply", "withdraw", "invite", "accept", "decline", "form"] or not TeamManager.valid_state(value.get("state")):
+		if value.get("action") not in ["refresh", "apply", "withdraw", "invite", "accept", "decline", "form"] or not TeamManager.valid_state(value.get("state")):
 			return false
 	elif kind == "combat_waiting":
 		if not value.get("players") is Array or value["players"].size() > 2 or not integer(value.get("needed"),1) or value["needed"] > 2:
