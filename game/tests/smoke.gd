@@ -501,6 +501,7 @@ func run() -> void:
 	for frame in range(180):
 		await physics_frame
 	Input.action_release("move_forward")
+	print("RETURN DEBUG z=", visit.player.position.z, " outside=", visit.exterior.outside, " velocity=", visit.player.velocity)
 	check(not visit.exterior.outside and visit.player.position.z < 160.5, "the real south route returns to Konoha through the gate")
 	check(VillageLink.point([0, 0.25, 628]) and not VillageLink.point([0, 0.25, 629]), "multiplayer validation includes the complete extended exterior bounds")
 	visit.player.reset_at(KonohaMap.SPAWN)
