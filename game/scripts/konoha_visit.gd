@@ -431,7 +431,12 @@ func _physics_process(delta: float) -> void:
 				if absf(player.position.x) > edge_x:
 					player.position.x = clampf(player.position.x, -edge_x, edge_x)
 					player.velocity.x = 0.0
-				if absf(player.position.z) > edge_z:
+				# Leave the southern gate lane open while the coordinate-based
+				# exterior transition is still crossing its hysteresis threshold.
+				# Clamping at z=158 here would otherwise stop the body before the
+				# gate and make the fallback transition unreachable.
+				var in_south_gate_lane := absf(player.position.x) <= KonohaExterior.GATE_LANE_HALF_WIDTH
+				if absf(player.position.z) > edge_z and not (in_south_gate_lane and player.position.z > edge_z):
 					player.position.z = clampf(player.position.z, -edge_z, edge_z)
 					player.velocity.z = 0.0
 	_update_camera()

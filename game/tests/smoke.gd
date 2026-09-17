@@ -502,7 +502,7 @@ func run() -> void:
 		await physics_frame
 	Input.action_release("move_forward")
 	check(not visit.exterior.outside and visit.player.position.z < 160.5, "the real south route returns to Konoha through the gate")
-	check(VillageLink.point([0, 0.25, 420]) and not VillageLink.point([0, 0.25, 429]), "multiplayer validation includes only the compact exterior bounds")
+	check(VillageLink.point([0, 0.25, 628]) and not VillageLink.point([0, 0.25, 629]), "multiplayer validation includes the complete extended exterior bounds")
 	visit.player.reset_at(KonohaMap.SPAWN)
 	for frame in range(12):
 		await physics_frame
