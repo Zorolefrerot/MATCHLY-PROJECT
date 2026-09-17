@@ -19,7 +19,9 @@ const REGION_FAR_Z: float = 628.0
 const GATE_LANE_HALF_WIDTH: float = 7.0
 # Hysteresis keeps the exterior flag stable while crossing the open gate: the
 # player must pass the wall before leaving and be fully back inside to return.
-const GATE_INSIDE_Z: float = 159.0
+# The player capsule stops at about z=159.7 against the inner wall face;
+# 160.0 is the physical return threshold while 162.0 remains the exit edge.
+const GATE_INSIDE_Z: float = 160.0
 const GATE_OUTSIDE_Z: float = 162.0
 const EXTERIOR_SPAWN := Vector3(0.0, 0.35, 169.0)
 const KONOHA_RETURN_SPAWN := Vector3(0.0, 0.35, 158.8)
