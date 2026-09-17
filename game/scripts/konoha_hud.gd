@@ -1,7 +1,12 @@
 class_name KonohaHUD
 extends TrainingHUD
 ## Shared Konoha visit: mission controls plus an explicit two-player test duel.
+const IG_ICON: Texture2D = preload("res://assets/ui/idrem_gold_icon.png")
+const LEVEL_ICON: Texture2D = preload("res://assets/ui/level_badge.png")
+
 var identity: Label
+var idrem_icon: TextureRect
+var level_icon: TextureRect
 var mission_refresh: Button
 var text_scroll: ScrollContainer
 var combat_status: Label
@@ -17,6 +22,14 @@ func _build() -> void:
 	top_panel.add_theme_stylebox_override("panel", panel_style(Color(0.06,0.13,0.15,0.90)))
 	add_child(top_panel)
 	identity = label("IG : 0\nNIVEAU : 0", 20)
+	# The currency and level now have distinct visual marks instead of relying
+	# only on text, which keeps the HUD readable on a small phone screen.
+	idrem_icon = _progress_icon(IG_ICON)
+	idrem_icon.name = "IdremGoldIcon"
+	top_panel.add_child(idrem_icon)
+	level_icon = _progress_icon(LEVEL_ICON)
+	level_icon.name = "LevelBadgeIcon"
+	top_panel.add_child(level_icon)
 	objective = label("Bienvenue. Approche-toi du guide Aoi.", 17)
 	objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	objective.add_theme_color_override("font_shadow_color", Color("172a2b"))
@@ -136,6 +149,14 @@ func _build() -> void:
 	column.add_child(restart_button)
 	hide_menu()
 
+func _progress_icon(texture: Texture2D) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.texture = texture
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return icon
+
 func _set_combat_buttons(active: bool) -> void:
 	combat_active = active
 	for action in ["combat_level", "combat_leave", "combat_melee", "combat_skill_0", "combat_skill_1", "combat_skill_2", "combat_skill_3", "combat_ultimate"]:
@@ -218,9 +239,13 @@ func _layout() -> void:
 	var w: float = size.x
 	var h: float = size.y
 	top_panel.position = Vector2(20,20)
-	top_panel.size = Vector2(230,78)
-	identity.position = Vector2(34,28)
-	identity.size = Vector2(196,60)
+	top_panel.size = Vector2(250,78)
+	idrem_icon.position = Vector2(28,22)
+	idrem_icon.size = Vector2(28,28)
+	level_icon.position = Vector2(28,49)
+	level_icon.size = Vector2(28,28)
+	identity.position = Vector2(64,25)
+	identity.size = Vector2(178,60)
 	buttons["music"].position = Vector2(20,108)
 	buttons["music"].size = Vector2(192,44)
 	buttons["chat"].position = Vector2(20,164)

@@ -209,11 +209,11 @@ func _ready() -> void:
 	pivot.add_child(arm)
 	var camera := Camera3D.new()
 	camera.fov = 67
-	# The outer districts remain in view, but trimming the unused far plane on
-	# mobile reduces vertex submission and depth-buffer work.
-	var far_default := 200.0 if mobile_render_profile else 235.0
+	# The southern route now reaches z=628: keep the distant landscape visible
+	# without adding any near geometry or a second world.
+	var far_default := 720.0 if mobile_render_profile else 760.0
 	var distance_scale := clampf(float(graphics_settings.get("view_distance", 0.78)), 0.60, 1.0)
-	camera.far = lerpf(150.0, far_default, distance_scale)
+	camera.far = lerpf(620.0, far_default, distance_scale)
 	arm.add_child(camera)
 	camera.current = true
 	hud = KonohaHUD.new()

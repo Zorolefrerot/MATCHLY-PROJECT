@@ -43,10 +43,27 @@ test("Konoha's first exterior is a compact same-world region with a real return 
   assert.match(map, /sky_mountain_panorama\.png/);
 });
 
+test("the long road returns through the open gate and the HUD has IG and level marks", () => {
+  const exterior = read("game/scripts/konoha_exterior.gd");
+  const hud = read("game/scripts/konoha_hud.gd");
+  assert.match(exterior, /GATE_INSIDE_Z/);
+  assert.match(exterior, /GATE_OUTSIDE_Z/);
+  assert.match(exterior, /Use the player coordinate as the source of truth/);
+  assert.match(exterior, /Vector3\(0, 0, 620\)/);
+  assert.match(hud, /idrem_gold_icon\.png/);
+  assert.match(hud, /level_badge\.png/);
+  for (const file of ["idrem_gold_icon.png", "level_badge.png"]) {
+    const bytes = readFileSync(new URL("../game/assets/ui/" + file, import.meta.url));
+    assert.equal(bytes.toString("hex", 0, 8), "89504e470d0a1a0a");
+    assert.equal(bytes.readUInt32BE(16), 256);
+    assert.equal(bytes.readUInt32BE(20), 256);
+  }
+});
+
 test("the shared network envelope covers the exterior and still rejects its edge", () => {
   const client = read("game/scripts/village_link.gd");
   const server = read("server/village-room.js");
-  assert.match(client, /float\(value\[2\]\) <= 428/);
-  assert.match(server, /p\[2\] <= 428/);
+  assert.match(client, /float\(value\[2\]\) <= 628/);
+  assert.match(server, /p\[2\] <= 628/);
   assert.match(server, /p\[2\] >= -158/);
 });

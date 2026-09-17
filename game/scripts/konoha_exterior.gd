@@ -15,9 +15,12 @@ signal returned_to_konoha
 const REGION_MIN_X: float = -126.0
 const REGION_MAX_X: float = 126.0
 const REGION_START_Z: float = 158.0
-const REGION_FAR_Z: float = 428.0
+const REGION_FAR_Z: float = 628.0
 const GATE_LANE_HALF_WIDTH: float = 7.0
-const GATE_Z: float = 160.5
+# Hysteresis keeps the exterior flag stable while crossing the open gate: the
+# player must pass the wall before leaving and be fully back inside to return.
+const GATE_INSIDE_Z: float = 159.0
+const GATE_OUTSIDE_Z: float = 162.0
 const EXTERIOR_SPAWN := Vector3(0.0, 0.35, 169.0)
 const KONOHA_RETURN_SPAWN := Vector3(0.0, 0.35, 158.8)
 const INTERIOR_KONOHA_SPAWN := Vector3(0.0, 0.35, 154.0)
@@ -84,7 +87,7 @@ func _box(size: Vector3, point: Vector3, color: Color, solid: bool = false, rota
 	item.position = point
 	item.rotation = rotation
 	item.material_override = _mat(color)
-	item.visibility_range_end = 430.0 if not lod else 150.0
+	item.visibility_range_end = REGION_FAR_Z + 40.0 if not lod else 180.0
 	item.visibility_range_end_margin = 10.0
 	add_child(item)
 	if solid:
@@ -113,7 +116,7 @@ func _cylinder(radius: float, height: float, point: Vector3, color: Color, segme
 	item.mesh = mesh
 	item.position = point
 	item.material_override = _mat(color)
-	item.visibility_range_end = 430.0 if not lod else 150.0
+	item.visibility_range_end = REGION_FAR_Z + 40.0 if not lod else 180.0
 	item.visibility_range_end_margin = 10.0
 	add_child(item)
 	if solid:
@@ -143,14 +146,14 @@ func _sphere(point: Vector3, radius: float, height: float, color: Color, lod: bo
 	item.mesh = mesh
 	item.position = point
 	item.material_override = _mat(color)
-	item.visibility_range_end = 430.0 if not lod else 150.0
+	item.visibility_range_end = REGION_FAR_Z + 40.0 if not lod else 180.0
 	item.visibility_range_end_margin = 10.0
 	add_child(item)
 	return item
 
 func _ground_patch(point: Vector3, size: Vector3, color: Color, rotation_y: float = 0.0) -> void:
 	var patch := _box(size, point, color, false, Vector3(0, rotation_y, 0), false)
-	patch.visibility_range_end = 430.0
+	patch.visibility_range_end = REGION_FAR_Z + 40.0
 
 func _build_ground() -> void:
 	# The external floor touches the south wall and ends at a visible mountain
@@ -183,7 +186,9 @@ func _build_path() -> void:
 		Vector3(0, 0, 164), Vector3(0, 0, 187), Vector3(8, 0, 211),
 		Vector3(3, 0, 237), Vector3(-8, 0, 262), Vector3(-5, 0, 286),
 		Vector3(1, 0, 312), Vector3(14, 0, 338), Vector3(7, 0, 367),
-		Vector3(-5, 0, 395), Vector3(0, 0, 418),
+		Vector3(-5, 0, 395), Vector3(0, 0, 418), Vector3(-6, 0, 446),
+		Vector3(7, 0, 475), Vector3(-4, 0, 505), Vector3(9, 0, 535),
+		Vector3(2, 0, 565), Vector3(-5, 0, 595), Vector3(0, 0, 620),
 	]
 	for index in range(points.size() - 1):
 		_path_segment(points[index], points[index + 1], 8.4 if index < 5 else 9.2)
@@ -316,7 +321,7 @@ func _build_distant_landscape() -> void:
 	material.texture_repeat = false
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	backdrop.material_override = material
-	backdrop.visibility_range_end = 620.0
+	backdrop.visibility_range_end = REGION_FAR_Z + 120.0
 	backdrop.visibility_range_end_margin = 24.0
 	add_child(backdrop)
 
@@ -324,25 +329,25 @@ func _build_distant_mountains() -> void:
 	# Natural cones form a readable mountain line at the far end. Each cone has
 	# its own solid collider: the landscape is not a traversable flat billboard.
 	var ridges: Array[Array] = [
-		[Vector3(-108, 0, 448), 24.0, 30.0], [Vector3(-64, 0, 454), 32.0, 39.0],
-		[Vector3(-12, 0, 460), 38.0, 48.0], [Vector3(43, 0, 453), 31.0, 38.0],
-		[Vector3(94, 0, 446), 25.0, 29.0],
+		[Vector3(-108, 0, 648), 24.0, 30.0], [Vector3(-64, 0, 654), 32.0, 39.0],
+		[Vector3(-12, 0, 660), 38.0, 48.0], [Vector3(43, 0, 653), 31.0, 38.0],
+		[Vector3(94, 0, 646), 25.0, 29.0],
 	]
 	for item: Array in ridges:
 		var point: Vector3 = item[0]
 		var radius: float = float(item[1])
 		var height: float = float(item[2])
 		var mountain := _cylinder(radius, height, point + Vector3(0, height * 0.5, 0), Color("657260"), 7, true, false)
-		mountain.visibility_range_end = 620.0
+		mountain.visibility_range_end = REGION_FAR_Z + 120.0
 		mountain.visibility_range_end_margin = 24.0
 	# Smaller foothills overlap the bases so there is no straight artificial seam.
 	for item: Array in [
-		[Vector3(-94, 0, 431), 25.0, 17.0], [Vector3(-40, 0, 438), 29.0, 20.0],
-		[Vector3(18, 0, 439), 27.0, 18.0], [Vector3(72, 0, 434), 26.0, 16.0],
+		[Vector3(-94, 0, 631), 25.0, 17.0], [Vector3(-40, 0, 638), 29.0, 20.0],
+		[Vector3(18, 0, 639), 27.0, 18.0], [Vector3(72, 0, 634), 26.0, 16.0],
 	]:
 		var point: Vector3 = item[0]
 		var mountain := _cylinder(float(item[1]), float(item[2]), point + Vector3(0, float(item[2]) * 0.5, 0), Color("5f6c59"), 8, true, false)
-		mountain.visibility_range_end = 620.0
+		mountain.visibility_range_end = REGION_FAR_Z + 120.0
 		mountain.visibility_range_end_margin = 24.0
 
 func _mission_marker(name: String, point: Vector3) -> Marker3D:
@@ -414,18 +419,16 @@ func update(point: Vector3, delta: float) -> void:
 	if not built:
 		return
 	transition_lock = maxf(0.0, transition_lock - delta)
-	if transition_lock <= 0.0:
-		if not outside and pending_exit and point.z >= GATE_Z:
+	if transition_lock <= 0.0 and absf(point.x) <= GATE_LANE_HALF_WIDTH:
+		# Use the player coordinate as the source of truth. Area3D signals can be
+		# missed during a fast reverse or immediately after a collision slide;
+		# relying on them was the reason the return could remain stuck outside.
+		if not outside and point.z >= GATE_OUTSIDE_Z:
 			_set_outside(true)
-		elif outside and pending_return and point.z <= GATE_Z:
-			_set_outside(false)
-		elif not outside and point.z > REGION_START_Z and absf(point.x) <= GATE_LANE_HALF_WIDTH:
-			_set_outside(true)
-		elif outside and point.z < GATE_Z and absf(point.x) <= GATE_LANE_HALF_WIDTH:
+		elif outside and point.z <= GATE_INSIDE_Z:
 			_set_outside(false)
 	pending_exit = false
-	if not outside:
-		pending_return = false
+	pending_return = false
 
 func _set_outside(value: bool) -> void:
 	outside = value
