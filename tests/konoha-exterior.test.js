@@ -22,8 +22,11 @@ test("Konoha's first exterior is a compact same-world region with a real return 
     "KonohaReturnSpawn",
   ])
     assert.match(exterior, new RegExp(name));
+  assert.match(exterior, /_build_distant_landscape/);
+  assert.match(exterior, /SKY_ART/);
   assert.match(exterior, /_build_distant_mountains/);
-  assert.match(exterior, /_build_boundaries/);
+  assert.doesNotMatch(exterior, /_build_boundaries/);
+  assert.match(exterior, /_cylinder\(radius, height, point \+ Vector3\(0, height \* 0\.5, 0\).*true/);
   assert.match(exterior, /_update_collision_lod/);
   assert.match(exterior, /left_konoha/);
   assert.match(exterior, /returned_to_konoha/);
@@ -31,7 +34,9 @@ test("Konoha's first exterior is a compact same-world region with a real return 
   assert.match(visit, /exterior\.update\(player\.position, delta\)/);
   assert.match(visit, /exterior\.clamp_player\(player\)/);
   assert.match(map, /_gate\(Vector3\(0, 0, 158\.5\), PI\/2, "PORTE SUD DE KONOHA", true\)/);
-  assert.match(map, /for x in \[-120, -60, 60, 120\]/);
+  assert.match(map, /_village_wall\(Vector3\(302\.3, wall_height, wall_thickness\)/);
+  assert.match(map, /const gate_half_width := 7\.0/);
+  assert.match(map, /No collider or wall occupies x \[-7, 7\]/);
   // The region reuses the Konoha world and its authored sky; it does not add a
   // second Environment or a private combat implementation.
   assert.doesNotMatch(exterior, /WorldEnvironment\.new|Environment\.new|Combat/);

@@ -4,6 +4,7 @@ extends TrainingArena
 ## The scenery combines bounded procedural collision with selected generated sky, earth and water textures.
 
 const SKY_ART: Texture2D = preload("res://assets/konoha/sky_mountain_panorama.png")
+const WALL_ART: Texture2D = preload("res://assets/konoha/stone.png")
 const EARTH_ART: Texture2D = preload("res://assets/konoha/earth_ground_texture.png")
 const RIVER_ART: Texture2D = preload("res://assets/konoha/river_water_texture.png")
 # The replacement river tile is square; this keeps its texels proportional while
@@ -210,6 +211,16 @@ func apply_graphics(settings: Dictionary) -> void:
 	if is_instance_valid(sun):
 		sun.shadow_enabled = bool(settings.get("shadows", false))
 
+func _village_wall(size: Vector3, point: Vector3) -> MeshInstance3D:
+	var wall := box(size, point, Color.WHITE, true)
+	var material := TrainingFighter.material(Color.WHITE)
+	material.albedo_texture = WALL_ART
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	material.texture_repeat = true
+	material.uv1_scale = Vector3(maxf(size.x / 6.0, 1.0), maxf(size.y / 4.0, 1.0), maxf(size.z / 6.0, 1.0))
+	wall.material_override = material
+	return wall
+
 func _build_ground_and_walls() -> void:
 	var ground := box(Vector3(308, 0.4, 328), Vector3(0, -0.25, 0), Color.WHITE, true)
 	if ground.get_child_count() > 0 and ground.get_child(0) is StaticBody3D:
@@ -221,19 +232,22 @@ func _build_ground_and_walls() -> void:
 	earth_material.uv1_scale = Vector3(13.0, 13.0, 13.0)
 	ground.material_override = earth_material
 	environment_texture_count += 1
-	# The thick outer ring follows the circular village wall visible on the map.
-	for side in [-1, 1]:
-		for z in [-120, -60, 0, 60, 120]:
-			box(Vector3(1.3, 5.2, 54), Vector3(side*151, 2.45, z), Color("778f78"), true)
-	for x in [-120, -60, 0, 60, 120]:
-		box(Vector3(54, 5.2, 1.3), Vector3(x, 2.45, -161), Color("778f78"), true)
-	# Keep the south wall solid except for the single existing main gate lane.
-	# KonohaExterior continues the same floor on the other side of this opening.
-	for x in [-120, -60, 60, 120]:
-		box(Vector3(54, 5.2, 1.3), Vector3(x, 2.45, 161), Color("778f78"), true)
-	# Four closed Konoha gates are the original architectural set; the south
-	# main gate keeps that architecture but opens only its central passage, while
-	# the other three remain closed.
+	# One continuous ring closes every former six-metre seam. The corner
+	# overlaps are intentional: there is no visual or physical hole in Konoha.
+	const wall_y := 2.45
+	const wall_height := 5.2
+	const wall_thickness := 1.3
+	_village_wall(Vector3(302.3, wall_height, wall_thickness), Vector3(0, wall_y, -161))
+	_village_wall(Vector3(wall_thickness, wall_height, 322.3), Vector3(-151, wall_y, 0))
+	_village_wall(Vector3(wall_thickness, wall_height, 322.3), Vector3(151, wall_y, 0))
+	# The south side has exactly one open lane, aligned with the exterior path.
+	# No collider or wall occupies x [-7, 7], so the gate is genuinely walkable.
+	const gate_half_width := 7.0
+	var side_width := 151.0 - gate_half_width
+	_village_wall(Vector3(side_width, wall_height, wall_thickness), Vector3(-(151.0 + gate_half_width) * 0.5, wall_y, 161))
+	_village_wall(Vector3(side_width, wall_height, wall_thickness), Vector3((151.0 + gate_half_width) * 0.5, wall_y, 161))
+	# Four closed Konoha gates define the architectural ring; only the south
+	# main gate has an open, traversable passage.
 	_gate(Vector3(148.7, 0, 2), 0.0, "PORTE EST DE KONOHA")
 	_gate(Vector3(-148.7, 0, 2), PI, "PORTE OUEST DE KONOHA")
 	_gate(Vector3(0, 0, 158.5), PI/2, "PORTE SUD DE KONOHA", true)

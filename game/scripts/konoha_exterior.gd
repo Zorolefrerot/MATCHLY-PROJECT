@@ -29,6 +29,7 @@ const MISSION_ZONE_RADIUS: float = 18.0
 const LOD_NEAR_DISTANCE: float = 62.0
 const LOD_FAR_DISTANCE: float = 82.0
 
+const SKY_ART: Texture2D = preload("res://assets/konoha/sky_mountain_panorama.png")
 const EARTH_ART: Texture2D = preload("res://assets/konoha/earth_ground_texture.png")
 const RIVER_ART: Texture2D = preload("res://assets/konoha/river_water_texture.png")
 
@@ -59,8 +60,8 @@ func build() -> void:
 	_build_stream_and_bridge()
 	_build_forest()
 	_build_ambush_clearing()
+	_build_distant_landscape()
 	_build_distant_mountains()
-	_build_boundaries()
 	_build_mission_zones()
 	_build_spawns_and_triggers()
 	_cache_collision_bodies()
@@ -298,39 +299,51 @@ func _build_ambush_clearing() -> void:
 	# A neutral center marker remains available to future mission systems.
 	_mission_marker("AmbushCenter", AMBUSH_ZONE)
 
+func _build_distant_landscape() -> void:
+	# The horizon continues with the authored landscape texture instead of a
+	# near rectangular wall. It is visual only, deliberately far beyond the
+	# walkable ground, and wider than the whole exterior zone.
+	var backdrop := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(360.0, 112.0)
+	backdrop.mesh = quad
+	backdrop.position = Vector3(0, 52.0, REGION_FAR_Z + 12.0)
+	backdrop.rotation.y = PI
+	var material := TrainingFighter.material(Color.WHITE, true)
+	material.albedo_texture = SKY_ART
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	material.texture_repeat = false
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	backdrop.material_override = material
+	backdrop.visibility_range_end = 620.0
+	backdrop.visibility_range_end_margin = 24.0
+	add_child(backdrop)
+
 func _build_distant_mountains() -> void:
+	# Natural cones form a readable mountain line at the far end. Each cone has
+	# its own solid collider: the landscape is not a traversable flat billboard.
 	var ridges: Array[Array] = [
-		[Vector3(-104, 0, 416), 24.0, 26.0], [Vector3(-61, 0, 425), 31.0, 34.0],
-		[Vector3(-10, 0, 434), 37.0, 40.0], [Vector3(42, 0, 426), 29.0, 32.0],
-		[Vector3(91, 0, 414), 23.0, 25.0],
+		[Vector3(-108, 0, 448), 24.0, 30.0], [Vector3(-64, 0, 454), 32.0, 39.0],
+		[Vector3(-12, 0, 460), 38.0, 48.0], [Vector3(43, 0, 453), 31.0, 38.0],
+		[Vector3(94, 0, 446), 25.0, 29.0],
 	]
 	for item: Array in ridges:
 		var point: Vector3 = item[0]
 		var radius: float = float(item[1])
 		var height: float = float(item[2])
-		var mountain := MeshInstance3D.new()
-		var mesh := CylinderMesh.new()
-		mesh.top_radius = radius * 0.18
-		mesh.bottom_radius = radius
-		mesh.height = height
-		mesh.radial_segments = 7
-		mountain.mesh = mesh
-		mountain.position = point + Vector3(0, height * 0.5, 0)
-		mountain.material_override = _mat(Color("657260"))
-		mountain.visibility_range_end = 430.0
-		mountain.visibility_range_end_margin = 18.0
-		add_child(mountain)
-	# Far foothills close the playable region with a visible, collidable ridge.
-	_box(Vector3(248, 14, 5), Vector3(0, 6.8, REGION_FAR_Z + 1.0), Color("5f6c59"), true)
-
-func _build_boundaries() -> void:
-	# Side cliffs and a rear ridge look like natural terrain rather than invisible
-	# map walls. The player remains inside the first, deliberately bounded region.
-	_box(Vector3(5, 12, 256), Vector3(REGION_MIN_X - 1.0, 6, 292), Color("64715d"), true)
-	_box(Vector3(5, 12, 256), Vector3(REGION_MAX_X + 1.0, 6, 292), Color("64715d"), true)
-	# A few foreground rock faces blend the side limits into the forest edge.
-	for point in [Vector3(-124, 2, 228), Vector3(124, 2, 252), Vector3(-124, 3, 337), Vector3(124, 3, 367)]:
-		_box(Vector3(4.0, 4.5, 11.0), point, Color("6a7461"), true, Vector3(0, point.x * 0.01, 0), false)
+		var mountain := _cylinder(radius, height, point + Vector3(0, height * 0.5, 0), Color("657260"), 7, true, false)
+		mountain.visibility_range_end = 620.0
+		mountain.visibility_range_end_margin = 24.0
+	# Smaller foothills overlap the bases so there is no straight artificial seam.
+	for item: Array in [
+		[Vector3(-94, 0, 431), 25.0, 17.0], [Vector3(-40, 0, 438), 29.0, 20.0],
+		[Vector3(18, 0, 439), 27.0, 18.0], [Vector3(72, 0, 434), 26.0, 16.0],
+	]:
+		var point: Vector3 = item[0]
+		var mountain := _cylinder(float(item[1]), float(item[2]), point + Vector3(0, float(item[2]) * 0.5, 0), Color("5f6c59"), 8, true, false)
+		mountain.visibility_range_end = 620.0
+		mountain.visibility_range_end_margin = 24.0
 
 func _mission_marker(name: String, point: Vector3) -> Marker3D:
 	var marker := Marker3D.new()
