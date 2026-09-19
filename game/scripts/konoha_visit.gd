@@ -934,6 +934,7 @@ func finish() -> void:
 		hokage_interior.set_active(false)
 	inside_hokage = false
 	_close_chat()
+	if is_instance_valid(team_manager): team_manager.close_panel()
 	if is_instance_valid(village_link): village_link.stop()
 	if is_instance_valid(music):
 		music.stop()
@@ -986,6 +987,7 @@ func _network_status(message: String) -> void:
 
 func _clear_remote() -> void:
 	if is_instance_valid(secondary_manager): secondary_manager.reset_network_action()
+	if is_instance_valid(team_manager): team_manager.close_panel()
 	for avatar: VillageAvatar in remote_avatars.values():
 		avatar.queue_free()
 	remote_avatars.clear()

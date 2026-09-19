@@ -344,6 +344,13 @@ func close_panel() -> void:
 	refresh_pending = false
 	if is_instance_valid(root):
 		root.hide()
+	# This panel is a real modal: freeze the local avatar while the player
+	# answers an invitation or validates the team at the counter. Without this
+	# release, the network pose could drift away from the reception between two
+	# clicks; without the matching reset, a held joystick key could resume motion.
+	if is_instance_valid(hud):
+		hud.blocked = false
+		hud.reset_input()
 
 func _request_refresh() -> void:
 	if refresh_pending or not is_instance_valid(village_link) or not village_link.connected:
@@ -457,6 +464,12 @@ func _open_view(next: String) -> void:
 	view = next
 	if not is_instance_valid(root):
 		return
+	# Do not let the player walk away from the physical reception while the
+	# menu is open. Server-side actions still verify the exact position, so a
+	# non-modal panel made the same click sequence fail intermittently.
+	if is_instance_valid(hud):
+		hud.blocked = true
+		hud.reset_input()
 	root.show()
 	focus_requested.emit()
 	_render()

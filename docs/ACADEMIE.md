@@ -108,8 +108,8 @@ SALLE DES PROFESSEURS)**. Chaque pièce a son enseigne lisible des deux côtés.
    SALLE 2 · HISTOIRE SHINOBI (professeure), SALLE 3 · LIBRE. Chacune : tableau,
    bureau du professeur, 6 pupitres avec chaises, étagère à parchemins.
 8. **Grande salle des équipes** (nord-ouest, 14 × 16 m) : estrade
-   « ENREGISTREMENT DES ÉQUIPES · OUVERTURE À VENIR », panneaux « LISTE DES
-   CANDIDATS · À VENIR » et « ANNONCES · À VENIR », bancs, bannières.
+   « ENREGISTREMENT DES ÉQUIPES · AU COMPTOIR », panneaux « LISTE DES
+   CANDIDATS · RÉCEPTION » et « INVITATIONS · HUD », bancs, bannières.
    **Rien n'est activé** — espace réservé au futur système de candidatures,
    recherche de compagnons, formation d'équipes et annonces.
 9. **Salle des professeurs** (nord-est) : bibliothèque, trois bureaux, table de

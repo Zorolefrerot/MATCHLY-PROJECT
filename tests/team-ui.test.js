@@ -21,4 +21,7 @@ test("Academy reception refreshes at the counter and renders actionable team not
   assert.match(service, /if \(action === "refresh"\)/);
   assert.match(sensei, /func show_dialogue\(text: String\)/);
   assert.match(manager, /show_dialogue\(spoken_line\)/);
+  assert.match(manager, /hud\.blocked = true/);
+  assert.match(manager, /hud\.blocked = false/);
+  assert.doesNotMatch(read("game/scripts/academy.gd"), /À VENIR|affichage à venir/);
 });

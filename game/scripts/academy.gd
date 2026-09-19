@@ -381,7 +381,7 @@ func _build_reception() -> void:
 	box(Vector3(0.14, 1.5, 0.9), Vector3(-40.6, FLOOR_TOP + 0.75, -21.0), dark)
 	box(Vector3(0.08, 1.1, 0.7), Vector3(-40.5, FLOOR_TOP + 1.5, -21.0), Color(0.95, 0.93, 0.85), false, Vector3(0, -0.35, 0))
 	label_3d("CANDIDATURES", Vector3(-40.4, FLOOR_TOP + 1.75, -21.0), 14, Color(0.3, 0.25, 0.2), -0.35)
-	label_3d("· À VENIR ·", Vector3(-40.4, FLOOR_TOP + 1.45, -21.0), 12, Color(0.45, 0.35, 0.25), -0.35)
+	label_3d("· COMPTOIR ACTIF ·", Vector3(-40.4, FLOOR_TOP + 1.45, -21.0), 12, Color(0.25, 0.45, 0.35), -0.35)
 	label_3d("RÉCEPTION DE L'ACADÉMIE", Vector3(-37.5, 3.1, SOUTH - 0.3), 22, Color(0.95, 0.9, 0.8))
 
 func _build_information() -> void:
@@ -404,11 +404,12 @@ func _build_information() -> void:
 	for z in [-22.2, -20.8]:
 		box(Vector3(0.06, 1.0, 0.8), Vector3(WEST + 0.32, 2.3, z), Color(0.72, 0.58, 0.24), false)
 		box(Vector3(0.05, 0.8, 0.6), Vector3(WEST + 0.38, 2.3, z), Color(0.85, 0.78, 0.66), false)
-	# Tableau des futures équipes.
+	# Tableau des équipes : le détail opérationnel reste dans le menu de
+	# réception, mais le bâtiment indique clairement que le système est actif.
 	box(Vector3(2.0, 1.4, 0.1), Vector3(-50.8, 2.0, -29.72), paper, false)
 	box(Vector3(2.2, 1.6, 0.07), Vector3(-50.8, 2.0, -29.77), dark, false)
 	label_3d("ÉQUIPES · ACTIVITÉS", Vector3(-50.8, 2.35, -29.62), 15, Color(0.3, 0.25, 0.18))
-	label_3d("affichage à venir", Vector3(-50.8, 1.75, -29.62), 12, Color(0.45, 0.38, 0.28))
+	label_3d("réception · équipes actives", Vector3(-50.8, 1.75, -29.62), 12, Color(0.25, 0.45, 0.35))
 	# Étagère à parchemins.
 	box(Vector3(2.4, 1.0, 0.5), Vector3(-57.5, FLOOR_TOP + 0.5, -20.4), dark)
 	_scroll_row(Vector3(-57.5, FLOOR_TOP + 1.05, -20.4), 5)
