@@ -96,6 +96,11 @@ static func valid_state(value: Variant) -> bool:
 		return false
 	if not value.get("unlocked") is bool or not value.get("candidates") is Array or not value.get("invites") is Array:
 		return false
+	# A locked account receives a compact placeholder before the second clan
+	# reward. Do not make future optional fields a reason to drop the village
+	# socket; mutations remain rejected by TeamService until it is unlocked.
+	if not value["unlocked"]:
+		return true
 	if value["candidates"].size() > 20 or value["invites"].size() > 3:
 		return false
 	if not value.get("message") is String or value["message"].is_empty():
