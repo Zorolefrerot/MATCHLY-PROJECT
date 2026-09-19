@@ -26,7 +26,7 @@ PvP d'équipe n'est inclus dans ce lot.
 | `game/scripts/team_sensei.gd` | **Créé.** Le Sensei de la cérémonie : corps `TrainingFighter` + gilet vert de Konoha, marche physique vers l'équipe, étiquette nom/titre. |
 | `game/scripts/village_link.gd` | `team_action()`, validation réception `team_state` / `team_action_ack`, codes d'erreur `TEAM_*` dans la liste blanche. |
 | `game/scripts/konoha_visit.gd` | Interaction **-7** (réception) → menu de la réceptionniste ; routage des événements équipe ; synchro profil HTTP ; fermeture du panneau sur journal/chat/pause/Hokage. |
-| `game/scripts/academy.gd` | Panneaux de la grande salle des équipes mis à jour (« À VENIR » → système ouvert). Géométrie inchangée. |
+| `game/scripts/academy.gd` | Panneaux du comptoir et de la grande salle alignés sur le système actif. Géométrie inchangée. |
 | `tests/team-system.test.js` | **Créé.** 20 tests serveur (voir §12). |
 | `game/tests/smoke.gd` | Bloc fumée client : validation d'état, portraits, carte d'invitation, cérémonie et marche du Sensei. |
 

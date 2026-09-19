@@ -89,12 +89,12 @@ SALLE DES PROFESSEURS)**. Chaque pièce a son enseigne lisible des deux côtés.
    vermillon, poutres, 4 lanternes suspendues, bancs d'attente, emblème « 忍 »,
    panneau « AVIS AUX VISITEURS ». Assez vaste pour plusieurs joueurs.
 2. **Réception** (est) : comptoir solide, documents, registres, rayonnage,
-   chaise, pupitre « CANDIDATURES · À VENIR » (place physique du futur système),
+   chaise, pupitre « CANDIDATURES · COMPTOIR ACTIF » (place physique du recrutement),
    PNJ fixe **« Réceptionniste de l'Académie »** — interaction = informations
    générales seulement (`-7`).
 3. **Salle des informations** (ouest) : grande carte de Konoha sur table, carte
    murale, règlement de l'Académie, portraits de shinobi, tableau
-   « ÉQUIPES · ACTIVITÉS · affichage à venir », étagère à parchemins.
+   « ÉQUIPES · ACTIVITÉS · réception active », étagère à parchemins.
 4. **Zone d'entraînement** (nord-ouest, 14 × 20 m) : tatamis, 5 mannequins,
    3 cibles murales, râtelier d'armes décoratives, circulation libre, **aucun
    système de combat**, PNJ « Instructeur · Kenjutsu ».
@@ -110,8 +110,8 @@ SALLE DES PROFESSEURS)**. Chaque pièce a son enseigne lisible des deux côtés.
 8. **Grande salle des équipes** (nord-ouest, 14 × 16 m) : estrade
    « ENREGISTREMENT DES ÉQUIPES · AU COMPTOIR », panneaux « LISTE DES
    CANDIDATS · RÉCEPTION » et « INVITATIONS · HUD », bancs, bannières.
-   **Rien n'est activé** — espace réservé au futur système de candidatures,
-   recherche de compagnons, formation d'équipes et annonces.
+   **Le comptoir et les équipes sont actifs** — la liste, les invitations,
+   le groupe provisoire et la cérémonie utilisent le protocole `team_action`.
 9. **Salle des professeurs** (nord-est) : bibliothèque, trois bureaux, table de
    travail ; arrivée d'escalier au nord.
 
@@ -187,14 +187,15 @@ voient chacun l'avatar de l'autre aux coordonnées de l'académie (**espace
 partagé, jamais d'instance privée**) et l'état de l'académie suit l'état réel
 des missions sur chaque client.
 
-`npm test` (56 tests Node) : inchangé, aucune régression serveur — l'académie
-n'ajoute aucun état serveur. Les contrôles Godot/Android (smoke complet, réseau,
-compilation APK) passent par GitHub Actions sur cette branche.
+`npm test` inclut les tests persistants du `TeamService` : candidature,
+profils, invitations, groupes provisoires, équipe officielle, Sensei et
+reconnexion. Les contrôles Godot/Android (smoke complet, réseau, compilation
+APK) passent par GitHub Actions sur cette branche.
 
-## 11. Points d'extension pour le futur système d'équipes
+## 11. Repères physiques du système d'équipes
 
-Repères nommés, prêts à être référencés par le lot « candidatures / compagnons /
-équipes / Sensei » — **aucune logique activée** :
+Repères nommés utilisés par le parcours physique « candidatures / compagnons /
+équipes / Sensei » :
 
 | Identifiant | Type | Emplacement |
 | --- | --- | --- |

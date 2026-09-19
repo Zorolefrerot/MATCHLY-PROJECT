@@ -377,7 +377,7 @@ func _build_reception() -> void:
 	box(Vector3(0.5, 2.2, 3.4), Vector3(EAST + 0.6, FLOOR_TOP + 1.1, -25.0), dark)
 	_scroll_row(Vector3(EAST + 0.6, FLOOR_TOP + 1.9, -25.0), 4)
 	_scroll_row(Vector3(EAST + 0.6, FLOOR_TOP + 1.2, -25.0), 4)
-	# Pupitre d'information (place physique du futur système de candidatures).
+	# Pupitre d'information (place physique des candidatures actives).
 	box(Vector3(0.14, 1.5, 0.9), Vector3(-40.6, FLOOR_TOP + 0.75, -21.0), dark)
 	box(Vector3(0.08, 1.1, 0.7), Vector3(-40.5, FLOOR_TOP + 1.5, -21.0), Color(0.95, 0.93, 0.85), false, Vector3(0, -0.35, 0))
 	label_3d("CANDIDATURES", Vector3(-40.4, FLOOR_TOP + 1.75, -21.0), 14, Color(0.3, 0.25, 0.2), -0.35)

@@ -73,19 +73,55 @@ func _process(_delta: float) -> void:
 		if near_reception:
 			_request_refresh()
 
-static func valid_state(value: Variant) -> bool:
+static func _valid_profile(value: Variant) -> bool:
 	if not value is Dictionary:
 		return false
-	if int(value.get("schemaVersion", -1)) != 1:
+	if value.get("kind") not in ["player", "npc"] or not value.get("key") is String or value["key"].is_empty():
 		return false
-	if not value.get("unlocked") is bool:
+	if not value.get("name") is String or value["name"].is_empty():
 		return false
-	if not value.get("candidates") is Array or not value.get("invites") is Array:
+	if value["kind"] == "player" and (not value["id"] is int or int(value["id"]) < 1):
 		return false
-	if value.get("self") != null and not value.get("self") is Dictionary:
+	if value["kind"] == "npc" and (not value["id"] is String or value["id"].is_empty()):
 		return false
-	if value.get("team") != null and not value.get("team") is Dictionary:
+	for key: String in ["clan", "affinity", "style", "personality", "portraitId"]:
+		if not value.get(key) is String or value[key].is_empty():
+			return false
+	if not value.get("level") is int or int(value["level"]) < 1 or int(value["level"]) > 100:
 		return false
+	return value.get("appearance") is Dictionary
+
+static func valid_state(value: Variant) -> bool:
+	if not value is Dictionary or int(value.get("schemaVersion", -1)) != 1:
+		return false
+	if not value.get("unlocked") is bool or not value.get("candidates") is Array or not value.get("invites") is Array:
+		return false
+	if value["candidates"].size() > 20 or value["invites"].size() > 3:
+		return false
+	if not value.get("message") is String or value["message"].is_empty():
+		return false
+	if value.has("revision") and (not value["revision"] is int or int(value["revision"]) < 0):
+		return false
+	if value.has("nearReception") and not value["nearReception"] is bool:
+		return false
+	for item: Variant in value["candidates"]:
+		if not _valid_profile(item):
+			return false
+	var self_value: Variant = value.get("self")
+	if self_value != null and not _valid_profile(self_value):
+		return false
+	var team_value: Variant = value.get("team")
+	if team_value != null:
+		if not team_value is Dictionary or not team_value.get("id") is int or int(team_value["id"]) < 1 or team_value.get("status") not in ["forming", "official"]:
+			return false
+		if not team_value.get("number") is int or int(team_value["number"]) < 0 or not team_value.get("members") is Array or team_value["members"].size() > 3:
+			return false
+		for member: Variant in team_value["members"]:
+			if not _valid_profile(member):
+				return false
+	for invite: Variant in value["invites"]:
+		if not invite is Dictionary or not invite.get("fromKey") is String or not invite.get("fromName") is String or not invite.get("fromClan") is String or not invite.get("fromPortraitId") is String or not invite.get("fromAppearance") is Dictionary or not invite.get("fromLevel") is int or int(invite["fromLevel"]) < 1:
+			return false
 	return true
 
 static func status_label(status: String) -> String:

@@ -69,57 +69,10 @@ CREATE TABLE IF NOT EXISTS secondary_missions(
  updated TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS secondary_missions_available ON secondary_missions(status,available_at);
--- Academy recruitment: candidates, three-member draft groups, invitations and
--- durable teams. Portraits remain profile/avatar references, never image blobs.
-CREATE TABLE IF NOT EXISTS academy_candidates(
- user_id INTEGER PRIMARY KEY REFERENCES users(id),
- status TEXT NOT NULL CHECK (status IN ('AVAILABLE','FORMING')),
- updated TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS academy_teams(
- id ${id},
- team_number INTEGER UNIQUE NOT NULL CHECK (team_number >= 1),
- sensei_id TEXT NOT NULL,
- status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','DISBANDED')),
- created TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS academy_team_members(
- team_id INTEGER NOT NULL REFERENCES academy_teams(id) ON DELETE CASCADE,
- member_order INTEGER NOT NULL CHECK (member_order BETWEEN 0 AND 2),
- user_id INTEGER REFERENCES users(id),
- npc_id TEXT,
- portrait_id TEXT NOT NULL,
- PRIMARY KEY(team_id,member_order),
- CHECK ((user_id IS NOT NULL AND npc_id IS NULL) OR (user_id IS NULL AND npc_id IS NOT NULL)
-));
-CREATE UNIQUE INDEX IF NOT EXISTS academy_team_user ON academy_team_members(user_id) WHERE user_id IS NOT NULL;
-CREATE TABLE IF NOT EXISTS academy_groups(
- id ${id},
- owner_user_id INTEGER NOT NULL REFERENCES users(id),
- status TEXT NOT NULL DEFAULT 'FORMING' CHECK (status IN ('FORMING','COMPLETED','CANCELLED')),
- created TEXT NOT NULL
-);
-CREATE UNIQUE INDEX IF NOT EXISTS academy_open_group_owner ON academy_groups(owner_user_id) WHERE status='FORMING';
-CREATE TABLE IF NOT EXISTS academy_group_members(
- group_id INTEGER NOT NULL REFERENCES academy_groups(id) ON DELETE CASCADE,
- member_order INTEGER NOT NULL CHECK (member_order BETWEEN 0 AND 2),
- user_id INTEGER REFERENCES users(id),
- npc_id TEXT,
- accepted INTEGER NOT NULL DEFAULT 0 CHECK (accepted IN (0,1)),
- portrait_id TEXT NOT NULL,
- PRIMARY KEY(group_id,member_order),
- CHECK ((user_id IS NOT NULL AND npc_id IS NULL) OR (user_id IS NULL AND npc_id IS NOT NULL)
-));
-CREATE UNIQUE INDEX IF NOT EXISTS academy_group_user ON academy_group_members(user_id) WHERE user_id IS NOT NULL;
-CREATE TABLE IF NOT EXISTS academy_invitations(
- id ${id},
- group_id INTEGER NOT NULL REFERENCES academy_groups(id) ON DELETE CASCADE,
- inviter_user_id INTEGER NOT NULL REFERENCES users(id),
- invitee_user_id INTEGER NOT NULL REFERENCES users(id),
- status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','ACCEPTED','DECLINED','CANCELLED')),
- created TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS academy_invitee_pending ON academy_invitations(invitee_user_id,status);
+-- The active Academy protocol uses the durable team_* tables below. The former
+-- academy_* tables are intentionally not recreated; existing installations may
+-- retain them as inert legacy data during deployment, but no runtime code reads
+-- or writes them anymore.
 -- Candidatures et équipes de trois de l'Académie Ninja. Clé candidat :
 -- 'p<userId>' pour un joueur (identité lue en base, jamais envoyée par le
 -- client) ou 'n<npcId>' pour le petit vivier PNJ. L'apparence stockée est la

@@ -66,58 +66,6 @@ static func account_progress(value: Variant) -> bool:
 			return false
 	return true
 
-static func academy_appearance(value: Variant) -> bool:
-	if value == null:
-		return true
-	if not value is Dictionary or value.size() != CharacterAppearance.DEFAULTS.size():
-		return false
-	for key: String in CharacterAppearance.DEFAULTS:
-		if not integer(value.get(key)) or value[key] >= CharacterAppearance.choices(key).size():
-			return false
-	return true
-
-static func academy_profile(value: Variant) -> bool:
-	if not value is Dictionary or value.get("kind") not in ["player", "npc"] or not plain(value.get("key"), 96) or not plain(value.get("name"), 50) or not plain(value.get("portraitId"), 120):
-		return false
-	if not integer(value.get("level")) or value["level"] > 100 or not plain(value.get("clan"), 50) or not plain(value.get("affinity"), 50) or not plain(value.get("style"), 100) or not plain(value.get("personality"), 240) or not academy_appearance(value.get("appearance")):
-		return false
-	if value["kind"] == "player" and not integer(value.get("id"), 1):
-		return false
-	if value["kind"] == "npc" and not plain(value.get("id"), 80):
-		return false
-	return true
-
-static func academy_profiles(value: Variant) -> bool:
-	if not value is Array or value.size() > 3:
-		return false
-	var seen: Dictionary = {}
-	for item: Variant in value:
-		if not academy_profile(item) or seen.has(item["key"]):
-			return false
-		seen[item["key"]] = true
-	return true
-
-static func academy_state(value: Variant) -> bool:
-	if not value is Dictionary or not integer(value.get("schemaVersion"), 1) or value["schemaVersion"] != 1 or typeof(value.get("unlocked")) != TYPE_BOOL or not academy_profiles(value.get("candidates")) or not value.get("invitations") is Array or value["invitations"].size() > 3 or not plain(value.get("message"), 240):
-		return false
-	if value.get("candidate") != null and (not value["candidate"] is Dictionary or not plain(value["candidate"].get("status"), 20)):
-		return false
-	var group: Variant = value.get("group")
-	if group != null:
-		if not group is Dictionary or not integer(group.get("id"), 1) or not integer(group.get("ownerId"), 1) or group.get("status") != "FORMING" or not academy_profiles(group.get("members")):
-			return false
-	var team: Variant = value.get("team")
-	if team != null:
-		if not team is Dictionary or not integer(team.get("id"), 1) or not integer(team.get("teamNumber"), 1) or team.get("status") != "ACTIVE" or not academy_profile(team.get("sensei")) or not academy_profiles(team.get("members")) or team["members"].size() != 3:
-			return false
-		var sensei: Dictionary = team["sensei"]
-		if not plain(sensei.get("title"), 120) or not plain(sensei.get("dialogue"), 500):
-			return false
-	for invite: Variant in value["invitations"]:
-		if not invite is Dictionary or not integer(invite.get("id"), 1) or not integer(invite.get("groupId"), 1) or not academy_profile(invite.get("from")):
-			return false
-	return true
-
 static func identity(value: Variant) -> bool:
 	if not value is Dictionary or not integer(value.get("id"),1) or not plain(value.get("name"),50):
 		return false
@@ -297,31 +245,6 @@ func secondary_refresh() -> bool:
 		return false
 	return _send({"type":"secondary_refresh"})
 
-func academy_refresh() -> bool:
-	if not connected:
-		return false
-	return _send({"type":"academy_action","action":"refresh"})
-
-func academy_action(action: String, target_key: String = "") -> bool:
-	if not connected or action not in ["apply", "withdraw", "invite"]:
-		return false
-	if action == "invite" and (target_key.is_empty() or target_key.length() > 80):
-		return false
-	var message := {"type":"academy_action","action":action}
-	if action == "invite":
-		message["targetKey"] = target_key
-	return _send(message)
-
-func academy_answer(invite_id: int, accepted: bool) -> bool:
-	if not connected or invite_id < 1:
-		return false
-	return _send({"type":"academy_action","action":"accept_invite" if accepted else "decline_invite","inviteId":invite_id})
-
-func academy_confirm() -> bool:
-	if not connected:
-		return false
-	return _send({"type":"academy_action","action":"confirm_team"})
-
 func combat_join() -> void:
 	if connected:
 		_send({"type":"combat_join"})
@@ -381,9 +304,6 @@ func _accept(value: Variant) -> bool:
 			return false
 	elif kind == "chat_ack":
 		if not integer(value.get("seq")):
-			return false
-	elif kind == "academy_state":
-		if not academy_state(value):
 			return false
 	elif kind == "secondary_state":
 		if not SecondaryMission.valid_state(value) or (value.has("progress") and not account_progress(value["progress"])):
@@ -449,7 +369,7 @@ func _accept(value: Variant) -> bool:
 			return false
 	elif kind == "error":
 		var error_code := str(value.get("code", ""))
-		var known_error := error_code in ["CHAT_RATE","COMBAT_BUSY","COMBAT_ACTION","SECONDARY_LOCKED","SECONDARY_CONFLICT","SECONDARY_NOT_AVAILABLE","SECONDARY_ALREADY_ACTIVE","SECONDARY_NOT_OWNER","SECONDARY_OBJECTIVE_INVALID","SECONDARY_TOO_FAR","SECONDARY_NOT_COMPLETE","INVALID_SECONDARY_ACTION","SECONDARY_ACTION","TEAM_LOCKED","TEAM_ACTION_INVALID","TEAM_NOT_AT_RECEPTION","TEAM_ALREADY_CANDIDATE","TEAM_NOT_CANDIDATE","TEAM_OFFICIAL","TEAM_TARGET_INVALID","TEAM_TARGET_UNKNOWN","TEAM_TARGET_BUSY","TEAM_INVITE_CONFLICT","TEAM_FULL","TEAM_NO_INVITE","TEAM_ALREADY_MEMBER","TEAM_INVITE_STALE","TEAM_INCOMPLETE","TEAM_FORM_RACE","TEAM_ACTION","TEAM_DB"] or error_code.begins_with("ACADEMY_") or error_code == "INVALID_ACADEMY_ACTION"
+		var known_error := error_code in ["CHAT_RATE","COMBAT_BUSY","COMBAT_ACTION","SECONDARY_LOCKED","SECONDARY_CONFLICT","SECONDARY_NOT_AVAILABLE","SECONDARY_ALREADY_ACTIVE","SECONDARY_NOT_OWNER","SECONDARY_OBJECTIVE_INVALID","SECONDARY_TOO_FAR","SECONDARY_NOT_COMPLETE","INVALID_SECONDARY_ACTION","SECONDARY_ACTION","TEAM_LOCKED","TEAM_ACTION_INVALID","TEAM_NOT_AT_RECEPTION","TEAM_ALREADY_CANDIDATE","TEAM_NOT_CANDIDATE","TEAM_OFFICIAL","TEAM_TARGET_INVALID","TEAM_TARGET_UNKNOWN","TEAM_TARGET_BUSY","TEAM_INVITE_CONFLICT","TEAM_FULL","TEAM_NO_INVITE","TEAM_ALREADY_MEMBER","TEAM_INVITE_STALE","TEAM_INCOMPLETE","TEAM_FORM_RACE","TEAM_ACTION","TEAM_DB"]
 		if not plain(error_code, 64) or not known_error or not plain(value.get("error"),240):
 			return false
 	else:

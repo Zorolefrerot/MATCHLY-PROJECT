@@ -848,29 +848,29 @@ func network_protocol_checks() -> void:
 	check(link._accept({"type":"welcome","protocol":1,"self":1,"spawn":[0,0.25,78],"radius":18}), "welcome binds presence to the current account")
 	check(not link._accept({"type":"snapshot","frame":1,"players":[pose,pose]}), "duplicate account IDs in a frame are refused")
 	check(not link._accept({"type":"error","code":123,"error":"test"}), "network error codes are type checked")
-	var academy_profile := {"key":"npc:kaito","kind":"npc","id":"kaito","name":"Kaito","level":8,"clan":"Senju","affinity":"Suiton","style":"Soutien défensif","personality":"Calme et attentif.","portraitId":"academy-npc-kaito-v1","appearance":CharacterAppearance.DEFAULTS.duplicate(),"status":"AVAILABLE"}
-	var academy_state := {"type":"academy_state","schemaVersion":1,"unlocked":true,"candidates":[academy_profile],"candidate":null,"group":null,"invitations":[],"team":null,"message":"Réception"}
-	check(VillageLink.academy_state(academy_state), "academy state accepts a server portrait profile")
-	var missing_portrait: Dictionary = academy_state.duplicate(true)
-	missing_portrait["candidates"] = [academy_profile.duplicate(true)]
+	var team_profile := {"key":"nkaito","kind":"npc","id":"kaito","name":"Kaito","level":8,"clan":"Senju","affinity":"Suiton","style":"Soutien défensif","personality":"Calme et attentif.","portraitId":"team-npc-kaito-v1","appearance":CharacterAppearance.DEFAULTS.duplicate(),"status":"recherche"}
+	var team_state := {"type":"team_state","schemaVersion":1,"unlocked":true,"revision":1,"nearReception":true,"candidates":[team_profile],"self":null,"invites":[],"team":null,"message":"Réception"}
+	check(TeamManager.valid_state(team_state), "team state accepts a server portrait profile")
+	var missing_portrait: Dictionary = team_state.duplicate(true)
+	missing_portrait["candidates"] = [team_profile.duplicate(true)]
 	missing_portrait["candidates"][0]["portraitId"] = ""
-	check(not VillageLink.academy_state(missing_portrait), "academy rejects a candidate without a portrait reference")
-	var academy_member_two: Dictionary = academy_profile.duplicate(true)
-	academy_member_two["key"] = "npc:renji"
-	academy_member_two["id"] = "renji"
-	academy_member_two["name"] = "Renji"
-	var academy_member_three: Dictionary = academy_profile.duplicate(true)
-	academy_member_three["key"] = "player:2"
-	academy_member_three["kind"] = "player"
-	academy_member_three["id"] = 2
-	academy_member_three["name"] = "Genin 2"
-	var academy_team: Dictionary = academy_state.duplicate(true)
-	academy_team["candidates"] = []
-	academy_team["team"] = {"id":1,"teamNumber":1,"status":"ACTIVE","sensei":{"key":"npc:daichi_kurogane","kind":"npc","id":"daichi_kurogane","name":"Daichi Kurogane","level":1,"clan":"Sensei","affinity":"Chakra","style":"Défense disciplinée","personality":"Calme.","portraitId":"sensei-daichi-kurogane-v1","appearance":CharacterAppearance.DEFAULTS.duplicate(),"status":"SENSEI","title":"Sensei Daichi Kurogane","dialogue":"Vous êtes l’équipe 001."},"members":[academy_profile,academy_member_two,academy_member_three]}
-	check(VillageLink.academy_state(academy_team), "academy state accepts an exactly three-member team and Sensei dialogue")
-	academy_team["team"]["members"].append(academy_profile.duplicate(true))
-	check(not VillageLink.academy_state(academy_team), "academy rejects a four-member team")
-	check(link._accept(academy_state), "authenticated link accepts an academy state")
+	check(not TeamManager.valid_state(missing_portrait), "team rejects a candidate without a portrait reference")
+	var team_member_two: Dictionary = team_profile.duplicate(true)
+	team_member_two["key"] = "nrenji"
+	team_member_two["id"] = "renji"
+	team_member_two["name"] = "Renji"
+	var team_member_three: Dictionary = team_profile.duplicate(true)
+	team_member_three["key"] = "p2"
+	team_member_three["kind"] = "player"
+	team_member_three["id"] = 2
+	team_member_three["name"] = "Genin 2"
+	var official_state: Dictionary = team_state.duplicate(true)
+	official_state["candidates"] = []
+	official_state["team"] = {"id":1,"number":1,"label":"ÉQUIPE 001","status":"official","senseiId":"daichi","members":[team_profile,team_member_two,team_member_three],"ceremony":null}
+	check(TeamManager.valid_state(official_state), "team state accepts an exactly three-member team and Sensei assignment")
+	official_state["team"]["members"].append(team_profile.duplicate(true))
+	check(not TeamManager.valid_state(official_state), "team rejects a four-member team")
+	check(link._accept(team_state), "authenticated link accepts a team state")
 	check(link._accept({"type":"snapshot","frame":5,"players":[pose]}) and link._accept({"type":"snapshot","frame":3,"players":[pose]}) and link.last_frame == 5, "older snapshots cannot rewind interpolation")
 	link.free()
 	account.free()

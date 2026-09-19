@@ -212,6 +212,15 @@ export class TeamService {
     this.seeded = false;
     this.onChange = null;
     this.lastPublic = "";
+    this.ready = null;
+  }
+
+  // VillageRoom calls this before emitting the first snapshot. Keeping the
+  // promise on the service also serializes the initial NPC seed with the first
+  // client action, so a reconnect can never observe a half-loaded roster.
+  ensureLoaded() {
+    if (!this.ready) this.ready = this.load();
+    return this.ready;
   }
 
   async load() {
@@ -276,6 +285,7 @@ export class TeamService {
 
   async refresh() {
     try {
+      await this.ensureLoaded();
       await this.db.transaction(async () => {
         await this.load();
       });
@@ -335,6 +345,7 @@ export class TeamService {
     return {
       key: row.key,
       kind: row.kind,
+      id: row.kind === "npc" ? String(row.npc_id || row.key.slice(1)) : Number(row.user_id || row.key.slice(1)),
       name,
       clan,
       level,
@@ -342,6 +353,9 @@ export class TeamService {
       style: row.style || "",
       personality: row.personality || "",
       idle: row.idle || "",
+      portraitId: row.kind === "npc"
+        ? `team-npc-${row.npc_id || row.key.slice(1)}-v1`
+        : `team-player-${row.user_id || row.key.slice(1)}-v1`,
       appearance,
       status: team
         ? team.status === "official"
@@ -421,6 +435,11 @@ export class TeamService {
         fromName: from ? from.name : "Candidat",
         fromClan: from ? from.clan : "",
         fromLevel: from ? Number(from.level) || 1 : 1,
+        fromPortraitId: from
+          ? from.kind === "npc"
+            ? `team-npc-${from.npc_id || from.key.slice(1)}-v1`
+            : `team-player-${from.user_id || from.key.slice(1)}-v1`
+          : "team-unknown-v1",
         fromAppearance: from
           ? safeAppearance(JSON.parse(from.appearance || "{}"))
           : {},
@@ -455,9 +474,11 @@ export class TeamService {
     )
       reject(400, "TEAM_ACTION_INVALID", "Action d’équipe inconnue.");
     if (action === "refresh") {
+      await this.ensureLoaded();
       await this.load();
       return { state: this.stateForPeer(peer, null) };
     }
+    await this.ensureLoaded();
     const result = await this.db.transaction(async () => {
       await this.load();
       const key = playerKey(peer.id);

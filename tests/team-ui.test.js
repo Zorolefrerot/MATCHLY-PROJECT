@@ -9,6 +9,8 @@ test("Academy reception refreshes at the counter and renders actionable team not
   const link = read("game/scripts/village_link.gd");
   const room = read("server/village-room.js");
   const service = read("server/team-system.js");
+  assert.doesNotMatch(room, /academy_action|academy_state|validAcademyAction/);
+  assert.doesNotMatch(read("game/scripts/village_link.gd"), /academy_action|academy_state/);
   const sensei = read("game/scripts/team_sensei.gd");
   assert.match(manager, /_request_refresh\(\)/);
   assert.match(manager, /📱 NOTIFICATION · INVITATION D’ÉQUIPE/);

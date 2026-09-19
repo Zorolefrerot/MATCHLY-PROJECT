@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { validAcademyAction } from "./team-recruitment.js";
 
 export const VILLAGE = Object.freeze({
   protocol: 1,
@@ -655,6 +654,10 @@ export class VillageRoom {
     this.now = now;
     this.secondary = secondary;
     this.teams = teams;
+    // TeamService loads its durable snapshot before the first team_state is
+    // emitted. It is started lazily after authenticated join so rejected
+    // upgrades still avoid all database access.
+    this.teamReady = null;
     this.peers = new Map();
     this.frame = 0;
     this.combatFrame = 0;
@@ -683,34 +686,36 @@ export class VillageRoom {
         ...this.secondary.stateForPeer(peer),
       });
   }
-  broadcastAcademy() {
-    if (!this.teams) return;
-    for (const peer of this.peers.values())
-      void this.teams
-        .stateForPeer(peer)
-        .then((state) => this.send(peer, { type: "academy_state", ...state }))
-        .catch(() => {});
+  ensureTeamsReady() {
+    if (!this.teams) return Promise.resolve();
+    if (!this.teamReady)
+      this.teamReady = this.teams.ensureLoaded?.() || Promise.resolve();
+    return this.teamReady;
   }
+
   broadcastTeams() {
     if (!this.teams) return;
-    for (const peer of this.peers.values()) {
-      const result = this.teams.stateForPeer(peer, this.peers);
-      if (result && typeof result.then === "function") {
-        result.then((state) => this.send(peer, { type: "academy_state", ...state })).catch(() => {});
-      } else {
-        this.send(peer, { type: "team_state", ...result });
-      }
-    }
+    void this.ensureTeamsReady()
+      .then(() => {
+        for (const peer of this.peers.values()) {
+          const state = this.teams.stateForPeer(peer, this.peers);
+          this.send(peer, { type: "team_state", ...state });
+        }
+      })
+      .catch(() => {});
   }
 
   sendTeamState(peer) {
     if (!this.teams) return;
-    const result = this.teams.stateForPeer(peer, this.peers);
-    if (result && typeof result.then === "function") {
-      result.then((state) => this.send(peer, { type: "academy_state", ...state })).catch(() => {});
-    } else {
-      this.send(peer, { type: "team_state", ...result });
-    }
+    void this.ensureTeamsReady()
+      .then(() => {
+        if (this.peers.get(peer.id) !== peer) return;
+        this.send(peer, {
+          type: "team_state",
+          ...this.teams.stateForPeer(peer, this.peers),
+        });
+      })
+      .catch(() => {});
   }
   roster() {
     this.broadcast({
@@ -1186,26 +1191,6 @@ export class VillageRoom {
           this.send(other, event);
       }
       this.send(peer, { type: "chat_ack", seq: message.seq });
-      return;
-    }
-    if (
-      this.teams &&
-      validAcademyAction(message) &&
-      message.type === "academy_action"
-    ) {
-      void this.teams
-        .action(peer, message)
-        .then((state) => {
-          this.broadcastAcademy();
-          this.send(peer, { type: "academy_state", ...state });
-        })
-        .catch((error) => {
-          this.reject(
-            peer,
-            error.gameCode || "ACADEMY_ACTION",
-            error.message || "Action d’Académie refusée.",
-          );
-        });
       return;
     }
     if (
