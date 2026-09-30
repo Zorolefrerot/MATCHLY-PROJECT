@@ -152,7 +152,7 @@ func _capture_microphone() -> void:
 		for index in range(PACKET_SAMPLES):
 			packet.append(outgoing[index])
 		outgoing = outgoing.slice(PACKET_SAMPLES)
-		village_link.send_voice(packet.to_base64(), sequence)
+		village_link.send_voice(Marshalls.raw_to_base64(packet), sequence)
 		sequence += 1
 
 func receive_voice(event: Dictionary) -> void:
