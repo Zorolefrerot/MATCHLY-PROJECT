@@ -43,6 +43,12 @@ const chat = (seq, text = "Bonjour", channel = "RP") => ({
   text,
   channel,
 });
+const voice = (seq, data = Buffer.alloc(160, 128).toString("base64")) => ({
+  type: "voice",
+  codec: "pcm8",
+  seq,
+  data,
+});
 test("room publishes only server identity, bounded positions and distinct movement states", () => {
   const { room, join, advance } = fixture();
   const a = join(1),
@@ -51,6 +57,7 @@ test("room publishes only server identity, bounded positions and distinct moveme
     a.events.find((e) => e.type === "welcome").spawn,
     [0, 0.25, 78],
   );
+  assert.equal(a.events.find((e) => e.type === "welcome").voiceRange, 5);
   assert.deepEqual(
     b.events.find((e) => e.type === "roster").players.map((p) => p.id),
     [1, 2],
@@ -162,6 +169,38 @@ test("proximity RP/HRP chat is plaintext, deduplicated, limited and has no catch
   room.receive(a.peer, chat(4, "fake\nidentity"));
   assert.equal(a.closes.at(-1)[0], 1008);
 });
+test("open microphone relays only PCM8 frames to peers within the strict 5 m range", () => {
+  const { room, join } = fixture();
+  const speaker = join(1);
+  const near = join(2);
+  const far = join(3);
+  near.peer.state.p = [3, 0.25, 78];
+  far.peer.state.p = [5.01, 0.25, 78];
+  room.receive(speaker.peer, voice(0));
+  const nearVoices = near.events.filter((event) => event.type === "voice");
+  assert.equal(nearVoices.length, 1);
+  assert.equal(nearVoices[0].sender, 1);
+  assert.equal(nearVoices[0].data, voice(0).data);
+  assert.equal(far.events.filter((event) => event.type === "voice").length, 0);
+  room.receive(speaker.peer, voice(0));
+  assert.equal(near.events.filter((event) => event.type === "voice").length, 1);
+  near.peer.state.p = [5.01, 0.25, 78];
+  room.receive(speaker.peer, voice(1));
+  assert.equal(near.events.filter((event) => event.type === "voice").length, 1);
+
+  const malformed = join(4);
+  room.receive(malformed.peer, voice(0, "not-base64"));
+  assert.equal(malformed.closes.at(-1)[0], 1008);
+  const oversized = join(5);
+  room.receive(oversized.peer, voice(0, Buffer.alloc(193, 128).toString("base64")));
+  assert.equal(oversized.closes.at(-1)[0], 1008);
+
+  const rateLimited = join(6);
+  for (let seq = 0; seq < 51; seq++) room.receive(rateLimited.peer, voice(seq));
+  assert.equal(rateLimited.events.at(-1).code, "VOICE_RATE");
+  assert.equal(rateLimited.closes.length, 0);
+});
+
 test("finite/strict packets, flood ceiling, expiry, capacity and shutdown fail closed", () => {
   for (const bad of [
     move(0, [NaN, 0, 0]),

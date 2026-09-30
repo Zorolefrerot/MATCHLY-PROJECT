@@ -93,6 +93,21 @@ static func plain(value: Variant, maximum: int) -> bool:
 		return false
 	return true
 
+
+static func voice_data(value: Variant) -> bool:
+	if not value is String or value.is_empty() or value.length() > 256:
+		return false
+	var raw: PackedByteArray = Marshalls.base64_to_raw(value)
+	return not raw.is_empty() and raw.size() <= 192
+
+static func voice_event(value: Variant) -> bool:
+	if not value is Dictionary or value.size() != 6:
+		return false
+	for key: Variant in value.keys():
+		if key not in ["codec", "data", "name", "sender", "seq", "type"]:
+			return false
+	return value.get("type") == "voice" and value.get("codec") == "pcm8" and integer(value.get("sender"),1) and plain(value.get("name"),50) and integer(value.get("seq")) and voice_data(value.get("data"))
+
 func _process(delta: float) -> void:
 	clock += delta
 	if not enabled or not active or api == null:
@@ -223,6 +238,12 @@ func chat(channel: String, text: String) -> int:
 		return -1
 	return seq
 
+func send_voice(data: String, seq: int) -> bool:
+	# PCM8 base64 packets are deliberately tiny: one 20 ms frame at 8 kHz.
+	if not connected or not voice_data(data) or not integer(seq):
+		return false
+	return _send({"type":"voice","codec":"pcm8","seq":seq,"data":data})
+
 func secondary_action(action: String, slot: int, mission_id: String, revision: int, index: int = -1) -> bool:
 	if connected and action in ["accept", "collect", "complete", "abandon"] and slot >= 0 and slot < 3 and not mission_id.is_empty() and revision >= 1 and index >= -1:
 		return _send({"type":"secondary_action","action":action,"slot":slot,"missionId":mission_id,"revision":revision,"index":index})
@@ -275,11 +296,11 @@ func _accept(value: Variant) -> bool:
 		return false
 	var kind: String = value["type"]
 	if kind == "welcome":
-		if connected or not integer(value.get("protocol"),1) or value["protocol"] != 1 or not integer(value.get("self"),1) or value["self"] != api.profile.get("character",{}).get("id") or not point(value.get("spawn")) or not integer(value.get("radius"),1) or value["radius"] != 18:
+		if connected or not integer(value.get("protocol"),1) or value["protocol"] != 1 or not integer(value.get("self"),1) or value["self"] != api.profile.get("character",{}).get("id") or not point(value.get("spawn")) or not integer(value.get("radius"),1) or value["radius"] != 18 or not integer(value.get("voiceRange"),1) or value["voiceRange"] != 5:
 			return false
 		connected = true
 		attempts = 0
-		status_changed.emit("Connecté · Proximité 12 m · RP / HRP")
+		status_changed.emit("Connecté · chat 18 m · voix 5 m · RP / HRP")
 	elif not connected:
 		return false
 	elif kind in ["roster","snapshot"]:
@@ -304,6 +325,9 @@ func _accept(value: Variant) -> bool:
 			return false
 	elif kind == "chat_ack":
 		if not integer(value.get("seq")):
+			return false
+	elif kind == "voice":
+		if not voice_event(value):
 			return false
 	elif kind == "secondary_state":
 		if not SecondaryMission.valid_state(value) or (value.has("progress") and not account_progress(value["progress"])):
@@ -369,7 +393,7 @@ func _accept(value: Variant) -> bool:
 			return false
 	elif kind == "error":
 		var error_code := str(value.get("code", ""))
-		var known_error := error_code in ["CHAT_RATE","COMBAT_BUSY","COMBAT_ACTION","SECONDARY_LOCKED","SECONDARY_CONFLICT","SECONDARY_NOT_AVAILABLE","SECONDARY_ALREADY_ACTIVE","SECONDARY_NOT_OWNER","SECONDARY_OBJECTIVE_INVALID","SECONDARY_TOO_FAR","SECONDARY_NOT_COMPLETE","INVALID_SECONDARY_ACTION","SECONDARY_ACTION","TEAM_LOCKED","TEAM_ACTION_INVALID","TEAM_NOT_AT_RECEPTION","TEAM_ALREADY_CANDIDATE","TEAM_NOT_CANDIDATE","TEAM_OFFICIAL","TEAM_TARGET_INVALID","TEAM_TARGET_UNKNOWN","TEAM_TARGET_BUSY","TEAM_INVITE_CONFLICT","TEAM_FULL","TEAM_NO_INVITE","TEAM_ALREADY_MEMBER","TEAM_INVITE_STALE","TEAM_INCOMPLETE","TEAM_FORM_RACE","TEAM_ACTION","TEAM_DB"]
+		var known_error := error_code in ["CHAT_RATE","VOICE_RATE","COMBAT_BUSY","COMBAT_ACTION","SECONDARY_LOCKED","SECONDARY_CONFLICT","SECONDARY_NOT_AVAILABLE","SECONDARY_ALREADY_ACTIVE","SECONDARY_NOT_OWNER","SECONDARY_OBJECTIVE_INVALID","SECONDARY_TOO_FAR","SECONDARY_NOT_COMPLETE","INVALID_SECONDARY_ACTION","SECONDARY_ACTION","TEAM_LOCKED","TEAM_ACTION_INVALID","TEAM_NOT_AT_RECEPTION","TEAM_ALREADY_CANDIDATE","TEAM_NOT_CANDIDATE","TEAM_OFFICIAL","TEAM_TARGET_INVALID","TEAM_TARGET_UNKNOWN","TEAM_TARGET_BUSY","TEAM_INVITE_CONFLICT","TEAM_FULL","TEAM_NO_INVITE","TEAM_ALREADY_MEMBER","TEAM_INVITE_STALE","TEAM_INCOMPLETE","TEAM_FORM_RACE","TEAM_ACTION","TEAM_DB"]
 		if not plain(error_code, 64) or not known_error or not plain(value.get("error"),240):
 			return false
 	else:

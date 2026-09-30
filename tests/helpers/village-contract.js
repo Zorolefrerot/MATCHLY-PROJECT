@@ -195,6 +195,19 @@ export async function villageContract(db, secondDb = db) {
     const message = await b.wait("chat");
     assert.equal(message.sender, ids[0]);
     assert.equal(message.name, "Genin WS 0");
+    const voiceData = Buffer.alloc(160, 128).toString("base64");
+    a.ws.send(
+      JSON.stringify({
+        type: "voice",
+        codec: "pcm8",
+        seq: 0,
+        data: voiceData,
+      }),
+    );
+    const voice = await b.wait("voice");
+    assert.equal(voice.sender, ids[0]);
+    assert.equal(voice.codec, "pcm8");
+    assert.equal(voice.data, voiceData);
     // Exercise the same WSS path used by the Godot visit, not only the pure room.
     a.ws.send(JSON.stringify({ type: "combat_join" }));
     await a.wait("combat_waiting");

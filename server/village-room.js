@@ -1,9 +1,12 @@
 import { randomUUID } from "node:crypto";
 
+export const VOICE_RANGE = 5;
+
 export const VILLAGE = Object.freeze({
   protocol: 1,
   capacity: 20,
   radius: 18,
+  voiceRange: VOICE_RANGE,
   spawn: Object.freeze([0, 0.25, 78]),
   // Keep a mobile/low-FPS client alive while the authenticated lease is
   // revalidated every two seconds. This is not a session extension: every
@@ -751,6 +754,9 @@ export class VillageRoom {
       packetTokens: 40,
       chatTokens: 3,
       lastChat: now,
+      voiceSeq: -1,
+      voiceTokens: 50,
+      lastVoice: now,
       distanceBudget: 2,
       lastRespawn: now - 5000,
       combat: null,
@@ -765,6 +771,7 @@ export class VillageRoom {
       self: peer.id,
       spawn: [...VILLAGE.spawn],
       radius: VILLAGE.radius,
+      voiceRange: VILLAGE.voiceRange,
     });
     this.roster();
     if (this.secondary)
@@ -1092,6 +1099,63 @@ export class VillageRoom {
     }
     this.sendCombatState();
   }
+  receiveVoice(peer, message, now) {
+    const valid =
+      exact(message, "codec,data,seq,type") &&
+      message.type === "voice" &&
+      message.codec === "pcm8" &&
+      sequence(message.seq) &&
+      typeof message.data === "string" &&
+      message.data.length > 0 &&
+      message.data.length <= 256 &&
+      /^[A-Za-z0-9+/]*={0,2}$/.test(message.data);
+    if (!valid) {
+      this.leave(peer, 1008, "Paquet vocal incompatible");
+      return;
+    }
+    const bytes = Buffer.from(message.data, "base64");
+    const canonical = bytes.toString("base64").replace(/=+$/, "");
+    if (
+      bytes.length === 0 ||
+      bytes.length > 192 ||
+      message.data.replace(/=+$/, "") !== canonical
+    ) {
+      this.leave(peer, 1008, "Paquet vocal trop volumineux");
+      return;
+    }
+    if (message.seq <= peer.voiceSeq) return;
+    peer.voiceTokens = Math.min(
+      50,
+      peer.voiceTokens + (now - peer.lastVoice) / 20,
+    );
+    peer.lastVoice = now;
+    if (peer.voiceTokens < 1) {
+      this.reject(peer, "VOICE_RATE", "Transmission vocale trop rapide.");
+      return;
+    }
+    peer.voiceTokens--;
+    peer.voiceSeq = message.seq;
+    const event = {
+      type: "voice",
+      sender: peer.id,
+      name: peer.name,
+      codec: "pcm8",
+      seq: message.seq,
+      data: message.data,
+    };
+    for (const other of this.peers.values()) {
+      if (
+        other !== peer &&
+        Math.hypot(
+          other.state.p[0] - peer.state.p[0],
+          other.state.p[1] - peer.state.p[1],
+          other.state.p[2] - peer.state.p[2],
+        ) <= VOICE_RANGE
+      )
+        this.send(other, event);
+    }
+  }
+
   receive(peer, message) {
     if (!this.active(peer)) {
       this.leave(
@@ -1102,6 +1166,12 @@ export class VillageRoom {
       return;
     }
     const now = this.now();
+    // Voice has its own bounded 50 packets/s budget so a 20 ms microphone
+    // stream does not compete with movement and text chat's flood budget.
+    if (message && typeof message === "object" && message.type === "voice") {
+      this.receiveVoice(peer, message, now);
+      return;
+    }
     peer.packetTokens = Math.min(
       40,
       peer.packetTokens + (now - peer.lastPacket) * 0.03,

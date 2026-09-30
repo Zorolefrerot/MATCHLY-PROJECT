@@ -844,8 +844,10 @@ func network_protocol_checks() -> void:
 	var link := VillageLink.new()
 	link.api = account
 	check(not link._accept({"type":"snapshot","frame":1,"players":[pose]}), "server frames require an authenticated welcome first")
-	check(not link._accept({"type":"welcome","protocol":"1","self":1,"spawn":[0,0.25,78],"radius":18}), "welcome rejects string protocol versions")
-	check(link._accept({"type":"welcome","protocol":1,"self":1,"spawn":[0,0.25,78],"radius":18}), "welcome binds presence to the current account")
+	check(not link._accept({"type":"welcome","protocol":"1","self":1,"spawn":[0,0.25,78],"radius":18,"voiceRange":5}), "welcome rejects string protocol versions")
+	check(link._accept({"type":"welcome","protocol":1,"self":1,"spawn":[0,0.25,78],"radius":18,"voiceRange":5}), "welcome binds presence to the current account")
+	check(VillageLink.voice_event({"type":"voice","codec":"pcm8","sender":2,"name":"Genin","seq":0,"data":Marshalls.raw_to_base64(PackedByteArray([128,128,128]))}), "client accepts a bounded PCM8 voice event")
+	check(not VillageLink.voice_event({"type":"voice","codec":"pcm8","sender":2,"name":"Genin","seq":0,"data":"x".repeat(257)}), "client rejects an oversized voice event")
 	check(not link._accept({"type":"snapshot","frame":1,"players":[pose,pose]}), "duplicate account IDs in a frame are refused")
 	check(not link._accept({"type":"error","code":123,"error":"test"}), "network error codes are type checked")
 	var team_profile := {"key":"nkaito","kind":"npc","id":"kaito","name":"Kaito","level":8,"clan":"Senju","affinity":"Suiton","style":"Soutien défensif","personality":"Calme et attentif.","portraitId":"team-npc-kaito-v1","appearance":CharacterAppearance.DEFAULTS.duplicate(),"status":"recherche"}

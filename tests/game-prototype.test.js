@@ -12,6 +12,8 @@ test("offline training stays separate from explicit scoped HTTPS account access"
   assert.match(project, /window\/handheld\/orientation=0/);
   const preset = read("game/export_presets.cfg");
   assert.match(preset, /permissions\/internet=true/);
+  assert.match(preset, /permissions\/record_audio=true/);
+  assert.match(read("game/scripts/village_voice.gd"), /RECORD_AUDIO/);
   assert.match(preset, /package\/unique_name="org.idremzenkai.training"/);
   assert.match(preset, /gradle_build\/use_gradle_build=false/);
   // Standard APK templates have fixed SDK levels; overrides require Gradle.

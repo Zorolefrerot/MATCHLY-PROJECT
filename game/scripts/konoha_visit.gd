@@ -59,6 +59,7 @@ var music_enabled: bool = true
 var app_active: bool = true
 var village_link: VillageLink
 var chat_panel: VillageChat
+var village_voice: VillageVoice
 var remote_avatars: Dictionary = {}
 var combat_effects: Node3D
 var combat_vfx: TrainingVFX
@@ -288,6 +289,10 @@ func _ready() -> void:
 		secondary_manager.set_link(village_link)
 		team_manager.set_link(village_link)
 		add_child(village_link)
+		village_voice = VillageVoice.new()
+		village_voice.name = "VillageVoice"
+		hud.add_child(village_voice)
+		village_voice.configure(village_link)
 
 func _build_hokage_transition_nodes() -> void:
 	# Explicit points are the only destinations used by the transition.
@@ -935,6 +940,7 @@ func finish() -> void:
 	inside_hokage = false
 	_close_chat()
 	if is_instance_valid(team_manager): team_manager.close_panel()
+	if is_instance_valid(village_voice): village_voice.shutdown()
 	if is_instance_valid(village_link): village_link.stop()
 	if is_instance_valid(music):
 		music.stop()
@@ -1148,6 +1154,8 @@ func _network_event(event: Dictionary) -> void:
 				unread = mini(unread+1,50)
 				hud.buttons["chat"].text = "CHAT RP / HRP (%d)" % unread
 		"chat_ack": chat_panel.acknowledge(int(event["seq"]))
+		"voice":
+			if is_instance_valid(village_voice): village_voice.receive_voice(event)
 		"error":
 			var code := str(event.get("code", ""))
 			if code.begins_with("SECONDARY_") or code == "INVALID_SECONDARY_ACTION":
