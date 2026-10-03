@@ -25,7 +25,19 @@ export function createApp(db) {
   const app = express();
   app.disable("x-powered-by");
   // Process liveness only: Render health checks must not wake Neon repeatedly.
-  app.get("/healthz", (req, res) => res.json({ status: "ok" }));
+  // The static village capability block also lets us detect a stale Render
+  // deployment without exposing accounts, sessions, or database state.
+  app.get("/healthz", (req, res) =>
+    res.json({
+      status: "ok",
+      village: {
+        protocol: 1,
+        path: "/api/game/village",
+        radius: 18,
+        voiceRange: 5,
+      },
+    }),
+  );
   app.set("trust proxy", 1);
   app.use(
     express.json({

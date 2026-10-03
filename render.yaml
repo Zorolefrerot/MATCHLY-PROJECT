@@ -10,7 +10,9 @@ services:
     buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev
     startCommand: npm start
     healthCheckPath: /healthz
-    autoDeploy: false
+    # Keep the production WSS and the Android client on the same branch.
+    # A push to this fixed branch now deploys the tested server automatically.
+    autoDeploy: true
     envVars:
       - key: NODE_VERSION
         value: 22.22.3

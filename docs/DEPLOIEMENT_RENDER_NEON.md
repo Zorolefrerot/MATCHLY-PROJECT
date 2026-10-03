@@ -36,7 +36,7 @@ arena/01a094b6-matchly-project
 | Start Command | `npm start` |
 | Instance Type | **Free** |
 | Health Check Path | `/healthz` |
-| Auto-Deploy | Désactivé au départ ; utiliser les déploiements manuels |
+| Auto-Deploy | Activé sur la branche `arena/01a094b6-matchly-project` ; après la création initiale, chaque push testé met à jour le service |
 
 **Ne crée pas de disque Render ni de base Render Postgres.** La base est déjà hébergée chez Neon. Un fichier `render.yaml` est également disponible pour une configuration Blueprint, mais le parcours manuel ci-dessus permet de vérifier tous les champs depuis un téléphone.
 
@@ -72,11 +72,12 @@ Si Neon n’est pas configuré, le démarrage s’arrête au lieu d’enregistre
 1. Vérifie **Instance Type: Free**, puis lance **Deploy Web Service**.
 2. Attends que Render affiche **Live**. Regarde les journaux si le déploiement échoue.
 3. Ouvre **l’URL réellement attribuée par Render** en haut de la page du service. Elle se termine généralement par `.onrender.com` ; ne déduis pas le nom exact à partir de celui du dépôt.
-4. Va sur `/connexion` et utilise l’e-mail et le mot de passe définis dans `ADMIN_EMAIL` et `ADMIN_PASSWORD`.
-5. Vérifie que `/admin` affiche ton tableau de bord.
-6. **Après cette première connexion réussie**, retourne dans **Environment**, supprime `ADMIN_PASSWORD` et `ADMIN_EMAIL`, puis sauvegarde et redéploie. Le propriétaire est déjà dans Neon : il est conservé et son mot de passe n’est pas remplacé au redémarrage. Conserve `DATABASE_URL`.
-7. Depuis une fenêtre privée, crée un compte candidat de test avec une adresse distincte, puis envoie une candidature. Contrôle son affichage dans l’administration.
-8. Effectue un déploiement manuel et vérifie que le compte et le dossier sont toujours présents. Ne procède à des admissions/tirages de test que si tu souhaites réellement consommer ces places : ils sont définitifs dans cette version.
+4. Vérifie `https://URL-REELLE/healthz`. La réponse attendue contient `status: "ok"` et le bloc `village` avec `protocol: 1`, `radius: 18` et `voiceRange: 5`. Si la réponse est seulement `{ "status": "ok" }`, le service est vivant mais encore sur une ancienne version : déclenche **Manual Deploy → Deploy latest commit** une fois, puis recontrôle.
+5. Va sur `/connexion` et utilise l’e-mail et le mot de passe définis dans `ADMIN_EMAIL` et `ADMIN_PASSWORD`.
+6. Vérifie que `/admin` affiche ton tableau de bord.
+7. **Après cette première connexion réussie**, retourne dans **Environment**, supprime `ADMIN_PASSWORD` et `ADMIN_EMAIL`, puis sauvegarde et redéploie. Le propriétaire est déjà dans Neon : il est conservé et son mot de passe n’est pas remplacé au redémarrage. Conserve `DATABASE_URL`.
+8. Depuis une fenêtre privée, crée un compte candidat de test avec une adresse distincte, puis envoie une candidature. Contrôle son affichage dans l’administration.
+9. Vérifie que les mises à jour suivantes arrivent automatiquement depuis `arena/01a094b6-matchly-project`; utilise **Manual Deploy → Deploy latest commit** seulement pour le premier rattrapage ou un incident de déploiement. Ne procède aux admissions/tirages de test que si tu souhaites réellement consommer ces places : ils sont définitifs dans cette version.
 
 **Tu peux partager ici l’URL publique Render pour obtenir de l’aide. Ne partage pas `DATABASE_URL`, le mot de passe, les cookies ni les paramètres privés.**
 
@@ -118,7 +119,7 @@ Documentation des limites :
 | Symptôme | Vérification |
 |---|---|
 | `vite: not found` pendant le build | Utiliser la commande avec `npm ci --include=dev` |
-| Le code du site n’apparaît pas | Vérifier la branche `arena/01a08158-matchly-project` |
+| Le code du site n’apparaît pas | Vérifier la branche `arena/01a094b6-matchly-project`, puis contrôler `/healthz` et son bloc `village` |
 | Démarrage interrompu | Vérifier les noms des variables, les identifiants du rôle Neon, le projet actif et les paramètres administrateur du premier démarrage |
 | Erreur `28P01` | Mot de passe/identifiants PostgreSQL invalides : recopier la connexion Neon dans Render |
 | Erreur `ENOTFOUND` / `ETIMEDOUT` | Hôte Neon incorrect ou problème réseau ; ne pas désactiver TLS pour contourner l’erreur |
@@ -133,6 +134,6 @@ Pour demander de l’aide, copie uniquement l’erreur utile des journaux et mas
 
 ## Prochain lot réseau 0.11 — ne pas confondre sources et APK vérifiée
 
-Le service Node existant reçoit WSS `/api/game/village` sur **le même port** que le site. Aucun second service, port public ou secret n’est nécessaire. Déploiement manuel sur la branche existante, après validation complète du lot et mise à jour de son lien de téléchargement. La 0.10 reste actuellement l’APK proposée.
+Le service Node existant reçoit WSS `/api/game/village` sur **le même port** que le site. Aucun second service, port public ou secret n’est nécessaire. Le Blueprint suit désormais automatiquement la branche `arena/01a094b6-matchly-project` après la validation complète du lot ; un **Manual Deploy → Deploy latest commit** reste nécessaire si le service Render existant n’a pas encore synchronisé cette configuration. La version Android ne doit être communiquée qu’après une CI Android verte.
 
 La salle est en mémoire dans **un seul processus** ; ne pas multiplier les instances en supposant qu’elles partagent la présence. Redémarrage/déploiement → reconnexion au point d’arrivée, mission personnelle conservée en base. Pas de base de positions ni de chat. Revalidation d’accès uniquement tant qu’il y a des participants, aucun appel Neon à vide. Gratuit ne veut pas dire disponibilité permanente ou trafic illimité. [Protocole, quotas, tests et limites](VILLAGE_PARTAGE.md).

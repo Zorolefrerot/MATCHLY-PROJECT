@@ -149,7 +149,7 @@ L’image fournie est recadrée au format carré pour créer le favicon ICO (16/
 
 Les fichiers sont déjà générés et versionnés : aucune dépendance graphique n’est nécessaire sur Render. Pour les régénérer après modification de l’image, installer ImageMagick dans l’environnement de développement puis lancer `bash scripts/generate-icons.sh`. Le manifeste décrit un raccourci web ; il ne fournit ni jeu Android ni mode hors ligne.
 
-Après mise à jour du dépôt, lancer un déploiement manuel Render. Les références d’icônes sont versionnées pour limiter les anciens favicons en cache.
+Le service Render suit la branche `arena/01a094b6-matchly-project` après validation complète ; vérifie `/healthz` et son bloc `village` après le premier rattrapage du service existant. Les références d’icônes sont versionnées pour limiter les anciens favicons en cache.
 
 ## Prototype Android séparé
 

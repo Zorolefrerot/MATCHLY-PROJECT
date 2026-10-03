@@ -129,7 +129,15 @@ test("Render health checks never query the database or block on Neon wake-up", a
       { headers: { Cookie: "iz_session=old-cookie" } },
     );
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { status: "ok" });
+    assert.deepEqual(await response.json(), {
+      status: "ok",
+      village: {
+        protocol: 1,
+        path: "/api/game/village",
+        radius: 18,
+        voiceRange: 5,
+      },
+    });
   } finally {
     app.locals.cleanup();
     await new Promise((r) => server.close(r));
