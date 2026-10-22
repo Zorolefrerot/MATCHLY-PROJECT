@@ -336,6 +336,7 @@ export const VisualReceiptModal: React.FC<VisualReceiptModalProps> = ({
          ===================================================================== */}
       <div className="w-full max-w-[700px] overflow-x-auto rounded-2xl shadow-2xl">
         <div
+          id="receipt-paper-sheet"
           ref={receiptSheetRef}
           className="mx-auto w-[680px] bg-[#FAFAFA] px-8 py-8 text-[#14181F] print:w-full print:shadow-none"
         >

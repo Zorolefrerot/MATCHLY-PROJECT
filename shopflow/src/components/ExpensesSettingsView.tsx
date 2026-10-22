@@ -7,23 +7,37 @@ import {
   Eye,
   Globe2,
   ImagePlus,
+  LayoutGrid,
   Lock,
+  Moon,
+  Palette,
+  Play,
   Plus,
   Receipt,
   RefreshCw,
   Sparkles,
   Store,
+  Sun,
   Trash2,
   Upload,
+  Volume2,
 } from 'lucide-react';
+import { THEME_PRESETS } from '../data/initialData';
 import { LANGUAGE_OPTIONS } from '../i18n/translations';
 import {
   AppLanguage,
+  CatalogDefaultFormat,
+  ColorMode,
+  CornerRadiusStyle,
   CurrencyCode,
   ExpenseEntry,
+  FontStyleChoice,
+  LayoutDensity,
   ShopSettings,
+  VoiceModelId,
 } from '../types';
 import { formatMoney, fromDisplayAmount } from '../utils/currency';
+import { speakCleanText, VOICE_MODELS } from '../utils/speechCleaner';
 
 interface ExpensesSettingsViewProps {
   settings: ShopSettings;
@@ -35,9 +49,6 @@ interface ExpensesSettingsViewProps {
   onResetDemo: () => void;
 }
 
-/**
- * Resizes uploaded shop logo cleanly via HTML5 Canvas so even 10MB camera photos save smoothly in localStorage
- */
 function resizeLogoImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -79,8 +90,8 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
   onResetDemo,
 }) => {
   const [section, setSection] = useState<
-    'branding' | 'lang_currency' | 'expenses' | 'ai_security'
-  >('branding');
+    'theme' | 'branding' | 'lang_currency' | 'ai_voice' | 'expenses'
+  >('theme');
 
   const [label, setLabel] = useState('');
   const [category, setCategory] =
@@ -93,9 +104,21 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
 
   const totalExpensesFC = expenses.reduce((sum, e) => sum + e.amountFC, 0);
 
-  const notifySaved = (msg = 'Paramètres enregistrés !') => {
+  const notifySaved = (msg = 'Modifications appliquées !') => {
     setSavedNotice(msg);
     setTimeout(() => setSavedNotice(null), 2200);
+  };
+
+  const updateTheme = (patch: Partial<ShopSettings['theme']>) => {
+    onUpdateSettings({
+      ...settings,
+      theme: {
+        ...settings.theme,
+        presetId: patch.presetId ?? 'custom',
+        ...patch,
+      },
+    });
+    notifySaved('Thème mis à jour en direct !');
   };
 
   const handleShopLogoUpload = async (
@@ -106,7 +129,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
     try {
       const compressedDataUrl = await resizeLogoImage(file);
       onUpdateSettings({ ...settings, shopLogo: compressedDataUrl });
-      notifySaved('Logo de la boutique mis à jour !');
+      notifySaved('Logo de la boutique enregistré !');
     } catch {
       notifySaved('Impossible de lire cette image.');
     }
@@ -130,8 +153,9 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
       receiptFooterSubtitle: 'Plus qu’une boutique, une communauté !',
       receiptQuote:
         '« Les vrais otakus ne collectionnent pas seulement des objets, ils collectionnent des émotions. »',
+      theme: THEME_PRESETS[2].config,
     });
-    notifySaved(' Modèle MB_OTAKU STORE appliqué ! Cliquez sur « Voir mon Reçu ».');
+    notifySaved('Profil & Thème MB_OTAKU STORE appliqués !');
   };
 
   const handleCreateExpense = (e: React.FormEvent) => {
@@ -185,18 +209,19 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
       <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 @lg:flex-row @lg:items-center @lg:justify-between">
         <div className="flex gap-1.5 overflow-x-auto pb-1 @lg:pb-0">
           {[
+            { id: 'theme', label: '🎨 Thème, Couleurs & Format', icon: Palette },
             { id: 'branding', label: '🏪 Boutique, Logo & Reçu', icon: Store },
             {
               id: 'lang_currency',
               label: '🌍 Langues (5) & Devise',
               icon: Globe2,
             },
+            { id: 'ai_voice', label: '🎙️ Voix IA & Sécurité', icon: Volume2 },
             {
               id: 'expenses',
               label: `🧾 Dépenses (${expenses.length})`,
               icon: Receipt,
             },
-            { id: 'ai_security', label: '🤖 IA & Sécurité', icon: Bot },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -204,15 +229,16 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               onClick={() =>
                 setSection(
                   tab.id as
+                    | 'theme'
                     | 'branding'
                     | 'lang_currency'
+                    | 'ai_voice'
                     | 'expenses'
-                    | 'ai_security'
                 )
               }
-              className={`shrink-0 rounded-xl px-4 py-2.5 text-xs font-extrabold transition ${
+              className={`shrink-0 rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition ${
                 section === tab.id
-                  ? 'bg-[#081844] text-white shadow-xs'
+                  ? 'bg-[#0A4DFF] text-white shadow-xs'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -231,33 +257,287 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
           <button
             type="button"
             onClick={onPreviewSampleReceipt}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-extrabold text-white shadow-xs transition hover:bg-emerald-700"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-extrabold text-white shadow-xs transition hover:opacity-90"
           >
             <Eye className="h-3.5 w-3.5" />
-            <span>Aperçu de mon Reçu WhatsApp</span>
+            <span>Aperçu Reçu WhatsApp</span>
           </button>
         </div>
       </div>
 
       {/* =========================================================
-          TAB 1: BOUTIQUE, LOGO PROPRIÉTAIRE & PERSONNALISATION REÇU
+          TAB 1: CUSTOM BOUTIQUE THEME, COLORS & FORMAT STUDIO
          ========================================================= */}
-      {section === 'branding' && (
+      {section === 'theme' && (
         <div className="grid grid-cols-1 gap-6 @lg:grid-cols-12">
-          {/* Logo Uploader Card */}
-          <div className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 @lg:col-span-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ImagePlus className="h-5 w-5 text-[#0A4DFF]" />
+          {/* Left: Preset Themes + Custom Color Pickers */}
+          <div className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 @lg:col-span-7">
+            <div className="flex items-center gap-2.5">
+              <Palette className="h-5 w-5 text-[#0A4DFF]" />
+              <div>
                 <h2 className="text-base font-extrabold text-slate-900">
-                  Logo de votre Boutique
+                  Thèmes & Couleurs Personnalisées de la Boutique
                 </h2>
+                <p className="text-xs text-slate-500">
+                  Choisissez une ambiance prête à l’emploi ou créez exactement vos propres couleurs.
+                </p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-500">
-              Importez l’image/logo de votre commerce : il s’affichera dans l’application, votre boutique en ligne et **en haut à gauche de tous vos reçus WhatsApp**.
-            </p>
+            {/* 5 One-Click Presets */}
+            <div className="grid grid-cols-1 gap-2.5 @sm:grid-cols-2">
+              {THEME_PRESETS.map((preset) => {
+                const isSelected = settings.theme.presetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => updateTheme(preset.config)}
+                    className={`flex items-center justify-between rounded-2xl border p-3.5 text-left transition ${
+                      isSelected
+                        ? 'border-[#0A4DFF] bg-blue-50/40 ring-2 ring-[#0A4DFF]/30'
+                        : 'border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex -space-x-1.5">
+                        <span
+                          style={{ backgroundColor: preset.config.primaryColor }}
+                          className="h-6 w-6 rounded-full ring-2 ring-white"
+                        />
+                        <span
+                          style={{ backgroundColor: preset.config.accentColor }}
+                          className="h-6 w-6 rounded-full ring-2 ring-white"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs font-extrabold text-slate-900">
+                          {preset.name}
+                        </p>
+                        <p className="text-[10.5px] text-slate-500">
+                          {preset.subtitle}
+                        </p>
+                      </div>
+                    </div>
+                    {isSelected && (
+                      <Check className="h-4 w-4 shrink-0 text-[#0A4DFF]" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom Color Pickers (Primary, Dark Header, Accent Gain) */}
+            <div className="grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 text-xs @sm:grid-cols-3">
+              <label className="flex items-center justify-between rounded-2xl border border-slate-200 p-3">
+                <div>
+                  <span className="block font-extrabold text-slate-900">
+                    Couleur Principale
+                  </span>
+                  <span className="font-mono text-[10px] text-slate-500">
+                    {settings.theme.primaryColor}
+                  </span>
+                </div>
+                <input
+                  type="color"
+                  value={settings.theme.primaryColor}
+                  onChange={(e) =>
+                    updateTheme({ primaryColor: e.target.value })
+                  }
+                  className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
+                />
+              </label>
+
+              <label className="flex items-center justify-between rounded-2xl border border-slate-200 p-3">
+                <div>
+                  <span className="block font-extrabold text-slate-900">
+                    Couleur Secondaire
+                  </span>
+                  <span className="font-mono text-[10px] text-slate-500">
+                    {settings.theme.accentColor}
+                  </span>
+                </div>
+                <input
+                  type="color"
+                  value={settings.theme.accentColor}
+                  onChange={(e) => updateTheme({ accentColor: e.target.value })}
+                  className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
+                />
+              </label>
+
+              <label className="flex items-center justify-between rounded-2xl border border-slate-200 p-3">
+                <div>
+                  <span className="block font-extrabold text-slate-900">
+                    En-tête & Reçu
+                  </span>
+                  <span className="font-mono text-[10px] text-slate-500">
+                    {settings.theme.primaryDarkColor}
+                  </span>
+                </div>
+                <input
+                  type="color"
+                  value={settings.theme.primaryDarkColor}
+                  onChange={(e) =>
+                    updateTheme({ primaryDarkColor: e.target.value })
+                  }
+                  className="h-9 w-9 cursor-pointer rounded-lg border-0 bg-transparent"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Right: Mode (Clair / Sombre / Papier) + Format, Coins, Police & Densité */}
+          <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 text-xs @lg:col-span-5">
+            <div className="flex items-center gap-2">
+              <LayoutGrid className="h-5 w-5 text-[#0A4DFF]" />
+              <h2 className="text-base font-extrabold text-slate-900">
+                Format & Style d’Affichage
+              </h2>
+            </div>
+
+            {/* Light / Dark / Warm Mode */}
+            <div>
+              <label className="mb-1.5 block font-bold text-slate-700">
+                Luminosité de l’application
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    { id: 'light', label: 'Clair Jour', icon: Sun },
+                    { id: 'dark', label: 'Sombre Nuit', icon: Moon },
+                    { id: 'warm', label: 'Papier Doux', icon: Sparkles },
+                  ] as { id: ColorMode; label: string; icon: typeof Sun }[]
+                ).map((m) => {
+                  const Icon = m.icon;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => updateTheme({ colorMode: m.id })}
+                      className={`flex flex-col items-center gap-1 rounded-xl border py-2.5 font-bold transition ${
+                        settings.theme.colorMode === m.id
+                          ? 'border-[#0A4DFF] bg-[#0A4DFF] text-white'
+                          : 'border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{m.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Corner Radius Style */}
+            <div>
+              <label className="mb-1.5 block font-bold text-slate-700">
+                Forme des cartes & boutons
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    { id: 'sharp', label: 'Carré Pro' },
+                    { id: 'modern', label: 'Moderne' },
+                    { id: 'round', label: 'Arrondi Doux' },
+                  ] as { id: CornerRadiusStyle; label: string }[]
+                ).map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => updateTheme({ cornerStyle: c.id })}
+                    className={`rounded-xl border py-2 font-bold transition ${
+                      settings.theme.cornerStyle === c.id
+                        ? 'border-[#0A4DFF] bg-[#0A4DFF] text-white'
+                        : 'border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Default Product Display Format */}
+            <div>
+              <label className="mb-1.5 block font-bold text-slate-700">
+                Format par défaut du stock & catalogue
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { id: 'grid', label: 'Grille Grandes Photos' },
+                    { id: 'table', label: 'Tableau Caisse Pro' },
+                  ] as { id: CatalogDefaultFormat; label: string }[]
+                ).map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => updateTheme({ defaultCatalogFormat: f.id })}
+                    className={`rounded-xl border py-2 font-bold transition ${
+                      settings.theme.defaultCatalogFormat === f.id
+                        ? 'border-[#0A4DFF] bg-[#0A4DFF] text-white'
+                        : 'border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Typography & Density */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="mb-1 block font-bold text-slate-700">
+                  Style de police
+                </label>
+                <select
+                  value={settings.theme.fontStyle}
+                  onChange={(e) =>
+                    updateTheme({
+                      fontStyle: e.target.value as FontStyleChoice,
+                    })
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-800"
+                >
+                  <option value="modern">Moderne Sans</option>
+                  <option value="editorial">Classique Élégant</option>
+                  <option value="mono">Technique Caisse</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block font-bold text-slate-700">
+                  Espacement écran
+                </label>
+                <select
+                  value={settings.theme.density}
+                  onChange={(e) =>
+                    updateTheme({ density: e.target.value as LayoutDensity })
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-800"
+                >
+                  <option value="comfortable">Confortable & Aéré</option>
+                  <option value="compact">Compact Haute Densité</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          TAB 2: BOUTIQUE, LOGO PROPRIÉTAIRE & REÇU WHATSAPP
+         ========================================================= */}
+      {section === 'branding' && (
+        <div className="grid grid-cols-1 gap-6 @lg:grid-cols-12">
+          <div className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 @lg:col-span-5">
+            <div className="flex items-center gap-2">
+              <ImagePlus className="h-5 w-5 text-[#0A4DFF]" />
+              <h2 className="text-base font-extrabold text-slate-900">
+                Logo de votre Boutique
+              </h2>
+            </div>
 
             <div className="flex flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-6 text-center">
               {settings.shopLogo ? (
@@ -267,7 +547,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                   className="h-28 w-28 rounded-full border-4 border-white object-cover shadow-md ring-2 ring-slate-900"
                 />
               ) : (
-                <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-[#081844] via-[#0A4DFF] to-[#00B4FF] text-white shadow-md">
+                <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full border-4 border-white bg-[#0A4DFF] text-white shadow-md">
                   <span className="text-2xl font-black">{shopInitials}</span>
                   <span className="text-[10px] font-bold tracking-widest uppercase">
                     LOGO
@@ -278,14 +558,11 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               <p className="mt-3 text-sm font-extrabold text-slate-900">
                 {settings.shopName}
               </p>
-              <p className="text-[11px] font-semibold text-slate-500">
-                {settings.shopTagline}
-              </p>
 
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#0A4DFF] px-4 py-2.5 text-xs font-extrabold text-white shadow-xs transition hover:bg-[#0839C8]">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#0A4DFF] px-4 py-2.5 text-xs font-extrabold text-white shadow-xs transition hover:opacity-90">
                   <Upload className="h-4 w-4" />
-                  <span>Importer le logo (Galerie / PC)</span>
+                  <span>Importer une image Logo</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -300,7 +577,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                     onClick={() =>
                       onUpdateSettings({ ...settings, shopLogo: '' })
                     }
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50"
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-red-600"
                   >
                     Retirer
                   </button>
@@ -308,29 +585,24 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               </div>
             </div>
 
-            {/* 1-Click Preset for MB_OTAKU STORE */}
-            <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 text-xs">
-              <div className="flex items-center gap-1.5 font-extrabold text-[#081844]">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4 text-xs">
+              <div className="flex items-center gap-1.5 font-extrabold text-slate-900">
                 <Sparkles className="h-4 w-4 text-[#0A4DFF]" />
-                <span>Test rapide : Exemple « MB_OTAKU STORE »</span>
+                <span>Exemple complet « MB_OTAKU STORE »</span>
               </div>
-              <p className="mt-1 text-[11px] text-slate-600">
-                Remplit automatiquement toutes les informations du modèle *MB_OTAKU STORE* (Mont-Ngafula, slogan, citation Otaku) en 1 clic :
-              </p>
               <button
                 type="button"
                 onClick={handleLoadOtakuPreset}
-                className="mt-3 w-full rounded-xl bg-[#081844] py-2.5 text-xs font-extrabold text-white transition hover:bg-slate-800"
+                className="mt-3 w-full rounded-xl bg-[#081844] py-2.5 text-xs font-extrabold text-white"
               >
-                Appliquer le profil exemple « MB_OTAKU STORE »
+                Appliquer le profil & thème « MB_OTAKU STORE »
               </button>
             </div>
           </div>
 
-          {/* Shop Identity & Receipt Customization Fields */}
           <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 text-xs @lg:col-span-7">
             <h2 className="text-base font-extrabold text-slate-900">
-              Informations commerciales & Modèle de Reçu WhatsApp
+              Informations commerciales & Personnalisation du Reçu
             </h2>
 
             <div className="grid grid-cols-1 gap-3.5 @sm:grid-cols-2">
@@ -344,7 +616,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({ ...settings, shopName: e.target.value })
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-bold text-slate-900 focus:border-[#0A4DFF] focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-bold text-slate-900"
                 />
               </div>
 
@@ -358,7 +630,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({ ...settings, ownerName: e.target.value })
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-semibold text-slate-900 focus:border-[#0A4DFF] focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-semibold text-slate-900"
                 />
               </div>
 
@@ -372,7 +644,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({ ...settings, city: e.target.value })
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-medium text-slate-900 focus:border-[#0A4DFF] focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-medium text-slate-900"
                 />
               </div>
 
@@ -389,7 +661,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                       whatsappNumber: e.target.value,
                     })
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-semibold text-slate-900 focus:border-[#0A4DFF] focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-semibold text-slate-900"
                 />
               </div>
 
@@ -406,14 +678,13 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                       instagramHandle: e.target.value,
                     })
                   }
-                  placeholder="@ma_boutique"
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-medium text-slate-900 focus:border-[#0A4DFF] focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-medium text-slate-900"
                 />
               </div>
 
               <div>
                 <label className="mb-1 block font-bold text-slate-700">
-                  Type d’activité (en haut à droite du reçu)
+                  Activité affichée sur le reçu
                 </label>
                 <input
                   type="text"
@@ -424,14 +695,14 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                       businessActivity: e.target.value,
                     })
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-medium text-slate-900 focus:border-[#0A4DFF] focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-medium text-slate-900"
                 />
               </div>
             </div>
 
             <div>
               <label className="mb-1 block font-bold text-slate-700">
-                Catégories / Spécialités sous le titre (séparées par •)
+                Spécialités sous le titre (séparées par •)
               </label>
               <input
                 type="text"
@@ -442,8 +713,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                     shopSpecialties: e.target.value,
                   })
                 }
-                placeholder="ANIME • MANGA • ACCESSOIRES • GOODIES"
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-bold uppercase text-slate-900 focus:border-[#0A4DFF] focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-bold uppercase text-slate-900"
               />
             </div>
 
@@ -461,7 +731,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                       shopTagline: e.target.value,
                     })
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 italic font-semibold text-slate-900 focus:border-[#0A4DFF] focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 italic font-semibold text-slate-900"
                 />
               </div>
 
@@ -479,31 +749,14 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                       defaultDeliveryFeeFC: Number(e.target.value) || 0,
                     })
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-bold tabular-nums text-slate-900 focus:border-[#0A4DFF] focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-bold tabular-nums text-slate-900"
                 />
               </div>
             </div>
 
             <div>
               <label className="mb-1 block font-bold text-slate-700">
-                Conditions affichées sur le reçu
-              </label>
-              <input
-                type="text"
-                value={settings.returnPolicyText}
-                onChange={(e) =>
-                  onUpdateSettings({
-                    ...settings,
-                    returnPolicyText: e.target.value,
-                  })
-                }
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-slate-800 focus:border-[#0A4DFF] focus:outline-hidden"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block font-bold text-slate-700">
-                Citation personnalisée en bas à droite du reçu
+                Citation en bas à droite du reçu
               </label>
               <input
                 type="text"
@@ -514,7 +767,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                     receiptQuote: e.target.value,
                   })
                 }
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 italic text-slate-800 focus:border-[#0A4DFF] focus:outline-hidden"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 italic text-slate-800"
               />
             </div>
           </div>
@@ -522,20 +775,19 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
       )}
 
       {/* =========================================================
-          TAB 2: LANGUES (FR, EN, LINGALA, SWAHILI, CHINOIS) & DEVISE
+          TAB 3: TRADUCTION INTÉGRALE 5 LANGUES + DEVISE
          ========================================================= */}
       {section === 'lang_currency' && (
         <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2">
-          {/* 5 Languages Card */}
           <div className="rounded-3xl border border-slate-200 bg-white p-6">
             <div className="flex items-center gap-2.5">
               <Globe2 className="h-5 w-5 text-[#0A4DFF]" />
               <div>
                 <h2 className="text-base font-extrabold text-slate-900">
-                  Langue de l’application & de l’IA
+                  Traduction Intégrale de toute l’Application (IA Active)
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Traduit l’interface et configure la langue par défaut de ShopFlow IA
+                  Traduit immédiatement tous les menus, boutons, produits, tableaux, reçus et l’IA.
                 </p>
               </div>
             </div>
@@ -552,12 +804,12 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                         ...settings,
                         language: lang.code as AppLanguage,
                       });
-                      notifySaved(`Langue changée : ${lang.nativeLabel}`);
+                      notifySaved(`Application traduite : ${lang.nativeLabel}`);
                     }}
                     className={`flex items-center justify-between rounded-2xl border p-4 text-left transition ${
                       isSelected
-                        ? 'border-[#0A4DFF] bg-blue-50/70 ring-1 ring-[#0A4DFF]'
-                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                        ? 'border-[#0A4DFF] bg-blue-50/40 ring-2 ring-[#0A4DFF]/30'
+                        : 'border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -572,9 +824,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                       </div>
                     </div>
                     {isSelected && (
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0A4DFF] text-white">
-                        <Check className="h-3.5 w-3.5" />
-                      </span>
+                      <Check className="h-4 w-4 shrink-0 text-[#0A4DFF]" />
                     )}
                   </button>
                 );
@@ -582,16 +832,15 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
             </div>
           </div>
 
-          {/* Currency & Daily Exchange Rate Card */}
           <div className="rounded-3xl border border-slate-200 bg-white p-6 text-xs">
             <div className="flex items-center gap-2.5">
               <Coins className="h-5 w-5 text-emerald-600" />
               <div>
                 <h2 className="text-base font-extrabold text-slate-900">
-                  Devise & Taux du Dollar en RDC
+                  Devise Unique & Taux du Jour
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Choisissez la devise unique affichée dans tous vos écrans et reçus
+                  Bascule toute la boutique entre Franc Congolais (FC) et Dollar (USD $)
                 </p>
               </div>
             </div>
@@ -607,7 +856,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                   }}
                   className={`rounded-2xl border p-4 text-left transition ${
                     settings.currency === curr
-                      ? 'border-emerald-600 bg-emerald-50/70 ring-1 ring-emerald-600'
+                      ? 'border-emerald-600 bg-emerald-50/40 ring-2 ring-emerald-600/30'
                       : 'border-slate-200 hover:bg-slate-50'
                   }`}
                 >
@@ -616,20 +865,14 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                       ? 'Franc Congolais (CDF / FC)'
                       : 'Dollar Américain (USD $)'}
                   </div>
-                  <div className="mt-1 text-[11px] text-slate-500">
-                    {curr === 'FC' ? 'Ex: 68 000 FC' : 'Ex: 23,86 $'}
-                  </div>
                 </button>
               ))}
             </div>
 
             <div className="mt-5 rounded-2xl bg-slate-50 p-4">
               <label className="block font-extrabold text-slate-800">
-                Taux de change du jour (1 USD en Francs Congolais)
+                Taux de change du jour (1 USD en FC)
               </label>
-              <p className="mt-0.5 text-[11px] text-slate-500">
-                Permet de convertir instantanément toute votre boutique entre FC et USD sans erreur.
-              </p>
               <div className="mt-3 flex items-center gap-3">
                 <span className="font-bold text-slate-600">1 $ =</span>
                 <input
@@ -652,7 +895,149 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
       )}
 
       {/* =========================================================
-          TAB 3: DÉPENSES DE LA JOURNÉE
+          TAB 4: VOICE MODELS STUDIO, AI ENGINE & SECURITY
+         ========================================================= */}
+      {section === 'ai_voice' && (
+        <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2">
+          {/* Voice Models Selector with Preview Button */}
+          <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 text-xs">
+            <div className="flex items-center gap-2.5">
+              <Volume2 className="h-5 w-5 text-[#0A4DFF]" />
+              <div>
+                <h2 className="text-base font-extrabold text-slate-900">
+                  Modèle de Voix de ShopFlow IA
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Nettoyage vocal automatique actif : ne prononce jamais les étoiles, barres ou symboles LaTeX.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {VOICE_MODELS.map((vm) => {
+                const isSelected = settings.voiceModel === vm.id;
+                return (
+                  <div
+                    key={vm.id}
+                    className={`flex items-center justify-between gap-2 rounded-2xl border p-3 transition ${
+                      isSelected
+                        ? 'border-[#0A4DFF] bg-blue-50/40 ring-1 ring-[#0A4DFF]'
+                        : 'border-slate-200'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onUpdateSettings({ ...settings, voiceModel: vm.id });
+                        notifySaved(`Voix sélectionnée : ${vm.name}`);
+                      }}
+                      className="flex-1 text-left"
+                    >
+                      <p className="font-extrabold text-slate-900">{vm.name}</p>
+                      <p className="text-[11px] text-slate-500">
+                        {vm.descriptionFr}
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onUpdateSettings({
+                          ...settings,
+                          voiceModel: vm.id as VoiceModelId,
+                        });
+                        speakCleanText(
+                          `Bonjour ${settings.ownerName}, voici ma voix claire sans aucun caractère spécial pour votre boutique ${settings.shopName}.`,
+                          settings.language,
+                          vm.id
+                        );
+                      }}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-slate-900 px-3 py-2 text-[11px] font-bold text-white hover:bg-[#0A4DFF]"
+                    >
+                      <Play className="h-3 w-3 fill-current" />
+                      <span>Tester</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* AI API Key & Security */}
+          <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 text-xs">
+            <div className="flex items-center gap-2.5">
+              <Bot className="h-5 w-5 text-[#0A4DFF]" />
+              <div>
+                <h2 className="text-base font-extrabold text-slate-900">
+                  Moteur IA & Sécurité Propriétaire
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Clé API dédiée optionnelle & Code PIN de protection
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block font-bold text-slate-700">
+                Clé API dédiée optionnelle (OpenAI / OpenRouter / Groq)
+              </label>
+              <input
+                type="password"
+                value={settings.customAiApiKey}
+                onChange={(e) =>
+                  onUpdateSettings({
+                    ...settings,
+                    customAiApiKey: e.target.value,
+                  })
+                }
+                placeholder="Laisser vide pour le moteur Cloud ShopFlow intégré"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-mono text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block font-bold text-slate-700">
+                Code PIN Propriétaire (4 chiffres)
+              </label>
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-slate-400" />
+                <input
+                  type="password"
+                  maxLength={6}
+                  value={settings.ownerPin}
+                  onChange={(e) =>
+                    onUpdateSettings({ ...settings, ownerPin: e.target.value })
+                  }
+                  className="w-36 rounded-xl border border-slate-200 px-3.5 py-2 font-mono text-sm font-bold tracking-widest"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={handleExportBackup}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-3 font-bold text-slate-800"
+              >
+                <Download className="h-4 w-4 text-[#0A4DFF]" />
+                <span>Exporter la sauvegarde JSON de ma boutique</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onResetDemo}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50/50 py-3 font-bold text-red-700"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Réinitialiser les données de démonstration</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          TAB 5: DÉPENSES DE LA JOURNÉE
          ========================================================= */}
       {section === 'expenses' && (
         <div className="rounded-3xl border border-slate-200 bg-white p-6">
@@ -662,15 +1047,12 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                 Dépenses de la journée
               </h2>
               <p className="text-xs text-slate-500">
-                Déduites automatiquement pour calculer votre vrai revenu net
+                Déduites automatiquement de votre bénéfice brut
               </p>
             </div>
-            <div className="text-right">
-              <span className="text-xs text-slate-400">Total du jour</span>
-              <p className="text-xl font-black text-amber-700 tabular-nums">
-                {fmt(totalExpensesFC)}
-              </p>
-            </div>
+            <p className="text-xl font-black text-amber-700 tabular-nums">
+              {fmt(totalExpensesFC)}
+            </p>
           </div>
 
           <form
@@ -709,7 +1091,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
             />
             <button
               type="submit"
-              className="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700 @sm:col-span-2"
+              className="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white @sm:col-span-2"
             >
               <Plus className="h-4 w-4" />
               <span>Ajouter</span>
@@ -741,135 +1123,6 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================
-          TAB 4: CONFIGURATION IA AVANCÉE, SÉCURITÉ PIN & SAUVEGARDE
-         ========================================================= */}
-      {section === 'ai_security' && (
-        <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2">
-          {/* AI Configuration */}
-          <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 text-xs">
-            <div className="flex items-center gap-2.5">
-              <Bot className="h-5 w-5 text-[#0A4DFF]" />
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900">
-                  Moteur ShopFlow Intelligence (IA Temps Réel)
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Connecté par défaut sans clé requise · Clé API dédiée optionnelle ci-dessous
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-emerald-50/80 p-3.5 text-emerald-900">
-              <strong>✓ Statut :</strong> IA Cloud active et connectée aux chiffres réels de votre boutique.
-            </div>
-
-            <div>
-              <label className="mb-1 block font-bold text-slate-700">
-                Clé API dédiée optionnelle (OpenAI / OpenRouter / Groq)
-              </label>
-              <input
-                type="password"
-                value={settings.customAiApiKey}
-                onChange={(e) =>
-                  onUpdateSettings({
-                    ...settings,
-                    customAiApiKey: e.target.value,
-                  })
-                }
-                placeholder="Laisser vide pour utiliser le moteur Cloud ShopFlow intégré"
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-mono text-xs"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block font-bold text-slate-700">
-                  Endpoint compatible OpenAI
-                </label>
-                <input
-                  type="text"
-                  value={settings.customAiEndpoint}
-                  onChange={(e) =>
-                    onUpdateSettings({
-                      ...settings,
-                      customAiEndpoint: e.target.value,
-                    })
-                  }
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-[11px]"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block font-bold text-slate-700">
-                  Modèle IA
-                </label>
-                <input
-                  type="text"
-                  value={settings.customAiModel}
-                  onChange={(e) =>
-                    onUpdateSettings({
-                      ...settings,
-                      customAiModel: e.target.value,
-                    })
-                  }
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-[11px]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Security, Backup & Reset */}
-          <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 text-xs">
-            <div className="flex items-center gap-2.5">
-              <Lock className="h-5 w-5 text-slate-800" />
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900">
-                  Sécurité Propriétaire & Sauvegarde
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Protégez vos paramètres sensibles et exportez vos données
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block font-bold text-slate-700">
-                Code PIN Propriétaire (4 chiffres)
-              </label>
-              <input
-                type="password"
-                maxLength={6}
-                value={settings.ownerPin}
-                onChange={(e) =>
-                  onUpdateSettings({ ...settings, ownerPin: e.target.value })
-                }
-                className="w-40 rounded-xl border border-slate-200 px-3.5 py-2 font-mono text-sm font-bold tracking-widest"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={handleExportBackup}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-3 font-bold text-slate-800 transition hover:bg-slate-100"
-              >
-                <Download className="h-4 w-4 text-[#0A4DFF]" />
-                <span>Télécharger une sauvegarde de ma configuration</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={onResetDemo}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50/50 py-3 font-bold text-red-700 transition hover:bg-red-100/60"
-              >
-                <RefreshCw className="h-4 w-4" />
-                <span>Réinitialiser les données de démonstration</span>
-              </button>
-            </div>
           </div>
         </div>
       )}

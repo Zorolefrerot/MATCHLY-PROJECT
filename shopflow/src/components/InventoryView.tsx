@@ -36,7 +36,17 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   onRestockProduct,
   onQuickSellProduct,
 }) => {
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>(
+    settings.theme?.defaultCatalogFormat === 'grid' ? 'cards' : 'table'
+  );
+
+  React.useEffect(() => {
+    if (settings.theme?.defaultCatalogFormat) {
+      setViewMode(
+        settings.theme.defaultCatalogFormat === 'grid' ? 'cards' : 'table'
+      );
+    }
+  }, [settings.theme?.defaultCatalogFormat]);
   const [search, setSearch] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);

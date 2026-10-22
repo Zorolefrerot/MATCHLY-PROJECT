@@ -2,6 +2,32 @@ export type CurrencyCode = 'FC' | 'USD';
 
 export type AppLanguage = 'fr' | 'en' | 'ln' | 'sw' | 'zh';
 
+export type VoiceModelId =
+  | 'nova'
+  | 'onyx'
+  | 'shimmer'
+  | 'echo'
+  | 'alloy'
+  | 'device_native';
+
+export type ColorMode = 'light' | 'dark' | 'warm';
+export type CornerRadiusStyle = 'sharp' | 'modern' | 'round';
+export type LayoutDensity = 'comfortable' | 'compact';
+export type CatalogDefaultFormat = 'grid' | 'table';
+export type FontStyleChoice = 'modern' | 'editorial' | 'mono';
+
+export interface ShopThemeConfig {
+  presetId: string;
+  primaryColor: string;
+  primaryDarkColor: string;
+  accentColor: string;
+  colorMode: ColorMode;
+  cornerStyle: CornerRadiusStyle;
+  density: LayoutDensity;
+  defaultCatalogFormat: CatalogDefaultFormat;
+  fontStyle: FontStyleChoice;
+}
+
 export type PaymentMethod = 'cash' | 'mobile_money' | 'credit' | 'card';
 
 export type NavTab =
@@ -23,14 +49,17 @@ export interface Product {
   refCode?: string;
   barcode?: string;
   name: string;
-  category: 'Alimentation' | 'Huiles & Lait' | 'Boissons' | 'Hygiène' | 'Mode & Accessoires';
+  category:
+    | 'Alimentation'
+    | 'Huiles & Lait'
+    | 'Boissons'
+    | 'Hygiène'
+    | 'Mode & Accessoires';
   unit: string;
   image: string;
   stock: number;
   minStockAlert: number;
-  /** Stored internally in FC (Congolese Francs) for exact math */
   purchasePriceFC: number;
-  /** Stored internally in FC (Congolese Francs) for exact math */
   sellingPriceFC: number;
 }
 
@@ -42,9 +71,9 @@ export interface SaleRecord {
   quantity: number;
   unitPurchasePriceFC: number;
   unitSellingPriceFC: number;
-  totalRevenueFC: number; // CA
-  totalCostFC: number; // Coût d'achat
-  netProfitFC: number; // Revenu / Bénéfice
+  totalRevenueFC: number;
+  totalCostFC: number;
+  netProfitFC: number;
   paymentMethod: PaymentMethod;
   customerName?: string;
   customerPhone?: string;
@@ -113,6 +142,9 @@ export interface ShopSettings {
   language: AppLanguage;
   currency: CurrencyCode;
   usdRateFC: number;
+  voiceModel: VoiceModelId;
+  autoSpeakAi: boolean;
+  theme: ShopThemeConfig;
   offlineSyncEnabled: boolean;
   lowStockNotifications: boolean;
   ownerPin: string;

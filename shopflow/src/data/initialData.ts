@@ -4,9 +4,109 @@ import {
   Product,
   SaleRecord,
   ShopSettings,
+  ShopThemeConfig,
 } from '../types';
 
-export const SHOPFLOW_APP_LOGO = '/shopflow-logo.png';
+export function sfAsset(relPath: string): string {
+  const clean = relPath.replace(/^\//, '');
+  const embedded = (
+    typeof window !== 'undefined'
+      ? (window as unknown as { __SF_IMGS__?: Record<string, string> })
+          .__SF_IMGS__
+      : undefined
+  )?.[clean];
+  return embedded || '/' + clean;
+}
+
+export const SHOPFLOW_APP_LOGO = sfAsset('shopflow-logo.png');
+
+export const THEME_PRESETS: {
+  id: string;
+  name: string;
+  subtitle: string;
+  config: ShopThemeConfig;
+}[] = [
+  {
+    id: 'shopflow_royal',
+    name: 'ShopFlow Royal (Officiel)',
+    subtitle: 'Bleu Électrique, Bleu Nuit & Émeraude',
+    config: {
+      presetId: 'shopflow_royal',
+      primaryColor: '#0A4DFF',
+      primaryDarkColor: '#081844',
+      accentColor: '#059669',
+      colorMode: 'light',
+      cornerStyle: 'modern',
+      density: 'comfortable',
+      defaultCatalogFormat: 'grid',
+      fontStyle: 'modern',
+    },
+  },
+  {
+    id: 'emerald_rdc',
+    name: 'Émeraude Croissance',
+    subtitle: 'Vert Fintech Africaine & Blanc Pur',
+    config: {
+      presetId: 'emerald_rdc',
+      primaryColor: '#059669',
+      primaryDarkColor: '#064E3B',
+      accentColor: '#0284C7',
+      colorMode: 'light',
+      cornerStyle: 'round',
+      density: 'comfortable',
+      defaultCatalogFormat: 'grid',
+      fontStyle: 'modern',
+    },
+  },
+  {
+    id: 'otaku_crimson',
+    name: 'Rouge Passion / Otaku',
+    subtitle: 'Style MB_OTAKU STORE vibrant',
+    config: {
+      presetId: 'otaku_crimson',
+      primaryColor: '#DC2626',
+      primaryDarkColor: '#18181B',
+      accentColor: '#EA580C',
+      colorMode: 'light',
+      cornerStyle: 'modern',
+      density: 'comfortable',
+      defaultCatalogFormat: 'grid',
+      fontStyle: 'modern',
+    },
+  },
+  {
+    id: 'midnight_pro',
+    name: 'Mode Sombre AMOLED Pro',
+    subtitle: 'Économie de batterie & contraste nuit',
+    config: {
+      presetId: 'midnight_pro',
+      primaryColor: '#3B82F6',
+      primaryDarkColor: '#1E293B',
+      accentColor: '#10B981',
+      colorMode: 'dark',
+      cornerStyle: 'modern',
+      density: 'comfortable',
+      defaultCatalogFormat: 'table',
+      fontStyle: 'modern',
+    },
+  },
+  {
+    id: 'luxe_gold',
+    name: 'Prestige Or & Papier Doux',
+    subtitle: 'Boutique mode, cosmétique & bijouterie',
+    config: {
+      presetId: 'luxe_gold',
+      primaryColor: '#B45309',
+      primaryDarkColor: '#292524',
+      accentColor: '#059669',
+      colorMode: 'warm',
+      cornerStyle: 'round',
+      density: 'comfortable',
+      defaultCatalogFormat: 'grid',
+      fontStyle: 'editorial',
+    },
+  },
+];
 
 export const INITIAL_SETTINGS: ShopSettings = {
   shopName: 'Alimentation Maman Grâce',
@@ -28,6 +128,9 @@ export const INITIAL_SETTINGS: ShopSettings = {
   language: 'fr',
   currency: 'FC',
   usdRateFC: 2850,
+  voiceModel: 'nova',
+  autoSpeakAi: false,
+  theme: THEME_PRESETS[0].config,
   offlineSyncEnabled: true,
   lowStockNotifications: true,
   ownerPin: '1234',
@@ -42,10 +145,11 @@ export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-riz-25',
     refCode: 'SF-001',
+    barcode: '6201045900124',
     name: 'Sac de Riz Parfumé 25 kg',
     category: 'Alimentation',
     unit: 'Sac 25kg',
-    image: '/products/riz-25kg.jpg',
+    image: sfAsset('products/riz-25kg.jpg'),
     stock: 14,
     minStockAlert: 5,
     purchasePriceFC: 58000,
@@ -54,10 +158,11 @@ export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-huile-5l',
     refCode: 'SF-002',
+    barcode: '6201045900254',
     name: 'Huile Végétale Dorée 5 L',
     category: 'Huiles & Lait',
     unit: 'Bidon 5L',
-    image: '/products/huile-5l.jpg',
+    image: sfAsset('products/huile-5l.jpg'),
     stock: 4,
     minStockAlert: 6,
     purchasePriceFC: 24500,
@@ -66,10 +171,11 @@ export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-lait-900',
     refCode: 'SF-003',
+    barcode: '6201045900384',
     name: 'Lait Entier en Poudre 900 g',
     category: 'Huiles & Lait',
     unit: 'Boîte 900g',
-    image: '/products/lait-poudre.jpg',
+    image: sfAsset('products/lait-poudre.jpg'),
     stock: 19,
     minStockAlert: 6,
     purchasePriceFC: 25500,
@@ -78,10 +184,11 @@ export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-semoule-10',
     refCode: 'SF-004',
+    barcode: '6201045900414',
     name: 'Farine de Maïs Semoule 10 kg',
     category: 'Alimentation',
     unit: 'Sac 10kg',
-    image: '/products/farine-semoule.jpg',
+    image: sfAsset('products/farine-semoule.jpg'),
     stock: 3,
     minStockAlert: 5,
     purchasePriceFC: 21000,
@@ -90,10 +197,11 @@ export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-sucre-5',
     refCode: 'SF-005',
+    barcode: '6201045900544',
     name: 'Sucre Blanc Cristallisé 5 kg',
     category: 'Alimentation',
     unit: 'Paquet 5kg',
-    image: '/products/sucre-5kg.jpg',
+    image: sfAsset('products/sucre-5kg.jpg'),
     stock: 22,
     minStockAlert: 8,
     purchasePriceFC: 15500,
@@ -102,10 +210,11 @@ export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-oeufs-30',
     refCode: 'SF-006',
+    barcode: '6201045900674',
     name: 'Alvéole de 30 Œufs Frais',
     category: 'Alimentation',
     unit: 'Alvéole x30',
-    image: '/products/oeufs-alveole.jpg',
+    image: sfAsset('products/oeufs-alveole.jpg'),
     stock: 11,
     minStockAlert: 5,
     purchasePriceFC: 13500,
@@ -114,10 +223,11 @@ export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-savon-pack',
     refCode: 'SF-007',
+    barcode: '6201045900704',
     name: 'Savon de Ménage Multi-Usage (x6)',
     category: 'Hygiène',
     unit: 'Lot de 6',
-    image: '/products/savon-menage.jpg',
+    image: sfAsset('products/savon-menage.jpg'),
     stock: 27,
     minStockAlert: 8,
     purchasePriceFC: 8500,
@@ -126,10 +236,11 @@ export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-jus-pack',
     refCode: 'SF-008',
+    barcode: '6201045900834',
     name: 'Pack Jus Mangue & Orange (x6)',
     category: 'Boissons',
     unit: 'Pack x6',
-    image: '/products/boissons-pack.jpg',
+    image: sfAsset('products/boissons-pack.jpg'),
     stock: 16,
     minStockAlert: 6,
     purchasePriceFC: 11000,
@@ -142,7 +253,7 @@ export const INITIAL_SALES: SaleRecord[] = [
     id: 'sale-101',
     productId: 'prod-riz-25',
     productName: 'Sac de Riz Parfumé 25 kg',
-    productImage: '/products/riz-25kg.jpg',
+    productImage: sfAsset('products/riz-25kg.jpg'),
     quantity: 3,
     unitPurchasePriceFC: 58000,
     unitSellingPriceFC: 68000,
@@ -159,7 +270,7 @@ export const INITIAL_SALES: SaleRecord[] = [
     id: 'sale-102',
     productId: 'prod-huile-5l',
     productName: 'Huile Végétale Dorée 5 L',
-    productImage: '/products/huile-5l.jpg',
+    productImage: sfAsset('products/huile-5l.jpg'),
     quantity: 4,
     unitPurchasePriceFC: 24500,
     unitSellingPriceFC: 29500,
@@ -176,7 +287,7 @@ export const INITIAL_SALES: SaleRecord[] = [
     id: 'sale-103',
     productId: 'prod-oeufs-30',
     productName: 'Alvéole de 30 Œufs Frais',
-    productImage: '/products/oeufs-alveole.jpg',
+    productImage: sfAsset('products/oeufs-alveole.jpg'),
     quantity: 5,
     unitPurchasePriceFC: 13500,
     unitSellingPriceFC: 17000,
@@ -191,7 +302,7 @@ export const INITIAL_SALES: SaleRecord[] = [
     id: 'sale-104',
     productId: 'prod-semoule-10',
     productName: 'Farine de Maïs Semoule 10 kg',
-    productImage: '/products/farine-semoule.jpg',
+    productImage: sfAsset('products/farine-semoule.jpg'),
     quantity: 3,
     unitPurchasePriceFC: 21000,
     unitSellingPriceFC: 26000,
@@ -273,12 +384,12 @@ export const WEEKLY_HISTORY_DAYS = [
 ];
 
 export const PRESET_PRODUCT_PHOTOS = [
-  { label: 'Riz 25 kg', url: '/products/riz-25kg.jpg' },
-  { label: 'Huile 5 L', url: '/products/huile-5l.jpg' },
-  { label: 'Lait en poudre', url: '/products/lait-poudre.jpg' },
-  { label: 'Semoule / Farine', url: '/products/farine-semoule.jpg' },
-  { label: 'Sucre 5 kg', url: '/products/sucre-5kg.jpg' },
-  { label: 'Œufs (Alvéole)', url: '/products/oeufs-alveole.jpg' },
-  { label: 'Savon ménage', url: '/products/savon-menage.jpg' },
-  { label: 'Jus & Boissons', url: '/products/boissons-pack.jpg' },
+  { label: 'Riz 25 kg', url: sfAsset('products/riz-25kg.jpg') },
+  { label: 'Huile 5 L', url: sfAsset('products/huile-5l.jpg') },
+  { label: 'Lait en poudre', url: sfAsset('products/lait-poudre.jpg') },
+  { label: 'Semoule / Farine', url: sfAsset('products/farine-semoule.jpg') },
+  { label: 'Sucre 5 kg', url: sfAsset('products/sucre-5kg.jpg') },
+  { label: 'Œufs (Alvéole)', url: sfAsset('products/oeufs-alveole.jpg') },
+  { label: 'Savon ménage', url: sfAsset('products/savon-menage.jpg') },
+  { label: 'Jus & Boissons', url: sfAsset('products/boissons-pack.jpg') },
 ];

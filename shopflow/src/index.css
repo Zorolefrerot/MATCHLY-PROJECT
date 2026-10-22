@@ -1,4 +1,12 @@
 @import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+:root {
+  --sf-primary: #0A4DFF;
+  --sf-primary-dark: #081844;
+  --sf-accent: #059669;
+  --sf-card-radius: 1rem;
+}
 
 @layer base {
   body {
@@ -17,21 +25,246 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Subtle custom scrollbar for clean desktop & mobile mockup frame */
+/* =========================================================
+   DYNAMIC SHOP THEME ENGINE (Colors, Modes, Formats, Fonts)
+   ========================================================= */
+#shopflow-theme-root[data-font="editorial"] {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+#shopflow-theme-root[data-font="mono"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Dynamic Primary & Accent Color Bindings */
+#shopflow-theme-root .bg-\[\#0A4DFF\] {
+  background-color: var(--sf-primary) !important;
+}
+#shopflow-theme-root .bg-\[\#081844\] {
+  background-color: var(--sf-primary-dark) !important;
+}
+#shopflow-theme-root .text-\[\#0A4DFF\],
+#shopflow-theme-root .text-\[\#0A7AFF\] {
+  color: var(--sf-primary) !important;
+}
+#shopflow-theme-root .border-\[\#0A4DFF\] {
+  border-color: var(--sf-primary) !important;
+}
+#shopflow-theme-root .bg-emerald-600 {
+  background-color: var(--sf-accent) !important;
+}
+
+/* Corner Format Styles: Sharp / Modern / Pill-Round */
+#shopflow-theme-root[data-corners="sharp"] .rounded-2xl,
+#shopflow-theme-root[data-corners="sharp"] .rounded-3xl,
+#shopflow-theme-root[data-corners="sharp"] .rounded-xl {
+  border-radius: 6px !important;
+}
+
+#shopflow-theme-root[data-corners="round"] .rounded-2xl,
+#shopflow-theme-root[data-corners="round"] .rounded-3xl {
+  border-radius: 28px !important;
+}
+#shopflow-theme-root[data-corners="round"] .rounded-xl {
+  border-radius: 18px !important;
+}
+
+/* Compact POS Density Mode */
+#shopflow-theme-root[data-density="compact"] .p-6 {
+  padding: 1rem !important;
+}
+#shopflow-theme-root[data-density="compact"] .p-5 {
+  padding: 0.85rem !important;
+}
+
+/* Warm Paper Mode */
+#shopflow-theme-root[data-mode="warm"],
+#shopflow-theme-root[data-mode="warm"] .bg-slate-50 {
+  background-color: #FAF6EE !important;
+}
+#shopflow-theme-root[data-mode="warm"] .bg-white {
+  background-color: #FFFDF8 !important;
+}
+
+/* Full Dark AMOLED Mode (Preserves crisp light paper strictly inside Receipt sheet!) */
+#shopflow-theme-root[data-mode="dark"],
+#shopflow-theme-root[data-mode="dark"] .bg-slate-50,
+#shopflow-theme-root[data-mode="dark"] .bg-slate-50\/70,
+#shopflow-theme-root[data-mode="dark"] .bg-slate-50\/80 {
+  background-color: #0B1120 !important;
+  color: #F1F5F9 !important;
+}
+
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .bg-white,
+#shopflow-theme-root[data-mode="dark"] .bg-white\/95 {
+  background-color: #111827 !important;
+  color: #F8FAFC !important;
+}
+
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .bg-slate-100 {
+  background-color: #1E293B !important;
+}
+
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .border-slate-200,
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .border-slate-100 {
+  border-color: #1F2937 !important;
+}
+
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .text-slate-900,
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .text-slate-950,
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .text-\[\#081844\] {
+  color: #F8FAFC !important;
+}
+
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .text-slate-800,
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .text-slate-700,
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .text-slate-600 {
+  color: #CBD5E1 !important;
+}
+
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) input,
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) select,
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) textarea {
+  background-color: #1E293B !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
+}
+
+/* =========================================================
+   CHATGPT-GRADE PROSE & KATEX MATH STYLING
+   ========================================================= */
+.sf-chatgpt-prose {
+  font-size: 0.925rem;
+  line-height: 1.72;
+  color: inherit;
+}
+
+.sf-chatgpt-prose p {
+  margin-bottom: 0.75rem;
+}
+.sf-chatgpt-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.sf-chatgpt-prose h1,
+.sf-chatgpt-prose h2,
+.sf-chatgpt-prose h3,
+.sf-chatgpt-prose h4 {
+  font-weight: 800;
+  margin-top: 1.15rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+.sf-chatgpt-prose h2 {
+  font-size: 1.12rem;
+}
+.sf-chatgpt-prose h3 {
+  font-size: 1.02rem;
+}
+
+.sf-chatgpt-prose ul {
+  list-style-type: disc;
+  padding-left: 1.4rem;
+  margin-bottom: 0.8rem;
+}
+.sf-chatgpt-prose ol {
+  list-style-type: decimal;
+  padding-left: 1.4rem;
+  margin-bottom: 0.8rem;
+}
+.sf-chatgpt-prose li {
+  margin-bottom: 0.32rem;
+}
+
+.sf-chatgpt-prose strong {
+  font-weight: 800;
+}
+
+.sf-chatgpt-prose blockquote {
+  border-left: 3.5px solid var(--sf-primary);
+  padding: 0.5rem 0.9rem;
+  margin: 0.85rem 0;
+  background: rgba(10, 77, 255, 0.05);
+  border-radius: 0 0.65rem 0.65rem 0;
+}
+
+.sf-chatgpt-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.95rem 0;
+  font-size: 0.84rem;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+}
+
+.sf-chatgpt-prose th {
+  background: #f1f5f9;
+  font-weight: 800;
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.sf-chatgpt-prose td {
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.sf-chatgpt-prose code:not(pre code) {
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.35rem;
+  font-size: 0.84em;
+  font-weight: 600;
+}
+
+.sf-chatgpt-prose pre {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 0.9rem 1rem;
+  border-radius: 0.85rem;
+  overflow-x: auto;
+  margin: 0.85rem 0;
+  font-size: 0.82rem;
+}
+
+.sf-chatgpt-prose .katex-display {
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  background: rgba(15, 23, 42, 0.035);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 0.9rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#shopflow-theme-root[data-mode="dark"] .sf-chatgpt-prose .katex-display {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+#shopflow-theme-root[data-mode="dark"] #receipt-paper-sheet {
+  background-color: #FAFAFA !important;
+  color: #14181F !important;
+}
+#shopflow-theme-root[data-mode="dark"] #receipt-paper-sheet .bg-white {
+  background-color: #FFFFFF !important;
+  color: #14181F !important;
+}
+#shopflow-theme-root[data-mode="dark"] #receipt-paper-sheet [class*="text-slate-"] {
+  color: #1E293B !important;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
 }

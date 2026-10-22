@@ -1,17 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import {
-  Bot,
+  ArrowUp,
   Check,
   CheckCircle2,
   Copy,
-  Loader2,
   Mic,
   MicOff,
-  RotateCcw,
-  Send,
-  Sparkles,
+  Plus,
+  Square,
   Volume2,
+  VolumeX,
 } from 'lucide-react';
+import { SHOPFLOW_APP_LOGO } from '../data/initialData';
 import { LANGUAGE_OPTIONS } from '../i18n/translations';
 import {
   CreditEntry,
@@ -19,8 +23,14 @@ import {
   Product,
   SaleRecord,
   ShopSettings,
+  VoiceModelId,
 } from '../types';
 import { formatMoney } from '../utils/currency';
+import {
+  speakCleanText,
+  stopAllSpeech,
+  VOICE_MODELS,
+} from '../utils/speechCleaner';
 
 export interface AiStoreAction {
   type: 'sell' | 'add_product' | 'update_price' | 'add_expense';
@@ -43,6 +53,7 @@ interface AiAssistantViewProps {
   expenses: ExpenseEntry[];
   credits: CreditEntry[];
   onExecuteAiActions: (actions: AiStoreAction[]) => string[];
+  onUpdateVoiceSettings: (voiceModel: VoiceModelId, autoSpeak: boolean) => void;
 }
 
 interface ChatMessage {
@@ -53,15 +64,44 @@ interface ChatMessage {
   timestamp: string;
 }
 
-const EXAMPLE_IDEAS = [
-  'Analyse mes ventes d’aujourd’hui et dis-moi comment augmenter mon bénéfice demain',
-  'Écris-moi un texte pub WhatsApp & TikTok accrocheur pour mes produits en stock',
-  'Si je baisse mes prix de 5% pour vendre deux fois plus vite, est-ce rentable ?',
-  'Enregistre la vente de 2 sacs de riz et 1 bidon d’huile',
-  'Avec 300 $ demain matin au dépôt, quel plan d’achat exact me conseilles-tu ?',
+const STARTER_CARDS = [
+  {
+    title: '📊 Bilan & Formules de Rentabilité',
+    prompt:
+      'Fais-moi un bilan complet de ma journée avec un tableau clair et les formules mathématiques exactes de ma marge brute et mon bénéfice net.',
+  },
+  {
+    title: '🚀 Pub WhatsApp & Script TikTok',
+    prompt:
+      'Rédige une publication WhatsApp très vendeuse et un script vidéo TikTok de 30 secondes pour attirer plus de clients dans ma boutique.',
+  },
+  {
+    title: '🧮 Simulation Hausse / Baisse de Prix',
+    prompt:
+      'Si je fais une promotion de -8% sur mes produits phares, combien d’unités supplémentaires dois-je vendre pour gagner plus d’argent qu’aujourd’hui ? Montre le calcul.',
+  },
+  {
+    title: '⚡ Action Directe Caisse & Stock',
+    prompt: 'Enregistre la vente de 2 sacs de riz et 1 bidon d’huile',
+  },
 ];
 
-function resizeOrCleanJson(text: string): {
+/**
+ * Normalizes LaTeX delimiters (`\[...\]` -> `$$...$$`, `\(...\)` -> `$...$`)
+ * while protecting plain currency figures like `12 $` or `$250` from accidental math mode!
+ */
+function prepareMarkdownAndLatex(raw: string): string {
+  let out = raw;
+  // Convert \[ ... \] block math into $$ ... $$
+  out = out.replace(/\\\[([\s\S]*?)\\\]/g, (_, expr) => `\n$$\n${expr.trim()}\n$$\n`);
+  // Convert \( ... \) inline math into $ ... $
+  out = out.replace(/\\\(([\s\S]*?)\\\)/g, (_, expr) => `$${expr.trim()}$`);
+  // Escape standalone currency numbers like "250 $" so they don't pair up across sentences
+  out = out.replace(/(\d[\d\s.,]*)\s+\$(?!\$)/g, '$1 \\$');
+  return out;
+}
+
+function extractActionsFromReply(text: string): {
   cleanReply: string;
   actions: AiStoreAction[];
 } {
@@ -76,7 +116,7 @@ function resizeOrCleanJson(text: string): {
           actions.push(parsed);
         }
       } catch {
-        // Ignore malformed JSON action block
+        // Ignore malformed block
       }
       return '';
     })
@@ -92,6 +132,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   expenses,
   credits,
   onExecuteAiActions,
+  onUpdateVoiceSettings,
 }) => {
   const fmt = (val: number) =>
     formatMoney(val, settings.currency, settings.usdRateFC);
@@ -100,31 +141,25 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     LANGUAGE_OPTIONS.find((l) => l.code === settings.language) ||
     LANGUAGE_OPTIONS[0];
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome-llm',
-      role: 'assistant',
-      content:
-        `Bonjour **${settings.ownerName}** ! Je suis **ShopFlow Intelligence**, votre co-pilote IA connecté en temps réel à **${settings.shopName}**.\n\n` +
-        `Contrairement à un simple robot à réponses fixes, je réfléchis librement sur toute votre activité :\n` +
-        `• **Analyse financière & stratégie** *(marges, prix idéaux, prévisions, rentabilité)*\n` +
-        `• **Marketing & Copywriting** *(textes de vente WhatsApp, scripts TikTok, offres packs)*\n` +
-        `• **Actions directes dans ShopFlow** *(enregistrer une vente, créer un produit, noter une dépense)*\n` +
-        `• **Multilingue natif** (*Français, English, Lingala, Kiswahili, 中文*)\n\n` +
-        `Que voulez-vous analyser ou accomplir maintenant ?`,
-      timestamp: 'En ligne · IA Temps Réel',
-    },
-  ]);
-
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(
+    null
+  );
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
+
+  useEffect(() => {
+    return () => {
+      stopAllSpeech();
+    };
+  }, []);
 
   const nowTime = () => {
     const d = new Date();
@@ -133,9 +168,6 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     ).padStart(2, '0')}`;
   };
 
-  /**
-   * Builds live, exact real-time store context so the LLM reasons on true shop data
-   */
   const buildSystemPrompt = () => {
     const totalCA = sales.reduce((a, s) => a + s.totalRevenueFC, 0);
     const totalCost = sales.reduce((a, s) => a + s.totalCostFC, 0);
@@ -155,74 +187,55 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
         stockActuel: p.stock,
         seuilAlerte: p.minStockAlert,
         prixAchat: fmt(p.purchasePriceFC),
-        prixAchatFC: p.purchasePriceFC,
         prixVente: fmt(p.sellingPriceFC),
-        prixVenteFC: p.sellingPriceFC,
         gainUnitaire: fmt(p.sellingPriceFC - p.purchasePriceFC),
         vendusAujourdhui: soldToday,
       };
     });
 
-    const creditsSnapshot = credits.map((c) => ({
-      client: c.customerName,
-      telephone: c.phone,
-      articles: c.itemsSummary,
-      total: fmt(c.totalAmountFC),
-      dejaPaye: fmt(c.paidAmountFC),
-      resteAPayer: fmt(Math.max(0, c.totalAmountFC - c.paidAmountFC)),
-      echeance: c.dueDate,
-    }));
+    return `Tu es ShopFlow AI, l'assistant intelligent officiel de ShopFlow (aussi puissant, structuré, analytique et agréable à lire que ChatGPT et l'IA de Chariow).
 
-    return `Tu es ShopFlow AI, un assistant IA expert en gestion commerciale, comptabilité simplifiée, stratégie e-commerce et marketing (du même niveau d'intelligence, de réflexion structurée et de proactivité que l'IA de Chariow), conçu spécialement pour les commerçants et entrepreneurs en RDC (Kinshasa, Lubumbashi, Goma...) et en Afrique.
-
-RÈGLES ESSENTIELLES :
-1. Réfléchis véritablement à chaque question posée par l'utilisateur (qu'il s'agisse de ses chiffres, d'une simulation mathématique, d'une stratégie business, d'une idée de pub TikTok/WhatsApp, de négociation client ou d'une question générale). Ne donne jamais de réponse générique vague : utilise ses VRAIS chiffres ci-dessous quand c'est pertinent, fais les vrais calculs étape par étape et propose des conseils concrets et actionnables.
-2. Langue préférée actuelle des paramètres : ${currentLangObj.nativeLabel} (code: ${settings.language}). Si le commerçant écrit dans une autre langue (Français, Anglais, Lingala, Swahili, Chinois), réponds-lui naturellement dans la langue qu'il utilise !
-3. Devise d'affichage active de la boutique : ${settings.currency} (Taux interne : 1 USD = ${settings.usdRateFC} FC). Exprime toujours les montants dans la devise active (${settings.currency}) sauf demande contraire.
-4. ACTIONS DIRECTES SUR L'APPLICATION : Si et seulement si l'utilisateur te demande explicitement d'exécuter une action dans sa boutique (ex: enregistrer une vente, ajouter une nouvelle marchandise, modifier un prix ou noter une dépense), insère TOUT EN HAUT de ta réponse un bloc exactement au format suivant contenant un tableau JSON valide (les montants internes doivent être en FC entiers) :
+STYLE DE PRÉSENTATION (TRÈS IMPORTANT) :
+1. Structure tes réponses de façon aérée, professionnelle et ultra-lisible comme ChatGPT : titres clairs (## ou ###), listes à puces propres, chiffres clés en **gras**, et **tableaux Markdown** dès que tu compares des produits, des prix ou des scénarios.
+2. FORMULES MATHÉMATIQUES EN LATEX : Dès que tu expliques un calcul financier, une marge, un seuil de rentabilité, un pourcentage ou une équation, utilise de belles formules LaTeX avec \`$$ ... $$\` (pour une formule centrée sur sa propre ligne) ou \`$ ... $\` (en ligne). Exemple :
+$$\\text{Revenu Net} = \\sum (P_{\\text{vente}} - P_{\\text{achat}}) \\times Q - \\text{Dépenses}$$
+3. LANGUE : Réponds intégralement dans la langue choisie par l'utilisateur (${currentLangObj.nativeLabel}, code: ${settings.language}), ou dans la langue du message s'il t'écrit dans une autre langue (Français, English, Lingala, Kiswahili, 中文).
+4. ACTIONS DIRECTES SUR LA BOUTIQUE : Si et seulement si l'utilisateur demande d'enregistrer une vente, d'ajouter un produit, de modifier un prix ou d'ajouter une dépense, place tout en haut de ta réponse :
 <shopflow_action>[{"type":"sell","productId":"prod-riz-25","quantity":2}]</shopflow_action>
-Types d'actions supportés :
-- {"type":"sell","productId":"ID_PRODUIT","quantity":NOMBRE}
+Actions disponibles (montants en FC entiers) :
+- {"type":"sell","productId":"ID","quantity":N}
 - {"type":"add_product","name":"NOM","category":"Alimentation","unit":"Pièce","stock":10,"purchasePriceFC":5000,"sellingPriceFC":8000}
-- {"type":"update_price","productId":"ID_PRODUIT","sellingPriceFC":70000}
+- {"type":"update_price","productId":"ID","sellingPriceFC":70000}
 - {"type":"add_expense","label":"MOTIF","amountFC":5000}
-Après ce bloc <shopflow_action>, écris toujours ta réponse humaine claire et chaleureuse.
 
-DONNÉES EN DIRECT DE LA BOUTIQUE À CET INSTANT PRÉCIS :
-- Nom boutique : ${settings.shopName} (${settings.shopSpecialties})
-- Propriétaire : ${settings.ownerName} | Ville : ${settings.city}
-- Résumé financier d'aujourd'hui :
-  * Articles vendus aujourd'hui : ${totalUnits} unités (${sales.length} ventes)
-  * Chiffre d'Affaires (CA du jour) : ${fmt(totalCA)} (${totalCA} FC)
-  * Coût d'achat des marchandises vendues : ${fmt(totalCost)} (${totalCost} FC)
-  * Dépenses boutique du jour : ${fmt(totalExp)} (${totalExp} FC) — Détail : ${JSON.stringify(expenses.map((e) => `${e.label}: ${fmt(e.amountFC)}`))}
-  * REVENU / BÉNÉFICE NET RÉEL DU JOUR : ${fmt(netProfit)} (${netProfit} FC)
-- Catalogue complet & Stocks en direct :
-${JSON.stringify(catalogSnapshot)}
-- Carnet de crédits clients (« Bons ») :
-${JSON.stringify(creditsSnapshot)}`;
+DONNÉES EN DIRECT DE LA BOUTIQUE (${settings.shopName} — ${settings.city}) :
+- Propriétaire : ${settings.ownerName} | Devise active : ${settings.currency} (1 USD = ${settings.usdRateFC} FC)
+- Ventes aujourd'hui : ${totalUnits} articles (${sales.length} ventes)
+- Chiffre d'Affaires (CA) : ${fmt(totalCA)}
+- Coût d'achat des articles vendus : ${fmt(totalCost)}
+- Dépenses du jour : ${fmt(totalExp)} (${expenses.map((e) => `${e.label}: ${fmt(e.amountFC)}`).join(', ')})
+- REVENU / BÉNÉFICE NET RÉEL : ${fmt(netProfit)}
+- Stock & Catalogue : ${JSON.stringify(catalogSnapshot)}
+- Crédits clients : ${JSON.stringify(
+      credits.map((c) => ({
+        client: c.customerName,
+        reste: fmt(Math.max(0, c.totalAmountFC - c.paidAmountFC)),
+        echeance: c.dueDate,
+      }))
+    )}`;
   };
 
-  /**
-   * Calls a real LLM endpoint (custom API key if configured, or live CORS cloud LLM gateway out of the box!)
-   */
   const queryRealLLM = async (
     historyToSend: ChatMessage[]
   ): Promise<string> => {
-    const systemMessage = {
-      role: 'system',
-      content: buildSystemPrompt(),
-    };
-
     const apiMessages = [
-      systemMessage,
+      { role: 'system', content: buildSystemPrompt() },
       ...historyToSend.slice(-8).map((m) => ({
         role: m.role,
         content: m.content,
       })),
     ];
 
-    // 1. If owner provided their own OpenAI / OpenRouter / Groq key in Settings
     if (settings.customAiApiKey && settings.customAiApiKey.trim().length > 10) {
       const resp = await fetch(
         settings.customAiEndpoint ||
@@ -236,7 +249,7 @@ ${JSON.stringify(creditsSnapshot)}`;
           body: JSON.stringify({
             model: settings.customAiModel || 'gpt-4o-mini',
             messages: apiMessages,
-            temperature: 0.7,
+            temperature: 0.65,
           }),
         }
       );
@@ -247,43 +260,51 @@ ${JSON.stringify(creditsSnapshot)}`;
       }
     }
 
-    // 2. Primary Zero-Config Real Cloud LLM (OpenAI-compatible CORS gateway)
     const response = await fetch('https://text.pollinations.ai/openai', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'openai',
         messages: apiMessages,
-        temperature: 0.7,
+        temperature: 0.65,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`LLM HTTP ${response.status}`);
+      throw new Error(`HTTP ${response.status}`);
     }
 
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      const json = await response.json();
-      const content = json?.choices?.[0]?.message?.content;
-      if (typeof content === 'string' && content.trim()) {
-        return content;
-      }
+    const raw = await response.text();
+    try {
+      const json = JSON.parse(raw);
+      const msg = json?.choices?.[0]?.message?.content;
+      if (typeof msg === 'string' && msg.trim()) return msg;
+    } catch {
+      // Plain text stream
+    }
+    if (raw && raw.trim()) return raw;
+    throw new Error('Empty response');
+  };
+
+  const handleTogglePlayMessage = (msg: ChatMessage) => {
+    if (speakingMessageId === msg.id) {
+      stopAllSpeech();
+      setSpeakingMessageId(null);
+      return;
     }
 
-    const rawText = await response.text();
-    if (rawText && rawText.trim()) {
-      return rawText;
-    }
-
-    throw new Error('Empty AI response');
+    setSpeakingMessageId(msg.id);
+    speakCleanText(msg.content, settings.language, settings.voiceModel, () => {
+      setSpeakingMessageId((curr) => (curr === msg.id ? null : curr));
+    });
   };
 
   const handleSend = async (overridePrompt?: string) => {
     const promptText = (overridePrompt ?? input).trim();
     if (!promptText || isThinking) return;
+
+    stopAllSpeech();
+    setSpeakingMessageId(null);
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -299,22 +320,36 @@ ${JSON.stringify(creditsSnapshot)}`;
 
     try {
       const rawAiText = await queryRealLLM(updatedHistory);
-      const { cleanReply, actions } = resizeOrCleanJson(rawAiText);
+      const { cleanReply, actions } = extractActionsFromReply(rawAiText);
       const badges =
         actions.length > 0 ? onExecuteAiActions(actions) : undefined;
+
+      const aiMsgId = `ai-${Date.now()}`;
+      const finalContent = cleanReply || rawAiText;
 
       setMessages((prev) => [
         ...prev,
         {
-          id: `ai-${Date.now()}`,
+          id: aiMsgId,
           role: 'assistant',
-          content: cleanReply || rawAiText,
+          content: finalContent,
           executedBadges: badges,
-          timestamp: `${nowTime()} · ShopFlow AI`,
+          timestamp: nowTime(),
         },
       ]);
+
+      if (settings.autoSpeakAi) {
+        setSpeakingMessageId(aiMsgId);
+        speakCleanText(
+          finalContent,
+          settings.language,
+          settings.voiceModel,
+          () => {
+            setSpeakingMessageId((curr) => (curr === aiMsgId ? null : curr));
+          }
+        );
+      }
     } catch {
-      // Offline emergency fallback if device has zero internet connectivity
       const totalCA = sales.reduce((a, s) => a + s.totalRevenueFC, 0);
       const totalCost = sales.reduce((a, s) => a + s.totalCostFC, 0);
       const totalExp = expenses.reduce((a, e) => a + e.amountFC, 0);
@@ -326,14 +361,14 @@ ${JSON.stringify(creditsSnapshot)}`;
           id: `ai-offline-${Date.now()}`,
           role: 'assistant',
           content:
-            `⚠️ **Connexion internet indisponible ou momentanément saturée.**\n\n` +
-            `En attendant le retour du réseau pour ma réflexion IA complète, voici vos chiffres locaux exacts calculés hors-ligne :\n` +
-            `• **Chiffre d’Affaires (CA) :** ${fmt(totalCA)} (${sales.length} ventes)\n` +
-            `• **Coût d’achat marchandise :** ${fmt(totalCost)}\n` +
-            `• **Dépenses :** ${fmt(totalExp)}\n` +
-            `• **Bénéfice Net Réel :** **+${fmt(net)}**\n\n` +
-            `Réessayez votre question dans quelques secondes dès que la connexion 4G/Wi-Fi est active !`,
-          timestamp: `${nowTime()} · Mode Secours Hors-Ligne`,
+            `### 📡 Mode Hors-Ligne Local\n\n` +
+            `Votre appareil semble momentanément hors connexion internet. Voici le calcul exact de votre boutique en local :\n\n` +
+            `$$\\text{Revenu Net} = ${Math.round(totalCA)} - ${Math.round(totalCost)} - ${Math.round(totalExp)} = ${Math.round(net)}\\text{ FC}$$\n\n` +
+            `- **Chiffre d’Affaires (CA) :** **${fmt(totalCA)}**\n` +
+            `- **Coût d’achat stock :** **${fmt(totalCost)}**\n` +
+            `- **Dépenses :** **${fmt(totalExp)}**\n` +
+            `- **Bénéfice Net Réel :** **+${fmt(net)}**`,
+          timestamp: nowTime(),
         },
       ]);
     } finally {
@@ -341,7 +376,7 @@ ${JSON.stringify(creditsSnapshot)}`;
     }
   };
 
-  const toggleVoiceInput = () => {
+  const toggleVoiceDictation = () => {
     const SpeechRec =
       (window as unknown as { SpeechRecognition?: new () => unknown })
         .SpeechRecognition ||
@@ -383,244 +418,303 @@ ${JSON.stringify(creditsSnapshot)}`;
     }
   };
 
-  const speakMessage = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(
-      text.replace(/\*\*/g, '').replace(/[#•]/g, '')
-    );
-    utter.lang =
-      settings.language === 'en'
-        ? 'en-US'
-        : settings.language === 'zh'
-          ? 'zh-CN'
-          : 'fr-FR';
-    window.speechSynthesis.speak(utter);
-  };
-
-  const renderMarkdown = (text: string) =>
-    text.split('\n').map((line, i) => {
-      if (line.trim().startsWith('### ')) {
-        return (
-          <h4 key={i} className="mt-2 font-extrabold text-slate-900">
-            {line.replace(/^###\s+/, '')}
-          </h4>
-        );
-      }
-      if (line.trim().startsWith('## ')) {
-        return (
-          <h3 key={i} className="mt-2.5 text-sm font-black text-slate-950">
-            {line.replace(/^##\s+/, '')}
-          </h3>
-        );
-      }
-      const parts = line.split(/(\*\*[^*]+\*\*)/g);
-      return (
-        <p key={i} className={line.trim() === '' ? 'h-2' : 'leading-relaxed'}>
-          {parts.map((part, idx) =>
-            part.startsWith('**') && part.endsWith('**') ? (
-              <strong key={idx} className="font-extrabold">
-                {part.slice(2, -2)}
-              </strong>
-            ) : (
-              <span key={idx}>{part}</span>
-            )
-          )}
-        </p>
-      );
-    });
-
   return (
-    <div className="mx-auto flex h-[calc(100vh-150px)] max-h-[780px] min-h-[560px] max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      {/* Header inspired by modern AI copilots (ShopFlow Royal Blue -> Emerald) */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-[#081844] via-[#0A4DFF] to-emerald-600 px-5 py-4 text-white">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-xs">
-            <Bot className="h-5 w-5" />
-          </div>
+    <div className="mx-auto flex h-[calc(100vh-135px)] max-h-[820px] min-h-[560px] max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
+      {/* Clean ChatGPT-Style Top Bar with Model Badge + Voice Model Picker + Auto-Audio */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-white px-4 py-3 @md:px-6">
+        <div className="flex items-center gap-2.5">
+          <img
+            src={SHOPFLOW_APP_LOGO}
+            alt="ShopFlow AI"
+            className="h-8 w-8 rounded-xl object-contain ring-1 ring-slate-200/80"
+          />
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm font-extrabold @md:text-base">
-                ShopFlow Intelligence
-              </h1>
-              <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-extrabold text-white">
-                IA RÉFLEXIVE TEMPS RÉEL
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-extrabold text-slate-900">
+                ShopFlow AI
+              </span>
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                LaTeX • Tableaux • Voix HD
               </span>
             </div>
-            <p className="text-xs text-sky-100">
-              Analyse librement toute question business, financière ou marketing · {currentLangObj.flag} {currentLangObj.nativeLabel}
-            </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setMessages((prev) => [prev[0]])}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/25"
-          title="Nouvelle discussion"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-          <span className="hidden @sm:inline">Nouveau chat</span>
-        </button>
+        {/* Voice Model Selector & Auto-Speak Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            aria-label="Modèle de voix"
+            value={settings.voiceModel}
+            onChange={(e) => {
+              const nextVoice = e.target.value as VoiceModelId;
+              onUpdateVoiceSettings(nextVoice, settings.autoSpeakAi);
+              speakCleanText(
+                'Bonjour, je suis votre nouvelle voix ShopFlow.',
+                settings.language,
+                nextVoice
+              );
+            }}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-hidden"
+          >
+            {VOICE_MODELS.map((vm) => (
+              <option key={vm.id} value={vm.id}>
+                🎙️ {vm.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={() => {
+              stopAllSpeech();
+              setSpeakingMessageId(null);
+              onUpdateVoiceSettings(settings.voiceModel, !settings.autoSpeakAi);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+              settings.autoSpeakAi
+                ? 'border-[#0A4DFF] bg-blue-50 text-[#0A4DFF]'
+                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+            title="Lire automatiquement les réponses à voix haute (sans prononcer les caractères spéciaux)"
+          >
+            {settings.autoSpeakAi ? (
+              <Volume2 className="h-3.5 w-3.5" />
+            ) : (
+              <VolumeX className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden @sm:inline">Voix auto</span>
+          </button>
+
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                stopAllSpeech();
+                setSpeakingMessageId(null);
+                setMessages([]);
+              }}
+              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              title="Nouvelle discussion"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden @md:inline">Nouveau</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Conversation Stream */}
-      <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/80 p-4 @md:p-6">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${
-              msg.role === 'user' ? 'justify-end' : 'justify-start'
-            }`}
-          >
-            <div
-              className={`max-w-[90%] rounded-2xl px-4 py-3.5 text-xs shadow-2xs @md:max-w-[78%] @md:text-sm ${
-                msg.role === 'user'
-                  ? 'rounded-br-sm bg-[#0A4DFF] text-white'
-                  : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'
-              }`}
-            >
-              {msg.executedBadges && msg.executedBadges.length > 0 && (
-                <div className="mb-2.5 flex flex-wrap gap-1.5">
-                  {msg.executedBadges.map((b, i) => (
-                    <span
-                      key={i}
-                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-800 ring-1 ring-emerald-200"
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                      {b}
-                    </span>
-                  ))}
+      {/* Main ChatGPT Conversation Canvas */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 @md:px-8">
+        <div className="mx-auto max-w-3xl">
+          {messages.length === 0 ? (
+            /* Clean Centered ChatGPT Empty State */
+            <div className="flex min-h-[370px] flex-col items-center justify-center py-6 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-50 p-2 shadow-xs ring-1 ring-slate-200/80">
+                <img
+                  src={SHOPFLOW_APP_LOGO}
+                  alt="ShopFlow"
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              <h2 className="mt-4 text-xl font-extrabold tracking-tight text-slate-900 @md:text-2xl">
+                Comment puis-je aider {settings.shopName} ?
+              </h2>
+              <p className="mt-1.5 max-w-md text-xs text-slate-500 @md:text-sm">
+                Posez n’importe quelle question financière, demandez des formules mathématiques en LaTeX, un plan marketing ou dictez directement une vente.
+              </p>
+
+              {/* 4 Clean ChatGPT-style Starter Cards */}
+              <div className="mt-7 grid w-full grid-cols-1 gap-3 text-left @sm:grid-cols-2">
+                {STARTER_CARDS.map((card) => (
+                  <button
+                    key={card.title}
+                    type="button"
+                    onClick={() => handleSend(card.prompt)}
+                    className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:bg-slate-50/80"
+                  >
+                    <p className="text-xs font-extrabold text-slate-900">
+                      {card.title}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-500">
+                      {card.prompt}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Clean ChatGPT Turn-by-Turn Stream */
+            <div className="space-y-8">
+              {messages.map((msg) =>
+                msg.role === 'user' ? (
+                  /* User Message Pill on Right (Exact ChatGPT Style) */
+                  <div key={msg.id} className="flex justify-end">
+                    <div className="max-w-[85%] rounded-3xl bg-slate-100 px-5 py-3 text-sm font-medium text-slate-900 @md:max-w-[75%]">
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                  </div>
+                ) : (
+                  /* Assistant Full-Width Editorial Response with ShopFlow Avatar + KaTeX + GFM */
+                  <div key={msg.id} className="flex items-start gap-3.5">
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white p-1 shadow-2xs ring-1 ring-slate-200">
+                      <img
+                        src={SHOPFLOW_APP_LOGO}
+                        alt="AI"
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      {msg.executedBadges && msg.executedBadges.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-1.5">
+                          {msg.executedBadges.map((b, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-800 ring-1 ring-emerald-200"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                              {b}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="sf-chatgpt-prose">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm, remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                        >
+                          {prepareMarkdownAndLatex(msg.content)}
+                        </ReactMarkdown>
+                      </div>
+
+                      {/* Subtle Action Bar Underneath Assistant Message (Play Clean Voice / Stop / Copy) */}
+                      <div className="mt-3 flex items-center gap-2 text-slate-400">
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePlayMessage(msg)}
+                          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                            speakingMessageId === msg.id
+                              ? 'bg-red-50 text-red-600'
+                              : 'hover:bg-slate-100 hover:text-slate-700'
+                          }`}
+                          title="Écouter la réponse avec voix naturelle (sans caractères spéciaux)"
+                        >
+                          {speakingMessageId === msg.id ? (
+                            <>
+                              <Square className="h-3.5 w-3.5 fill-current" />
+                              <span>Arrêter la voix</span>
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 className="h-3.5 w-3.5" />
+                              <span>Écouter</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(msg.content);
+                              setCopiedId(msg.id);
+                              setTimeout(() => setCopiedId(null), 1500);
+                            } catch {
+                              // Ignore
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold hover:bg-slate-100 hover:text-slate-700"
+                          title="Copier"
+                        >
+                          {copiedId === msg.id ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 text-emerald-600" />
+                              <span className="text-emerald-600">Copié</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3.5 w-3.5" />
+                              <span>Copier</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              )}
+
+              {/* Smooth Thinking Pulse Indicator */}
+              {isThinking && (
+                <div className="flex items-start gap-3.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white p-1 shadow-2xs ring-1 ring-slate-200">
+                    <img
+                      src={SHOPFLOW_APP_LOGO}
+                      alt="AI"
+                      className="h-full w-full animate-pulse object-contain"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pt-1.5 text-xs font-semibold text-slate-500">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-[#0A4DFF]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-[#0A4DFF] [animation-delay:150ms]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-[#0A4DFF] [animation-delay:300ms]" />
+                    <span className="ml-1">Réflexion en cours...</span>
+                  </div>
                 </div>
               )}
 
-              <div className="space-y-0.5">{renderMarkdown(msg.content)}</div>
-
-              <div className="mt-2.5 flex items-center justify-between gap-3 border-t border-black/5 pt-1.5">
-                <span
-                  className={`text-[10px] ${
-                    msg.role === 'user' ? 'text-blue-100' : 'text-slate-400'
-                  }`}
-                >
-                  {msg.timestamp}
-                </span>
-
-                {msg.role === 'assistant' && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => speakMessage(msg.content)}
-                      className="text-slate-400 transition hover:text-emerald-600"
-                      title="Écouter la réponse"
-                    >
-                      <Volume2 className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(msg.content);
-                          setCopiedId(msg.id);
-                          setTimeout(() => setCopiedId(null), 1500);
-                        } catch {
-                          // Ignore
-                        }
-                      }}
-                      className="text-slate-400 transition hover:text-slate-700"
-                      title="Copier le texte"
-                    >
-                      {copiedId === msg.id ? (
-                        <Check className="h-3.5 w-3.5 text-emerald-600" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
+              <div ref={bottomRef} />
             </div>
-          </div>
-        ))}
-
-        {/* Thinking State Indicator */}
-        {isThinking && (
-          <div className="flex justify-start">
-            <div className="flex items-center gap-3 rounded-2xl rounded-bl-sm border border-blue-100 bg-white px-4 py-3 text-xs font-semibold text-slate-700 shadow-2xs">
-              <Loader2 className="h-4 w-4 animate-spin text-[#0A4DFF]" />
-              <span>
-                ShopFlow IA réfléchit et analyse les données de votre boutique...
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Optional Ideas Strip */}
-      <div className="border-t border-slate-100 bg-white px-4 pt-2.5">
-        <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
-          <Sparkles className="h-3.5 w-3.5 text-[#0A4DFF]" />
-          <span>Exemples libres (ou posez n’importe quelle question de votre choix) :</span>
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {EXAMPLE_IDEAS.map((idea) => (
-            <button
-              key={idea}
-              type="button"
-              disabled={isThinking}
-              onClick={() => handleSend(idea)}
-              className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-[#081844] disabled:opacity-50"
-            >
-              {idea}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Input Bar */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSend();
-        }}
-        className="flex items-center gap-2 border-t border-slate-100 bg-white p-3 @md:p-4"
-      >
-        <button
-          type="button"
-          onClick={toggleVoiceInput}
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition ${
-            isListening
-              ? 'animate-pulse bg-red-500 text-white'
-              : 'bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-[#0A4DFF]'
-          }`}
-          title="Parler au micro"
-        >
-          {isListening ? (
-            <MicOff className="h-5 w-5" />
-          ) : (
-            <Mic className="h-5 w-5" />
           )}
-        </button>
+        </div>
+      </div>
 
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={isThinking}
-          placeholder="Posez n’importe quelle question (stratégie, calculs, pub WhatsApp, vente, Lingala/Swahili/中文)..."
-          className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-[#0A4DFF] focus:bg-white focus:outline-hidden @md:text-sm"
-        />
-
-        <button
-          type="submit"
-          disabled={isThinking || !input.trim()}
-          className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#0A4DFF] px-5 text-xs font-bold text-white shadow-xs transition hover:bg-[#0839C8] disabled:bg-slate-300"
+      {/* Floating Rounded ChatGPT Composer Box at Bottom */}
+      <div className="bg-white px-4 pt-2 pb-4 @md:px-8">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSend();
+          }}
+          className="mx-auto flex max-w-3xl items-center gap-2 rounded-3xl border border-slate-300 bg-slate-50 px-3 py-2 shadow-xs focus-within:border-slate-400 focus-within:bg-white"
         >
-          <Send className="h-4 w-4" />
-          <span className="hidden @sm:inline">Envoyer</span>
-        </button>
-      </form>
+          <button
+            type="button"
+            onClick={toggleVoiceDictation}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${
+              isListening
+                ? 'animate-pulse bg-red-500 text-white'
+                : 'text-slate-600 hover:bg-slate-200/70'
+            }`}
+            title="Dicter au micro"
+          >
+            {isListening ? (
+              <MicOff className="h-4 w-4" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+          </button>
+
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={isThinking}
+            placeholder="Envoyer un message à ShopFlow AI..."
+            className="flex-1 bg-transparent px-2 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden"
+          />
+
+          <button
+            type="submit"
+            disabled={isThinking || !input.trim()}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white transition hover:bg-[#0A4DFF] disabled:bg-slate-300"
+            aria-label="Envoyer"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

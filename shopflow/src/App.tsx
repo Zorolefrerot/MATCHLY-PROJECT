@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   BookOpenCheck,
   Bot,
@@ -7,9 +7,11 @@ import {
   Crown,
   Globe,
   LayoutDashboard,
+  Loader2,
   Monitor,
   Package,
   PackagePlus,
+  Palette,
   ReceiptText,
   Settings,
   ShoppingBag,
@@ -36,7 +38,12 @@ import {
   INITIAL_SETTINGS,
   PRESET_PRODUCT_PHOTOS,
   SHOPFLOW_APP_LOGO,
+  sfAsset,
 } from './data/initialData';
+import {
+  translateEntirePageDOM,
+  translateStringSync,
+} from './i18n/fullTranslator';
 import { LANGUAGE_OPTIONS, TRANSLATIONS } from './i18n/translations';
 import {
   AppLanguage,
@@ -51,12 +58,15 @@ import {
   ShopSettings,
   SubscriptionPlanId,
   VisualReceiptPayload,
+  VoiceModelId,
 } from './types';
 import { formatMoney } from './utils/currency';
 
-const STORAGE_KEY = 'shopflow_rdc_mockup_v3';
+const STORAGE_KEY = 'shopflow_rdc_mockup_v4';
 
 export function App() {
+  const appRootRef = useRef<HTMLDivElement | null>(null);
+
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [previewViewport, setPreviewViewport] =
     useState<PreviewViewport>('hybrid');
@@ -67,6 +77,8 @@ export function App() {
   const [credits, setCredits] = useState<CreditEntry[]>(INITIAL_CREDITS);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>(INITIAL_EXPENSES);
 
+  const [isAiTranslating, setIsAiTranslating] = useState(false);
+
   // Toast Notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -74,18 +86,18 @@ export function App() {
   const [restockTarget, setRestockTarget] = useState<Product | null>(null);
   const [restockQtyInput, setRestockQtyInput] = useState('10');
 
-  // Camera Barcode Scanner Modal
+  // Camera & Photo Barcode Scanner Modal
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannedCartTrigger, setScannedCartTrigger] = useState<{
     product: Product;
     nonce: number;
   } | null>(null);
 
-  // Official Graphical WhatsApp Receipt Modal (MB_OTAKU STORE layout!)
+  // Official Graphical WhatsApp Receipt Modal
   const [visualReceipt, setVisualReceipt] =
     useState<VisualReceiptPayload | null>(null);
 
-  // Text WhatsApp Modal (for daily owner summary & polite credit reminders)
+  // Text WhatsApp Modal
   const [whatsAppModal, setWhatsAppModal] = useState<{
     title: string;
     recipient: string;
@@ -97,8 +109,16 @@ export function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.settings)
-          setSettings({ ...INITIAL_SETTINGS, ...parsed.settings });
+        if (parsed.settings) {
+          setSettings({
+            ...INITIAL_SETTINGS,
+            ...parsed.settings,
+            theme: {
+              ...INITIAL_SETTINGS.theme,
+              ...(parsed.settings.theme || {}),
+            },
+          });
+        }
         if (parsed.products) setProducts(parsed.products);
         if (parsed.sales) setSales(parsed.sales);
         if (parsed.credits) setCredits(parsed.credits);
@@ -120,7 +140,48 @@ export function App() {
     }
   }, [settings, products, sales, credits, expenses]);
 
+  // Whole-App Automatic Dictionary + AI Full Translation Engine whenever language or view changes!
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (settings.language !== 'fr') {
+        setIsAiTranslating(true);
+      }
+      translateEntirePageDOM(appRootRef.current, settings.language, () => {
+        setIsAiTranslating(false);
+      }).finally(() => {
+        setIsAiTranslating(false);
+      });
+    }, 60);
+
+    return () => clearTimeout(timer);
+  }, [
+    settings.language,
+    activeTab,
+    isScannerOpen,
+    visualReceipt,
+    restockTarget,
+    products,
+    sales,
+    credits,
+    expenses,
+  ]);
+
   const t = TRANSLATIONS[settings.language] || TRANSLATIONS.fr;
+
+  // Displayed localized products & sales seamlessly in every component!
+  const localizedProducts = products.map((p) => ({
+    ...p,
+    name: translateStringSync(p.name, settings.language),
+    image: p.image.startsWith('data:') ? p.image : sfAsset(p.image),
+  }));
+
+  const localizedSales = sales.map((s) => ({
+    ...s,
+    productName: translateStringSync(s.productName, settings.language),
+    productImage: s.productImage.startsWith('data:')
+      ? s.productImage
+      : sfAsset(s.productImage),
+  }));
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -139,9 +200,8 @@ export function App() {
     ).padStart(2, '0')}`;
   };
 
-  // Build sample / latest receipt preview matching the exact graphical model
   const openSampleGraphicalReceipt = () => {
-    const sampleItems = products.slice(0, 4).map((p, i) => ({
+    const sampleItems = localizedProducts.slice(0, 4).map((p, i) => ({
       id: p.id,
       refCode: p.refCode || `SF-00${i + 1}`,
       name: p.name,
@@ -170,33 +230,33 @@ export function App() {
     });
   };
 
-  // Direct Quick Sale
   const handleDirectSellQuantity = (
     product: Product,
     qty: number = 1,
     method: PaymentMethod = 'cash',
     label?: string
   ) => {
-    if (product.stock < qty || qty <= 0) return;
+    const rawProduct = products.find((p) => p.id === product.id) || product;
+    if (rawProduct.stock < qty || qty <= 0) return;
 
-    const unitProfit = product.sellingPriceFC - product.purchasePriceFC;
+    const unitProfit = rawProduct.sellingPriceFC - rawProduct.purchasePriceFC;
 
     setProducts((prev) =>
       prev.map((p) =>
-        p.id === product.id ? { ...p, stock: Math.max(0, p.stock - qty) } : p
+        p.id === rawProduct.id ? { ...p, stock: Math.max(0, p.stock - qty) } : p
       )
     );
 
     const newSale: SaleRecord = {
       id: `sale-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      productId: product.id,
-      productName: product.name,
-      productImage: product.image,
+      productId: rawProduct.id,
+      productName: rawProduct.name,
+      productImage: rawProduct.image,
       quantity: qty,
-      unitPurchasePriceFC: product.purchasePriceFC,
-      unitSellingPriceFC: product.sellingPriceFC,
-      totalRevenueFC: product.sellingPriceFC * qty,
-      totalCostFC: product.purchasePriceFC * qty,
+      unitPurchasePriceFC: rawProduct.purchasePriceFC,
+      unitSellingPriceFC: rawProduct.sellingPriceFC,
+      totalRevenueFC: rawProduct.sellingPriceFC * qty,
+      totalCostFC: rawProduct.purchasePriceFC * qty,
       netProfitFC: unitProfit * qty,
       paymentMethod: method,
       customerName: label,
@@ -205,11 +265,10 @@ export function App() {
 
     setSales((prev) => [newSale, ...prev]);
     showToast(
-      `+${qty} ${product.name} vendu ! Revenu : +${fmt(unitProfit * qty)}`
+      `+${qty} ${product.name} → +${fmt(unitProfit * qty)}`
     );
   };
 
-  // Execute Real Actions emitted dynamically by ShopFlow LLM AI
   const handleExecuteAiActions = (actions: AiStoreAction[]): string[] => {
     const badges: string[] = [];
 
@@ -218,8 +277,8 @@ export function App() {
         const target = products.find((p) => p.id === act.productId);
         const qty = Math.max(1, act.quantity || 1);
         if (target && target.stock >= qty) {
-          handleDirectSellQuantity(target, qty, 'cash', 'Vente ShopFlow IA');
-          badges.push(`Vente IA : ${qty}× ${target.name}`);
+          handleDirectSellQuantity(target, qty, 'cash', 'ShopFlow AI');
+          badges.push(`${qty}× ${target.name}`);
         }
       } else if (act.type === 'add_product' && act.name) {
         const newProd: Product = {
@@ -235,7 +294,7 @@ export function App() {
           sellingPriceFC: act.sellingPriceFC || 15000,
         };
         setProducts((prev) => [newProd, ...prev]);
-        badges.push(`Produit ajouté : ${newProd.name}`);
+        badges.push(`+ ${newProd.name}`);
       } else if (
         act.type === 'update_price' &&
         act.productId &&
@@ -248,26 +307,25 @@ export function App() {
               : p
           )
         );
-        badges.push(`Prix mis à jour (${fmt(act.sellingPriceFC)})`);
+        badges.push(`Prix → ${fmt(act.sellingPriceFC)}`);
       } else if (act.type === 'add_expense' && act.amountFC) {
         setExpenses((prev) => [
           {
             id: `exp-${Date.now()}`,
-            label: act.label || 'Charge enregistrée par IA',
+            label: act.label || 'Charge IA',
             category: 'Autre',
             amountFC: act.amountFC!,
             timestamp: nowTime(),
           },
           ...prev,
         ]);
-        badges.push(`Dépense notée : ${fmt(act.amountFC)}`);
+        badges.push(`− ${fmt(act.amountFC)}`);
       }
     }
 
     return badges;
   };
 
-  // Multi-item Cart Checkout
   const handleCompleteCartSale = (
     items: CartItem[],
     paymentMethod: PaymentMethod,
@@ -332,7 +390,7 @@ export function App() {
     }
 
     const totalGain = newSales.reduce((s, r) => s + r.netProfitFC, 0);
-    showToast(`Vente validée ! Bénéfice généré : +${fmt(totalGain)}`);
+    showToast(`Vente validée ! +${fmt(totalGain)}`);
   };
 
   const handleUndoSale = (saleId: string) => {
@@ -347,20 +405,18 @@ export function App() {
           : p
       )
     );
-    showToast(
-      `Vente annulée : ${target.quantity}x ${target.productName} remis en stock`
-    );
+    showToast(`${target.quantity}x ${target.productName} remis en stock`);
   };
 
   const handleSaveProduct = (product: Product, isNew: boolean) => {
     if (isNew) {
       setProducts((prev) => [product, ...prev]);
-      showToast(`Marchandise « ${product.name} » ajoutée au stock !`);
+      showToast(`« ${product.name} » ajouté au stock !`);
     } else {
       setProducts((prev) =>
         prev.map((p) => (p.id === product.id ? product : p))
       );
-      showToast(`Fiche « ${product.name} » mise à jour !`);
+      showToast(`« ${product.name} » mis à jour !`);
     }
   };
 
@@ -373,9 +429,7 @@ export function App() {
         p.id === restockTarget.id ? { ...p, stock: p.stock + added } : p
       )
     );
-    showToast(
-      `+${added} ${restockTarget.unit}s ajoutés à ${restockTarget.name}`
-    );
+    showToast(`+${added} ajoutés à ${restockTarget.name}`);
     setRestockTarget(null);
   };
 
@@ -413,7 +467,7 @@ export function App() {
       activePlan: planId,
       planPaid: true,
     }));
-    showToast(`Abonnement activé via ${methodLabel} !`);
+    showToast(`Abonnement activé (${methodLabel}) !`);
   };
 
   const handleResetDemo = () => {
@@ -440,36 +494,16 @@ export function App() {
     badge?: string | number;
     highlight?: boolean;
   }[] = [
-    {
-      id: 'dashboard',
-      label: t.navDashboard,
-      icon: LayoutDashboard,
-    },
-    {
-      id: 'pos',
-      label: t.navPos,
-      icon: ShoppingBag,
-      badge: sales.length,
-    },
+    { id: 'dashboard', label: t.navDashboard, icon: LayoutDashboard },
+    { id: 'pos', label: t.navPos, icon: ShoppingBag, badge: sales.length },
     {
       id: 'inventory',
       label: t.navInventory,
       icon: Package,
       badge: lowStockCount > 0 ? lowStockCount : undefined,
     },
-    {
-      id: 'ai',
-      label: t.navAi,
-      icon: Bot,
-      badge: 'IA',
-      highlight: true,
-    },
-    {
-      id: 'storefront',
-      label: t.navStorefront,
-      icon: Globe,
-      badge: 'PRO',
-    },
+    { id: 'ai', label: t.navAi, icon: Bot, badge: 'AI', highlight: true },
+    { id: 'storefront', label: t.navStorefront, icon: Globe, badge: 'PRO' },
     {
       id: 'credits',
       label: t.navCredits,
@@ -482,11 +516,7 @@ export function App() {
       icon: Crown,
       badge: settings.planPaid ? '✓' : undefined,
     },
-    {
-      id: 'expenses',
-      label: t.navSettings,
-      icon: Settings,
-    },
+    { id: 'expenses', label: t.navSettings, icon: Settings },
   ];
 
   const mobileBottomItems: {
@@ -503,63 +533,89 @@ export function App() {
 
   const isPhoneFrame = previewViewport === 'mobile';
 
+  const themeInlineStyle = {
+    '--sf-primary': settings.theme.primaryColor,
+    '--sf-primary-dark': settings.theme.primaryDarkColor,
+    '--sf-accent': settings.theme.accentColor,
+  } as React.CSSProperties;
+
   return (
     <div
-      className={`min-h-screen ${
+      id="shopflow-theme-root"
+      ref={appRootRef}
+      style={themeInlineStyle}
+      data-mode={settings.theme.colorMode}
+      data-corners={settings.theme.cornerStyle}
+      data-density={settings.theme.density}
+      data-font={settings.theme.fontStyle}
+      className={`min-h-screen transition-colors duration-200 ${
         isPhoneFrame ? 'bg-slate-900 px-3 py-6' : 'bg-slate-50'
       }`}
     >
-      {/* Top Mockup Mode Switcher Banner on Desktop */}
+      {/* Top Preview Switcher on Desktop */}
       <div
         className={`mx-auto mb-0 hidden items-center justify-between px-4 py-2 text-xs lg:flex ${
           isPhoneFrame
             ? 'mb-4 max-w-2xl rounded-2xl border border-slate-700 bg-slate-800 text-slate-200'
-            : 'border-b border-slate-800 bg-[#081844] text-sky-50'
+            : 'border-b border-black/10 bg-[#081844] text-white'
         }`}
       >
         <div className="flex items-center gap-2">
           <span className="rounded-md bg-[#0A4DFF] px-2 py-0.5 text-[11px] font-extrabold text-white">
-            SHOPFLOW V3 PRO
+            SHOPFLOW V4 PRO
           </span>
-          <span className="text-slate-300">
-            Logo officiel + Reçu Image WhatsApp HD + IA Réflexive Temps Réel + Logo Boutique & 5 Langues
+          <span className="text-slate-200">
+            Thème personnalisé • Traduction intégrale 5 langues • ShopFlow AI (LaTeX + Voix naturelle) • Scanner Photo HD réparé
           </span>
         </div>
 
         <div className="flex items-center gap-2">
+          {isAiTranslating && (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1 text-[11px] font-bold text-sky-200">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              IA Traduction...
+            </span>
+          )}
+          <button
+            onClick={() => setActiveTab('expenses')}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 font-bold text-white transition hover:bg-white/25"
+          >
+            <Palette className="h-3.5 w-3.5" />
+            <span>Thème</span>
+          </button>
           <button
             onClick={openSampleGraphicalReceipt}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1 font-bold text-white transition hover:bg-emerald-500"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1 font-bold text-white transition hover:opacity-90"
           >
             <ReceiptText className="h-3.5 w-3.5" />
-            <span>Voir le Reçu WhatsApp</span>
+            <span>Reçu WhatsApp</span>
           </button>
           <button
             onClick={() => setPreviewViewport('hybrid')}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-bold transition ${
               !isPhoneFrame
-                ? 'bg-white text-[#081844]'
+                ? 'bg-white text-slate-950'
                 : 'text-slate-300 hover:bg-slate-700'
             }`}
           >
             <Monitor className="h-3.5 w-3.5" />
-            <span>Vue PC / Tablette</span>
+            <span>PC / Tablette</span>
           </button>
           <button
             onClick={() => setPreviewViewport('mobile')}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-bold transition ${
               isPhoneFrame
-                ? 'bg-white text-[#081844]'
-                : 'text-sky-200 hover:bg-white/10'
+                ? 'bg-white text-slate-950'
+                : 'text-sky-100 hover:bg-white/10'
             }`}
           >
             <Smartphone className="h-3.5 w-3.5" />
-            <span>Simuler Smartphone</span>
+            <span>Smartphone</span>
           </button>
         </div>
       </div>
 
-      {/* Main Responsive Shell */}
+      {/* Main Shell */}
       <div
         className={
           isPhoneFrame
@@ -567,11 +623,10 @@ export function App() {
             : 'flex min-h-[calc(100vh-40px)] w-full'
         }
       >
-        {/* Left Sidebar (Desktop/Tablet) */}
+        {/* Sidebar */}
         {!isPhoneFrame && (
           <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between overflow-y-auto border-r border-slate-200 bg-white p-5 lg:flex">
             <div className="space-y-5">
-              {/* Official ShopFlow Brand Logo */}
               <div className="flex items-center gap-3 px-1">
                 <img
                   src={SHOPFLOW_APP_LOGO}
@@ -579,8 +634,8 @@ export function App() {
                   className="h-12 w-12 shrink-0 rounded-2xl object-contain shadow-xs ring-1 ring-slate-200/80"
                 />
                 <div className="min-w-0">
-                  <span className="text-lg font-black tracking-tight text-[#081844]">
-                    Shop<span className="text-[#0A7AFF]">Flow</span>
+                  <span className="text-lg font-black tracking-tight text-slate-900">
+                    Shop<span className="text-[#0A4DFF]">Flow</span>
                   </span>
                   <p className="truncate text-[10px] font-bold text-emerald-700">
                     {settings.planPaid ? t.proActive : t.freeTrial}
@@ -588,7 +643,6 @@ export function App() {
                 </div>
               </div>
 
-              {/* Navigation Links */}
               <nav className="space-y-1">
                 {sidebarItems.map((item) => {
                   const Icon = item.icon;
@@ -599,16 +653,18 @@ export function App() {
                       onClick={() => setActiveTab(item.id)}
                       className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-bold transition ${
                         active
-                          ? 'bg-blue-50 text-[#081844] ring-1 ring-blue-200'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          ? 'bg-[#0A4DFF] text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
                       <span className="flex items-center gap-3">
                         <Icon
                           className={`h-4 w-4 ${
-                            active || item.highlight
-                              ? 'text-[#0A4DFF]'
-                              : 'text-slate-400'
+                            active
+                              ? 'text-white'
+                              : item.highlight
+                                ? 'text-[#0A4DFF]'
+                                : 'text-slate-400'
                           }`}
                         />
                         <span className="truncate">{item.label}</span>
@@ -617,14 +673,11 @@ export function App() {
                       {item.badge !== undefined && (
                         <span
                           className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold tabular-nums ${
-                            item.id === 'ai'
-                              ? 'bg-[#0A4DFF] text-white'
-                              : item.id === 'storefront'
-                                ? 'bg-emerald-600 text-white'
-                                : item.id === 'inventory' ||
-                                    item.id === 'credits'
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-slate-100 text-slate-700'
+                            active
+                              ? 'bg-white/20 text-white'
+                              : item.id === 'ai'
+                                ? 'bg-[#0A4DFF] text-white'
+                                : 'bg-slate-100 text-slate-700'
                           }`}
                         >
                           {item.badge}
@@ -636,7 +689,6 @@ export function App() {
               </nav>
             </div>
 
-            {/* Bottom Shop Owner Card + Language & Currency Switchers */}
             <div className="mt-4 space-y-2.5 rounded-2xl border border-slate-200 bg-slate-50 p-3.5 text-xs">
               <div className="flex items-center justify-between gap-1.5">
                 <select
@@ -664,7 +716,7 @@ export function App() {
                       currency: s.currency === 'FC' ? 'USD' : 'FC',
                     }))
                   }
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-extrabold text-slate-800 shadow-2xs hover:border-[#0A4DFF]"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-extrabold text-slate-800"
                 >
                   <Coins className="h-3 w-3 text-emerald-600" />
                   <span>{settings.currency}</span>
@@ -675,7 +727,6 @@ export function App() {
                 type="button"
                 onClick={() => setActiveTab('expenses')}
                 className="flex w-full items-center gap-2.5 border-t border-slate-200/80 pt-2.5 text-left"
-                title="Modifier le logo et les infos de la boutique"
               >
                 {settings.shopLogo ? (
                   <img
@@ -684,7 +735,7 @@ export function App() {
                     className="h-9 w-9 shrink-0 rounded-full border border-slate-300 object-cover"
                   />
                 ) : (
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#081844] text-[11px] font-black text-white">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0A4DFF] text-[11px] font-black text-white">
                     {settings.shopName.slice(0, 2).toUpperCase()}
                   </div>
                 )}
@@ -693,7 +744,7 @@ export function App() {
                     {settings.shopName}
                   </p>
                   <p className="truncate text-[10px] font-semibold text-[#0A4DFF]">
-                    Modifier logo & infos →
+                    Thème, logo & paramètres →
                   </p>
                 </div>
               </button>
@@ -706,13 +757,13 @@ export function App() {
           </aside>
         )}
 
-        {/* Main Content Container */}
+        {/* Main Content */}
         <div
           className={`@container flex flex-1 flex-col ${
             isPhoneFrame ? 'overflow-y-auto' : 'min-w-0'
           }`}
         >
-          {/* Sticky Mobile Header featuring Official ShopFlow Logo + Language/Currency Switchers */}
+          {/* Sticky Mobile Header */}
           <header
             className={`sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-xs ${
               isPhoneFrame ? 'block' : 'lg:hidden'
@@ -726,16 +777,19 @@ export function App() {
                   className="h-10 w-10 shrink-0 rounded-xl object-contain ring-1 ring-slate-200/80"
                 />
                 <div>
-                  <span className="text-sm font-black tracking-tight text-[#081844]">
-                    Shop<span className="text-[#0A7AFF]">Flow</span>
+                  <span className="text-sm font-black tracking-tight text-slate-900">
+                    Shop<span className="text-[#0A4DFF]">Flow</span>
                   </span>
-                  <p className="max-w-[140px] truncate text-[10px] font-semibold text-slate-500">
+                  <p className="max-w-[135px] truncate text-[10px] font-semibold text-slate-500">
                     {settings.shopName}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-1.5">
+                {isAiTranslating && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#0A4DFF]" />
+                )}
                 <select
                   aria-label="Langue"
                   value={settings.language}
@@ -769,13 +823,18 @@ export function App() {
               </div>
             </div>
 
-            {/* Quick Mobile Action Strip */}
             <div className="flex gap-1.5 overflow-x-auto border-t border-slate-100 px-3 py-1.5 text-[11px]">
               <button
                 onClick={openSampleGraphicalReceipt}
                 className="shrink-0 rounded-full bg-[#081844] px-3 py-1 font-bold text-white"
               >
                 🧾 Reçu WhatsApp
+              </button>
+              <button
+                onClick={() => setIsScannerOpen(true)}
+                className="shrink-0 rounded-full bg-emerald-600 px-3 py-1 font-bold text-white"
+              >
+                📷 Scanner Photo
               </button>
               {[
                 { id: 'storefront' as NavTab, label: '🌐 Boutique' },
@@ -809,8 +868,8 @@ export function App() {
             {activeTab === 'dashboard' && (
               <DashboardView
                 settings={settings}
-                products={products}
-                sales={sales}
+                products={localizedProducts}
+                sales={localizedSales}
                 expenses={expenses}
                 credits={credits}
                 onNavigate={setActiveTab}
@@ -828,8 +887,8 @@ export function App() {
             {activeTab === 'pos' && (
               <PosSalesView
                 settings={settings}
-                products={products}
-                sales={sales}
+                products={localizedProducts}
+                sales={localizedSales}
                 onQuickSellProduct={(p) => handleDirectSellQuantity(p, 1)}
                 onCompleteCartSale={handleCompleteCartSale}
                 onUndoSale={handleUndoSale}
@@ -842,8 +901,8 @@ export function App() {
             {activeTab === 'inventory' && (
               <InventoryView
                 settings={settings}
-                products={products}
-                sales={sales}
+                products={localizedProducts}
+                sales={localizedSales}
                 onSaveProduct={handleSaveProduct}
                 onRestockProduct={(prod) => {
                   setRestockTarget(prod);
@@ -856,18 +915,28 @@ export function App() {
             {activeTab === 'ai' && (
               <AiAssistantView
                 settings={settings}
-                products={products}
-                sales={sales}
+                products={localizedProducts}
+                sales={localizedSales}
                 expenses={expenses}
                 credits={credits}
                 onExecuteAiActions={handleExecuteAiActions}
+                onUpdateVoiceSettings={(
+                  voiceModel: VoiceModelId,
+                  autoSpeak: boolean
+                ) =>
+                  setSettings((prev) => ({
+                    ...prev,
+                    voiceModel,
+                    autoSpeakAi: autoSpeak,
+                  }))
+                }
               />
             )}
 
             {activeTab === 'storefront' && (
               <OnlineStoreView
                 settings={settings}
-                products={products}
+                products={localizedProducts}
                 onSimulateOnlineOrderReceived={(
                   items,
                   customerName,
@@ -906,9 +975,7 @@ export function App() {
                     deliveryFeeFC: settings.defaultDeliveryFeeFC,
                   });
                 }}
-                onShareWhatsAppOrder={() => {
-                  // Visual receipt modal opens directly above!
-                }}
+                onShareWhatsAppOrder={() => {}}
               />
             )}
 
@@ -961,9 +1028,7 @@ export function App() {
                 expenses={expenses}
                 onAddExpense={(exp) => {
                   setExpenses((prev) => [exp, ...prev]);
-                  showToast(
-                    `Dépense ajoutée (${fmt(exp.amountFC)}) — Revenu net mis à jour`
-                  );
+                  showToast(`Dépense ajoutée (${fmt(exp.amountFC)})`);
                 }}
                 onDeleteExpense={(id) => {
                   setExpenses((prev) => prev.filter((e) => e.id !== id));
@@ -976,7 +1041,7 @@ export function App() {
             )}
           </main>
 
-          {/* Bottom Navigation Bar (Mobile / Smartphone Simulator) */}
+          {/* Bottom Navigation Bar */}
           <nav
             className={`${
               isPhoneFrame
@@ -987,26 +1052,17 @@ export function App() {
             {mobileBottomItems.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.id;
-              const isAi = item.id === 'ai';
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
                   className={`relative flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-bold transition ${
-                    active
-                      ? 'text-[#0A4DFF]'
-                      : isAi
-                        ? 'text-emerald-600'
-                        : 'text-slate-400'
+                    active ? 'text-[#0A4DFF]' : 'text-slate-400'
                   }`}
                 >
                   <Icon
                     className={`h-5 w-5 ${
-                      active
-                        ? 'text-[#0A4DFF]'
-                        : isAi
-                          ? 'text-emerald-600'
-                          : 'text-slate-400'
+                      active ? 'text-[#0A4DFF]' : 'text-slate-400'
                     }`}
                   />
                   <span>{item.label}</span>
@@ -1022,14 +1078,14 @@ export function App() {
         <button
           type="button"
           onClick={() => setActiveTab('ai')}
-          className="fixed right-6 bottom-6 z-40 hidden items-center gap-2 rounded-full bg-gradient-to-r from-[#081844] to-[#0A4DFF] px-5 py-3 text-xs font-extrabold text-white shadow-xl transition hover:scale-105 lg:flex"
+          className="fixed right-6 bottom-6 z-40 hidden items-center gap-2 rounded-full bg-[#0A4DFF] px-5 py-3 text-xs font-extrabold text-white shadow-xl transition hover:scale-105 lg:flex"
         >
           <Bot className="h-4 w-4" />
           <span>{t.askAiBtn}</span>
         </button>
       )}
 
-      {/* Live Feedback Toast */}
+      {/* Toast */}
       {toastMessage && (
         <div className="fixed right-4 bottom-20 z-50 flex items-center gap-2.5 rounded-2xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-xl lg:bottom-20">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
@@ -1037,7 +1093,7 @@ export function App() {
         </div>
       )}
 
-      {/* Official Visual Graphical WhatsApp Receipt Modal */}
+      {/* Visual Receipt Modal */}
       {visualReceipt && (
         <VisualReceiptModal
           settings={settings}
@@ -1046,18 +1102,46 @@ export function App() {
         />
       )}
 
-      {/* Barcode Camera Scanner Modal */}
+      {/* Repaired Photo + Live Camera Barcode Scanner Modal */}
       {isScannerOpen && (
         <BarcodeScannerModal
           settings={settings}
-          products={products}
+          products={localizedProducts}
           onScanAction={(product, mode) => {
             if (mode === 'instant_sell') {
-              handleDirectSellQuantity(product, 1, 'cash', 'Scan Code-Barres');
+              handleDirectSellQuantity(product, 1, 'cash', 'Scan Photo/Caméra');
             } else {
               setActiveTab('pos');
               setScannedCartTrigger({ product, nonce: Date.now() });
               showToast(`${product.name} ajouté à la facture !`);
+            }
+          }}
+          onBindBarcodeOrCreateProduct={(prod, isNew, mode) => {
+            handleSaveProduct(prod, isNew);
+            if (mode === 'instant_sell') {
+              setTimeout(() => {
+                setSales((prev) => [
+                  {
+                    id: `sale-${Date.now()}`,
+                    productId: prod.id,
+                    productName: prod.name,
+                    productImage: prod.image,
+                    quantity: 1,
+                    unitPurchasePriceFC: prod.purchasePriceFC,
+                    unitSellingPriceFC: prod.sellingPriceFC,
+                    totalRevenueFC: prod.sellingPriceFC,
+                    totalCostFC: prod.purchasePriceFC,
+                    netProfitFC: prod.sellingPriceFC - prod.purchasePriceFC,
+                    paymentMethod: 'cash',
+                    customerName: 'Scan Photo',
+                    timestamp: nowTime(),
+                  },
+                  ...prev,
+                ]);
+              }, 50);
+            } else {
+              setActiveTab('pos');
+              setScannedCartTrigger({ product: prod, nonce: Date.now() });
             }
           }}
           onClose={() => setIsScannerOpen(false)}
@@ -1098,10 +1182,7 @@ export function App() {
                     {restockTarget.name}
                   </p>
                   <p className="text-slate-500">
-                    Stock actuel :{' '}
-                    <strong>
-                      {restockTarget.stock} {restockTarget.unit}s
-                    </strong>
+                    Stock actuel : <strong>{restockTarget.stock}</strong>
                   </p>
                 </div>
               </div>
@@ -1116,7 +1197,7 @@ export function App() {
                   required
                   value={restockQtyInput}
                   onChange={(e) => setRestockQtyInput(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-extrabold text-slate-900 tabular-nums focus:border-emerald-500 focus:outline-hidden"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-extrabold text-slate-900 tabular-nums"
                 />
               </div>
 
@@ -1130,9 +1211,9 @@ export function App() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white hover:bg-emerald-700"
+                  className="rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white"
                 >
-                  Mettre à jour le stock
+                  Mettre à jour
                 </button>
               </div>
             </form>
@@ -1140,7 +1221,7 @@ export function App() {
         </div>
       )}
 
-      {/* Text WhatsApp Modal (Daily Summary / Credit Reminder) */}
+      {/* Text WhatsApp Modal */}
       {whatsAppModal && (
         <WhatsAppModal
           title={whatsAppModal.title}
