@@ -1,13 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Bot,
+  Check,
   CheckCircle2,
+  Copy,
+  Loader2,
   Mic,
   MicOff,
+  RotateCcw,
   Send,
   Sparkles,
-  TrendingUp,
+  Volume2,
 } from 'lucide-react';
+import { LANGUAGE_OPTIONS } from '../i18n/translations';
 import {
   CreditEntry,
   ExpenseEntry,
@@ -17,31 +22,68 @@ import {
 } from '../types';
 import { formatMoney } from '../utils/currency';
 
+export interface AiStoreAction {
+  type: 'sell' | 'add_product' | 'update_price' | 'add_expense';
+  productId?: string;
+  quantity?: number;
+  name?: string;
+  category?: Product['category'];
+  unit?: string;
+  stock?: number;
+  purchasePriceFC?: number;
+  sellingPriceFC?: number;
+  label?: string;
+  amountFC?: number;
+}
+
 interface AiAssistantViewProps {
   settings: ShopSettings;
   products: Product[];
   sales: SaleRecord[];
   expenses: ExpenseEntry[];
   credits: CreditEntry[];
-  onExecuteAiSale: (product: Product, quantity: number) => void;
-  onExecuteAiExpense: (label: string, amountFC: number) => void;
+  onExecuteAiActions: (actions: AiStoreAction[]) => string[];
 }
 
 interface ChatMessage {
   id: string;
-  sender: 'ai' | 'user';
-  text: string;
-  actionBadge?: string;
+  role: 'assistant' | 'user';
+  content: string;
+  executedBadges?: string[];
   timestamp: string;
 }
 
-const QUICK_PROMPTS = [
-  "Combien j'ai vendu et gagné aujourd'hui ?",
-  'Vendu 2 sacs de riz et 1 huile',
-  'Que racheter avec 250 $ au dépôt demain ?',
-  'Quel produit me rapporte le plus ?',
-  "Qui me doit de l'argent à crédit ?",
+const EXAMPLE_IDEAS = [
+  'Analyse mes ventes d’aujourd’hui et dis-moi comment augmenter mon bénéfice demain',
+  'Écris-moi un texte pub WhatsApp & TikTok accrocheur pour mes produits en stock',
+  'Si je baisse mes prix de 5% pour vendre deux fois plus vite, est-ce rentable ?',
+  'Enregistre la vente de 2 sacs de riz et 1 bidon d’huile',
+  'Avec 300 $ demain matin au dépôt, quel plan d’achat exact me conseilles-tu ?',
 ];
+
+function resizeOrCleanJson(text: string): {
+  cleanReply: string;
+  actions: AiStoreAction[];
+} {
+  const actions: AiStoreAction[] = [];
+  const cleanReply = text
+    .replace(/<shopflow_action>([\s\S]*?)<\/shopflow_action>/gi, (_, inner) => {
+      try {
+        const parsed = JSON.parse(inner.trim());
+        if (Array.isArray(parsed)) {
+          actions.push(...parsed);
+        } else if (parsed && typeof parsed === 'object') {
+          actions.push(parsed);
+        }
+      } catch {
+        // Ignore malformed JSON action block
+      }
+      return '';
+    })
+    .trim();
+
+  return { cleanReply, actions };
+}
 
 export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   settings,
@@ -49,33 +91,40 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   sales,
   expenses,
   credits,
-  onExecuteAiSale,
-  onExecuteAiExpense,
+  onExecuteAiActions,
 }) => {
   const fmt = (val: number) =>
     formatMoney(val, settings.currency, settings.usdRateFC);
 
+  const currentLangObj =
+    LANGUAGE_OPTIONS.find((l) => l.code === settings.language) ||
+    LANGUAGE_OPTIONS[0];
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: 'welcome-ai',
-      sender: 'ai',
-      text:
-        `Bonjour ${settings.ownerName} 👋 ! Je suis l’IA **ShopFlow Coach** de *${settings.shopName}*.\n\n` +
-        `Vous pouvez :\n` +
-        `• Me poser vos questions (*« Combien j’ai vendu aujourd’hui ? »*, *« Quel est mon bénéfice ? »*)\n` +
-        `• Enregistrer une vente par simple phrase ou au micro (*« Vendu 2 sacs de riz et 1 huile »*)\n` +
-        `• Me demander quoi racheter au dépôt selon votre budget !`,
-      timestamp: 'En direct',
+      id: 'welcome-llm',
+      role: 'assistant',
+      content:
+        `Bonjour **${settings.ownerName}** ! Je suis **ShopFlow Intelligence**, votre co-pilote IA connecté en temps réel à **${settings.shopName}**.\n\n` +
+        `Contrairement à un simple robot à réponses fixes, je réfléchis librement sur toute votre activité :\n` +
+        `• **Analyse financière & stratégie** *(marges, prix idéaux, prévisions, rentabilité)*\n` +
+        `• **Marketing & Copywriting** *(textes de vente WhatsApp, scripts TikTok, offres packs)*\n` +
+        `• **Actions directes dans ShopFlow** *(enregistrer une vente, créer un produit, noter une dépense)*\n` +
+        `• **Multilingue natif** (*Français, English, Lingala, Kiswahili, 中文*)\n\n` +
+        `Que voulez-vous analyser ou accomplir maintenant ?`,
+      timestamp: 'En ligne · IA Temps Réel',
     },
   ]);
 
   const [input, setInput] = useState('');
+  const [isThinking, setIsThinking] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isThinking]);
 
   const nowTime = () => {
     const d = new Date();
@@ -84,243 +133,212 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     ).padStart(2, '0')}`;
   };
 
-  const generateSmartResponse = (rawText: string): { reply: string; badge?: string } => {
-    const q = rawText.toLowerCase().trim();
-
+  /**
+   * Builds live, exact real-time store context so the LLM reasons on true shop data
+   */
+  const buildSystemPrompt = () => {
     const totalCA = sales.reduce((a, s) => a + s.totalRevenueFC, 0);
     const totalCost = sales.reduce((a, s) => a + s.totalCostFC, 0);
     const totalExp = expenses.reduce((a, e) => a + e.amountFC, 0);
     const netProfit = totalCA - totalCost - totalExp;
     const totalUnits = sales.reduce((a, s) => a + s.quantity, 0);
 
-    // 1. Check if merchant is dictating a SALE command ("vendu 2 riz et 1 huile", "j'ai vendu...", "vente...")
-    if (/(vendu|vendre|encaisse|acheté par client)/i.test(q)) {
-      const matchedItems: { product: Product; qty: number }[] = [];
-
-      // Split segments by "et", ",", "+"
-      const parts = q.split(/\s+(?:et|\+|avec)\s+|,/);
-      for (const part of parts) {
-        const qtyMatch = part.match(/(\d+)/);
-        const qty = qtyMatch ? Math.max(1, parseInt(qtyMatch[1], 10)) : 1;
-
-        const foundProduct = products.find((prod) => {
-          const keywords = prod.name
-            .toLowerCase()
-            .split(/\s+/)
-            .filter((w) => w.length >= 3 && !['sac', 'pack', 'lot', 'par'].includes(w));
-          return keywords.some((kw) => part.includes(kw));
-        });
-
-        if (foundProduct && foundProduct.stock >= qty) {
-          matchedItems.push({ product: foundProduct, qty });
-        }
-      }
-
-      if (matchedItems.length > 0) {
-        let addedCA = 0;
-        let addedProfit = 0;
-        const lines: string[] = [];
-
-        for (const item of matchedItems) {
-          onExecuteAiSale(item.product, item.qty);
-          const itemCA = item.product.sellingPriceFC * item.qty;
-          const itemGain =
-            (item.product.sellingPriceFC - item.product.purchasePriceFC) *
-            item.qty;
-          addedCA += itemCA;
-          addedProfit += itemGain;
-          lines.push(
-            `• **${item.qty}× ${item.product.name}** → CA : ${fmt(itemCA)} (Gain : +${fmt(itemGain)})`
-          );
-        }
-
-        return {
-          badge: `✅ ${matchedItems.length} vente(s) enregistrée(s) automatiquement`,
-          reply:
-            `C’est noté et enregistré dans votre caisse ! 🎉\n\n` +
-            `${lines.join('\n')}\n\n` +
-            `• **CA ajouté :** +${fmt(addedCA)}\n` +
-            `• **Revenu net gagné :** +${fmt(addedProfit)}\n` +
-            `• **Nouveau Revenu Net du jour :** **${fmt(netProfit + addedProfit)}**\n` +
-            `Le stock a été mis à jour automatiquement.`,
-        };
-      }
-    }
-
-    // 2. Check if merchant dictates an EXPENSE ("dépense transport 5000", "payé moto 8000")
-    if (/(dépense|depense|transport|moto|courant|sachet)/i.test(q) && /\d+/.test(q)) {
-      const numMatch = q.match(/(\d+(?:[.,]\d+)?)/);
-      const rawVal = numMatch ? parseFloat(numMatch[1].replace(',', '.')) : 0;
-      if (rawVal > 0) {
-        const amountFC =
-          settings.currency === 'USD' || q.includes('$')
-            ? Math.round(rawVal * settings.usdRateFC)
-            : Math.round(rawVal);
-        onExecuteAiExpense(`Dépense vocale (${rawText})`, amountFC);
-        return {
-          badge: `🧾 Dépense déduite (${fmt(amountFC)})`,
-          reply:
-            `J’ai enregistré la dépense de **${fmt(amountFC)}** dans vos charges du jour.\n` +
-            `Votre **Revenu Net Réel** mis à jour est maintenant de **${fmt(netProfit - amountFC)}**.`,
-        };
-      }
-    }
-
-    // 3. Restocking / Budget Advice ("racheter", "dépôt", "approvisionner", "budget")
-    if (/(racheter|dépôt|depot|approvision|stock|acheter quoi|conseil)/i.test(q)) {
-      const budgetMatch = q.match(/(\d+)\s*(\$|usd|dollars?|fc)?/i);
-      let budgetFC = 250 * settings.usdRateFC;
-      if (budgetMatch) {
-        const num = parseInt(budgetMatch[1], 10);
-        const unitStr = (budgetMatch[2] || '').toLowerCase();
-        if (unitStr.includes('$') || unitStr.includes('usd') || num <= 2000) {
-          budgetFC = num * settings.usdRateFC;
-        } else {
-          budgetFC = num;
-        }
-      }
-
-      // Prioritize low-stock + high-margin items
-      const ranked = [...products].sort((a, b) => {
-        const aUrgency = a.stock <= a.minStockAlert ? 1 : 0;
-        const bUrgency = b.stock <= b.minStockAlert ? 1 : 0;
-        if (aUrgency !== bUrgency) return bUrgency - aUrgency;
-        return (
-          b.sellingPriceFC -
-          b.purchasePriceFC -
-          (a.sellingPriceFC - a.purchasePriceFC)
-        );
-      });
-
-      let remaining = budgetFC;
-      let expectedGain = 0;
-      const planLines: string[] = [];
-
-      for (const prod of ranked.slice(0, 4)) {
-        const targetQty = Math.min(
-          8,
-          Math.floor(remaining / Math.max(1, prod.purchasePriceFC))
-        );
-        if (targetQty > 0) {
-          const cost = targetQty * prod.purchasePriceFC;
-          const gain =
-            targetQty * (prod.sellingPriceFC - prod.purchasePriceFC);
-          remaining -= cost;
-          expectedGain += gain;
-          planLines.push(
-            `• **${targetQty} ${prod.unit}s de ${prod.name}** (Coût : ${fmt(cost)} → Gain futur : +${fmt(gain)})`
-          );
-        }
-      }
-
+    const catalogSnapshot = products.map((p) => {
+      const soldToday = sales
+        .filter((s) => s.productId === p.id)
+        .reduce((acc, s) => acc + s.quantity, 0);
       return {
-        badge: '📦 Plan d’achat optimisé par IA',
-        reply:
-          `Avec un budget de **${fmt(budgetFC)}** pour le dépôt, voici la commande la plus rentable (priorité aux stocks bas et fortes marges) :\n\n` +
-          `${planLines.join('\n')}\n\n` +
-          `💰 **Total investi :** ${fmt(budgetFC - remaining)}\n` +
-          `🚀 **Bénéfice net attendu à la revente :** **+${fmt(expectedGain)}** !`,
+        id: p.id,
+        nom: p.name,
+        categorie: p.category,
+        unite: p.unit,
+        stockActuel: p.stock,
+        seuilAlerte: p.minStockAlert,
+        prixAchat: fmt(p.purchasePriceFC),
+        prixAchatFC: p.purchasePriceFC,
+        prixVente: fmt(p.sellingPriceFC),
+        prixVenteFC: p.sellingPriceFC,
+        gainUnitaire: fmt(p.sellingPriceFC - p.purchasePriceFC),
+        vendusAujourdhui: soldToday,
       };
-    }
+    });
 
-    // 4. Customer Credits / Debts ("crédit", "dette", "doit", "bon")
-    if (/(crédit|credit|dette|doit|bon|client)/i.test(q)) {
-      const unpaid = credits.filter((c) => c.totalAmountFC > c.paidAmountFC);
-      const totalDebt = unpaid.reduce(
-        (s, c) => s + (c.totalAmountFC - c.paidAmountFC),
-        0
-      );
-      const list = unpaid
-        .map(
-          (c) =>
-            `• **${c.customerName}** : reste **${fmt(
-              c.totalAmountFC - c.paidAmountFC
-            )}** (échéance : ${c.dueDate})`
-        )
-        .join('\n');
+    const creditsSnapshot = credits.map((c) => ({
+      client: c.customerName,
+      telephone: c.phone,
+      articles: c.itemsSummary,
+      total: fmt(c.totalAmountFC),
+      dejaPaye: fmt(c.paidAmountFC),
+      resteAPayer: fmt(Math.max(0, c.totalAmountFC - c.paidAmountFC)),
+      echeance: c.dueDate,
+    }));
 
-      return {
-        reply:
-          `Actuellement, **${unpaid.length} clients** vous doivent un total de **${fmt(totalDebt)}** :\n\n` +
-          `${list || 'Aucun crédit impayé !'}\n\n` +
-          `💡 Conseil IA : Relancez d’abord les échéances proches via le bouton *Rappel WhatsApp* dans l’onglet Crédits.`,
-      };
-    }
+    return `Tu es ShopFlow AI, un assistant IA expert en gestion commerciale, comptabilité simplifiée, stratégie e-commerce et marketing (du même niveau d'intelligence, de réflexion structurée et de proactivité que l'IA de Chariow), conçu spécialement pour les commerçants et entrepreneurs en RDC (Kinshasa, Lubumbashi, Goma...) et en Afrique.
 
-    // 5. Most profitable products ("meilleur", "rapporte", "produit", "rentable")
-    if (/(meilleur|rapporte|plus rentable|top produit)/i.test(q)) {
-      const productProfits = products
-        .map((p) => {
-          const sold = sales
-            .filter((s) => s.productId === p.id)
-            .reduce((sum, s) => sum + s.quantity, 0);
-          return {
-            name: p.name,
-            sold,
-            profitToday: (p.sellingPriceFC - p.purchasePriceFC) * sold,
-            unitMargin: p.sellingPriceFC - p.purchasePriceFC,
-          };
-        })
-        .sort((a, b) => b.profitToday - a.profitToday);
+RÈGLES ESSENTIELLES :
+1. Réfléchis véritablement à chaque question posée par l'utilisateur (qu'il s'agisse de ses chiffres, d'une simulation mathématique, d'une stratégie business, d'une idée de pub TikTok/WhatsApp, de négociation client ou d'une question générale). Ne donne jamais de réponse générique vague : utilise ses VRAIS chiffres ci-dessous quand c'est pertinent, fais les vrais calculs étape par étape et propose des conseils concrets et actionnables.
+2. Langue préférée actuelle des paramètres : ${currentLangObj.nativeLabel} (code: ${settings.language}). Si le commerçant écrit dans une autre langue (Français, Anglais, Lingala, Swahili, Chinois), réponds-lui naturellement dans la langue qu'il utilise !
+3. Devise d'affichage active de la boutique : ${settings.currency} (Taux interne : 1 USD = ${settings.usdRateFC} FC). Exprime toujours les montants dans la devise active (${settings.currency}) sauf demande contraire.
+4. ACTIONS DIRECTES SUR L'APPLICATION : Si et seulement si l'utilisateur te demande explicitement d'exécuter une action dans sa boutique (ex: enregistrer une vente, ajouter une nouvelle marchandise, modifier un prix ou noter une dépense), insère TOUT EN HAUT de ta réponse un bloc exactement au format suivant contenant un tableau JSON valide (les montants internes doivent être en FC entiers) :
+<shopflow_action>[{"type":"sell","productId":"prod-riz-25","quantity":2}]</shopflow_action>
+Types d'actions supportés :
+- {"type":"sell","productId":"ID_PRODUIT","quantity":NOMBRE}
+- {"type":"add_product","name":"NOM","category":"Alimentation","unit":"Pièce","stock":10,"purchasePriceFC":5000,"sellingPriceFC":8000}
+- {"type":"update_price","productId":"ID_PRODUIT","sellingPriceFC":70000}
+- {"type":"add_expense","label":"MOTIF","amountFC":5000}
+Après ce bloc <shopflow_action>, écris toujours ta réponse humaine claire et chaleureuse.
 
-      const top3 = productProfits
-        .slice(0, 3)
-        .map(
-          (item, i) =>
-            `${i + 1}. **${item.name}** : ${item.sold} vendus aujourd’hui → **+${fmt(item.profitToday)}** de revenu`
-        )
-        .join('\n');
-
-      return {
-        reply:
-          `Voici vos **3 marchandises championnes** aujourd’hui :\n\n` +
-          `${top3}\n\n` +
-          `Assurez-vous de ne jamais tomber en rupture sur ces articles !`,
-      };
-    }
-
-    // Default / Today's sales & profit summary ("combien j'ai vendu aujourd'hui", etc.)
-    const lowStockNames = products
-      .filter((p) => p.stock <= p.minStockAlert)
-      .map((p) => p.name);
-
-    return {
-      reply:
-        `Voici votre bilan exact à cet instant (${nowTime()}) 📊 :\n\n` +
-        `• **Articles vendus :** ${totalUnits} unités (${sales.length} ventes)\n` +
-        `• **Chiffre d’Affaires (CA) :** **${fmt(totalCA)}**\n` +
-        `• **Coût d’achat des articles vendus :** ${fmt(totalCost)} *(à garder pour le stock)*\n` +
-        `• **Dépenses de la journée :** − ${fmt(totalExp)}\n` +
-        `• ✅ **VOTRE REVENU NET RÉEL :** **+${fmt(netProfit)}**\n\n` +
-        (lowStockNames.length > 0
-          ? `⚠️ Attention : stock bas sur *${lowStockNames.join(', ')}*.`
-          : `✅ Tous vos stocks sont à bon niveau.`),
-    };
+DONNÉES EN DIRECT DE LA BOUTIQUE À CET INSTANT PRÉCIS :
+- Nom boutique : ${settings.shopName} (${settings.shopSpecialties})
+- Propriétaire : ${settings.ownerName} | Ville : ${settings.city}
+- Résumé financier d'aujourd'hui :
+  * Articles vendus aujourd'hui : ${totalUnits} unités (${sales.length} ventes)
+  * Chiffre d'Affaires (CA du jour) : ${fmt(totalCA)} (${totalCA} FC)
+  * Coût d'achat des marchandises vendues : ${fmt(totalCost)} (${totalCost} FC)
+  * Dépenses boutique du jour : ${fmt(totalExp)} (${totalExp} FC) — Détail : ${JSON.stringify(expenses.map((e) => `${e.label}: ${fmt(e.amountFC)}`))}
+  * REVENU / BÉNÉFICE NET RÉEL DU JOUR : ${fmt(netProfit)} (${netProfit} FC)
+- Catalogue complet & Stocks en direct :
+${JSON.stringify(catalogSnapshot)}
+- Carnet de crédits clients (« Bons ») :
+${JSON.stringify(creditsSnapshot)}`;
   };
 
-  const handleSend = (customPrompt?: string) => {
-    const textToSend = (customPrompt ?? input).trim();
-    if (!textToSend) return;
+  /**
+   * Calls a real LLM endpoint (custom API key if configured, or live CORS cloud LLM gateway out of the box!)
+   */
+  const queryRealLLM = async (
+    historyToSend: ChatMessage[]
+  ): Promise<string> => {
+    const systemMessage = {
+      role: 'system',
+      content: buildSystemPrompt(),
+    };
+
+    const apiMessages = [
+      systemMessage,
+      ...historyToSend.slice(-8).map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+    ];
+
+    // 1. If owner provided their own OpenAI / OpenRouter / Groq key in Settings
+    if (settings.customAiApiKey && settings.customAiApiKey.trim().length > 10) {
+      const resp = await fetch(
+        settings.customAiEndpoint ||
+          'https://api.openai.com/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${settings.customAiApiKey.trim()}`,
+          },
+          body: JSON.stringify({
+            model: settings.customAiModel || 'gpt-4o-mini',
+            messages: apiMessages,
+            temperature: 0.7,
+          }),
+        }
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const txt = data?.choices?.[0]?.message?.content;
+        if (txt) return txt;
+      }
+    }
+
+    // 2. Primary Zero-Config Real Cloud LLM (OpenAI-compatible CORS gateway)
+    const response = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'openai',
+        messages: apiMessages,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`LLM HTTP ${response.status}`);
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const json = await response.json();
+      const content = json?.choices?.[0]?.message?.content;
+      if (typeof content === 'string' && content.trim()) {
+        return content;
+      }
+    }
+
+    const rawText = await response.text();
+    if (rawText && rawText.trim()) {
+      return rawText;
+    }
+
+    throw new Error('Empty AI response');
+  };
+
+  const handleSend = async (overridePrompt?: string) => {
+    const promptText = (overridePrompt ?? input).trim();
+    if (!promptText || isThinking) return;
 
     const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
-      sender: 'user',
-      text: textToSend,
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: promptText,
       timestamp: nowTime(),
     };
 
-    const { reply, badge } = generateSmartResponse(textToSend);
+    const updatedHistory = [...messages, userMsg];
+    setMessages(updatedHistory);
+    if (!overridePrompt) setInput('');
+    setIsThinking(true);
 
-    const aiMsg: ChatMessage = {
-      id: `a-${Date.now() + 1}`,
-      sender: 'ai',
-      text: reply,
-      actionBadge: badge,
-      timestamp: nowTime(),
-    };
+    try {
+      const rawAiText = await queryRealLLM(updatedHistory);
+      const { cleanReply, actions } = resizeOrCleanJson(rawAiText);
+      const badges =
+        actions.length > 0 ? onExecuteAiActions(actions) : undefined;
 
-    setMessages((prev) => [...prev, userMsg, aiMsg]);
-    if (!customPrompt) setInput('');
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          role: 'assistant',
+          content: cleanReply || rawAiText,
+          executedBadges: badges,
+          timestamp: `${nowTime()} · ShopFlow AI`,
+        },
+      ]);
+    } catch {
+      // Offline emergency fallback if device has zero internet connectivity
+      const totalCA = sales.reduce((a, s) => a + s.totalRevenueFC, 0);
+      const totalCost = sales.reduce((a, s) => a + s.totalCostFC, 0);
+      const totalExp = expenses.reduce((a, e) => a + e.amountFC, 0);
+      const net = totalCA - totalCost - totalExp;
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-offline-${Date.now()}`,
+          role: 'assistant',
+          content:
+            `⚠️ **Connexion internet indisponible ou momentanément saturée.**\n\n` +
+            `En attendant le retour du réseau pour ma réflexion IA complète, voici vos chiffres locaux exacts calculés hors-ligne :\n` +
+            `• **Chiffre d’Affaires (CA) :** ${fmt(totalCA)} (${sales.length} ventes)\n` +
+            `• **Coût d’achat marchandise :** ${fmt(totalCost)}\n` +
+            `• **Dépenses :** ${fmt(totalExp)}\n` +
+            `• **Bénéfice Net Réel :** **+${fmt(net)}**\n\n` +
+            `Réessayez votre question dans quelques secondes dès que la connexion 4G/Wi-Fi est active !`,
+          timestamp: `${nowTime()} · Mode Secours Hors-Ligne`,
+        },
+      ]);
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   const toggleVoiceInput = () => {
@@ -330,15 +348,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       (window as unknown as { webkitSpeechRecognition?: new () => unknown })
         .webkitSpeechRecognition;
 
-    if (!SpeechRec) {
-      // Graceful fallback simulation when browser has no SpeechRecognition API
-      setIsListening(true);
-      setTimeout(() => {
-        setIsListening(false);
-        handleSend("Combien j'ai vendu et gagné aujourd'hui ?");
-      }, 900);
-      return;
-    }
+    if (!SpeechRec) return;
 
     try {
       const recognition = new SpeechRec() as {
@@ -349,7 +359,14 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
         onend: () => void;
         start: () => void;
       };
-      recognition.lang = 'fr-FR';
+      recognition.lang =
+        settings.language === 'en'
+          ? 'en-US'
+          : settings.language === 'zh'
+            ? 'zh-CN'
+            : settings.language === 'sw'
+              ? 'sw-KE'
+              : 'fr-FR';
       recognition.interimResults = false;
       setIsListening(true);
 
@@ -366,12 +383,40 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     }
   };
 
-  // Render simple markdown bold **text** cleanly
-  const renderFormattedText = (text: string) =>
+  const speakMessage = (text: string) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(
+      text.replace(/\*\*/g, '').replace(/[#•]/g, '')
+    );
+    utter.lang =
+      settings.language === 'en'
+        ? 'en-US'
+        : settings.language === 'zh'
+          ? 'zh-CN'
+          : 'fr-FR';
+    window.speechSynthesis.speak(utter);
+  };
+
+  const renderMarkdown = (text: string) =>
     text.split('\n').map((line, i) => {
+      if (line.trim().startsWith('### ')) {
+        return (
+          <h4 key={i} className="mt-2 font-extrabold text-slate-900">
+            {line.replace(/^###\s+/, '')}
+          </h4>
+        );
+      }
+      if (line.trim().startsWith('## ')) {
+        return (
+          <h3 key={i} className="mt-2.5 text-sm font-black text-slate-950">
+            {line.replace(/^##\s+/, '')}
+          </h3>
+        );
+      }
       const parts = line.split(/(\*\*[^*]+\*\*)/g);
       return (
-        <p key={i} className={line === '' ? 'h-2' : 'leading-relaxed'}>
+        <p key={i} className={line.trim() === '' ? 'h-2' : 'leading-relaxed'}>
           {parts.map((part, idx) =>
             part.startsWith('**') && part.endsWith('**') ? (
               <strong key={idx} className="font-extrabold">
@@ -386,9 +431,9 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     });
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-150px)] max-h-[760px] min-h-[540px] max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-emerald-700 to-teal-700 px-5 py-4 text-white">
+    <div className="mx-auto flex h-[calc(100vh-150px)] max-h-[780px] min-h-[560px] max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      {/* Header inspired by modern AI copilots (ShopFlow Royal Blue -> Emerald) */}
+      <div className="flex items-center justify-between bg-gradient-to-r from-[#081844] via-[#0A4DFF] to-emerald-600 px-5 py-4 text-white">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-xs">
             <Bot className="h-5 w-5" />
@@ -396,83 +441,144 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-extrabold @md:text-base">
-                ShopFlow IA — Coach & Caisse Vocale
+                ShopFlow Intelligence
               </h1>
-              <span className="rounded-full bg-emerald-400/25 px-2 py-0.5 text-[10px] font-extrabold text-emerald-100">
-                PRO IA
+              <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-extrabold text-white">
+                IA RÉFLEXIVE TEMPS RÉEL
               </span>
             </div>
-            <p className="text-xs text-emerald-100">
-              Connecté en direct à votre stock, vos ventes et vos crédits
+            <p className="text-xs text-sky-100">
+              Analyse librement toute question business, financière ou marketing · {currentLangObj.flag} {currentLangObj.nativeLabel}
             </p>
           </div>
         </div>
 
-        <div className="hidden items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold @md:flex">
-          <TrendingUp className="h-3.5 w-3.5 text-emerald-300" />
-          <span>Calcul & Saisie auto</span>
-        </div>
+        <button
+          type="button"
+          onClick={() => setMessages((prev) => [prev[0]])}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/25"
+          title="Nouvelle discussion"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          <span className="hidden @sm:inline">Nouveau chat</span>
+        </button>
       </div>
 
-      {/* Chat Messages Stream */}
-      <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/70 p-4 @md:p-6">
+      {/* Conversation Stream */}
+      <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/80 p-4 @md:p-6">
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${
-              msg.sender === 'user' ? 'justify-end' : 'justify-start'
+              msg.role === 'user' ? 'justify-end' : 'justify-start'
             }`}
           >
             <div
-              className={`max-w-[88%] rounded-2xl px-4 py-3 text-xs shadow-2xs @md:max-w-[75%] @md:text-sm ${
-                msg.sender === 'user'
-                  ? 'rounded-br-sm bg-emerald-600 text-white'
+              className={`max-w-[90%] rounded-2xl px-4 py-3.5 text-xs shadow-2xs @md:max-w-[78%] @md:text-sm ${
+                msg.role === 'user'
+                  ? 'rounded-br-sm bg-[#0A4DFF] text-white'
                   : 'rounded-bl-sm border border-slate-200 bg-white text-slate-800'
               }`}
             >
-              {msg.actionBadge && (
-                <div className="mb-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-800 ring-1 ring-emerald-200">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>{msg.actionBadge}</span>
+              {msg.executedBadges && msg.executedBadges.length > 0 && (
+                <div className="mb-2.5 flex flex-wrap gap-1.5">
+                  {msg.executedBadges.map((b, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-800 ring-1 ring-emerald-200"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                      {b}
+                    </span>
+                  ))}
                 </div>
               )}
 
-              <div className="space-y-0.5">{renderFormattedText(msg.text)}</div>
+              <div className="space-y-0.5">{renderMarkdown(msg.content)}</div>
 
-              <div
-                className={`mt-1.5 text-right text-[10px] ${
-                  msg.sender === 'user' ? 'text-emerald-100' : 'text-slate-400'
-                }`}
-              >
-                {msg.timestamp}
+              <div className="mt-2.5 flex items-center justify-between gap-3 border-t border-black/5 pt-1.5">
+                <span
+                  className={`text-[10px] ${
+                    msg.role === 'user' ? 'text-blue-100' : 'text-slate-400'
+                  }`}
+                >
+                  {msg.timestamp}
+                </span>
+
+                {msg.role === 'assistant' && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => speakMessage(msg.content)}
+                      className="text-slate-400 transition hover:text-emerald-600"
+                      title="Écouter la réponse"
+                    >
+                      <Volume2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(msg.content);
+                          setCopiedId(msg.id);
+                          setTimeout(() => setCopiedId(null), 1500);
+                        } catch {
+                          // Ignore
+                        }
+                      }}
+                      className="text-slate-400 transition hover:text-slate-700"
+                      title="Copier le texte"
+                    >
+                      {copiedId === msg.id ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         ))}
+
+        {/* Thinking State Indicator */}
+        {isThinking && (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-3 rounded-2xl rounded-bl-sm border border-blue-100 bg-white px-4 py-3 text-xs font-semibold text-slate-700 shadow-2xs">
+              <Loader2 className="h-4 w-4 animate-spin text-[#0A4DFF]" />
+              <span>
+                ShopFlow IA réfléchit et analyse les données de votre boutique...
+              </span>
+            </div>
+          </div>
+        )}
+
         <div ref={bottomRef} />
       </div>
 
-      {/* Quick 1-Tap Suggestion Chips */}
-      <div className="border-t border-slate-100 bg-white px-4 pt-3">
+      {/* Optional Ideas Strip */}
+      <div className="border-t border-slate-100 bg-white px-4 pt-2.5">
         <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
-          <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-          <span>Questions & commandes rapides à tester en 1 clic :</span>
+          <Sparkles className="h-3.5 w-3.5 text-[#0A4DFF]" />
+          <span>Exemples libres (ou posez n’importe quelle question de votre choix) :</span>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {QUICK_PROMPTS.map((prompt) => (
+          {EXAMPLE_IDEAS.map((idea) => (
             <button
-              key={prompt}
+              key={idea}
               type="button"
-              onClick={() => handleSend(prompt)}
-              className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50/70 px-3 py-1.5 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100"
+              disabled={isThinking}
+              onClick={() => handleSend(idea)}
+              className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-[#081844] disabled:opacity-50"
             >
-              {prompt}
+              {idea}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Input Bar + Voice Microphone */}
+      {/* Input Bar */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -486,9 +592,9 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition ${
             isListening
               ? 'animate-pulse bg-red-500 text-white'
-              : 'bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700'
+              : 'bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-[#0A4DFF]'
           }`}
-          title="Dicter au micro"
+          title="Parler au micro"
         >
           {isListening ? (
             <MicOff className="h-5 w-5" />
@@ -501,13 +607,15 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Posez une question ou tapez ex: « Vendu 2 riz et 1 huile »..."
-          className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-hidden @md:text-sm"
+          disabled={isThinking}
+          placeholder="Posez n’importe quelle question (stratégie, calculs, pub WhatsApp, vente, Lingala/Swahili/中文)..."
+          className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-[#0A4DFF] focus:bg-white focus:outline-hidden @md:text-sm"
         />
 
         <button
           type="submit"
-          className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-emerald-600 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700"
+          disabled={isThinking || !input.trim()}
+          className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#0A4DFF] px-5 text-xs font-bold text-white shadow-xs transition hover:bg-[#0839C8] disabled:bg-slate-300"
         >
           <Send className="h-4 w-4" />
           <span className="hidden @sm:inline">Envoyer</span>

@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import {
   CheckCircle2,
   History,
-  MessageCircle,
   Minus,
   Plus,
+  ReceiptText,
   RotateCcw,
   ScanBarcode,
   Search,
@@ -17,6 +17,7 @@ import {
   Product,
   SaleRecord,
   ShopSettings,
+  VisualReceiptPayload,
 } from '../types';
 import { formatMoney, fromDisplayAmount } from '../utils/currency';
 
@@ -29,15 +30,24 @@ interface PosSalesViewProps {
     items: CartItem[],
     paymentMethod: PaymentMethod,
     customerName: string,
-    customerPhone: string
+    customerPhone: string,
+    customerAddress: string,
+    deliveryFeeFC: number
   ) => void;
   onUndoSale: (saleId: string) => void;
-  onOpenReceiptWhatsApp: (receiptText: string, customerLabel: string) => void;
+  onOpenVisualReceipt: (payload: VisualReceiptPayload) => void;
   onOpenScanner: () => void;
   externalCartAddProduct?: { product: Product; nonce: number } | null;
 }
 
-const CATEGORIES = ['Tous', 'Alimentation', 'Huiles & Lait', 'Hygiène', 'Boissons'] as const;
+const CATEGORIES = [
+  'Tous',
+  'Alimentation',
+  'Huiles & Lait',
+  'Hygiène',
+  'Boissons',
+  'Mode & Accessoires',
+] as const;
 
 export const PosSalesView: React.FC<PosSalesViewProps> = ({
   settings,
@@ -46,7 +56,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
   onQuickSellProduct,
   onCompleteCartSale,
   onUndoSale,
-  onOpenReceiptWhatsApp,
+  onOpenVisualReceipt,
   onOpenScanner,
   externalCartAddProduct,
 }) => {
@@ -54,25 +64,16 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Tous');
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [paymentMethod, setPaymentMethod] =
+    useState<PaymentMethod>('mobile_money');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [deliveryInput, setDeliveryInput] = useState('');
   const [cashGivenInput, setCashGivenInput] = useState('');
 
-  React.useEffect(() => {
-    if (externalCartAddProduct) {
-      addToCart(externalCartAddProduct.product);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalCartAddProduct?.nonce]);
-
-  const fmt = (val: number) => formatMoney(val, settings.currency, settings.usdRateFC);
-
-  const filteredProducts = products.filter((p) => {
-    const matchesCat = selectedCategory === 'Tous' || p.category === selectedCategory;
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesSearch;
-  });
+  const fmt = (val: number) =>
+    formatMoney(val, settings.currency, settings.usdRateFC);
 
   const addToCart = (product: Product) => {
     if (product.stock <= 0) return;
@@ -89,6 +90,22 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
       return [...prev, { product, quantity: 1 }];
     });
   };
+
+  React.useEffect(() => {
+    if (externalCartAddProduct) {
+      addToCart(externalCartAddProduct.product);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalCartAddProduct?.nonce]);
+
+  const filteredProducts = products.filter((p) => {
+    const matchesCat =
+      selectedCategory === 'Tous' || p.category === selectedCategory;
+    const matchesSearch = p.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
 
   const updateCartQty = (productId: string, delta: number) => {
     setCart((prev) =>
@@ -115,6 +132,15 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
   );
   const cartTotalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
 
+  const deliveryFeeFC =
+    deliveryInput !== ''
+      ? fromDisplayAmount(
+          parseFloat(deliveryInput) || 0,
+          settings.currency,
+          settings.usdRateFC
+        )
+      : settings.defaultDeliveryFeeFC;
+
   const cashGivenFC = fromDisplayAmount(
     parseFloat(cashGivenInput) || 0,
     settings.currency,
@@ -122,46 +148,109 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
   );
   const changeToReturnFC = Math.max(0, cashGivenFC - cartTotalCA);
 
-  const handleCheckout = (sendWhatsAppAfter: boolean) => {
+  const handleCheckout = (openVisualReceiptAfter: boolean) => {
     if (cart.length === 0) return;
-    const clientLabel =
-      customerName.trim() ||
-      (paymentMethod === 'credit' ? 'Client habituel' : 'Client comptoir');
 
-    const lines = cart
-      .map(
-        (i) =>
-          `• ${i.quantity}x ${i.product.name} = ${fmt(
-            i.product.sellingPriceFC * i.quantity
-          )}`
-      )
-      .join('\n');
+    const finalClient = customerName.trim() || 'Client Comptoir';
+    const finalPhone = customerPhone.trim() || '+243 97 000 0000';
+    const finalAddress = customerAddress.trim() || settings.city;
 
-    const receiptMsg =
-      `🧾 *REÇU DE VENTE — ${settings.shopName.toUpperCase()}*\n` +
-      `📍 ${settings.city}\n` +
-      `--------------------------\n` +
-      `${lines}\n` +
-      `--------------------------\n` +
-      `💰 *TOTAL PAYÉ : ${fmt(cartTotalCA)}*\n` +
-      `💳 Mode : ${
-        paymentMethod === 'cash'
-          ? 'Espèces (Cash)'
-          : paymentMethod === 'mobile_money'
-            ? 'Mobile Money (M-Pesa / Orange / Airtel)'
-            : `À Crédit (Bon — ${clientLabel})`
-      }\n` +
-      `Merci pour votre confiance ! 🙏`;
+    const now = new Date();
+    const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(
+      now.getMonth() + 1
+    ).padStart(2, '0')}/${now.getFullYear()}  ${String(
+      now.getHours()
+    ).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-    onCompleteCartSale(cart, paymentMethod, clientLabel, customerPhone.trim());
+    const invoiceNum = `#2026-0${Math.floor(100 + Math.random() * 899)}`;
+    const randomRef = `${Math.random()
+      .toString(36)
+      .substring(2, 6)
+      .toUpperCase()}-${Math.random()
+      .toString(36)
+      .substring(2, 6)
+      .toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+    const methodText =
+      paymentMethod === 'mobile_money'
+        ? 'Mobile Money (M-Pesa / Airtel / Orange)'
+        : paymentMethod === 'cash'
+          ? 'Espèces (Cash Comptoir)'
+          : paymentMethod === 'card'
+            ? 'Carte Bancaire (Visa / Mastercard)'
+            : 'À Crédit (Bon Client)';
+
+    const snapshotPayload: VisualReceiptPayload = {
+      invoiceNumber: invoiceNum,
+      dateTime: dateFormatted,
+      customerName: finalClient,
+      customerPhone: finalPhone,
+      customerAddress: finalAddress,
+      paymentMethodLabel: methodText,
+      paymentReference: randomRef,
+      isPaid: paymentMethod !== 'credit',
+      items: cart.map(({ product, quantity }, idx) => ({
+        id: product.id,
+        refCode: product.refCode || `SF-00${idx + 1}`,
+        name: product.name,
+        subtitle: product.unit,
+        image: product.image,
+        quantity,
+        unitPriceFC: product.sellingPriceFC,
+      })),
+      deliveryFeeFC,
+    };
+
+    onCompleteCartSale(
+      cart,
+      paymentMethod,
+      finalClient,
+      finalPhone,
+      finalAddress,
+      deliveryFeeFC
+    );
     setCart([]);
     setCustomerName('');
     setCustomerPhone('');
+    setCustomerAddress('');
     setCashGivenInput('');
 
-    if (sendWhatsAppAfter) {
-      onOpenReceiptWhatsApp(receiptMsg, clientLabel);
+    if (openVisualReceiptAfter) {
+      onOpenVisualReceipt(snapshotPayload);
     }
+  };
+
+  const openReceiptFromSingleSale = (s: SaleRecord) => {
+    const now = new Date();
+    onOpenVisualReceipt({
+      invoiceNumber: `#2026-${s.id.slice(-4)}`,
+      dateTime: `${String(now.getDate()).padStart(2, '0')}/${String(
+        now.getMonth() + 1
+      ).padStart(2, '0')}/${now.getFullYear()}  ${s.timestamp}`,
+      customerName: s.customerName || 'Client Comptoir',
+      customerPhone: s.customerPhone || '+243 97 000 0000',
+      customerAddress: s.customerAddress || settings.city,
+      paymentMethodLabel:
+        s.paymentMethod === 'mobile_money'
+          ? 'Mobile Money (M-Pesa / Vodacom)'
+          : s.paymentMethod === 'credit'
+            ? 'À Crédit (Bon Client)'
+            : 'Espèces (Cash)',
+      paymentReference: '8F7A-3D9B-6C1E',
+      isPaid: s.paymentMethod !== 'credit',
+      items: [
+        {
+          id: s.productId,
+          refCode: 'SF-001',
+          name: s.productName,
+          subtitle: 'Article Boutique',
+          image: s.productImage,
+          quantity: s.quantity,
+          unitPriceFC: s.unitSellingPriceFC,
+        },
+      ],
+      deliveryFeeFC: s.deliveryFeeFC ?? settings.defaultDeliveryFeeFC,
+    });
   };
 
   const totalSalesTodayCA = sales.reduce((s, r) => s + r.totalRevenueFC, 0);
@@ -176,36 +265,36 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
             onClick={() => setSubTab('catalog')}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
               subTab === 'catalog'
-                ? 'bg-white text-emerald-700 shadow-2xs'
+                ? 'bg-white text-[#081844] shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Zap className="h-4 w-4" />
+            <Zap className="h-4 w-4 text-[#0A4DFF]" />
             <span>Caisse & Vente Rapide</span>
           </button>
           <button
             onClick={() => setSubTab('history')}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
               subTab === 'history'
-                ? 'bg-white text-emerald-700 shadow-2xs'
+                ? 'bg-white text-[#081844] shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <History className="h-4 w-4" />
-            <span>Ventes de la journée ({sales.length})</span>
+            <History className="h-4 w-4 text-[#0A4DFF]" />
+            <span>Ventes du jour ({sales.length})</span>
           </button>
         </div>
 
         <div className="flex items-center justify-between gap-4 rounded-xl bg-emerald-50/80 px-4 py-2 text-xs @md:justify-end">
           <div>
-            <span className="text-slate-600">CA Ventes du jour : </span>
+            <span className="text-slate-600">CA Ventes : </span>
             <strong className="font-extrabold text-slate-900 tabular-nums">
               {fmt(totalSalesTodayCA)}
             </strong>
           </div>
           <span className="text-emerald-300">|</span>
           <div>
-            <span className="text-emerald-800">Gain sur ventes : </span>
+            <span className="text-emerald-800">Gain : </span>
             <strong className="font-extrabold text-emerald-700 tabular-nums">
               +{fmt(totalSalesTodayProfit)}
             </strong>
@@ -217,7 +306,6 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
         <div className="grid grid-cols-1 gap-6 @lg:grid-cols-12">
           {/* Left: Product Grid */}
           <div className="space-y-4 @lg:col-span-8">
-            {/* Search & Scanner Bar */}
             <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -226,17 +314,17 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher (riz, huile, lait...)"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pr-4 pl-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-hidden"
+                    placeholder="Rechercher une marchandise..."
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pr-4 pl-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0A4DFF] focus:bg-white focus:outline-hidden"
                   />
                 </div>
 
                 <button
                   type="button"
                   onClick={onOpenScanner}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2.5 text-xs font-extrabold text-white transition hover:bg-slate-800"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#081844] px-3.5 py-2.5 text-xs font-extrabold text-white transition hover:bg-slate-800"
                 >
-                  <ScanBarcode className="h-4 w-4 text-emerald-400" />
+                  <ScanBarcode className="h-4 w-4 text-sky-400" />
                   <span>Scanner</span>
                 </button>
               </div>
@@ -248,7 +336,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                     onClick={() => setSelectedCategory(cat)}
                     className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
                       selectedCategory === cat
-                        ? 'bg-emerald-600 text-white'
+                        ? 'bg-[#0A4DFF] text-white'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -269,7 +357,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                 return (
                   <div
                     key={product.id}
-                    className="flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:border-emerald-300 hover:shadow-xs"
+                    className="flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:border-blue-300 hover:shadow-xs"
                   >
                     <div>
                       <div className="relative h-36 w-full bg-slate-100">
@@ -293,7 +381,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
 
                       <div className="p-4">
                         <span className="text-[11px] font-medium text-slate-400">
-                          {product.category} · Par {product.unit}
+                          {product.category} · {product.unit}
                         </span>
                         <h3 className="mt-0.5 line-clamp-1 text-sm font-bold text-slate-900">
                           {product.name}
@@ -304,19 +392,17 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                             {fmt(product.sellingPriceFC)}
                           </span>
                           <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 tabular-nums">
-                            Gain +{fmt(profitPerUnit)}
+                            +{fmt(profitPerUnit)}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Two clear actions: 1-Click Direct Sale OR Add to Ticket */}
                     <div className="grid grid-cols-2 gap-2 border-t border-slate-100 bg-slate-50/70 p-3">
                       <button
                         onClick={() => onQuickSellProduct(product)}
                         disabled={product.stock <= 0}
-                        className="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-300"
-                        title="Enregistre immédiatement 1 vente cash"
+                        className="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 active:scale-95 disabled:bg-slate-300"
                       >
                         <Zap className="h-3.5 w-3.5" />
                         <span>+1 Vendu</span>
@@ -325,11 +411,11 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                       <button
                         onClick={() => addToCart(product)}
                         disabled={product.stock <= 0}
-                        className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 disabled:opacity-50"
+                        className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-700 transition hover:border-[#0A4DFF] hover:bg-blue-50 hover:text-[#081844] disabled:opacity-50"
                       >
                         <ShoppingCart className="h-3.5 w-3.5" />
                         <span>
-                          {inCart ? `Panier (${inCart.quantity})` : 'Panier +'}
+                          {inCart ? `Panier (${inCart.quantity})` : 'Facture +'}
                         </span>
                       </button>
                     </div>
@@ -339,14 +425,14 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
             </div>
           </div>
 
-          {/* Right: Multi-item Ticket / Mobile Money / Credit ("Bon") */}
+          {/* Right: Ticket & Visual WhatsApp Receipt Generator */}
           <div className="@lg:col-span-4">
             <div className="sticky top-20 rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
                 <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4 text-emerald-600" />
+                  <ReceiptText className="h-4 w-4 text-[#0A4DFF]" />
                   <h2 className="text-sm font-bold text-slate-900">
-                    Ticket Client ({cartTotalItems})
+                    Ticket & Reçu WhatsApp ({cartTotalItems})
                   </h2>
                 </div>
                 {cart.length > 0 && (
@@ -362,20 +448,18 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
               {cart.length === 0 ? (
                 <div className="py-10 text-center">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                    <ShoppingCart className="h-6 w-6" />
+                    <ReceiptText className="h-6 w-6" />
                   </div>
-                  <p className="mt-3 text-xs font-semibold text-slate-700">
-                    Aucun article dans le ticket
+                  <p className="mt-3 text-xs font-bold text-slate-700">
+                    Ajoutez des articles avec « Facture + »
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
-                    Utilisez <strong>« +1 Vendu »</strong> pour une vente express, ou{' '}
-                    <strong>« Panier + »</strong> pour un client qui prend plusieurs articles ou à crédit.
+                    Génère automatiquement le **vrai Reçu Image Haute Définition** (modèle officiel avec photos, code-barres & logo boutique) à envoyer sur WhatsApp !
                   </p>
                 </div>
               ) : (
-                <div className="mt-4 space-y-4">
-                  {/* Cart items */}
-                  <div className="max-h-56 space-y-2.5 overflow-y-auto pr-1">
+                <div className="mt-4 space-y-3.5">
+                  <div className="max-h-52 space-y-2 overflow-y-auto pr-1">
                     {cart.map(({ product, quantity }) => (
                       <div
                         key={product.id}
@@ -392,7 +476,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                         <div className="flex shrink-0 items-center gap-1.5">
                           <button
                             onClick={() => updateCartQty(product.id, -1)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </button>
@@ -401,7 +485,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                           </span>
                           <button
                             onClick={() => updateCartQty(product.id, 1)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>
@@ -410,16 +494,17 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                     ))}
                   </div>
 
-                  {/* Payment Method Selector */}
-                  <div className="space-y-2 pt-2">
+                  {/* Mode de paiement */}
+                  <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700">
-                      Mode de règlement client
+                      Mode de paiement
                     </label>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {(
                         [
-                          { id: 'cash', label: 'Cash' },
                           { id: 'mobile_money', label: 'Mobile Money' },
+                          { id: 'cash', label: 'Cash Espèces' },
+                          { id: 'card', label: 'Carte Bancaire' },
                           { id: 'credit', label: 'Bon / Crédit' },
                         ] as const
                       ).map((mode) => (
@@ -427,10 +512,10 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                           key={mode.id}
                           type="button"
                           onClick={() => setPaymentMethod(mode.id)}
-                          className={`rounded-xl border px-2 py-2 text-[11px] font-bold transition ${
+                          className={`rounded-xl border px-2.5 py-2 text-[11px] font-bold transition ${
                             paymentMethod === mode.id
-                              ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
-                              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                              ? 'border-[#0A4DFF] bg-blue-50 text-[#081844]'
+                              : 'border-slate-200 bg-white text-slate-600'
                           }`}
                         >
                           {mode.label}
@@ -439,85 +524,93 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Optional change calculator for Cash OR Customer info for Credit */}
+                  {/* Client & Livraison Details for Receipt */}
+                  <div className="space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
+                    <p className="text-[11px] font-extrabold text-slate-700">
+                      Infos Client sur le Reçu WhatsApp :
+                    </p>
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Nom client (ex: KABASELE Merdi)"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="tel"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        placeholder="+243 97..."
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs"
+                      />
+                      <input
+                        type="text"
+                        value={customerAddress}
+                        onChange={(e) => setCustomerAddress(e.target.value)}
+                        placeholder="Commune / Quartier"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs"
+                      />
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      value={deliveryInput}
+                      onChange={(e) => setDeliveryInput(e.target.value)}
+                      placeholder={`Frais de livraison (défaut: ${fmt(settings.defaultDeliveryFeeFC)})`}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs tabular-nums"
+                    />
+                  </div>
+
                   {paymentMethod === 'cash' && (
-                    <div className="rounded-xl bg-slate-50 p-3">
-                      <label className="block text-[11px] font-semibold text-slate-600">
-                        Montant remis par le client ({settings.currency}) — optionnel
-                      </label>
+                    <div className="rounded-xl bg-emerald-50/50 p-2.5 text-xs">
                       <input
                         type="number"
                         min="0"
                         value={cashGivenInput}
                         onChange={(e) => setCashGivenInput(e.target.value)}
-                        placeholder={`Ex: ${settings.currency === 'FC' ? '100000' : '50'}`}
-                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 tabular-nums focus:border-emerald-500 focus:outline-hidden"
+                        placeholder={`Billet remis (${settings.currency}) — calcul monnaie`}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold tabular-nums"
                       />
                       {cashGivenFC > cartTotalCA && (
-                        <p className="mt-1.5 text-xs font-bold text-emerald-700 tabular-nums">
+                        <p className="mt-1 font-bold text-emerald-700 tabular-nums">
                           Monnaie à rendre : {fmt(changeToReturnFC)}
                         </p>
                       )}
                     </div>
                   )}
 
-                  {(paymentMethod === 'credit' || paymentMethod === 'mobile_money') && (
-                    <div className="space-y-2 rounded-xl bg-amber-50/60 p-3">
-                      <input
-                        type="text"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder={
-                          paymentMethod === 'credit'
-                            ? 'Nom du client (ex: Maman Bijou)'
-                            : 'Réf / Nom (ex: M-Pesa Client)'
-                        }
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-hidden"
-                      />
-                      {paymentMethod === 'credit' && (
-                        <input
-                          type="tel"
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
-                          placeholder="Téléphone WhatsApp (+243...)"
-                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-emerald-500 focus:outline-hidden"
-                        />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Totals Summary */}
-                  <div className="space-y-1.5 border-t border-slate-100 pt-3 text-xs">
+                  {/* Totals */}
+                  <div className="space-y-1 border-t border-slate-100 pt-2.5 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Total à encaisser (CA)</span>
+                      <span className="text-slate-500">Total Facture</span>
                       <span className="text-base font-extrabold text-slate-900 tabular-nums">
-                        {fmt(cartTotalCA)}
+                        {fmt(cartTotalCA + deliveryFeeFC)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-emerald-700">Bénéfice net calculé</span>
+                      <span className="text-emerald-700">Bénéfice net</span>
                       <span className="font-bold text-emerald-700 tabular-nums">
                         +{fmt(cartTotalProfit)}
                       </span>
                     </div>
                   </div>
 
-                  {/* Checkout buttons */}
                   <div className="space-y-2 pt-1">
                     <button
-                      onClick={() => handleCheckout(false)}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700"
+                      onClick={() => handleCheckout(true)}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0A4DFF] py-3 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#0839C8]"
                     >
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>Valider la vente ({fmt(cartTotalCA)})</span>
+                      <ReceiptText className="h-4 w-4" />
+                      <span>Valider + Générer Reçu Image WhatsApp</span>
                     </button>
 
                     <button
-                      onClick={() => handleCheckout(true)}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100"
+                      onClick={() => handleCheckout(false)}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
                     >
-                      <MessageCircle className="h-4 w-4" />
-                      <span>Valider + Reçu WhatsApp</span>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      <span>Encaisser rapidement sans reçu</span>
                     </button>
                   </div>
                 </div>
@@ -526,90 +619,83 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
           </div>
         </div>
       ) : (
-        /* Full Daily Sales History View */
+        /* Daily Sales History Table with Direct Visual Receipt Button */
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-4">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Détail complet des ventes de la journée
-              </h2>
-              <p className="text-xs text-slate-500">
-                En cas d’erreur de saisie, cliquez sur « Annuler » pour remettre automatiquement l’article en stock.
-              </p>
-            </div>
+          <div className="pb-4">
+            <h2 className="text-base font-bold text-slate-900">
+              Ventes enregistrées aujourd’hui
+            </h2>
+            <p className="text-xs text-slate-500">
+              Cliquez sur <strong>« Reçu Image »</strong> sur n’importe quelle ligne pour afficher ou envoyer le reçu graphique officiel au client.
+            </p>
           </div>
 
-          {sales.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-500">
-              Aucune vente enregistrée pour le moment aujourd’hui.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 text-[11px] font-bold uppercase text-slate-400">
-                    <th className="pb-3">Heure</th>
-                    <th className="pb-3">Marchandise</th>
-                    <th className="pb-3 text-center">Qté</th>
-                    <th className="pb-3 text-right">Prix d’achat total</th>
-                    <th className="pb-3 text-right">CA Vente</th>
-                    <th className="pb-3 text-right">Revenu Gagné</th>
-                    <th className="pb-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {sales.map((s) => (
-                    <tr key={s.id} className="hover:bg-slate-50">
-                      <td className="py-3 pr-3 font-medium text-slate-500 tabular-nums">
-                        {s.timestamp}
-                      </td>
-                      <td className="py-3 pr-3">
-                        <div className="flex items-center gap-2.5">
-                          <img
-                            src={s.productImage}
-                            alt={s.productName}
-                            className="h-9 w-9 rounded-lg object-cover"
-                          />
-                          <div>
-                            <p className="font-bold text-slate-900">{s.productName}</p>
-                            <span className="text-[11px] text-slate-500">
-                              {s.paymentMethod === 'cash'
-                                ? 'Espèces (Cash)'
-                                : s.paymentMethod === 'mobile_money'
-                                  ? s.customerName || 'Mobile Money'
-                                  : `Bon Crédit · ${s.customerName || 'Client'}`}
-                            </span>
-                          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 text-[11px] font-bold uppercase text-slate-400">
+                  <th className="pb-3">Heure</th>
+                  <th className="pb-3">Marchandise & Client</th>
+                  <th className="pb-3 text-center">Qté</th>
+                  <th className="pb-3 text-right">CA Vente</th>
+                  <th className="pb-3 text-right">Revenu</th>
+                  <th className="pb-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sales.map((s) => (
+                  <tr key={s.id} className="hover:bg-slate-50">
+                    <td className="py-3 pr-3 font-medium text-slate-500 tabular-nums">
+                      {s.timestamp}
+                    </td>
+                    <td className="py-3 pr-3">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={s.productImage}
+                          alt={s.productName}
+                          className="h-9 w-9 rounded-lg object-cover"
+                        />
+                        <div>
+                          <p className="font-bold text-slate-900">
+                            {s.productName}
+                          </p>
+                          <span className="text-[11px] text-slate-500">
+                            {s.customerName || 'Client Comptoir'}
+                          </span>
                         </div>
-                      </td>
-                      <td className="py-3 text-center font-bold text-slate-800 tabular-nums">
-                        {s.quantity}
-                      </td>
-                      <td className="py-3 text-right text-slate-600 tabular-nums">
-                        {fmt(s.totalCostFC)}
-                      </td>
-                      <td className="py-3 text-right font-bold text-slate-900 tabular-nums">
-                        {fmt(s.totalRevenueFC)}
-                      </td>
-                      <td className="py-3 text-right font-extrabold text-emerald-700 tabular-nums">
-                        +{fmt(s.netProfitFC)}
-                      </td>
-                      <td className="py-3 text-right">
+                      </div>
+                    </td>
+                    <td className="py-3 text-center font-bold text-slate-800 tabular-nums">
+                      {s.quantity}
+                    </td>
+                    <td className="py-3 text-right font-bold text-slate-900 tabular-nums">
+                      {fmt(s.totalRevenueFC)}
+                    </td>
+                    <td className="py-3 text-right font-extrabold text-emerald-700 tabular-nums">
+                      +{fmt(s.netProfitFC)}
+                    </td>
+                    <td className="py-3 text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => openReceiptFromSingleSale(s)}
+                          className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-[#0A4DFF] transition hover:bg-blue-100"
+                        >
+                          <ReceiptText className="h-3.5 w-3.5" />
+                          <span>Reçu Image</span>
+                        </button>
                         <button
                           onClick={() => onUndoSale(s.id)}
-                          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-50"
-                          title="Annuler cette vente et remettre en stock"
+                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-red-600 transition hover:bg-red-50"
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
-                          <span>Annuler</span>
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

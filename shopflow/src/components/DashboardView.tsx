@@ -24,6 +24,7 @@ import {
   ShopSettings,
 } from '../types';
 import { WEEKLY_HISTORY_DAYS } from '../data/initialData';
+import { TRANSLATIONS } from '../i18n/translations';
 import { formatMoney } from '../utils/currency';
 
 interface DashboardViewProps {
@@ -36,6 +37,7 @@ interface DashboardViewProps {
   onQuickSellProduct: (product: Product) => void;
   onRestockProduct: (product: Product) => void;
   onOpenDailyWhatsApp: () => void;
+  onOpenSampleReceipt: () => void;
   onOpenScanner: () => void;
 }
 
@@ -49,6 +51,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onQuickSellProduct,
   onRestockProduct,
   onOpenDailyWhatsApp,
+  onOpenSampleReceipt,
   onOpenScanner,
 }) => {
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(6); // Today by default
@@ -82,52 +85,62 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const profitRatio = Math.max(0, 100 - costRatio - expenseRatio);
 
   const fmt = (val: number) => formatMoney(val, settings.currency, settings.usdRateFC);
+  const t = TRANSLATIONS[settings.language] || TRANSLATIONS.fr;
 
   return (
     <div className="space-y-6 pb-8">
       {/* Top Greeting & Fast Actions */}
       <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 @lg:flex-row @lg:items-center @lg:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Boutique ouverte · Calcul automatique actif
-            </span>
-            <span className="text-xs font-medium text-slate-400">
-              {settings.city}
-            </span>
+        <div className="flex items-center gap-3.5">
+          {settings.shopLogo && (
+            <img
+              src={settings.shopLogo}
+              alt={settings.shopName}
+              className="h-14 w-14 shrink-0 rounded-full border-2 border-slate-900 object-cover shadow-xs"
+            />
+          )}
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                {t.tagline}
+              </span>
+              <span className="text-xs font-medium text-slate-400">
+                {settings.city}
+              </span>
+            </div>
+            <h1 className="mt-1 text-xl font-extrabold tracking-tight text-slate-900 @md:text-2xl">
+              {t.helloShop}, {settings.shopName}
+            </h1>
+            <p className="mt-0.5 text-sm text-slate-500">
+              {t.dashboardSubtitle}
+            </p>
           </div>
-          <h1 className="mt-1.5 text-xl font-extrabold tracking-tight text-slate-900 @md:text-2xl">
-            Bonjour, {settings.shopName}
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Voici la situation claire de vos ventes, stocks et revenus d’aujourd’hui.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={onOpenScanner}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800"
+            onClick={onOpenSampleReceipt}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-xs font-extrabold text-[#081844] transition hover:bg-blue-100"
           >
-            <ScanBarcode className="h-4 w-4 text-emerald-400" />
-            <span>Scanner Caméra</span>
+            <Receipt className="h-4 w-4 text-[#0A4DFF]" />
+            <span>Modèle Reçu WhatsApp</span>
           </button>
 
           <button
-            onClick={() => onNavigate('ai')}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100"
+            onClick={onOpenScanner}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#081844] px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800"
           >
-            <Bot className="h-4 w-4 text-emerald-600" />
-            <span>IA Coach</span>
+            <ScanBarcode className="h-4 w-4 text-sky-400" />
+            <span>{t.scannerBtn}</span>
           </button>
 
           <button
             onClick={onOpenDailyWhatsApp}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-800"
           >
             <MessageCircle className="h-4 w-4 text-emerald-600" />
-            <span>Bilan WhatsApp</span>
+            <span>{t.whatsappSummaryBtn}</span>
           </button>
 
           <button
@@ -135,46 +148,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700"
           >
             <Zap className="h-4 w-4" />
-            <span>Vente rapide</span>
+            <span>{t.quickSaleBtn}</span>
           </button>
         </div>
       </div>
 
-      {/* Pro Features Quick Access Strip (AI, Online WhatsApp Store, Scanner, Subscription) */}
+      {/* Pro Features Quick Access Strip (AI, Online WhatsApp Store, Subscription) */}
       <div className="grid grid-cols-1 gap-3 @sm:grid-cols-3">
         <button
           type="button"
           onClick={() => onNavigate('ai')}
-          className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 text-left transition hover:shadow-xs"
+          className="flex items-center justify-between rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-emerald-50 p-4 text-left transition hover:shadow-xs"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0A4DFF] text-white">
               <Bot className="h-5 w-5" />
             </div>
             <div>
               <p className="text-xs font-extrabold text-slate-900">
-                Demander à l’IA ShopFlow
+                {t.askAiBtn}
               </p>
               <p className="text-[11px] text-slate-600">
-                Questions ventes, vocal & conseil stock
+                IA réflexive type Chariow (stratégie, calculs, ventes)
               </p>
             </div>
           </div>
-          <ArrowRight className="h-4 w-4 shrink-0 text-emerald-700" />
+          <ArrowRight className="h-4 w-4 shrink-0 text-[#0A4DFF]" />
         </button>
 
         <button
           type="button"
           onClick={() => onNavigate('storefront')}
-          className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-emerald-300 hover:shadow-xs"
+          className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-blue-300 hover:shadow-xs"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-emerald-400">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#081844] text-sky-400">
               <Globe className="h-5 w-5" />
             </div>
             <div>
               <p className="text-xs font-extrabold text-slate-900">
-                Ma Boutique en Ligne WhatsApp
+                {t.onlineStoreTitle}
               </p>
               <p className="text-[11px] text-slate-500">
                 Lien catalogue à partager aux clients
@@ -195,10 +208,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <div>
               <p className="text-xs font-extrabold text-slate-900">
-                {settings.planPaid ? 'Abonnement Pro Actif ✓' : 'Abonnement & Paiement Carte'}
+                {t.subscriptionTitle}
               </p>
               <p className="text-[11px] text-slate-600">
-                Carte Bancaire Visa/MC & Mobile Money
+                Visa / Mastercard & Mobile Money
               </p>
             </div>
           </div>
@@ -212,7 +225,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              Chiffre d’Affaires (CA)
+              {t.kpiCA}
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
               <ShoppingBag className="h-4 w-4" />
@@ -230,9 +243,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              Coût d’Achat Ventes
+              {t.kpiCost}
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#0A4DFF]">
               <Wallet className="h-4 w-4" />
             </div>
           </div>
@@ -248,7 +261,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              Dépenses Boutique
+              {t.kpiExpenses}
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
               <Receipt className="h-4 w-4" />
@@ -266,11 +279,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </button>
         </div>
 
-        {/* 4. Revenu Net Réel (Highlighted Emerald Card) */}
-        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 text-white shadow-sm">
+        {/* 4. Revenu Net Réel */}
+        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-[#081844] via-[#0A4DFF] to-emerald-600 p-5 text-white shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold tracking-wide text-emerald-100 uppercase">
-              Revenu / Bénéfice Net
+            <span className="text-xs font-semibold tracking-wide text-sky-100 uppercase">
+              {t.kpiNetProfit}
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white">
               <TrendingUp className="h-4 w-4" />
@@ -279,7 +292,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="mt-3 text-2xl font-extrabold text-white tabular-nums">
             {realNetRevenue >= 0 ? `+${fmt(realNetRevenue)}` : fmt(realNetRevenue)}
           </div>
-          <p className="mt-1.5 text-xs text-emerald-100">
+          <p className="mt-1.5 text-xs text-sky-100">
             Gain net réel dans votre poche (après achat & dépenses)
           </p>
         </div>

@@ -544,6 +544,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     <option value="Huiles & Lait">Huiles & Lait</option>
                     <option value="Hygiène">Hygiène</option>
                     <option value="Boissons">Boissons</option>
+                    <option value="Mode & Accessoires">Mode & Accessoires</option>
                   </select>
                 </div>
               </div>

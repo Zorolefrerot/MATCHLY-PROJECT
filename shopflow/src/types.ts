@@ -1,6 +1,8 @@
 export type CurrencyCode = 'FC' | 'USD';
 
-export type PaymentMethod = 'cash' | 'mobile_money' | 'credit';
+export type AppLanguage = 'fr' | 'en' | 'ln' | 'sw' | 'zh';
+
+export type PaymentMethod = 'cash' | 'mobile_money' | 'credit' | 'card';
 
 export type NavTab =
   | 'dashboard'
@@ -18,9 +20,10 @@ export type PreviewViewport = 'hybrid' | 'mobile';
 
 export interface Product {
   id: string;
+  refCode?: string;
   barcode?: string;
   name: string;
-  category: 'Alimentation' | 'Huiles & Lait' | 'Boissons' | 'Hygiène';
+  category: 'Alimentation' | 'Huiles & Lait' | 'Boissons' | 'Hygiène' | 'Mode & Accessoires';
   unit: string;
   image: string;
   stock: number;
@@ -44,6 +47,9 @@ export interface SaleRecord {
   netProfitFC: number; // Revenu / Bénéfice
   paymentMethod: PaymentMethod;
   customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  deliveryFeeFC?: number;
   timestamp: string;
 }
 
@@ -66,15 +72,53 @@ export interface ExpenseEntry {
   timestamp: string;
 }
 
+export interface ReceiptLineItem {
+  id: string;
+  refCode: string;
+  name: string;
+  subtitle: string;
+  image: string;
+  quantity: number;
+  unitPriceFC: number;
+}
+
+export interface VisualReceiptPayload {
+  invoiceNumber: string;
+  dateTime: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  paymentMethodLabel: string;
+  paymentReference: string;
+  isPaid: boolean;
+  items: ReceiptLineItem[];
+  deliveryFeeFC: number;
+}
+
 export interface ShopSettings {
   shopName: string;
   ownerName: string;
   city: string;
   whatsappNumber: string;
+  shopLogo: string;
+  shopSpecialties: string;
+  shopTagline: string;
+  instagramHandle: string;
+  businessActivity: string;
+  defaultDeliveryFeeFC: number;
+  deliveryDelayText: string;
+  returnPolicyText: string;
+  receiptFooterSubtitle: string;
+  receiptQuote: string;
+  language: AppLanguage;
   currency: CurrencyCode;
-  /** Conversion reference used seamlessly when merchant chooses USD vs FC */
   usdRateFC: number;
   offlineSyncEnabled: boolean;
+  lowStockNotifications: boolean;
+  ownerPin: string;
+  customAiApiKey: string;
+  customAiEndpoint: string;
+  customAiModel: string;
   activePlan: SubscriptionPlanId;
   planPaid: boolean;
 }
