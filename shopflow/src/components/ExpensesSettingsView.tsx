@@ -47,6 +47,7 @@ interface ExpensesSettingsViewProps {
   onUpdateSettings: (next: ShopSettings) => void;
   onPreviewSampleReceipt: () => void;
   onResetDemo: () => void;
+  onActivateVendorLock?: () => void;
 }
 
 function resizeLogoImage(file: File): Promise<string> {
@@ -88,6 +89,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
   onUpdateSettings,
   onPreviewSampleReceipt,
   onResetDemo,
+  onActivateVendorLock,
 }) => {
   const [section, setSection] = useState<
     'theme' | 'branding' | 'lang_currency' | 'ai_voice' | 'expenses'
@@ -963,64 +965,86 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
             </div>
           </div>
 
-          {/* AI API Key & Security */}
+          {/* Clear Patron / Vendor Security Lock & Backups (No confusing API keys!) */}
           <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 text-xs">
             <div className="flex items-center gap-2.5">
-              <Bot className="h-5 w-5 text-[#0A4DFF]" />
+              <Lock className="h-5 w-5 text-[#0A4DFF]" />
               <div>
                 <h2 className="text-base font-extrabold text-slate-900">
-                  Moteur IA & Sécurité Propriétaire
+                  Cadenas Patron & Mode Vendeur (Employé)
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Clé API dédiée optionnelle & Code PIN de protection
+                  Protégez vos bénéfices secrets quand un employé tient la caisse
                 </p>
               </div>
             </div>
 
-            <div>
-              <label className="mb-1 block font-bold text-slate-700">
-                Clé API dédiée optionnelle (OpenAI / OpenRouter / Groq)
-              </label>
-              <input
-                type="password"
-                value={settings.customAiApiKey}
-                onChange={(e) =>
-                  onUpdateSettings({
-                    ...settings,
-                    customAiApiKey: e.target.value,
-                  })
-                }
-                placeholder="Laisser vide pour le moteur Cloud ShopFlow intégré"
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-mono text-xs"
-              />
+            {/* Reassuring Automatic AI Banner */}
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-emerald-950">
+              <p className="font-extrabold">
+                ✅ ShopFlow AI est 100 % automatique (aucune clé requise)
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-emerald-800">
+                Vous n’avez rien à configurer : l’intelligence artificielle, les calculs financiers et les voix sont directement intégrés à votre compte ShopFlow.
+              </p>
             </div>
 
-            <div>
-              <label className="mb-1 block font-bold text-slate-700">
-                Code PIN Propriétaire (4 chiffres)
-              </label>
-              <div className="flex items-center gap-2">
-                <Lock className="h-4 w-4 text-slate-400" />
-                <input
-                  type="password"
-                  maxLength={6}
-                  value={settings.ownerPin}
-                  onChange={(e) =>
-                    onUpdateSettings({ ...settings, ownerPin: e.target.value })
-                  }
-                  className="w-36 rounded-xl border border-slate-200 px-3.5 py-2 font-mono text-sm font-bold tracking-widest"
-                />
+            {/* Crystal-Clear Explanation + Working Boss PIN */}
+            <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+              <div>
+                <p className="font-extrabold text-slate-900">
+                  🔑 À quoi sert votre Code PIN Patron (4 chiffres) ?
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
+                  Quand vous laissez un <strong>vendeur ou caissier</strong> travailler sur le téléphone, activez le <strong>Mode Vendeur</strong> : il pourra encaisser les ventes et imprimer les reçus WhatsApp, <strong>mais vos bénéfices nets, vos prix d’achat fournisseurs et vos paramètres seront verrouillés</strong> tant que votre code à 4 chiffres n’est pas saisi.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <div>
+                  <label className="mb-1 block text-[11px] font-bold text-slate-700">
+                    Votre Code Secret Patron (modifiable)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-[#0A4DFF]" />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={settings.ownerPin}
+                      onChange={(e) =>
+                        onUpdateSettings({
+                          ...settings,
+                          ownerPin: e.target.value.replace(/[^0-9]/g, '').slice(0, 6),
+                        })
+                      }
+                      placeholder="1234"
+                      className="w-32 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-center font-mono text-sm font-black tracking-[0.3em] text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                {onActivateVendorLock && (
+                  <button
+                    type="button"
+                    onClick={onActivateVendorLock}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#0A4DFF] px-4 py-2.5 text-xs font-extrabold text-white shadow-xs transition hover:opacity-90"
+                  >
+                    <Lock className="h-3.5 w-3.5" />
+                    <span>Activer Mode Vendeur</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="flex flex-col gap-2.5 pt-2">
+            <div className="flex flex-col gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={handleExportBackup}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-3 font-bold text-slate-800"
               >
                 <Download className="h-4 w-4 text-[#0A4DFF]" />
-                <span>Exporter la sauvegarde JSON de ma boutique</span>
+                <span>Exporter la sauvegarde de ma boutique</span>
               </button>
 
               <button

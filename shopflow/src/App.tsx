@@ -8,6 +8,7 @@ import {
   Globe,
   LayoutDashboard,
   Loader2,
+  Lock,
   Monitor,
   Package,
   PackagePlus,
@@ -16,6 +17,7 @@ import {
   Settings,
   ShoppingBag,
   Smartphone,
+  Unlock,
   Wifi,
   X,
 } from 'lucide-react';
@@ -79,6 +81,15 @@ export function App() {
 
   const [isAiTranslating, setIsAiTranslating] = useState(false);
 
+  // Real Patron vs Vendor/Cashier PIN Protection!
+  const [isVendorLocked, setIsVendorLocked] = useState(false);
+  const [showPinUnlockModal, setShowPinUnlockModal] = useState(false);
+  const [pendingProtectedTab, setPendingProtectedTab] = useState<NavTab | null>(
+    null
+  );
+  const [pinAttempt, setPinAttempt] = useState('');
+  const [pinError, setPinError] = useState(false);
+
   // Toast Notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -141,6 +152,7 @@ export function App() {
   }, [settings, products, sales, credits, expenses]);
 
   // Whole-App Automatic Dictionary + AI Full Translation Engine whenever language or view changes!
+  // Never runs external AI call while on 'ai' tab unless language is non-French so chat has 100% priority bandwidth.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       if (settings.language !== 'fr') {
@@ -151,7 +163,7 @@ export function App() {
       }).finally(() => {
         setIsAiTranslating(false);
       });
-    }, 60);
+    }, 180);
 
     return () => clearTimeout(timer);
   }, [
@@ -160,11 +172,46 @@ export function App() {
     isScannerOpen,
     visualReceipt,
     restockTarget,
-    products,
-    sales,
-    credits,
-    expenses,
+    showPinUnlockModal,
   ]);
+
+  const handleRequestTab = (targetTab: NavTab) => {
+    const vendorAllowedTabs: NavTab[] = ['pos', 'storefront'];
+    if (isVendorLocked && !vendorAllowedTabs.includes(targetTab)) {
+      setPendingProtectedTab(targetTab);
+      setPinAttempt('');
+      setPinError(false);
+      setShowPinUnlockModal(true);
+      return;
+    }
+    setActiveTab(targetTab);
+  };
+
+  const handleActivateVendorMode = () => {
+    setIsVendorLocked(true);
+    setActiveTab('pos');
+    showToast(
+      `🔒 Mode Vendeur activé ! Bénéfices & paramètres protégés par le code ${settings.ownerPin || '1234'}`
+    );
+  };
+
+  const handleUnlockSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const expected = (settings.ownerPin || '1234').trim();
+    if (pinAttempt.trim() === expected) {
+      setIsVendorLocked(false);
+      setShowPinUnlockModal(false);
+      setPinError(false);
+      if (pendingProtectedTab) {
+        setActiveTab(pendingProtectedTab);
+        setPendingProtectedTab(null);
+      }
+      showToast('🔓 Mode Patron déverrouillé !');
+    } else {
+      setPinError(true);
+      setPinAttempt('');
+    }
+  };
 
   const t = TRANSLATIONS[settings.language] || TRANSLATIONS.fr;
 
@@ -577,7 +624,26 @@ export function App() {
             </span>
           )}
           <button
-            onClick={() => setActiveTab('expenses')}
+            onClick={() =>
+              isVendorLocked
+                ? setShowPinUnlockModal(true)
+                : handleActivateVendorMode()
+            }
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-bold text-white transition ${
+              isVendorLocked
+                ? 'bg-amber-600 hover:bg-amber-500'
+                : 'bg-white/15 hover:bg-white/25'
+            }`}
+          >
+            {isVendorLocked ? (
+              <Unlock className="h-3.5 w-3.5" />
+            ) : (
+              <Lock className="h-3.5 w-3.5" />
+            )}
+            <span>{isVendorLocked ? 'Mode Patron' : 'Mode Vendeur'}</span>
+          </button>
+          <button
+            onClick={() => handleRequestTab('expenses')}
             className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 font-bold text-white transition hover:bg-white/25"
           >
             <Palette className="h-3.5 w-3.5" />
@@ -650,7 +716,7 @@ export function App() {
                   return (
                     <button
                       key={item.id}
-                      onClick={() => setActiveTab(item.id)}
+                      onClick={() => handleRequestTab(item.id)}
                       className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-bold transition ${
                         active
                           ? 'bg-[#0A4DFF] text-white shadow-xs'
@@ -670,18 +736,24 @@ export function App() {
                         <span className="truncate">{item.label}</span>
                       </span>
 
-                      {item.badge !== undefined && (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold tabular-nums ${
-                            active
-                              ? 'bg-white/20 text-white'
-                              : item.id === 'ai'
-                                ? 'bg-[#0A4DFF] text-white'
-                                : 'bg-slate-100 text-slate-700'
-                          }`}
-                        >
-                          {item.badge}
-                        </span>
+                      {isVendorLocked &&
+                      item.id !== 'pos' &&
+                      item.id !== 'storefront' ? (
+                        <Lock className="h-3.5 w-3.5 text-amber-500" />
+                      ) : (
+                        item.badge !== undefined && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold tabular-nums ${
+                              active
+                                ? 'bg-white/20 text-white'
+                                : item.id === 'ai'
+                                  ? 'bg-[#0A4DFF] text-white'
+                                  : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            {item.badge}
+                          </span>
+                        )
                       )}
                     </button>
                   );
@@ -836,6 +908,18 @@ export function App() {
               >
                 📷 Scanner Photo
               </button>
+              <button
+                onClick={() =>
+                  isVendorLocked
+                    ? setShowPinUnlockModal(true)
+                    : handleActivateVendorMode()
+                }
+                className={`shrink-0 rounded-full px-3 py-1 font-bold text-white ${
+                  isVendorLocked ? 'bg-amber-600' : 'bg-slate-700'
+                }`}
+              >
+                {isVendorLocked ? '🔓 Déverrouiller Patron' : '🔒 Mode Vendeur'}
+              </button>
               {[
                 { id: 'storefront' as NavTab, label: '🌐 Boutique' },
                 {
@@ -846,7 +930,7 @@ export function App() {
               ].map((pill) => (
                 <button
                   key={pill.id}
-                  onClick={() => setActiveTab(pill.id)}
+                  onClick={() => handleRequestTab(pill.id)}
                   className={`shrink-0 rounded-full px-3 py-1 font-bold transition ${
                     activeTab === pill.id
                       ? 'bg-[#0A4DFF] text-white'
@@ -1037,6 +1121,7 @@ export function App() {
                 onUpdateSettings={setSettings}
                 onPreviewSampleReceipt={openSampleGraphicalReceipt}
                 onResetDemo={handleResetDemo}
+                onActivateVendorLock={handleActivateVendorMode}
               />
             )}
           </main>
@@ -1055,7 +1140,7 @@ export function App() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleRequestTab(item.id)}
                   className={`relative flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-bold transition ${
                     active ? 'text-[#0A4DFF]' : 'text-slate-400'
                   }`}
@@ -1229,6 +1314,74 @@ export function App() {
           message={whatsAppModal.message}
           onClose={() => setWhatsAppModal(null)}
         />
+      )}
+
+      {/* Boss 4-Digit PIN Unlock Modal */}
+      {showPinUnlockModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <Unlock className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">
+                    Accès Réservé au Patron
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Saisissez votre Code PIN Propriétaire
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPinUnlockModal(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUnlockSubmit} className="mt-5 space-y-4">
+              <div>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  autoFocus
+                  maxLength={6}
+                  value={pinAttempt}
+                  onChange={(e) => {
+                    setPinError(false);
+                    setPinAttempt(e.target.value);
+                  }}
+                  placeholder="••••"
+                  className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3.5 text-center font-mono text-2xl font-black tracking-[0.5em] text-slate-900 focus:border-[#0A4DFF] focus:bg-white focus:outline-none"
+                />
+                {pinError && (
+                  <p className="mt-2 text-center text-xs font-bold text-red-600">
+                    Code incorrect. Réessayez (code par défaut : 1234).
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPinUnlockModal(false)}
+                  className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600"
+                >
+                  Rester en Mode Vendeur
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl bg-[#0A4DFF] py-2.5 text-xs font-extrabold text-white shadow-xs"
+                >
+                  Déverrouiller
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
