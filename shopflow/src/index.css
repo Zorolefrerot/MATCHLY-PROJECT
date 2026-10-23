@@ -257,6 +257,31 @@
   color: #1E293B !important;
 }
 
+/* Bespoke Studio Display Typography & Smooth GPU Animations */
+.sf-studio-site {
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.sf-display-heading {
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+  letter-spacing: -0.03em;
+}
+@keyframes sf-marquee-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+.sf-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: sf-marquee-scroll 28s linear infinite;
+}
+.sf-marquee-track:hover {
+  animation-play-state: paused;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
