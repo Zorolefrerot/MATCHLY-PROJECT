@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Coins,
   Crown,
+  ExternalLink,
   Globe,
   LayoutDashboard,
   Loader2,
@@ -22,11 +23,17 @@ import {
   X,
 } from 'lucide-react';
 import { AiAssistantView, AiStoreAction } from './components/AiAssistantView';
+import {
+  AuthModal,
+  AuthModalMode,
+  SignupPayload,
+} from './components/AuthModal';
 import { BarcodeScannerModal } from './components/BarcodeScannerModal';
 import { CreditsView } from './components/CreditsView';
 import { DashboardView } from './components/DashboardView';
 import { ExpensesSettingsView } from './components/ExpensesSettingsView';
 import { InventoryView } from './components/InventoryView';
+import { LandingPageView } from './components/LandingPageView';
 import { OnlineStoreView } from './components/OnlineStoreView';
 import { PosSalesView } from './components/PosSalesView';
 import { SubscriptionView } from './components/SubscriptionView';
@@ -70,6 +77,16 @@ export function App() {
   const appRootRef = useRef<HTMLDivElement | null>(null);
 
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const [screenMode, setScreenMode] = useState<'landing' | 'app'>('landing');
+  const [authModalConfig, setAuthModalConfig] = useState<{
+    mode: AuthModalMode;
+    plan?: SubscriptionPlanId;
+  } | null>(null);
+  const deferredInstallPromptRef = useRef<{
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+  } | null>(null);
+
   const [previewViewport, setPreviewViewport] =
     useState<PreviewViewport>('hybrid');
 
@@ -151,6 +168,19 @@ export function App() {
     }
   }, [settings, products, sales, credits, expenses]);
 
+  useEffect(() => {
+    const onBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      deferredInstallPromptRef.current = e as unknown as {
+        prompt: () => Promise<void>;
+        userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+      };
+    };
+    window.addEventListener('beforeinstallprompt', onBeforeInstall);
+    return () =>
+      window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+  }, []);
+
   // Whole-App Automatic Dictionary + AI Full Translation Engine whenever language or view changes!
   // Never runs external AI call while on 'ai' tab unless language is non-French so chat has 100% priority bandwidth.
   useEffect(() => {
@@ -168,12 +198,42 @@ export function App() {
     return () => clearTimeout(timer);
   }, [
     settings.language,
+    screenMode,
     activeTab,
     isScannerOpen,
     visualReceipt,
     restockTarget,
     showPinUnlockModal,
+    authModalConfig,
   ]);
+
+  const handleCompleteSignup = (payload: SignupPayload) => {
+    setSettings((prev) => ({
+      ...prev,
+      shopName: payload.shopName,
+      ownerName: payload.ownerName,
+      city: payload.city,
+      whatsappNumber: payload.whatsappNumber,
+      currency: payload.currency,
+      ownerPin: payload.ownerPin || '1234',
+      activePlan: payload.selectedPlan,
+      planPaid: false,
+    }));
+    if (payload.startEmptyCatalog) {
+      setProducts([]);
+      setSales([]);
+      setCredits([]);
+      setExpenses([]);
+    }
+    setIsVendorLocked(false);
+    setAuthModalConfig(null);
+    setActiveTab('dashboard');
+    setScreenMode('app');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast(
+      `🎉 Bienvenue ${payload.ownerName} ! Votre boutique « ${payload.shopName} » est prête !`
+    );
+  };
 
   const handleRequestTab = (targetTab: NavTab) => {
     const vendorAllowedTabs: NavTab[] = ['pos', 'storefront'];
@@ -591,30 +651,66 @@ export function App() {
       id="shopflow-theme-root"
       ref={appRootRef}
       style={themeInlineStyle}
-      data-mode={settings.theme.colorMode}
+      data-mode={screenMode === 'landing' ? 'light' : settings.theme.colorMode}
       data-corners={settings.theme.cornerStyle}
       data-density={settings.theme.density}
       data-font={settings.theme.fontStyle}
       className={`min-h-screen transition-colors duration-200 ${
-        isPhoneFrame ? 'bg-slate-900 px-3 py-6' : 'bg-slate-50'
+        screenMode === 'landing'
+          ? 'bg-white'
+          : isPhoneFrame
+            ? 'bg-slate-900 px-3 py-6'
+            : 'bg-slate-50'
       }`}
     >
-      {/* Top Preview Switcher on Desktop */}
-      <div
-        className={`mx-auto mb-0 hidden items-center justify-between px-4 py-2 text-xs lg:flex ${
-          isPhoneFrame
-            ? 'mb-4 max-w-2xl rounded-2xl border border-slate-700 bg-slate-800 text-slate-200'
-            : 'border-b border-black/10 bg-[#081844] text-white'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <span className="rounded-md bg-[#0A4DFF] px-2 py-0.5 text-[11px] font-extrabold text-white">
-            SHOPFLOW V4 PRO
-          </span>
-          <span className="text-slate-200">
-            Thème personnalisé • Traduction intégrale 5 langues • ShopFlow AI (LaTeX + Voix naturelle) • Scanner Photo HD réparé
-          </span>
-        </div>
+      {screenMode === 'landing' ? (
+        <LandingPageView
+          language={settings.language}
+          currency={settings.currency}
+          usdRateFC={settings.usdRateFC}
+          onChangeLanguage={(lang) =>
+            setSettings((prev) => ({ ...prev, language: lang }))
+          }
+          onChangeCurrency={(curr) =>
+            setSettings((prev) => ({ ...prev, currency: curr }))
+          }
+          onOpenAuthModal={(mode, preselectedPlan) =>
+            setAuthModalConfig({ mode, plan: preselectedPlan })
+          }
+          onEnterInteractiveDemo={(tab) => {
+            if (tab) setActiveTab(tab);
+            setScreenMode('app');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onPreviewRealWhatsAppReceipt={openSampleGraphicalReceipt}
+        />
+      ) : (
+        <>
+          {/* Top Preview Switcher on Desktop */}
+          <div
+            className={`mx-auto mb-0 hidden items-center justify-between px-4 py-2 text-xs lg:flex ${
+              isPhoneFrame
+                ? 'mb-4 max-w-2xl rounded-2xl border border-slate-700 bg-slate-800 text-slate-200'
+                : 'border-b border-black/10 bg-[#081844] text-white'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setScreenMode('landing');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0A4DFF] px-3 py-1 text-[11px] font-extrabold text-white transition hover:bg-blue-500"
+              >
+                <ExternalLink className="h-3 w-3" />
+                <span>← Voir le Site Vitrine</span>
+              </button>
+              <span className="text-slate-200">
+                Application ShopFlow Pro en direct • Boutique active :{' '}
+                <strong className="text-white">{settings.shopName}</strong>
+              </span>
+            </div>
 
         <div className="flex items-center gap-2">
           {isAiTranslating && (
@@ -897,6 +993,15 @@ export function App() {
 
             <div className="flex gap-1.5 overflow-x-auto border-t border-slate-100 px-3 py-1.5 text-[11px]">
               <button
+                onClick={() => {
+                  setScreenMode('landing');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="shrink-0 rounded-full bg-[#0A4DFF] px-3 py-1 font-bold text-white"
+              >
+                🌐 Site Vitrine
+              </button>
+              <button
                 onClick={openSampleGraphicalReceipt}
                 className="shrink-0 rounded-full bg-[#081844] px-3 py-1 font-bold text-white"
               >
@@ -1162,12 +1267,41 @@ export function App() {
       {activeTab !== 'ai' && !isPhoneFrame && (
         <button
           type="button"
-          onClick={() => setActiveTab('ai')}
+          onClick={() => handleRequestTab('ai')}
           className="fixed right-6 bottom-6 z-40 hidden items-center gap-2 rounded-full bg-[#0A4DFF] px-5 py-3 text-xs font-extrabold text-white shadow-xl transition hover:scale-105 lg:flex"
         >
           <Bot className="h-4 w-4" />
           <span>{t.askAiBtn}</span>
         </button>
+      )}
+        </>
+      )}
+
+      {/* Auth / Signup / Login / Install App Modal */}
+      {authModalConfig && (
+        <AuthModal
+          initialMode={authModalConfig.mode}
+          preselectedPlan={authModalConfig.plan}
+          defaultCurrency={settings.currency}
+          onCompleteSignup={handleCompleteSignup}
+          onLoginExisting={(loginId) => {
+            setAuthModalConfig(null);
+            setIsVendorLocked(false);
+            setScreenMode('app');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast(`Bon retour ! Connecté à votre espace (${loginId}).`);
+          }}
+          onTriggerNativeInstall={async () => {
+            if (deferredInstallPromptRef.current) {
+              await deferredInstallPromptRef.current.prompt();
+              const res = await deferredInstallPromptRef.current.userChoice;
+              deferredInstallPromptRef.current = null;
+              return res.outcome === 'accepted';
+            }
+            return false;
+          }}
+          onClose={() => setAuthModalConfig(null)}
+        />
       )}
 
       {/* Toast */}

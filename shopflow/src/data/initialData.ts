@@ -19,6 +19,7 @@ export function sfAsset(relPath: string): string {
 }
 
 export const SHOPFLOW_APP_LOGO = sfAsset('shopflow-logo.png');
+export const LANDING_HERO_PHOTO = sfAsset('landing-hero-merchant.jpg');
 
 export const THEME_PRESETS: {
   id: string;
