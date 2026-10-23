@@ -393,6 +393,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <p className="font-extrabold">Votre boutique se crée après l’installation, dans l’application ShopFlow.</p>
               <p className="mt-1">Ce site vitrine ne collecte pas vos informations de boutique et ne lance pas sa création.</p>
             </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {[
+                { platform: 'Android', packageName: 'Fichier .APK', status: 'Bientôt disponible' },
+                { platform: 'iPhone / iPad', packageName: 'App Store', status: 'Bientôt disponible' },
+                { platform: 'Windows', packageName: 'Installateur .EXE', status: 'Bientôt disponible' },
+              ].map((item) => (
+                <div key={item.platform} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="font-extrabold text-slate-900">{item.platform}</p>
+                  <p className="mt-1 text-[11px] text-slate-500">{item.packageName}</p>
+                  <p className="mt-3 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-800">
+                    {item.status}
+                  </p>
+                </div>
+              ))}
+            </div>
             <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
               <div className="flex items-start gap-3">
                 <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-[#0A4DFF]" />

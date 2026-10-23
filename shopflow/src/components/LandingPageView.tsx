@@ -472,7 +472,27 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
                   <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-12">
                     {/* Animated Left Copy */}
-                    <div className="space-y-8 lg:col-span-6">
+                    <div className="space-y-9 lg:col-span-6">
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.55 }}
+                        className="flex items-center gap-4"
+                      >
+                        <img
+                          src={SHOPFLOW_APP_LOGO}
+                          alt="Logo officiel de ShopFlow — Gérez, Calculez, Faites grandir"
+                          className="h-20 w-20 shrink-0 rounded-3xl bg-white p-1 shadow-2xl ring-1 ring-white/20 sm:h-24 sm:w-24"
+                        />
+                        <div>
+                          <p className="sf-display-heading text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+                            Shop<span className="text-sky-400">Flow</span>
+                          </p>
+                          <p className="mt-1 max-w-[15rem] text-xs leading-5 text-slate-400 sm:text-sm">
+                            La gestion de votre commerce, pensée pour vos réalités.
+                          </p>
+                        </div>
+                      </motion.div>
                       <motion.div
                         initial={{ opacity: 0, y: 18 }}
                         animate={{ opacity: 1, y: 0 }}
