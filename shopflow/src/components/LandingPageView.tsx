@@ -20,7 +20,6 @@ import {
   Sparkles,
   WifiOff,
   X,
-  Zap,
 } from 'lucide-react';
 import {
   LANDING_HERO_PHOTO,
@@ -56,6 +55,7 @@ export type ShowcaseSubPage =
   | 'faq';
 
 interface LandingPageViewProps {
+  isInstalledApp: boolean;
   language: AppLanguage;
   currency: CurrencyCode;
   usdRateFC: number;
@@ -102,6 +102,7 @@ const FAQ_LIST = [
 ];
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
+  isInstalledApp,
   language,
   currency,
   usdRateFC,
@@ -204,17 +205,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             : 'border-b border-white/10 bg-[#050B1C] text-white'
         }`}
       >
-        <div className="mx-auto flex h-17 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex min-h-20 max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           {/* Official Brand Logo */}
           <button
             type="button"
             onClick={() => navigateToSubPage('home')}
-            className="flex items-center gap-2.5 text-left"
+            aria-label="ShopFlow — accueil"
+            className="flex shrink-0 items-center gap-3 text-left"
           >
             <img
               src={SHOPFLOW_APP_LOGO}
-              alt="ShopFlow"
-              className="h-9 w-9 rounded-xl bg-white p-1 object-contain shadow-sm sm:h-10 sm:w-10"
+              alt="Logo officiel de l’application ShopFlow"
+              className="h-14 w-14 rounded-2xl bg-white p-0.5 object-contain shadow-md sm:h-16 sm:w-16"
             />
             <span className="sf-display-heading text-lg font-bold tracking-tight text-white sm:text-xl">
               Shop<span className="text-sky-400">Flow</span>
@@ -246,10 +248,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           <div className="flex items-center gap-2.5">
             <button
               type="button"
-              onClick={() => onOpenAuthModal('signup', 'pro_ai')}
+              onClick={() =>
+                isInstalledApp
+                  ? onEnterInteractiveDemo('dashboard')
+                  : onOpenAuthModal('install')
+              }
               className="hidden rounded-full bg-[#0A4DFF] px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/30 transition hover:bg-blue-500 sm:inline-flex"
             >
-              Essai gratuit
+              {isInstalledApp ? 'Ouvrir l’application' : 'Télécharger l’app'}
             </button>
 
             <button
@@ -373,7 +379,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 {/* Direct Launch Into Live App / Receipt Preview */}
                 <div className="mt-6 space-y-2.5 border-t border-white/10 pt-5">
                   <p className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                    Accès Rapide Application
+                    Démo de l’application (boutique exemple)
                   </p>
                   <button
                     type="button"
@@ -385,33 +391,26 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   >
                     <span className="flex items-center gap-2">
                       <Play className="h-4 w-4 fill-current" />
-                      <span>Ouvrir la Démo Interactive en Direct</span>
+                      <span>Explorer la démo (boutique exemple)</span>
                     </span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDrawerOpen(false);
-                        onOpenAuthModal('signup', 'pro_ai');
-                      }}
-                      className="rounded-xl bg-[#0A4DFF] py-2.5 text-xs font-bold text-white hover:bg-blue-500"
-                    >
-                      Créer ma boutique
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDrawerOpen(false);
-                        onOpenAuthModal('login');
-                      }}
-                      className="rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-bold text-white hover:bg-white/15"
-                    >
-                      Se connecter
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDrawerOpen(false);
+                      if (isInstalledApp) onEnterInteractiveDemo('dashboard');
+                      else onOpenAuthModal('install');
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 py-3 text-xs font-bold text-white transition hover:bg-white/15"
+                  >
+                    <Download className="h-4 w-4" />
+                    Télécharger / installer l’application
+                  </button>
+                  <p className="px-1 text-[11px] leading-relaxed text-slate-400">
+                    La création de votre boutique se fait dans l’application, après son installation.
+                  </p>
                 </div>
               </div>
 
@@ -465,15 +464,15 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           {subPage === 'home' && (
             <div>
               {/* DARK OBSIDIAN LUXURY HERO WITH 3D SCROLL PARALLAX */}
-              <section className="relative overflow-hidden bg-[#050B1C] pt-12 pb-20 text-white sm:pt-18 sm:pb-28">
+              <section className="relative overflow-hidden bg-[#050B1C] pt-16 pb-24 text-white sm:pt-24 sm:pb-32">
                 {/* Atmospheric Mesh Glows */}
                 <div className="pointer-events-none absolute -top-28 -left-20 h-96 w-96 rounded-full bg-[#0A4DFF]/30 blur-3xl" />
                 <div className="pointer-events-none absolute right-0 bottom-0 h-80 w-80 rounded-full bg-emerald-500/15 blur-3xl" />
 
                 <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-                  <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+                  <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-12">
                     {/* Animated Left Copy */}
-                    <div className="space-y-6 lg:col-span-6">
+                    <div className="space-y-8 lg:col-span-6">
                       <motion.div
                         initial={{ opacity: 0, y: 18 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -512,14 +511,23 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.24 }}
-                        className="flex flex-col gap-3 pt-2 sm:flex-row"
+                        className="flex flex-col gap-4 pt-3 sm:flex-row"
                       >
                         <button
                           type="button"
-                          onClick={() => onOpenAuthModal('signup', 'pro_ai')}
+                          onClick={() =>
+                            isInstalledApp
+                              ? onEnterInteractiveDemo('dashboard')
+                              : onOpenAuthModal('install')
+                          }
                           className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0A4DFF] px-7 py-4 text-sm font-bold text-white shadow-xl shadow-blue-600/35 transition hover:scale-[1.02] hover:bg-blue-500"
                         >
-                          <span>Démarrer 7 jours gratuits</span>
+                          {isInstalledApp ? (
+                            <Play className="h-4 w-4 fill-current" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
+                          <span>{isInstalledApp ? 'Ouvrir ShopFlow' : 'Télécharger l’application'}</span>
                           <ArrowRight className="h-4 w-4" />
                         </button>
 
@@ -532,6 +540,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                           <span>Voir en vidéo</span>
                         </button>
                       </motion.div>
+                      <p className="max-w-lg text-xs leading-6 text-slate-400 sm:text-sm">
+                        Le site sert à découvrir ShopFlow. La création de votre boutique se fait uniquement dans l’application, après installation.
+                      </p>
                     </div>
 
                     {/* Right 3D Parallax Phone + Floating Animated Badges */}
@@ -803,12 +814,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   <span className="inline-block rounded-full border border-sky-400/30 bg-sky-500/15 px-4 py-1 text-xs font-bold text-sky-300">
                     💎 Formules Simples & Transparentes
                   </span>
-                  <h1 className="sf-display-heading mt-4 text-3xl font-extrabold sm:text-5xl">
-                    7 jours gratuits pour tout tester dans votre boutique
+                  <h1 className="sf-display-heading mt-5 text-3xl font-extrabold sm:text-5xl">
+                    Des tarifs clairs, à activer dans l’application
                   </h1>
-                  <p className="mt-3 text-sm text-slate-300 sm:text-base">
-                    Payez ensuite simplement par M-Pesa, Orange Money, Airtel
-                    Money, Afrimoney ou Carte Visa / Mastercard.
+                  <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
+                    Installez d’abord ShopFlow. Vous créerez votre boutique et choisirez votre formule depuis l’application. Paiement par M-Pesa, Orange Money, Airtel Money, Afrimoney ou carte Visa / Mastercard.
                   </p>
 
                   <div className="mt-7 inline-flex rounded-full border border-white/15 bg-white/10 p-1 text-xs font-bold">
@@ -924,14 +934,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
                         <button
                           type="button"
-                          onClick={() => onOpenAuthModal('signup', plan.id)}
+                          onClick={() =>
+                            isInstalledApp
+                              ? onEnterInteractiveDemo('subscription')
+                              : onOpenAuthModal('install')
+                          }
                           className={`mt-8 w-full rounded-full py-3.5 text-sm font-bold text-white transition ${
                             plan.highlight
                               ? 'bg-[#0A4DFF] hover:bg-blue-700'
                               : 'bg-slate-950 hover:bg-slate-800'
                           }`}
                         >
-                          Démarrer 7 jours gratuits
+                          Installer puis choisir dans l’app
                         </button>
                       </div>
                     </StaggerItem>
@@ -951,26 +965,29 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   <span className="inline-block rounded-full border border-emerald-400/30 bg-emerald-500/15 px-4 py-1 text-xs font-bold text-emerald-300">
                     📲 Multi-Appareils & Sauvegarde Garantie
                   </span>
-                  <h1 className="sf-display-heading mt-4 text-3xl font-extrabold sm:text-5xl">
-                    Installez ShopFlow partout & gardez vos données à vie
+                  <h1 className="sf-display-heading mt-5 text-3xl leading-tight font-extrabold sm:text-5xl">
+                    Installez ShopFlow. Créez votre boutique dans l’application.
                   </h1>
-                  <div className="mt-8 flex flex-wrap justify-center gap-3">
+                  <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
+                    Ce site présente ShopFlow : il ne crée pas de boutique. Après installation, ouvrez l’application et suivez les étapes de création sur votre appareil.
+                  </p>
+                  <div className="mt-9 flex flex-wrap justify-center gap-3">
                     <button
                       type="button"
-                      onClick={() => onOpenAuthModal('install')}
+                      onClick={() =>
+                        isInstalledApp
+                          ? onEnterInteractiveDemo('dashboard')
+                          : onOpenAuthModal('install')
+                      }
                       className="inline-flex items-center gap-2 rounded-full bg-[#0A4DFF] px-6 py-3.5 text-sm font-bold text-white shadow-lg"
                     >
-                      <Download className="h-4 w-4" />
-                      <span>Installer sur Android ou iPhone</span>
+                      {isInstalledApp ? <Play className="h-4 w-4 fill-current" /> : <Download className="h-4 w-4" />}
+                      <span>{isInstalledApp ? 'Ouvrir l’application ShopFlow' : 'Installer / ajouter l’app à l’écran d’accueil'}</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => onOpenAuthModal('signup', 'pro_ai')}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3.5 text-sm font-bold text-white"
-                    >
-                      <Zap className="h-4 w-4 text-emerald-400" />
-                      <span>Créer mon compte Cloud</span>
-                    </button>
+                    <div className="max-w-xl rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-left text-sm leading-relaxed text-slate-300">
+                      <span className="font-bold text-white">Votre boutique se crée dans ShopFlow, pas sur ce site.</span>{' '}
+                      Installez d’abord l’application, puis suivez l’accueil guidé pour créer votre espace commerçant.
+                    </div>
                   </div>
                 </div>
               </section>

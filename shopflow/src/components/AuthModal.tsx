@@ -109,7 +109,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </h3>
               <p className="text-[11px] text-sky-200">
                 {mode === 'install'
-                  ? 'Android • iPhone (iOS) • Tablette & PC'
+                  ? 'Installation sur Android • iPhone • Ordinateur'
                   : '7 jours d’essai gratuit complet • Sans engagement'}
               </p>
             </div>
@@ -124,7 +124,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </div>
 
-        {/* Mode Switch Tabs */}
+        {/* Signup and login are deliberately not offered from the public install flow. */}
+        {initialMode !== 'install' && (
         <div className="grid grid-cols-3 border-b border-slate-100 bg-slate-50 p-1.5 text-xs font-extrabold">
           <button
             type="button"
@@ -160,6 +161,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             📲 Installer l’App
           </button>
         </div>
+        )}
 
         {/* =====================================================
             MODE 1: SIGNUP NEW SHOP
@@ -387,6 +389,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
            ===================================================== */}
         {mode === 'install' && (
           <div className="space-y-4 p-6 text-xs">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 leading-relaxed text-emerald-950">
+              <p className="font-extrabold">Votre boutique se crée après l’installation, dans l’application ShopFlow.</p>
+              <p className="mt-1">Ce site vitrine ne collecte pas vos informations de boutique et ne lance pas sa création.</p>
+            </div>
             <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
               <div className="flex items-start gap-3">
                 <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-[#0A4DFF]" />
@@ -430,10 +436,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     1. Appuyez sur le bouton <strong>Partager</strong> en bas de Safari.
                     <br />
                     2. Touchez <strong>« Sur l’écran d’accueil »</strong> puis{' '}
-                    <strong>« Ajouter »</strong> : ShopFlow s’ouvre en plein écran comme une application App Store !
+                    <strong>« Ajouter »</strong> : ShopFlow s’ouvre en plein écran comme une application.
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 leading-relaxed text-amber-950">
+              <p className="font-extrabold">À propos des versions APK, App Store et Windows (.exe)</p>
+              <p className="mt-1">Les fichiers d’installation natifs ne sont pas encore publiés dans cette version. L’installation proposée ici est la version web installable. Les liens officiels seront affichés ici dès que les paquets seront disponibles.</p>
             </div>
 
             {installFeedback && (

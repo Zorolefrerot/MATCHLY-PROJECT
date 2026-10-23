@@ -78,6 +78,13 @@ export function App() {
 
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [screenMode, setScreenMode] = useState<'landing' | 'app'>('landing');
+  const [isInstalledApp] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches;
+    const isIOSStandalone =
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    return Boolean(isStandalone || isIOSStandalone);
+  });
   const [authModalConfig, setAuthModalConfig] = useState<{
     mode: AuthModalMode;
     plan?: SubscriptionPlanId;
@@ -665,6 +672,7 @@ export function App() {
     >
       {screenMode === 'landing' ? (
         <LandingPageView
+          isInstalledApp={isInstalledApp}
           language={settings.language}
           currency={settings.currency}
           usdRateFC={settings.usdRateFC}
@@ -804,6 +812,17 @@ export function App() {
                   </p>
                 </div>
               </div>
+
+              {isInstalledApp && (
+                <button
+                  type="button"
+                  onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0A4DFF] px-3 py-3 text-xs font-extrabold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700"
+                >
+                  <PackagePlus className="h-4 w-4" />
+                  Créer ma boutique
+                </button>
+              )}
 
               <nav className="space-y-1">
                 {sidebarItems.map((item) => {
@@ -1001,6 +1020,14 @@ export function App() {
               >
                 🌐 Site Vitrine
               </button>
+              {isInstalledApp && (
+                <button
+                  onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })}
+                  className="shrink-0 rounded-full bg-emerald-600 px-3 py-1 font-bold text-white"
+                >
+                  ＋ Créer ma boutique
+                </button>
+              )}
               <button
                 onClick={openSampleGraphicalReceipt}
                 className="shrink-0 rounded-full bg-[#081844] px-3 py-1 font-bold text-white"
