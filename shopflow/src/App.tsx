@@ -77,7 +77,6 @@ export function App() {
   const appRootRef = useRef<HTMLDivElement | null>(null);
 
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
-  const [screenMode, setScreenMode] = useState<'landing' | 'app'>('landing');
   const [isInstalledApp] = useState(() => {
     if (typeof window === 'undefined') return false;
     const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches;
@@ -85,6 +84,10 @@ export function App() {
       (navigator as Navigator & { standalone?: boolean }).standalone === true;
     return Boolean(isStandalone || isIOSStandalone);
   });
+  // The public site never embeds the app. Installed standalone sessions open the app directly.
+  const [screenMode, setScreenMode] = useState<'landing' | 'app'>(() =>
+    isInstalledApp ? 'app' : 'landing'
+  );
   const [authModalConfig, setAuthModalConfig] = useState<{
     mode: AuthModalMode;
     plan?: SubscriptionPlanId;
@@ -672,7 +675,6 @@ export function App() {
     >
       {screenMode === 'landing' ? (
         <LandingPageView
-          isInstalledApp={isInstalledApp}
           language={settings.language}
           currency={settings.currency}
           usdRateFC={settings.usdRateFC}
@@ -685,12 +687,6 @@ export function App() {
           onOpenAuthModal={(mode, preselectedPlan) =>
             setAuthModalConfig({ mode, plan: preselectedPlan })
           }
-          onEnterInteractiveDemo={(tab) => {
-            if (tab) setActiveTab(tab);
-            setScreenMode('app');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onPreviewRealWhatsAppReceipt={openSampleGraphicalReceipt}
         />
       ) : (
         <>

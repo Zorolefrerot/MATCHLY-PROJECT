@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ArrowUpRight,
   BarChart3,
   Bot,
-  Check,
   Lock,
   Maximize2,
   Package,
@@ -13,7 +11,6 @@ import {
   X,
 } from 'lucide-react';
 import { INITIAL_PRODUCTS, SHOPFLOW_APP_LOGO } from '../../data/initialData';
-import { NavTab } from '../../types';
 import { RevealOnScroll } from './MotionPrimitives';
 
 export interface CaptureGuideItem {
@@ -22,7 +19,6 @@ export interface CaptureGuideItem {
   category: 'ventes' | 'stock' | 'gestion';
   title: string;
   subtitle: string;
-  targetAppTab: NavTab;
   steps: string[];
 }
 
@@ -34,7 +30,6 @@ const CAPTURES: CaptureGuideItem[] = [
     title: 'Tableau de Bord & Vrai Bénéfice Net',
     subtitle:
       'Dès l’ouverture de ShopFlow, visualisez l’argent réellement gagné aujourd’hui sans aucune calculatrice.',
-    targetAppTab: 'dashboard',
     steps: [
       'Affiche séparément le Chiffre d’Affaires, le Coût d’achat des articles vendus et vos Dépenses du jour.',
       'Calcule en direct votre Vrai Bénéfice Net exact en Francs (FC) ou en Dollars ($ USD).',
@@ -48,7 +43,6 @@ const CAPTURES: CaptureGuideItem[] = [
     title: 'Caisse Rapide 1-Clic & Panier Client',
     subtitle:
       'Servez vos clients en moins de 2 secondes au comptoir, même aux heures de grande affluence.',
-    targetAppTab: 'pos',
     steps: [
       'Appuyez sur « +1 Vendu » pour encaisser un article instantanément, ou ajoutez plusieurs articles au panier.',
       'Choisissez le mode de règlement : Cash, Mobile Money (M-Pesa, Orange, Airtel) ou Crédit.',
@@ -62,7 +56,6 @@ const CAPTURES: CaptureGuideItem[] = [
     title: 'Reçu Graphique Professionnel sur WhatsApp',
     subtitle:
       'Offrez à chaque client un reçu propre et haut de gamme portant le logo et les couleurs de votre boutique.',
-    targetAppTab: 'pos',
     steps: [
       'Génère automatiquement le numéro de reçu, la date, le nom du client et les miniatures photos des articles.',
       'Affiche clairement le sous-total, la livraison éventuelle et le cachet officiel « ✓ PAYÉ ».',
@@ -76,7 +69,6 @@ const CAPTURES: CaptureGuideItem[] = [
     title: 'Inventaire, Prix d’Achat & Alertes Rupture',
     subtitle:
       'Sachez toujours exactement combien de pièces restent en rayon avant de tomber en rupture.',
-    targetAppTab: 'inventory',
     steps: [
       'Chaque vente diminue votre stock réel automatiquement à la seconde même.',
       'Un badge orange « Stock bas » vous alerte dès qu’un produit descend sous le seuil minimum choisi.',
@@ -90,7 +82,6 @@ const CAPTURES: CaptureGuideItem[] = [
     title: 'Scanner Photo & Code-Barres Intelligent',
     subtitle:
       'Plus besoin d’acheter un lecteur laser coûteux : la caméra de votre téléphone fait tout.',
-    targetAppTab: 'pos',
     steps: [
       'Lit instantanément les codes-barres et QR codes sur n’importe quel emballage.',
       'Fonctionne aussi en prenant simplement une photo d’un article sans code-barres grâce à la reconnaissance visuelle.',
@@ -104,7 +95,6 @@ const CAPTURES: CaptureGuideItem[] = [
     title: 'ShopFlow AI : Conseiller Financier & Voix Naturelle',
     subtitle:
       'Posez vos questions en langage simple, obtenez des tableaux clairs et écoutez les réponses à voix haute.',
-    targetAppTab: 'ai',
     steps: [
       'Connaît en temps réel vos ventes, vos marges et vos articles les plus rentables.',
       'Simule vos promotions, calcule vos seuils de rentabilité et rédige vos textes publicitaires WhatsApp.',
@@ -118,7 +108,6 @@ const CAPTURES: CaptureGuideItem[] = [
     title: 'Cahier de Crédits (« Bons ») & Relance 1 Clic',
     subtitle:
       'Ne perdez plus jamais d’argent à cause des dettes clients oubliées sur des feuilles volantes.',
-    targetAppTab: 'credits',
     steps: [
       'Enregistre le nom du client, son numéro WhatsApp, le détail pris et la date promise.',
       'Note chaque avance partielle versée et calcule automatiquement le reste exact à payer.',
@@ -132,7 +121,6 @@ const CAPTURES: CaptureGuideItem[] = [
     title: 'Mode Vendeur (Code PIN) & Thème Boutique',
     subtitle:
       'Laissez vos employés tenir la caisse sans jamais dévoiler vos bénéfices secrets ni vos prix fournisseurs.',
-    targetAppTab: 'expenses',
     steps: [
       'Activez le cadenas « Mode Vendeur » en 1 clic avant de confier le téléphone à votre caissier.',
       'Seul votre Code PIN Patron à 4 chiffres permet de rouvrir le Tableau de bord et les Paramètres.',
@@ -504,12 +492,10 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
 };
 
 interface ScreenshotsGuidePageProps {
-  onOpenRealScreenInApp: (tab: NavTab) => void;
   onSwitchToVideosPage: () => void;
 }
 
 export const ScreenshotsGuidePage: React.FC<ScreenshotsGuidePageProps> = ({
-  onOpenRealScreenInApp,
   onSwitchToVideosPage,
 }) => {
   const [filter, setFilter] = useState<'all' | 'ventes' | 'stock' | 'gestion'>(
@@ -536,8 +522,8 @@ export const ScreenshotsGuidePage: React.FC<ScreenshotsGuidePageProps> = ({
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
             Faites défiler pour découvrir chaque partie de l’application
-            expliquée avec des captures annotées <strong className="text-white">① ② ③</strong>, ou
-            cliquez sur une capture pour l’agrandir ou la tester en direct.
+            expliquée avec des captures annotées <strong className="text-white">① ② ③</strong>.
+            Cliquez sur une capture pour l’agrandir : le site présente des visuels, sans intégrer l’application.
           </p>
 
           {/* Filter Pills */}
@@ -634,15 +620,6 @@ export const ScreenshotsGuidePage: React.FC<ScreenshotsGuidePageProps> = ({
                 <div className="flex flex-wrap items-center gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => onOpenRealScreenInApp(cap.targetAppTab)}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#0A4DFF] px-5 py-3 text-xs font-bold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700"
-                  >
-                    <span>Essayer cet écran en direct</span>
-                    <ArrowUpRight className="h-4 w-4" />
-                  </button>
-
-                  <button
-                    type="button"
                     onClick={onSwitchToVideosPage}
                     className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-3 text-xs font-bold text-slate-700 transition hover:border-[#0A4DFF] hover:text-[#0A4DFF]"
                   >
@@ -686,20 +663,9 @@ export const ScreenshotsGuidePage: React.FC<ScreenshotsGuidePageProps> = ({
               <div className="scale-105 py-2">
                 <PhoneScreenCapture captureId={zoomedItem.id} />
               </div>
-              <div className="mt-5 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const tab = zoomedItem.targetAppTab;
-                    setZoomedItem(null);
-                    onOpenRealScreenInApp(tab);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#0A4DFF] px-6 py-2.5 text-xs font-bold text-white"
-                >
-                  <Check className="h-4 w-4" />
-                  <span>Ouvrir en vrai dans ShopFlow</span>
-                </button>
-              </div>
+              <p className="mt-5 text-center text-xs text-slate-400">
+                Capture de présentation — l’application n’est pas intégrée à ce site.
+              </p>
             </motion.div>
           </motion.div>
         )}

@@ -9,12 +9,14 @@ import {
 
 export function sfAsset(relPath: string): string {
   const clean = relPath.replace(/^\//, '');
-  const embedded = (
+  const embeddedImages =
     typeof window !== 'undefined'
       ? (window as unknown as { __SF_IMGS__?: Record<string, string> })
           .__SF_IMGS__
-      : undefined
-  )?.[clean];
+      : undefined;
+  // Standalone HTML bundles historically stored public paths with a leading slash;
+  // accept both formats so the official logo and all embedded photos resolve.
+  const embedded = embeddedImages?.[clean] ?? embeddedImages?.[`/${clean}`];
   return embedded || '/' + clean;
 }
 

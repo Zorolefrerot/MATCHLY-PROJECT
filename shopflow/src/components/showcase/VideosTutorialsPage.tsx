@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ArrowUpRight,
   Bot,
   CheckCircle2,
   Lock,
@@ -19,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { INITIAL_PRODUCTS, SHOPFLOW_APP_LOGO } from '../../data/initialData';
-import { AppLanguage, NavTab } from '../../types';
+import { AppLanguage } from '../../types';
 import { speakCleanText, stopAllSpeech } from '../../utils/speechCleaner';
 import { RevealOnScroll, StaggerGroup, StaggerItem } from './MotionPrimitives';
 
@@ -36,7 +35,6 @@ export interface ModuleVideoSpec {
   durationSec: number;
   title: string;
   summary: string;
-  targetAppTab: NavTab;
   icon: React.FC<{ className?: string }>;
   accentBg: string;
   frames: {
@@ -54,7 +52,6 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     title: 'Encaisser une vente en 1 clic & voir son Bénéfice Net',
     summary:
       'Regardez comment une vente met à jour simultanément votre caisse, votre stock restant et votre vrai bénéfice net du soir.',
-    targetAppTab: 'pos',
     icon: ShoppingBag,
     accentBg: 'from-blue-600 to-indigo-700',
     frames: [
@@ -89,7 +86,6 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     title: 'Générer & envoyer un Reçu Professionnel sur WhatsApp',
     summary:
       'Voyez comment ShopFlow crée un reçu haut de gamme portant votre logo et l’envoie en HD sur le WhatsApp du client.',
-    targetAppTab: 'pos',
     icon: ReceiptText,
     accentBg: 'from-emerald-600 to-teal-700',
     frames: [
@@ -124,7 +120,6 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     title: 'Scanner un article par Caméra ou simple Photo',
     summary:
       'Découvrez comment le téléphone lit un code-barres ou reconnaît visuellement un produit photographié.',
-    targetAppTab: 'pos',
     icon: ScanBarcode,
     accentBg: 'from-sky-600 to-cyan-700',
     frames: [
@@ -159,7 +154,6 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     title: 'Gérer le Stock, les Alertes Rupture & le Réapprovisionnement',
     summary:
       'Ne manquez plus jamais une vente faute de marchandise grâce aux alertes automatiques de stock bas.',
-    targetAppTab: 'inventory',
     icon: Package,
     accentBg: 'from-amber-600 to-orange-700',
     frames: [
@@ -194,7 +188,6 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     title: 'Parler à ShopFlow AI & écouter sa réponse vocale',
     summary:
       'Votre conseiller financier personnel calcule vos marges, prépare vos pubs WhatsApp et vous répond à voix haute.',
-    targetAppTab: 'ai',
     icon: Bot,
     accentBg: 'from-violet-600 to-purple-700',
     frames: [
@@ -229,7 +222,6 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     title: 'Suivre le Cahier de Crédits Clients (« Bons ») & Relancer',
     summary:
       'Fini les dettes oubliées : suivez chaque avance payée et envoyez un rappel WhatsApp propre en 1 clic.',
-    targetAppTab: 'credits',
     icon: ReceiptText,
     accentBg: 'from-rose-600 to-pink-700',
     frames: [
@@ -264,7 +256,6 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     title: 'Verrouiller la boutique en Mode Vendeur (Code PIN Patron)',
     summary:
       'Confiez la caisse à votre employé en toute sérénité : vos bénéfices et prix d’achat restent 100 % secrets.',
-    targetAppTab: 'expenses',
     icon: Lock,
     accentBg: 'from-slate-800 to-slate-950',
     frames: [
@@ -740,12 +731,10 @@ const AnimatedModuleVideoStage: React.FC<{
 
 interface VideosTutorialsPageProps {
   language: AppLanguage;
-  onOpenRealScreenInApp: (tab: NavTab) => void;
 }
 
 export const VideosTutorialsPage: React.FC<VideosTutorialsPageProps> = ({
   language,
-  onOpenRealScreenInApp,
 }) => {
   const [selectedVideo, setSelectedVideo] = useState<ModuleVideoSpec>(
     MODULE_VIDEOS[0]
@@ -790,14 +779,7 @@ export const VideosTutorialsPage: React.FC<VideosTutorialsPageProps> = ({
                 <span>Agrandir en mode Cinéma</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => onOpenRealScreenInApp(selectedVideo.targetAppTab)}
-                className="inline-flex items-center gap-2 rounded-full bg-[#0A4DFF] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500"
-              >
-                <span>Tester cette partie en vrai maintenant</span>
-                <ArrowUpRight className="h-4 w-4" />
-              </button>
+
             </div>
           </div>
         </div>
@@ -810,8 +792,7 @@ export const VideosTutorialsPage: React.FC<VideosTutorialsPageProps> = ({
             Choisissez la vidéo d’un module ({MODULE_VIDEOS.length} vidéos)
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Cliquez sur une carte pour lancer immédiatement la démonstration
-            correspondante.
+            Ces animations illustrent les modules sans lancer ni intégrer l’application. Cliquez sur une carte pour choisir la démonstration correspondante.
           </p>
         </RevealOnScroll>
 

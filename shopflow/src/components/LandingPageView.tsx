@@ -29,7 +29,6 @@ import { LANGUAGE_OPTIONS } from '../i18n/translations';
 import {
   AppLanguage,
   CurrencyCode,
-  NavTab,
   SubscriptionPlanId,
 } from '../types';
 import { AuthModalMode } from './AuthModal';
@@ -55,7 +54,6 @@ export type ShowcaseSubPage =
   | 'faq';
 
 interface LandingPageViewProps {
-  isInstalledApp: boolean;
   language: AppLanguage;
   currency: CurrencyCode;
   usdRateFC: number;
@@ -65,8 +63,6 @@ interface LandingPageViewProps {
     mode: AuthModalMode,
     preselectedPlan?: SubscriptionPlanId
   ) => void;
-  onEnterInteractiveDemo: (initialTab?: NavTab) => void;
-  onPreviewRealWhatsAppReceipt: () => void;
 }
 
 const MARQUEE_ITEMS = [
@@ -102,15 +98,12 @@ const FAQ_LIST = [
 ];
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
-  isInstalledApp,
   language,
   currency,
   usdRateFC,
   onChangeLanguage,
   onChangeCurrency,
   onOpenAuthModal,
-  onEnterInteractiveDemo,
-  onPreviewRealWhatsAppReceipt,
 }) => {
   const [subPage, setSubPage] = useState<ShowcaseSubPage>('home');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -248,14 +241,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           <div className="flex items-center gap-2.5">
             <button
               type="button"
-              onClick={() =>
-                isInstalledApp
-                  ? onEnterInteractiveDemo('dashboard')
-                  : onOpenAuthModal('install')
-              }
+              onClick={() => onOpenAuthModal('install')}
               className="hidden rounded-full bg-[#0A4DFF] px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/30 transition hover:bg-blue-500 sm:inline-flex"
             >
-              {isInstalledApp ? 'Ouvrir l’application' : 'Télécharger l’app'}
+              Télécharger l’app
             </button>
 
             <button
@@ -376,32 +365,27 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   })}
                 </div>
 
-                {/* Direct Launch Into Live App / Receipt Preview */}
+                {/* Marketing site only: no embedded application or interactive demo. */}
                 <div className="mt-6 space-y-2.5 border-t border-white/10 pt-5">
                   <p className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                    Démo de l’application (boutique exemple)
+                    Découvrir ShopFlow sans ouvrir l’application
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setDrawerOpen(false);
-                      onEnterInteractiveDemo('dashboard');
-                    }}
-                    className="flex w-full items-center justify-between rounded-2xl bg-emerald-600 px-4 py-3 text-xs font-extrabold text-white transition hover:bg-emerald-500"
+                    onClick={() => navigateToSubPage('screenshots')}
+                    className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-xs font-extrabold text-white transition hover:bg-white/15"
                   >
                     <span className="flex items-center gap-2">
-                      <Play className="h-4 w-4 fill-current" />
-                      <span>Explorer la démo (boutique exemple)</span>
+                      <Images className="h-4 w-4" />
+                      <span>Voir les captures et explications</span>
                     </span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
-
                   <button
                     type="button"
                     onClick={() => {
                       setDrawerOpen(false);
-                      if (isInstalledApp) onEnterInteractiveDemo('dashboard');
-                      else onOpenAuthModal('install');
+                      onOpenAuthModal('install');
                     }}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 py-3 text-xs font-bold text-white transition hover:bg-white/15"
                   >
@@ -409,7 +393,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     Télécharger / installer l’application
                   </button>
                   <p className="px-1 text-[11px] leading-relaxed text-slate-400">
-                    La création de votre boutique se fait dans l’application, après son installation.
+                    Le site vitrine ne contient pas l’application. La boutique se crée uniquement dans l’application installée.
                   </p>
                 </div>
               </div>
@@ -535,19 +519,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       >
                         <button
                           type="button"
-                          onClick={() =>
-                            isInstalledApp
-                              ? onEnterInteractiveDemo('dashboard')
-                              : onOpenAuthModal('install')
-                          }
+                          onClick={() => onOpenAuthModal('install')}
                           className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0A4DFF] px-7 py-4 text-sm font-bold text-white shadow-xl shadow-blue-600/35 transition hover:scale-[1.02] hover:bg-blue-500"
                         >
-                          {isInstalledApp ? (
-                            <Play className="h-4 w-4 fill-current" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                          <span>{isInstalledApp ? 'Ouvrir ShopFlow' : 'Télécharger l’application'}</span>
+                          <Download className="h-4 w-4" />
+                          <span>Télécharger / installer l’application</span>
                           <ArrowRight className="h-4 w-4" />
                         </button>
 
@@ -579,8 +555,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                               duration: 3.6,
                               ease: 'easeInOut',
                             }}
-                            onClick={onPreviewRealWhatsAppReceipt}
-                            className="mt-4 cursor-pointer rounded-2xl border border-white/15 bg-slate-900/90 p-3.5 text-xs shadow-2xl backdrop-blur-md sm:absolute sm:top-10 sm:-left-10 sm:mt-0 sm:w-56"
+                            className="mt-4 rounded-2xl border border-white/15 bg-slate-900/90 p-3.5 text-xs shadow-2xl backdrop-blur-md sm:absolute sm:top-10 sm:-left-10 sm:mt-0 sm:w-56"
                           >
                             <div className="flex items-center gap-2.5">
                               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
@@ -591,7 +566,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                                   Reçu WhatsApp HD
                                 </p>
                                 <p className="text-[11px] text-emerald-300">
-                                  Cliquer pour voir →
+                                  Exemple présenté en capture
                                 </p>
                               </div>
                             </div>
@@ -724,10 +699,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       <div className="flex flex-wrap gap-3 pt-2">
                         <button
                           type="button"
-                          onClick={() => onEnterInteractiveDemo('dashboard')}
+                          onClick={() => navigateToSubPage('screenshots')}
                           className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-xs font-bold text-white transition hover:bg-[#0A4DFF]"
                         >
-                          <span>Tester la démo en direct</span>
+                          <Images className="h-4 w-4" />
+                          <span>Voir les captures expliquées</span>
                           <ArrowRight className="h-4 w-4" />
                         </button>
                       </div>
@@ -809,7 +785,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
              =============================================================== */}
           {subPage === 'screenshots' && (
             <ScreenshotsGuidePage
-              onOpenRealScreenInApp={(tab) => onEnterInteractiveDemo(tab)}
               onSwitchToVideosPage={() => navigateToSubPage('videos')}
             />
           )}
@@ -818,10 +793,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               PAGE 3: DEDICATED MODULE VIDEOS PAGE
              =============================================================== */}
           {subPage === 'videos' && (
-            <VideosTutorialsPage
-              language={language}
-              onOpenRealScreenInApp={(tab) => onEnterInteractiveDemo(tab)}
-            />
+            <VideosTutorialsPage language={language} />
           )}
 
           {/* ===============================================================
@@ -954,11 +926,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
                         <button
                           type="button"
-                          onClick={() =>
-                            isInstalledApp
-                              ? onEnterInteractiveDemo('subscription')
-                              : onOpenAuthModal('install')
-                          }
+                          onClick={() => onOpenAuthModal('install')}
                           className={`mt-8 w-full rounded-full py-3.5 text-sm font-bold text-white transition ${
                             plan.highlight
                               ? 'bg-[#0A4DFF] hover:bg-blue-700'
@@ -994,15 +962,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   <div className="mt-9 flex flex-wrap justify-center gap-3">
                     <button
                       type="button"
-                      onClick={() =>
-                        isInstalledApp
-                          ? onEnterInteractiveDemo('dashboard')
-                          : onOpenAuthModal('install')
-                      }
+                      onClick={() => onOpenAuthModal('install')}
                       className="inline-flex items-center gap-2 rounded-full bg-[#0A4DFF] px-6 py-3.5 text-sm font-bold text-white shadow-lg"
                     >
-                      {isInstalledApp ? <Play className="h-4 w-4 fill-current" /> : <Download className="h-4 w-4" />}
-                      <span>{isInstalledApp ? 'Ouvrir l’application ShopFlow' : 'Installer / ajouter l’app à l’écran d’accueil'}</span>
+                      <Download className="h-4 w-4" />
+                      <span>Consulter les options d’installation</span>
                     </button>
                     <div className="max-w-xl rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-left text-sm leading-relaxed text-slate-300">
                       <span className="font-bold text-white">Votre boutique se crée dans ShopFlow, pas sur ce site.</span>{' '}
@@ -1136,10 +1100,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onEnterInteractiveDemo('dashboard')}
+              onClick={() => onOpenAuthModal('install')}
               className="text-emerald-400 hover:underline"
             >
-              Ouvrir l’Application →
+              Installer ShopFlow →
             </button>
           </div>
 
