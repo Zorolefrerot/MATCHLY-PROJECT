@@ -24,4 +24,4 @@ La PWA conserve ses données localement sur l’appareil. Elle ne synchronise pa
 
 ## APK Android
 
-Le workflow **ShopFlow Android APK** compile un APK de test. Pour publier ou actualiser le lien Android stable, lancer ce workflow manuellement avec l’option `publish_test_release` activée. L’APK est signé en mode debug et destiné aux essais, pas à une distribution commerciale.
+Le workflow **ShopFlow Android APK** compile un APK de test et maintient une préversion GitHub pour son téléchargement. L’APK est signé en mode debug et destiné aux essais, pas à une distribution commerciale.
