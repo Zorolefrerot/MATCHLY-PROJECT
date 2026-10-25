@@ -70,6 +70,62 @@ interface ChatMessage {
   timestamp: string;
 }
 
+interface SavedConversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  updatedAt: string;
+}
+
+interface ConversationStore {
+  activeConversationId: string;
+  conversations: SavedConversation[];
+}
+
+const createConversation = (): SavedConversation => ({
+  id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  title: 'Nouvelle discussion',
+  messages: [],
+  updatedAt: new Date().toISOString(),
+});
+
+const loadConversationStore = (storageKey: string): ConversationStore => {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<ConversationStore>;
+      const conversations = Array.isArray(parsed.conversations)
+        ? parsed.conversations.filter(
+            (conversation): conversation is SavedConversation =>
+              Boolean(
+                conversation &&
+                  typeof conversation.id === 'string' &&
+                  typeof conversation.title === 'string' &&
+                  Array.isArray(conversation.messages)
+              )
+          )
+        : [];
+      if (conversations.length > 0) {
+        const requestedId = parsed.activeConversationId;
+        return {
+          conversations,
+          activeConversationId: conversations.some((c) => c.id === requestedId)
+            ? requestedId!
+            : conversations[0].id,
+        };
+      }
+    }
+  } catch {
+    // Fall through to a clean local conversation if storage is unavailable or corrupt.
+  }
+
+  const initialConversation = createConversation();
+  return {
+    activeConversationId: initialConversation.id,
+    conversations: [initialConversation],
+  };
+};
+
 const STARTER_CARDS = [
   {
     title: '📊 Bilan & Formules de Rentabilité',
@@ -108,7 +164,16 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     LANGUAGE_OPTIONS.find((l) => l.code === settings.language) ||
     LANGUAGE_OPTIONS[0];
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const conversationStorageKey = `shopflow_ai_conversations_v1:${encodeURIComponent(
+    `${settings.shopName}:${settings.ownerName}`.trim().toLocaleLowerCase()
+  )}`;
+  const [conversationStore, setConversationStore] = useState<ConversationStore>(
+    () => loadConversationStore(conversationStorageKey)
+  );
+  const activeConversation = conversationStore.conversations.find(
+    (conversation) => conversation.id === conversationStore.activeConversationId
+  );
+  const messages = activeConversation?.messages ?? [];
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -121,6 +186,52 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(conversationStorageKey, JSON.stringify(conversationStore));
+    } catch {
+      // Keep the active session usable even if the device storage quota is exceeded.
+    }
+  }, [conversationStorageKey, conversationStore]);
+
+  const appendConversationMessage = (
+    conversationId: string,
+    message: ChatMessage
+  ) => {
+    setConversationStore((previous) => ({
+      ...previous,
+      conversations: previous.conversations.map((conversation) => {
+        if (conversation.id !== conversationId) return conversation;
+        const isFirstUserMessage =
+          message.role === 'user' &&
+          !conversation.messages.some((item) => item.role === 'user');
+        const shortTitle = message.content.replace(/\s+/g, ' ').trim();
+        return {
+          ...conversation,
+          title: isFirstUserMessage
+            ? shortTitle.length > 42
+              ? `${shortTitle.slice(0, 39)}…`
+              : shortTitle
+            : conversation.title,
+          messages: [...conversation.messages, message],
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  };
+
+  const startNewConversation = () => {
+    if (isThinking) return;
+    stopAllSpeech();
+    setSpeakingMessageId(null);
+    setInput('');
+    const conversation = createConversation();
+    setConversationStore((previous) => ({
+      activeConversationId: conversation.id,
+      conversations: [conversation, ...previous.conversations].slice(0, 40),
+    }));
+  };
 
   useEffect(() => {
     return () => {
@@ -270,8 +381,9 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       timestamp: nowTime(),
     };
 
+    const conversationId = conversationStore.activeConversationId;
     const updatedHistory = [...messages, userMsg];
-    setMessages(updatedHistory);
+    appendConversationMessage(conversationId, userMsg);
     if (!overridePrompt) setInput('');
     setIsThinking(true);
 
@@ -286,16 +398,13 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       const cleanAiText = await queryCloudAI(updatedHistory, actionSummary);
       const aiMsgId = `ai-${Date.now()}`;
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: aiMsgId,
-          role: 'assistant',
-          content: cleanAiText,
-          executedBadges: badges,
-          timestamp: nowTime(),
-        },
-      ]);
+      appendConversationMessage(conversationId, {
+        id: aiMsgId,
+        role: 'assistant',
+        content: cleanAiText,
+        executedBadges: badges,
+        timestamp: nowTime(),
+      });
 
       if (settings.autoSpeakAi) {
         setSpeakingMessageId(aiMsgId);
@@ -321,16 +430,13 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       );
       const aiMsgId = `ai-smart-${Date.now()}`;
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: aiMsgId,
-          role: 'assistant',
-          content: smartLocal,
-          executedBadges: badges,
-          timestamp: nowTime(),
-        },
-      ]);
+      appendConversationMessage(conversationId, {
+        id: aiMsgId,
+        role: 'assistant',
+        content: smartLocal,
+        executedBadges: badges,
+        timestamp: nowTime(),
+      });
 
       if (settings.autoSpeakAi) {
         setSpeakingMessageId(aiMsgId);
@@ -410,10 +516,13 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
                 Inclus & Actif
               </span>
             </div>
+            <p className="mt-0.5 text-[10px] font-medium text-slate-500">
+              Historique enregistré sur cet appareil
+            </p>
           </div>
         </div>
 
-        {/* Voice Model Selector + Auto-Speak + New Conversation */}
+        {/* Saved conversations + Voice Model Selector + New Conversation */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
             <Volume2 className="h-3.5 w-3.5 shrink-0 text-[#0A4DFF]" />
@@ -462,21 +571,37 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
             )}
           </button>
 
-          {messages.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                stopAllSpeech();
-                setSpeakingMessageId(null);
-                setMessages([]);
-              }}
-              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
-              title="Nouvelle discussion"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden @sm:inline">Nouveau</span>
-            </button>
-          )}
+          <select
+            aria-label="Discussions IA enregistrées sur cet appareil"
+            value={conversationStore.activeConversationId}
+            disabled={isThinking}
+            onChange={(event) => {
+              stopAllSpeech();
+              setSpeakingMessageId(null);
+              setInput('');
+              setConversationStore((previous) => ({
+                ...previous,
+                activeConversationId: event.target.value,
+              }));
+            }}
+            className="max-w-44 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-60"
+          >
+            {conversationStore.conversations.map((conversation) => (
+              <option key={conversation.id} value={conversation.id}>
+                {conversation.title}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={startNewConversation}
+            disabled={isThinking}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            title="Démarrer une nouvelle discussion sans effacer l’historique"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span className="hidden @sm:inline">Nouveau</span>
+          </button>
         </div>
       </div>
 

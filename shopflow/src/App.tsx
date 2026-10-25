@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import {
   BookOpenCheck,
   Bot,
@@ -82,7 +83,7 @@ export function App() {
     const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches;
     const isIOSStandalone =
       (navigator as Navigator & { standalone?: boolean }).standalone === true;
-    return Boolean(isStandalone || isIOSStandalone);
+    return Boolean(Capacitor.isNativePlatform() || isStandalone || isIOSStandalone);
   });
   // The public site never embeds the app. Installed standalone sessions open the app directly.
   const [screenMode, setScreenMode] = useState<'landing' | 'app'>(() =>
@@ -589,6 +590,12 @@ export function App() {
 
   const handleResetDemo = () => {
     localStorage.removeItem(STORAGE_KEY);
+    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+      const key = localStorage.key(index);
+      if (key?.startsWith('shopflow_ai_conversations_v1:')) {
+        localStorage.removeItem(key);
+      }
+    }
     setSettings(INITIAL_SETTINGS);
     setProducts(INITIAL_PRODUCTS);
     setSales(INITIAL_SALES);
