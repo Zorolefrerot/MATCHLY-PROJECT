@@ -31,4 +31,4 @@ Les données sont conservées localement sur chaque appareil et ne sont pas sync
 
 ## APK Android
 
-Le workflow **ShopFlow Android APK** compile un APK de test et maintient une préversion GitHub pour son téléchargement. L’APK est signé en mode debug et destiné aux essais, pas à une distribution commerciale.
+Le workflow **ShopFlow Android APK** compile un APK de test, vérifie sa signature et maintient une préversion GitHub. Le package de test Android est `cd.shopflow.app.test`, afin de ne pas remplacer une autre installation ShopFlow. La clé de débogage stable est réservée aux mises à jour de test et ne doit pas signer une version de production.
