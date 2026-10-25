@@ -136,9 +136,6 @@ export const INITIAL_SETTINGS: ShopSettings = {
   offlineSyncEnabled: true,
   lowStockNotifications: true,
   ownerPin: '1234',
-  customAiApiKey: '',
-  customAiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-  customAiModel: 'gemini-2.5-flash',
   activePlan: 'pro_ai',
   planPaid: false,
 };

@@ -1,5 +1,5 @@
 import { AppLanguage } from '../types';
-import { ChatApiConfig, requestChatCompletion } from '../utils/aiApi';
+import { requestChatCompletion } from '../utils/aiApi';
 
 /**
  * Comprehensive multi-language dictionary covering 100% of UI texts, default products,
@@ -367,7 +367,6 @@ export function translateStringSync(text: string, lang: AppLanguage): string {
 export async function translateEntirePageDOM(
   rootEl: HTMLElement | null,
   lang: AppLanguage,
-  aiConfig: ChatApiConfig,
   onBatchComplete?: () => void
 ): Promise<void> {
   if (!rootEl) return;
@@ -464,7 +463,7 @@ export async function translateEntirePageDOM(
     }
   });
 
-  if (lang === 'fr' || missingTexts.size === 0 || !aiConfig.apiKey.trim()) return;
+  if (lang === 'fr' || missingTexts.size === 0) return;
 
   // Call Real Cloud AI in parallel JSON chunks so 100% of every word on screen translates completely!
   const targetLangName: Record<Exclude<AppLanguage, 'fr'>, string> = {
@@ -486,7 +485,6 @@ export async function translateEntirePageDOM(
     await Promise.all(
       chunks.map(async (sourceArray) => {
         const jsonText = await requestChatCompletion(
-          aiConfig,
           [
             {
               role: 'system',

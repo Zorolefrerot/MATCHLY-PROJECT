@@ -1,17 +1,13 @@
 services:
   - type: web
     name: shopflow-site
-    runtime: static
+    runtime: node
     branch: arena/0b9f89cc-matchly-project
+    plan: free
     buildCommand: npm --prefix shopflow ci && npm run build:hosted
-    staticPublishPath: ./dist
-    headers:
-      - path: /app/sw.js
-        name: Cache-Control
-        value: no-cache, no-store, must-revalidate
-      - path: /downloads/*.apk
-        name: Content-Type
-        value: application/vnd.android.package-archive
-      - path: /downloads/*.apk
-        name: Content-Disposition
-        value: attachment; filename="ShopFlow-Android.apk"
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false

@@ -4,14 +4,10 @@ import {
   Check,
   Coins,
   Download,
-  Eye,
-  EyeOff,
   Globe2,
   ImagePlus,
   LayoutGrid,
-  Loader2,
   Lock,
-  CheckCircle2,
   Moon,
   Palette,
   Plus,
@@ -38,35 +34,6 @@ import {
 } from '../types';
 import { formatMoney, fromDisplayAmount } from '../utils/currency';
 import { formatSaleTime } from '../utils/saleDate';
-import { testChatApi } from '../utils/aiApi';
-
-const AI_API_PRESETS = [
-  {
-    id: 'gemini',
-    label: 'Google Gemini (conseillé)',
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-    model: 'gemini-2.5-flash',
-  },
-  {
-    id: 'openai',
-    label: 'OpenAI',
-    endpoint: 'https://api.openai.com/v1/chat/completions',
-    model: 'gpt-4o-mini',
-  },
-  {
-    id: 'groq',
-    label: 'Groq',
-    endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-    model: 'llama-3.3-70b-versatile',
-  },
-  {
-    id: 'openrouter',
-    label: 'OpenRouter',
-    endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-    model: 'google/gemini-2.5-flash',
-  },
-  { id: 'custom', label: 'Autre API compatible OpenAI', endpoint: '', model: '' },
-] as const;
 
 interface ExpensesSettingsViewProps {
   settings: ShopSettings;
@@ -131,31 +98,6 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
     useState<ExpenseEntry['category']>('Transport');
   const [amountInput, setAmountInput] = useState('');
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [apiTestStatus, setApiTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
-  const [apiTestMessage, setApiTestMessage] = useState('');
-
-  const selectedApiPreset =
-    AI_API_PRESETS.find((preset) => preset.endpoint && preset.endpoint === settings.customAiEndpoint) ??
-    AI_API_PRESETS[AI_API_PRESETS.length - 1];
-
-  const handleTestApi = async () => {
-    setApiTestStatus('testing');
-    setApiTestMessage('Vérification de la connexion…');
-    try {
-      const result = await testChatApi({
-        endpoint: settings.customAiEndpoint,
-        apiKey: settings.customAiApiKey,
-        model: settings.customAiModel,
-      });
-      setApiTestStatus('success');
-      setApiTestMessage(result || 'Réponse reçue : API prête.');
-    } catch (error) {
-      setApiTestStatus('error');
-      setApiTestMessage(error instanceof Error ? error.message : 'Test API échoué.');
-    }
-  };
-
   const fmt = (val: number) =>
     formatMoney(val, settings.currency, settings.usdRateFC);
 
@@ -913,141 +855,16 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-3.5 text-blue-950">
-              <p className="font-extrabold">Connecter un fournisseur d’IA</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-blue-900">
-                ShopFlow prend en charge Gemini, OpenAI, Groq, OpenRouter et les API compatibles OpenAI. Il faut une clé personnelle du fournisseur choisi ; aucun secret n’est inclus dans l’application. Les questions et les données de boutique utiles à la réponse seront envoyées à ce fournisseur.
-              </p>
-            </div>
-
-            <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4">
-              <div>
-                <label htmlFor="shopflow-ai-provider" className="mb-1 block font-bold text-slate-700">
-                  Fournisseur
-                </label>
-                <select
-                  id="shopflow-ai-provider"
-                  value={selectedApiPreset.id}
-                  onChange={(event) => {
-                    const preset = AI_API_PRESETS.find((item) => item.id === event.target.value);
-                    if (!preset) return;
-                    onUpdateSettings({
-                      ...settings,
-                      customAiEndpoint: preset.endpoint || settings.customAiEndpoint,
-                      customAiModel: preset.model || settings.customAiModel,
-                    });
-                    setApiTestStatus('idle');
-                    setApiTestMessage('');
-                  }}
-                  className="w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-bold text-slate-900"
-                >
-                  {AI_API_PRESETS.map((preset) => (
-                    <option key={preset.id} value={preset.id}>{preset.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="shopflow-ai-endpoint" className="mb-1 block font-bold text-slate-700">
-                  Adresse de l’API
-                </label>
-                <input
-                  id="shopflow-ai-endpoint"
-                  type="url"
-                  inputMode="url"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  value={settings.customAiEndpoint}
-                  onChange={(event) => {
-                    onUpdateSettings({ ...settings, customAiEndpoint: event.target.value });
-                    setApiTestStatus('idle');
-                    setApiTestMessage('');
-                  }}
-                  placeholder="https://…/v1/chat/completions"
-                  className="w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-[11px] text-slate-900"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 @md:grid-cols-2">
-                <div className="min-w-0">
-                  <label htmlFor="shopflow-ai-model" className="mb-1 block font-bold text-slate-700">
-                    Modèle
-                  </label>
-                  <input
-                    id="shopflow-ai-model"
-                    value={settings.customAiModel}
-                    onChange={(event) => {
-                      onUpdateSettings({ ...settings, customAiModel: event.target.value });
-                      setApiTestStatus('idle');
-                      setApiTestMessage('');
-                    }}
-                    placeholder="gemini-2.5-flash"
-                    className="w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-[11px] text-slate-900"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <label htmlFor="shopflow-ai-key" className="mb-1 block font-bold text-slate-700">
-                    Clé API
-                  </label>
-                  <div className="flex min-w-0">
-                    <input
-                      id="shopflow-ai-key"
-                      type={showApiKey ? 'text' : 'password'}
-                      autoComplete="off"
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      value={settings.customAiApiKey}
-                      onChange={(event) => {
-                        onUpdateSettings({ ...settings, customAiApiKey: event.target.value });
-                        setApiTestStatus('idle');
-                        setApiTestMessage('');
-                      }}
-                      placeholder="Collez votre clé ici"
-                      className="w-full min-w-0 rounded-l-xl border border-r-0 border-slate-300 bg-white px-3 py-2.5 text-[11px] text-slate-900"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowApiKey((visible) => !visible)}
-                      aria-label={showApiKey ? 'Masquer la clé API' : 'Afficher la clé API'}
-                      className="shrink-0 rounded-r-xl border border-slate-300 bg-slate-50 px-3 text-slate-600"
-                    >
-                      {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 text-blue-950">
+              <div className="flex items-start gap-3">
+                <Bot className="mt-0.5 h-5 w-5 shrink-0 text-[#0A4DFF]" />
+                <div>
+                  <p className="font-extrabold">Assistant ShopFlow</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-blue-900">
+                    La configuration de l’assistant est gérée côté service ShopFlow. Aucune clé, adresse de service ou sélection de modèle à saisir dans l’application. Les réponses IA nécessitent Internet et restent soumises aux limites du service.
+                  </p>
                 </div>
               </div>
-
-              <div className="flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="min-w-0 break-words text-[10px] leading-relaxed text-slate-500">
-                  La clé est conservée dans le stockage local de cet appareil et exclue des sauvegardes exportées. Ne la saisissez pas sur un appareil partagé.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleTestApi}
-                  disabled={apiTestStatus === 'testing'}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0A4DFF] px-4 py-2.5 text-[11px] font-extrabold text-white disabled:cursor-wait disabled:opacity-60"
-                >
-                  {apiTestStatus === 'testing' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  Tester l’API
-                </button>
-              </div>
-              {apiTestMessage && (
-                <p role="status" className={`break-words rounded-xl px-3 py-2 text-[11px] leading-relaxed ${apiTestStatus === 'error' ? 'bg-red-50 text-red-800' : apiTestStatus === 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-50 text-slate-600'}`}>
-                  {apiTestMessage}
-                </p>
-              )}
-              {selectedApiPreset.id === 'gemini' && (
-                <a
-                  href="https://aistudio.google.com/app/apikey"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-block break-all text-[10px] font-bold text-blue-700 underline underline-offset-2"
-                >
-                  Obtenir une clé Gemini dans Google AI Studio
-                </a>
-              )}
             </div>
 
             {/* Crystal-Clear Explanation + Working Boss PIN */}

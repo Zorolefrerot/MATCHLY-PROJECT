@@ -430,11 +430,6 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       try {
         const stockNames = products.map((p) => `${p.id}: ${p.name}`).join(', ');
         const inner = await requestChatCompletion(
-          {
-            endpoint: settings.customAiEndpoint,
-            apiKey: settings.customAiApiKey,
-            model: settings.customAiModel,
-          },
           [
             {
               role: 'user',

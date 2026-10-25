@@ -308,7 +308,7 @@ export function generateSmartLocalBusinessResponse(
       `## Votre espace est prêt\n\n` +
       `Aucun produit, vente, crédit ou frais n’est encore enregistré. Je ne vais pas inventer de chiffres. ` +
       `Ajoutez votre premier article dans **Stock**, puis utilisez **Caisse** pour enregistrer une vente.\n\n` +
-      `Je peux aussi expliquer les fonctions de ShopFlow ou vous aider à rédiger un texte général. Pour les réponses générales par IA, configurez une clé auprès d’un fournisseur dans Paramètres → IA & Sécurité ; sans clé ou connexion, ce mode local reste limité aux données et outils présents sur l’appareil.`
+      `Je peux aussi expliquer les fonctions de ShopFlow ou vous aider à rédiger un texte général. Si le service IA en ligne est indisponible, les fonctions locales et les données présentes sur cet appareil restent accessibles.`
     );
   }
 

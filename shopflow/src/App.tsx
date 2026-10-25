@@ -88,9 +88,14 @@ const removeLegacySampleRecords = <T extends { id?: string }>(records: unknown):
     : [];
 
 const sanitizeLegacySettings = (saved: Partial<ShopSettings>): ShopSettings => {
+  const safeSaved = { ...saved } as Partial<ShopSettings> & Record<string, unknown>;
+  // Drop legacy client-side provider configuration (including any old local API key).
+  delete safeSaved.customAiApiKey;
+  delete safeSaved.customAiEndpoint;
+  delete safeSaved.customAiModel;
   const merged: ShopSettings = {
     ...INITIAL_SETTINGS,
-    ...saved,
+    ...safeSaved,
     theme: { ...INITIAL_SETTINGS.theme, ...(saved.theme || {}) },
   };
   const oldExampleValues: Partial<ShopSettings> = {
@@ -113,15 +118,6 @@ const sanitizeLegacySettings = (saved: Partial<ShopSettings>): ShopSettings => {
     if (merged[settingKey] === value) {
       Object.assign(merged, { [settingKey]: INITIAL_SETTINGS[settingKey] });
     }
-  }
-  // Migrate the former empty OpenAI default so new installs land on the documented Gemini preset.
-  if (
-    !merged.customAiApiKey &&
-    merged.customAiEndpoint === 'https://api.openai.com/v1/chat/completions' &&
-    merged.customAiModel === 'gpt-4o-mini'
-  ) {
-    merged.customAiEndpoint = INITIAL_SETTINGS.customAiEndpoint;
-    merged.customAiModel = INITIAL_SETTINGS.customAiModel;
   }
   return merged;
 };
@@ -271,21 +267,12 @@ export function App() {
   // Never runs external AI call while on 'ai' tab unless language is non-French so chat has 100% priority bandwidth.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      if (settings.language !== 'fr' && settings.customAiApiKey.trim()) {
-        setIsAiTranslating(true);
-      }
+      if (settings.language !== 'fr') setIsAiTranslating(true);
       translateEntirePageDOM(
         appRootRef.current,
         settings.language,
-        {
-          endpoint: settings.customAiEndpoint,
-          apiKey: settings.customAiApiKey,
-          model: settings.customAiModel,
-        },
         () => setIsAiTranslating(false)
-      ).finally(() => {
-        setIsAiTranslating(false);
-      });
+      ).finally(() => setIsAiTranslating(false));
     }, 180);
 
     return () => clearTimeout(timer);
@@ -652,7 +639,7 @@ export function App() {
         format: 'shopflow-local-backup',
         version: 1,
         exportedAt: new Date().toISOString(),
-        settings: { ...settings, customAiApiKey: '' },
+        settings,
         products,
         sales,
         credits,

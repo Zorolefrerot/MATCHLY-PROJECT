@@ -148,9 +148,6 @@ export interface ShopSettings {
   offlineSyncEnabled: boolean;
   lowStockNotifications: boolean;
   ownerPin: string;
-  customAiApiKey: string;
-  customAiEndpoint: string;
-  customAiModel: string;
   activePlan: SubscriptionPlanId;
   planPaid: boolean;
 }

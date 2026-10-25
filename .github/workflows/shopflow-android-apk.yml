@@ -74,6 +74,8 @@ jobs:
 
       - name: Build ShopFlow web application
         working-directory: shopflow
+        env:
+          VITE_SHOPFLOW_API_BASE_URL: ${{ vars.SHOPFLOW_API_BASE_URL }}
         run: npm run build
 
       - name: Sync Capacitor Android project

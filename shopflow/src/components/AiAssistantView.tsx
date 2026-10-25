@@ -279,14 +279,14 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
 
     const creditLines = credits
       .map(
-        (c) =>
-          `- ${c.customerName} : reste à payer ${fmt(Math.max(0, c.totalAmountFC - c.paidAmountFC))} (échéance : ${c.dueDate})`
+        (c, index) =>
+          `- Crédit ${index + 1} : reste à payer ${fmt(Math.max(0, c.totalAmountFC - c.paidAmountFC))} (échéance : ${c.dueDate})`
       )
       .join('\n');
 
     return [
       `Tu es ShopFlow AI, le conseiller commercial et financier intelligent intégré à l'application ShopFlow.`,
-      `Tu t'adresses à un commerçant (${settings.ownerName}, gérant de "${settings.shopName}" à ${settings.city}), JAMAIS à un développeur.`,
+      `Tu t'adresses à un commerçant, JAMAIS à un développeur. N'inclus pas de nom de personne ni de donnée personnelle dans tes réponses.`,
       ``,
       `RÈGLES ABSOLUES DE PRÉSENTATION :`,
       `1. N'envoie JAMAIS de code informatique, JAMAIS de JSON, JAMAIS de balises HTML (pas de <br>) et JAMAIS de blocs de code avec trois accents graves.`,
@@ -330,14 +330,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       })),
     ];
 
-    return requestChatCompletion(
-      {
-        endpoint: settings.customAiEndpoint,
-        apiKey: settings.customAiApiKey,
-        model: settings.customAiModel,
-      },
-      apiMessages
-    );
+    return requestChatCompletion(apiMessages);
   };
 
   const handleTogglePlayMessage = (msg: ChatMessage) => {
@@ -387,7 +380,6 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
 
       let answer = '';
       let usedLocalFallback = false;
-      let apiErrorMessage = '';
       if (actionExecutionFailed) {
         answer =
           'Je n’ai pas pu confirmer cette opération. Vérifiez la caisse et le stock avant de réessayer ; aucune confirmation automatique n’est donnée.';
@@ -403,9 +395,8 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
             throw new Error('Connexion Internet indisponible.');
           }
           answer = await queryCloudAI(updatedHistory);
-        } catch (error) {
+        } catch {
           usedLocalFallback = true;
-          apiErrorMessage = error instanceof Error ? error.message : 'Service IA indisponible.';
           try {
             answer = generateSmartLocalBusinessResponse(
               promptText,
@@ -427,7 +418,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       }
 
       const content = usedLocalFallback && badges.length === 0
-        ? `**Mode local — API en ligne non utilisée :** ${apiErrorMessage || 'les questions générales peuvent être limitées sans connexion ou clé API.'} Je réponds avec les données et fonctions disponibles sur cet appareil.\n\n${answer}`
+        ? `**Mode local :** le service IA en ligne est temporairement indisponible. Je réponds avec les données et fonctions disponibles sur cet appareil.\n\n${answer}`
         : answer;
       const aiMsgId = `ai-${Date.now()}`;
       appendConversationMessage(conversationId, {
@@ -571,8 +562,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
             </h2>
             <p className="mt-1.5 max-w-lg text-xs leading-relaxed text-slate-500 @md:text-sm">
               Je peux consulter les données de votre boutique enregistrées sur cet appareil.
-              Les actions simples fonctionnent localement. Pour les réponses générales,
-              configurez une clé API dans Paramètres → IA & Sécurité.
+              Les actions simples fonctionnent localement. Les réponses générales sont disponibles quand le service IA est en ligne.
             </p>
 
             <div className="mt-7 grid w-full grid-cols-1 gap-3 text-left @sm:grid-cols-2">
