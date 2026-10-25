@@ -17,7 +17,8 @@ export function sfAsset(relPath: string): string {
   // Standalone HTML bundles historically stored public paths with a leading slash;
   // accept both formats so the official logo and all embedded photos resolve.
   const embedded = embeddedImages?.[clean] ?? embeddedImages?.[`/${clean}`];
-  return embedded || '/' + clean;
+  // Keep all web assets inside the current PWA scope (/app/) and relative Capacitor bundle.
+  return embedded || `./${clean}`;
 }
 
 export const SHOPFLOW_APP_LOGO = sfAsset('shopflow-logo.png');
@@ -136,8 +137,8 @@ export const INITIAL_SETTINGS: ShopSettings = {
   lowStockNotifications: true,
   ownerPin: '1234',
   customAiApiKey: '',
-  customAiEndpoint: 'https://api.openai.com/v1/chat/completions',
-  customAiModel: 'gpt-4o-mini',
+  customAiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+  customAiModel: 'gemini-2.5-flash',
   activePlan: 'pro_ai',
   planPaid: false,
 };

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Product, ShopSettings } from '../types';
 import { formatMoney } from '../utils/currency';
+import { requestChatCompletion } from '../utils/aiApi';
 
 interface BarcodeScannerModalProps {
   settings: ShopSettings;
@@ -428,76 +429,58 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       // 2. Ask Multimodal Vision AI to visually recognize the photographed product/barcode!
       try {
         const stockNames = products.map((p) => `${p.id}: ${p.name}`).join(', ');
-        const resp = await fetch('https://text.pollinations.ai/openai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'openai',
-            temperature: 0.2,
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  {
-                    type: 'text',
-                    text: `Analyse cette photo prise par un commerçant. Produits existants dans son stock: [${stockNames}].
-Réponds UNIQUEMENT avec un objet JSON strict sans balises markdown de la forme:
-{"matchedProductId": "id exact si c'est clairement l'un des produits du stock sinon null", "detectedName": "nom commercial court et précis en français de l'objet sur la photo", "barcodeRead": "chiffres du code-barres si visible sinon null", "estimatedPriceFC": 15000, "category": "Alimentation"}`,
-                  },
-                  {
-                    type: 'image_url',
-                    image_url: { url: compactDataUrl },
-                  },
-                ],
-              },
-            ],
-          }),
-        });
-
-        if (resp.ok) {
-          const raw = await resp.text();
-          let inner = raw;
-          try {
-            const env = JSON.parse(raw);
-            if (env?.choices?.[0]?.message?.content) {
-              inner = env.choices[0].message.content;
-            }
-          } catch {
-            // Direct JSON string
+        const inner = await requestChatCompletion(
+          {
+            endpoint: settings.customAiEndpoint,
+            apiKey: settings.customAiApiKey,
+            model: settings.customAiModel,
+          },
+          [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: `Analyse cette photo prise par un commerçant. Produits existants dans son stock: [${stockNames}].\nRéponds UNIQUEMENT avec un objet JSON strict sans balises markdown de la forme:\n{"matchedProductId": "id exact si c'est clairement l'un des produits du stock sinon null", "detectedName": "nom commercial court et précis en français de l'objet sur la photo", "barcodeRead": "chiffres du code-barres si visible sinon null", "estimatedPriceFC": 15000, "category": "Alimentation"}`,
+                },
+                { type: 'image_url', image_url: { url: compactDataUrl } },
+              ],
+            },
+          ],
+          { timeoutMs: 25_000, maxTokens: 300 }
+        );
+        const jsonMatch = inner.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const info = JSON.parse(jsonMatch[0]);
+          if (info.barcodeRead && !barcodeResult) {
+            setDecodedCode(String(info.barcodeRead));
           }
-          const jsonMatch = inner.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const info = JSON.parse(jsonMatch[0]);
-            if (info.barcodeRead && !barcodeResult) {
-              setDecodedCode(String(info.barcodeRead));
-            }
-            if (info.matchedProductId) {
-              const found = products.find(
-                (p) => p.id === info.matchedProductId
-              );
-              if (found) {
-                playBeepSound();
-                setMatchedProduct(found);
-                onScanAction(found, scanMode);
-                setIsAnalyzing(false);
-                return;
-              }
-            }
-            if (info.detectedName) {
+          if (info.matchedProductId) {
+            const found = products.find(
+              (product) => product.id === info.matchedProductId
+            );
+            if (found) {
               playBeepSound();
-              setAiVisionSuggestion({
-                detectedName: info.detectedName,
-                estimatedPriceFC: Number(info.estimatedPriceFC) || 15000,
-                category: info.category || 'Alimentation',
-              });
-              setQuickNewName(info.detectedName);
-              setQuickNewSellPrice(String(Number(info.estimatedPriceFC) || 15000));
-              setQuickNewBuyPrice(
-                String(
-                  Math.round((Number(info.estimatedPriceFC) || 15000) * 0.75)
-                )
-              );
+              setMatchedProduct(found);
+              onScanAction(found, scanMode);
+              setIsAnalyzing(false);
+              return;
             }
+          }
+          if (info.detectedName) {
+            playBeepSound();
+            setAiVisionSuggestion({
+              detectedName: info.detectedName,
+              estimatedPriceFC: Number(info.estimatedPriceFC) || 15000,
+              category: info.category || 'Alimentation',
+            });
+            setQuickNewName(info.detectedName);
+            setQuickNewSellPrice(String(Number(info.estimatedPriceFC) || 15000));
+            setQuickNewBuyPrice(
+              String(
+                Math.round((Number(info.estimatedPriceFC) || 15000) * 0.75)
+              )
+            );
           }
         }
       } catch {

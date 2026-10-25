@@ -27,13 +27,13 @@ import {
   cleanRawModelText,
   detectLocalStoreActions,
   generateSmartLocalBusinessResponse,
-  parseGatewayResponseText,
 } from '../utils/aiSanitizer';
 import { formatMoney } from '../utils/currency';
 import {
   speakCleanText,
   stopAllSpeech,
 } from '../utils/speechCleaner';
+import { requestChatCompletion } from '../utils/aiApi';
 
 export interface AiStoreAction {
   type: 'sell' | 'add_product' | 'update_price' | 'add_expense';
@@ -323,50 +323,21 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     actionSummary?: string
   ): Promise<string> => {
     const apiMessages = [
-      { role: 'system', content: buildSystemPrompt(actionSummary) },
-      ...historyToSend.slice(-6).map((m) => ({
-        role: m.role,
-        content: m.content,
+      { role: 'system' as const, content: buildSystemPrompt(actionSummary) },
+      ...historyToSend.slice(-6).map((message) => ({
+        role: message.role,
+        content: message.content,
       })),
     ];
 
-    // Deux tentatives via une passerelle externe ; le calcul local prend le relais si elles échouent.
-    const candidateModels = ['openai', 'mistral'];
-    let lastErr: unknown = null;
-
-    for (const modelName of candidateModels) {
-      let timer: number | undefined;
-      try {
-        const controller = new AbortController();
-        timer = window.setTimeout(() => controller.abort(), 6000);
-        const response = await fetch('https://text.pollinations.ai/openai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            model: modelName,
-            seed: Math.floor(Math.random() * 900000) + 100000,
-            messages: apiMessages,
-            temperature: 0.55,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const raw = await response.text();
-        const parsed = parseGatewayResponseText(raw);
-        if (!parsed.trim()) throw new Error('Empty AI response');
-        return parsed;
-      } catch (err) {
-        lastErr = err;
-      } finally {
-        if (timer !== undefined) clearTimeout(timer);
-      }
-    }
-
-    throw lastErr || new Error('Cloud AI unavailable');
+    return requestChatCompletion(
+      {
+        endpoint: settings.customAiEndpoint,
+        apiKey: settings.customAiApiKey,
+        model: settings.customAiModel,
+      },
+      apiMessages
+    );
   };
 
   const handleTogglePlayMessage = (msg: ChatMessage) => {
@@ -416,6 +387,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
 
       let answer = '';
       let usedLocalFallback = false;
+      let apiErrorMessage = '';
       if (actionExecutionFailed) {
         answer =
           'Je n’ai pas pu confirmer cette opération. Vérifiez la caisse et le stock avant de réessayer ; aucune confirmation automatique n’est donnée.';
@@ -428,11 +400,12 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       } else {
         try {
           if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-            throw new Error('Offline');
+            throw new Error('Connexion Internet indisponible.');
           }
           answer = await queryCloudAI(updatedHistory);
-        } catch {
+        } catch (error) {
           usedLocalFallback = true;
+          apiErrorMessage = error instanceof Error ? error.message : 'Service IA indisponible.';
           try {
             answer = generateSmartLocalBusinessResponse(
               promptText,
@@ -454,7 +427,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       }
 
       const content = usedLocalFallback && badges.length === 0
-        ? `**Mode local :** le service IA en ligne est indisponible ou n’a pas répondu à temps. Je réponds avec les données et fonctions disponibles sur cet appareil ; les questions générales peuvent être limitées.\n\n${answer}`
+        ? `**Mode local — API en ligne non utilisée :** ${apiErrorMessage || 'les questions générales peuvent être limitées sans connexion ou clé API.'} Je réponds avec les données et fonctions disponibles sur cet appareil.\n\n${answer}`
         : answer;
       const aiMsgId = `ai-${Date.now()}`;
       appendConversationMessage(conversationId, {
@@ -598,8 +571,8 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
             </h2>
             <p className="mt-1.5 max-w-lg text-xs leading-relaxed text-slate-500 @md:text-sm">
               Je peux consulter les données de votre boutique enregistrées sur cet appareil.
-              Les actions simples fonctionnent localement ; les réponses générales
-              peuvent nécessiter une connexion à un service IA externe gratuit.
+              Les actions simples fonctionnent localement. Pour les réponses générales,
+              configurez une clé API dans Paramètres → IA & Sécurité.
             </p>
 
             <div className="mt-7 grid w-full grid-cols-1 gap-3 text-left @sm:grid-cols-2">

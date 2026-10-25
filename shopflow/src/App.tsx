@@ -114,6 +114,15 @@ const sanitizeLegacySettings = (saved: Partial<ShopSettings>): ShopSettings => {
       Object.assign(merged, { [settingKey]: INITIAL_SETTINGS[settingKey] });
     }
   }
+  // Migrate the former empty OpenAI default so new installs land on the documented Gemini preset.
+  if (
+    !merged.customAiApiKey &&
+    merged.customAiEndpoint === 'https://api.openai.com/v1/chat/completions' &&
+    merged.customAiModel === 'gpt-4o-mini'
+  ) {
+    merged.customAiEndpoint = INITIAL_SETTINGS.customAiEndpoint;
+    merged.customAiModel = INITIAL_SETTINGS.customAiModel;
+  }
   return merged;
 };
 
@@ -262,12 +271,19 @@ export function App() {
   // Never runs external AI call while on 'ai' tab unless language is non-French so chat has 100% priority bandwidth.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      if (settings.language !== 'fr') {
+      if (settings.language !== 'fr' && settings.customAiApiKey.trim()) {
         setIsAiTranslating(true);
       }
-      translateEntirePageDOM(appRootRef.current, settings.language, () => {
-        setIsAiTranslating(false);
-      }).finally(() => {
+      translateEntirePageDOM(
+        appRootRef.current,
+        settings.language,
+        {
+          endpoint: settings.customAiEndpoint,
+          apiKey: settings.customAiApiKey,
+          model: settings.customAiModel,
+        },
+        () => setIsAiTranslating(false)
+      ).finally(() => {
         setIsAiTranslating(false);
       });
     }, 180);
@@ -636,7 +652,7 @@ export function App() {
         format: 'shopflow-local-backup',
         version: 1,
         exportedAt: new Date().toISOString(),
-        settings,
+        settings: { ...settings, customAiApiKey: '' },
         products,
         sales,
         credits,
@@ -1072,24 +1088,24 @@ export function App() {
               isPhoneFrame ? 'sf-safe-top block' : 'sf-safe-top lg:hidden'
             }`}
           >
-            <div className="flex items-center justify-between px-3.5 py-2.5">
-              <div className="flex items-center gap-2.5">
+            <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-2.5">
+              <div className="flex min-w-0 items-center gap-2">
                 <img
                   src={SHOPFLOW_APP_LOGO}
                   alt="ShopFlow"
-                  className="h-10 w-10 shrink-0 rounded-xl object-contain ring-1 ring-slate-200/80"
+                  className="h-9 w-9 shrink-0 rounded-xl object-contain ring-1 ring-slate-200/80"
                 />
-                <div>
+                <div className="min-w-0">
                   <span className="text-sm font-black tracking-tight text-slate-900">
                     Shop<span className="text-[#0A4DFF]">Flow</span>
                   </span>
-                  <p className="max-w-[135px] truncate text-[10px] font-semibold text-slate-500">
+                  <p className="max-w-[100px] truncate text-[10px] font-semibold text-slate-500">
                     {settings.shopName}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex shrink-0 items-center gap-1">
                 {isAiTranslating && (
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-[#0A4DFF]" />
                 )}

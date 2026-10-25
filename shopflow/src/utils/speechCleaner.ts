@@ -5,7 +5,6 @@ export interface VoiceModelOption {
   name: string;
   gender: 'female' | 'male' | 'neutral';
   descriptionFr: string;
-  openAiVoice: string;
   pitch: number;
   rate: number;
 }
@@ -15,8 +14,7 @@ export const VOICE_MODELS: VoiceModelOption[] = [
     id: 'nova',
     name: 'Nova — Douce & Naturelle',
     gender: 'female',
-    descriptionFr: 'Voix féminine chaleureuse et fluide (style ChatGPT)',
-    openAiVoice: 'nova',
+    descriptionFr: 'Voix du téléphone, ton féminin et chaleureux',
     pitch: 1.06,
     rate: 1.0,
   },
@@ -24,8 +22,7 @@ export const VOICE_MODELS: VoiceModelOption[] = [
     id: 'onyx',
     name: 'Onyx — Grave & Conseiller Pro',
     gender: 'male',
-    descriptionFr: 'Voix masculine posée, claire et rassurante',
-    openAiVoice: 'onyx',
+    descriptionFr: 'Voix du téléphone, ton masculin et posé',
     pitch: 0.88,
     rate: 0.98,
   },
@@ -33,8 +30,7 @@ export const VOICE_MODELS: VoiceModelOption[] = [
     id: 'shimmer',
     name: 'Shimmer — Posée & Limpide',
     gender: 'female',
-    descriptionFr: 'Voix féminine calme, idéale pour les bilans chiffrés',
-    openAiVoice: 'shimmer',
+    descriptionFr: 'Voix du téléphone, articulation douce et lente',
     pitch: 1.12,
     rate: 0.95,
   },
@@ -42,8 +38,7 @@ export const VOICE_MODELS: VoiceModelOption[] = [
     id: 'echo',
     name: 'Echo — Dynamique & Rapide',
     gender: 'male',
-    descriptionFr: 'Voix masculine énergique pour le comptoir rapide',
-    openAiVoice: 'echo',
+    descriptionFr: 'Voix du téléphone, débit plus dynamique',
     pitch: 0.96,
     rate: 1.06,
   },
@@ -51,8 +46,7 @@ export const VOICE_MODELS: VoiceModelOption[] = [
     id: 'alloy',
     name: 'Alloy — Studio Équilibrée',
     gender: 'neutral',
-    descriptionFr: 'Voix neutre très nette et articulée',
-    openAiVoice: 'alloy',
+    descriptionFr: 'Voix du téléphone, ton neutre et régulier',
     pitch: 1.0,
     rate: 1.0,
   },
@@ -61,7 +55,6 @@ export const VOICE_MODELS: VoiceModelOption[] = [
     name: 'Système Hors-Ligne Instantané',
     gender: 'neutral',
     descriptionFr: 'Utilise directement le moteur vocal local du téléphone',
-    openAiVoice: 'alloy',
     pitch: 1.0,
     rate: 1.0,
   },
@@ -209,23 +202,13 @@ export function cleanTextForSpeech(raw: string, lang: AppLanguage): string {
   return text;
 }
 
-let activeAudioElement: HTMLAudioElement | null = null;
-
 export function stopAllSpeech(): void {
-  if (activeAudioElement) {
-    activeAudioElement.pause();
-    activeAudioElement.currentTime = 0;
-    activeAudioElement = null;
-  }
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
 }
 
-/**
- * Speaks cleaned text using either Neural OpenAI Audio (alloy/nova/onyx/shimmer/echo)
- * or calibrated local SpeechSynthesis voice matching gender + language, with instant fallback!
- */
+/** Uses the phone's built-in speech engine so voice playback remains available without a remote TTS API. */
 export async function speakCleanText(
   rawText: string,
   lang: AppLanguage,
@@ -241,74 +224,7 @@ export async function speakCleanText(
   }
 
   const profile =
-    VOICE_MODELS.find((v) => v.id === voiceModelId) || VOICE_MODELS[0];
-
-  // Try Neural Cloud Voice first unless user explicitly selected local offline engine
-  if (voiceModelId !== 'device_native') {
-    try {
-      const clipped = clean.slice(0, 750);
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5500);
-
-      const resp = await fetch('https://text.pollinations.ai/openai', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'openai-audio',
-          modalities: ['text', 'audio'],
-          audio: { voice: profile.openAiVoice, format: 'mp3' },
-          messages: [
-            {
-              role: 'system',
-              content:
-                'Read the exact user text naturally, warmly, and clearly without adding or changing a single word.',
-            },
-            { role: 'user', content: clipped },
-          ],
-        }),
-      });
-      clearTimeout(timeout);
-
-      if (resp.ok) {
-        const ct = resp.headers.get('content-type') || '';
-        if (ct.includes('audio/')) {
-          const blob = await resp.blob();
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          activeAudioElement = audio;
-          audio.onended = () => {
-            URL.revokeObjectURL(url);
-            activeAudioElement = null;
-            onEnd?.();
-          };
-          audio.onerror = () => {
-            URL.revokeObjectURL(url);
-            activeAudioElement = null;
-            speakWithNativeBrowserVoice(clean, lang, profile, onEnd);
-          };
-          await audio.play();
-          return;
-        } else if (ct.includes('application/json')) {
-          const data = await resp.json();
-          const b64Audio = data?.choices?.[0]?.message?.audio?.data;
-          if (b64Audio) {
-            const audio = new Audio(`data:audio/mp3;base64,${b64Audio}`);
-            activeAudioElement = audio;
-            audio.onended = () => {
-              activeAudioElement = null;
-              onEnd?.();
-            };
-            await audio.play();
-            return;
-          }
-        }
-      }
-    } catch {
-      // Smoothly fallback to calibrated native voice below
-    }
-  }
-
+    VOICE_MODELS.find((voice) => voice.id === voiceModelId) || VOICE_MODELS[0];
   speakWithNativeBrowserVoice(clean, lang, profile, onEnd);
 }
 

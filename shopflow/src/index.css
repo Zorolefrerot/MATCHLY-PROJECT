@@ -343,3 +343,65 @@
     min-height: calc(100dvh - 9.5rem);
   }
 }
+
+/* iOS/PWA viewport and narrow-screen safeguards. */
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  margin: 0;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+#shopflow-theme-root {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
+}
+.sf-app-main,
+.sf-app-main > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.sf-chatgpt-prose {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sf-chatgpt-prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+}
+.sf-chatgpt-prose pre,
+.sf-chatgpt-prose .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 639px) {
+  #shopflow-theme-root input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  #shopflow-theme-root textarea,
+  #shopflow-theme-root select {
+    font-size: 16px !important;
+  }
+  .sf-app-main {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  .sf-ai-view {
+    border-radius: 1rem;
+  }
+  .sf-chatgpt-prose {
+    font-size: 0.875rem;
+  }
+}

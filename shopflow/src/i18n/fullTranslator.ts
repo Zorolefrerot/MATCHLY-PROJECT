@@ -1,4 +1,5 @@
 import { AppLanguage } from '../types';
+import { ChatApiConfig, requestChatCompletion } from '../utils/aiApi';
 
 /**
  * Comprehensive multi-language dictionary covering 100% of UI texts, default products,
@@ -366,6 +367,7 @@ export function translateStringSync(text: string, lang: AppLanguage): string {
 export async function translateEntirePageDOM(
   rootEl: HTMLElement | null,
   lang: AppLanguage,
+  aiConfig: ChatApiConfig,
   onBatchComplete?: () => void
 ): Promise<void> {
   if (!rootEl) return;
@@ -462,7 +464,7 @@ export async function translateEntirePageDOM(
     }
   });
 
-  if (lang === 'fr' || missingTexts.size === 0) return;
+  if (lang === 'fr' || missingTexts.size === 0 || !aiConfig.apiKey.trim()) return;
 
   // Call Real Cloud AI in parallel JSON chunks so 100% of every word on screen translates completely!
   const targetLangName: Record<Exclude<AppLanguage, 'fr'>, string> = {
@@ -483,36 +485,17 @@ export async function translateEntirePageDOM(
 
     await Promise.all(
       chunks.map(async (sourceArray) => {
-        const resp = await fetch('https://text.pollinations.ai/openai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'openai',
-            temperature: 0.2,
-            messages: [
-              {
-                role: 'system',
-                content: `Translate every string in the user's JSON array into ${targetLangName[lang]}. Keep numbers, currency codes (FC, CDF, USD, $), brand names (ShopFlow, WhatsApp, M-Pesa, Visa, Mastercard), and emojis intact. Return ONLY a raw JSON array of strings of the exact same length and order, with no markdown code fences.`,
-              },
-              {
-                role: 'user',
-                content: JSON.stringify(sourceArray),
-              },
-            ],
-          }),
-        });
-
-        if (!resp.ok) return;
-        const rawResp = await resp.text();
-        let jsonText = rawResp.trim();
-        try {
-          const maybeEnvelope = JSON.parse(rawResp);
-          if (maybeEnvelope?.choices?.[0]?.message?.content) {
-            jsonText = maybeEnvelope.choices[0].message.content.trim();
-          }
-        } catch {
-          // rawResp is already content text
-        }
+        const jsonText = await requestChatCompletion(
+          aiConfig,
+          [
+            {
+              role: 'system',
+              content: `Translate every string in the user's JSON array into ${targetLangName[lang]}. Keep numbers, currency codes (FC, CDF, USD, $), brand names (ShopFlow, WhatsApp, M-Pesa, Visa, Mastercard), and emojis intact. Return ONLY a raw JSON array of strings of the exact same length and order, with no markdown code fences.`,
+            },
+            { role: 'user', content: JSON.stringify(sourceArray) },
+          ],
+          { timeoutMs: 25_000, maxTokens: 1800 }
+        );
 
         const arrayMatch = jsonText.match(/\[[\s\S]*\]/);
         if (!arrayMatch) return;
