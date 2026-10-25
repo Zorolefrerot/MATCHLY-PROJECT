@@ -18,6 +18,7 @@ import {
   fromDisplayAmount,
   toDisplayAmount,
 } from '../utils/currency';
+import { parseSaleDate } from '../utils/saleDate';
 
 interface InventoryViewProps {
   settings: ShopSettings;
@@ -55,8 +56,8 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const [name, setName] = useState('');
   const [category, setCategory] = useState<Product['category']>('Alimentation');
   const [unit, setUnit] = useState('Pièce');
-  const [image, setImage] = useState(PRESET_PRODUCT_PHOTOS[0].url);
-  const [stockInput, setStockInput] = useState('10');
+  const [image, setImage] = useState('');
+  const [stockInput, setStockInput] = useState('0');
   const [minStockInput, setMinStockInput] = useState('5');
   const [purchaseInput, setPurchaseInput] = useState('');
   const [sellingInput, setSellingInput] = useState('');
@@ -67,12 +68,12 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     setEditingProduct(null);
     setName('');
     setCategory('Alimentation');
-    setUnit('Sac');
-    setImage(PRESET_PRODUCT_PHOTOS[0].url);
-    setStockInput('12');
+    setUnit('Pièce');
+    setImage('');
+    setStockInput('0');
     setMinStockInput('5');
-    setPurchaseInput(settings.currency === 'FC' ? '20000' : '7.5');
-    setSellingInput(settings.currency === 'FC' ? '25000' : '9.5');
+    setPurchaseInput('');
+    setSellingInput('');
     setIsModalOpen(true);
   };
 
@@ -160,7 +161,16 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
 
   // Compute daily stats per product
   const getProductDailyStats = (productId: string) => {
-    const matching = sales.filter((s) => s.productId === productId);
+    const today = new Date();
+    const matching = sales.filter((sale) => {
+      const date = parseSaleDate(sale.timestamp);
+      return Boolean(
+        sale.productId === productId && date &&
+        date.getFullYear() === today.getFullYear() &&
+        date.getMonth() === today.getMonth() &&
+        date.getDate() === today.getDate()
+      );
+    });
     return {
       qtySold: matching.reduce((s, r) => s + r.quantity, 0),
       caFC: matching.reduce((s, r) => s + r.totalRevenueFC, 0),
@@ -287,11 +297,17 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     <tr key={prod.id} className="hover:bg-slate-50/80">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={prod.image}
-                            alt={prod.name}
-                            className="h-11 w-11 shrink-0 rounded-xl object-cover ring-1 ring-slate-200"
-                          />
+                          {prod.image ? (
+                            <img
+                              src={prod.image}
+                              alt={prod.name}
+                              className="h-11 w-11 shrink-0 rounded-xl object-cover ring-1 ring-slate-200"
+                            />
+                          ) : (
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+                              <ImagePlus className="h-5 w-5" />
+                            </div>
+                          )}
                           <div>
                             <p className="font-bold text-slate-900">{prod.name}</p>
                             <p className="text-[11px] text-slate-400">
@@ -387,11 +403,17 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
               >
                 <div>
                   <div className="relative h-40 bg-slate-100">
-                    <img
-                      src={prod.image}
-                      alt={prod.name}
-                      className="h-full w-full object-cover"
-                    />
+                    {prod.image ? (
+                      <img
+                        src={prod.image}
+                        alt={prod.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-slate-300">
+                        <ImagePlus className="h-10 w-10" />
+                      </div>
+                    )}
                     <span
                       className={`absolute top-2.5 left-2.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
                         isLow
@@ -488,11 +510,18 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                   Photo de la marchandise
                 </label>
                 <div className="flex items-center gap-4">
-                  <img
-                    src={image}
-                    alt="Aperçu"
-                    className="h-20 w-20 shrink-0 rounded-2xl border border-slate-200 object-cover"
-                  />
+                  {image ? (
+                    <img
+                      src={image}
+                      alt="Aperçu de l’article"
+                      className="h-20 w-20 shrink-0 rounded-2xl border border-slate-200 object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-[10px] font-semibold text-slate-400">
+                      <ImagePlus className="h-5 w-5" />
+                      Sans photo
+                    </div>
+                  )}
                   <div className="flex-1 space-y-2">
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 font-bold text-slate-700 transition hover:bg-slate-100">
                       <Upload className="h-4 w-4 text-emerald-600" />

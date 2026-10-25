@@ -23,7 +23,7 @@ import {
   SaleRecord,
   ShopSettings,
 } from '../types';
-import { WEEKLY_HISTORY_DAYS } from '../data/initialData';
+import { parseSaleDate, formatSaleTime } from '../utils/saleDate';
 import { TRANSLATIONS } from '../i18n/translations';
 import { formatMoney } from '../utils/currency';
 
@@ -37,7 +37,6 @@ interface DashboardViewProps {
   onQuickSellProduct: (product: Product) => void;
   onRestockProduct: (product: Product) => void;
   onOpenDailyWhatsApp: () => void;
-  onOpenSampleReceipt: () => void;
   onOpenScanner: () => void;
 }
 
@@ -51,17 +50,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onQuickSellProduct,
   onRestockProduct,
   onOpenDailyWhatsApp,
-  onOpenSampleReceipt,
   onOpenScanner,
 }) => {
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(6); // Today by default
 
-  const totalCA = sales.reduce((acc, s) => acc + s.totalRevenueFC, 0);
-  const totalPurchaseCost = sales.reduce((acc, s) => acc + s.totalCostFC, 0);
+  const today = new Date();
+  const isToday = (timestamp: string) => {
+    const date = parseSaleDate(timestamp);
+    return Boolean(date && date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate());
+  };
+  const todaySales = sales.filter((sale) => isToday(sale.timestamp));
+  const todayExpenses = expenses.filter((expense) => isToday(expense.timestamp));
+  const totalCA = todaySales.reduce((acc, s) => acc + s.totalRevenueFC, 0);
+  const totalPurchaseCost = todaySales.reduce((acc, s) => acc + s.totalCostFC, 0);
   const grossMargin = totalCA - totalPurchaseCost;
-  const totalExpenses = expenses.reduce((acc, e) => acc + e.amountFC, 0);
+  const totalExpenses = todayExpenses.reduce((acc, e) => acc + e.amountFC, 0);
   const realNetRevenue = grossMargin - totalExpenses;
-  const totalUnitsSold = sales.reduce((acc, s) => acc + s.quantity, 0);
+  const totalUnitsSold = todaySales.reduce((acc, s) => acc + s.quantity, 0);
   const totalCreditsUnpaid = credits.reduce(
     (acc, c) => acc + Math.max(0, c.totalAmountFC - c.paidAmountFC),
     0
@@ -69,14 +74,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const lowStockProducts = products.filter((p) => p.stock <= p.minStockAlert);
 
-  const chartDays = [
-    ...WEEKLY_HISTORY_DAYS,
-    {
-      day: "Auj.",
-      caFC: totalCA,
-      netProfitFC: Math.max(0, realNetRevenue),
-    },
-  ];
+  const chartDays = Array.from({ length: 7 }, (_, idx) => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - (6 - idx));
+    const daySales = sales.filter((sale) => {
+      const saleDate = parseSaleDate(sale.timestamp);
+      return Boolean(
+        saleDate &&
+          saleDate.getFullYear() === date.getFullYear() &&
+          saleDate.getMonth() === date.getMonth() &&
+          saleDate.getDate() === date.getDate()
+      );
+    });
+    return {
+      day: idx === 6 ? 'Auj.' : new Intl.DateTimeFormat('fr-CD', { weekday: 'short' }).format(date).replace('.', ''),
+      caFC: daySales.reduce((sum, sale) => sum + sale.totalRevenueFC, 0),
+      // SaleRecord.netProfitFC is the margin after purchase cost; it does not include dated expenses.
+      netProfitFC: daySales.reduce((sum, sale) => sum + sale.netProfitFC, 0),
+    };
+  });
+  const hasWeekSales = chartDays.some((day) => day.caFC > 0);
   const maxCA = Math.max(...chartDays.map((d) => d.caFC), 100000);
   const activeDay = chartDays[selectedDayIdx] || chartDays[chartDays.length - 1];
 
@@ -119,14 +137,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={onOpenSampleReceipt}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-xs font-extrabold text-[#081844] transition hover:bg-blue-100"
-          >
-            <Receipt className="h-4 w-4 text-[#0A4DFF]" />
-            <span>Modèle Reçu WhatsApp</span>
-          </button>
-
           <button
             onClick={onOpenScanner}
             className="inline-flex items-center gap-1.5 rounded-xl bg-[#081844] px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800"
@@ -235,7 +245,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {fmt(totalCA)}
           </div>
           <p className="mt-1.5 text-xs text-slate-500">
-            <strong className="font-semibold text-slate-700">{totalUnitsSold} articles</strong> vendus en {sales.length} ventes aujourd’hui
+            <strong className="font-semibold text-slate-700">{totalUnitsSold} articles</strong> vendus en {todaySales.length} ventes aujourd’hui
           </p>
         </div>
 
@@ -274,7 +284,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             onClick={() => onNavigate('expenses')}
             className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:underline"
           >
-            <span>{expenses.length} charges enregistrées</span>
+            <span>{todayExpenses.length} charges enregistrées aujourd’hui</span>
             <ArrowRight className="h-3 w-3" />
           </button>
         </div>
@@ -327,7 +337,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div
             style={{ width: `${profitRatio}%` }}
             className="bg-emerald-500 transition-all duration-300"
-            title="Revenu / Bénéfice Net"
+            title="Marge sur ventes (avant frais)"
           />
         </div>
 
@@ -365,7 +375,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-base font-bold text-slate-900">
-                Évolution de la semaine (CA vs Revenu Net)
+                Évolution de la semaine (CA et marge sur ventes)
               </h2>
               <p className="text-xs text-slate-500">
                 Touchez un jour pour voir le détail exact
@@ -378,19 +388,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
               <span className="mx-1.5 text-slate-300">|</span>
               <span className="font-bold text-emerald-600 tabular-nums">
-                Gain +{fmt(activeDay.netProfitFC)}
+                Marge +{fmt(activeDay.netProfitFC)}
               </span>
             </div>
           </div>
 
-          {/* Interactive Bar Chart */}
+          {/* Interactive chart uses only recorded sales; no demo bars are shown. */}
+          {!hasWeekSales && (
+            <p className="mt-5 rounded-xl bg-slate-50 px-3 py-2 text-center text-xs text-slate-500">
+              Vos ventes apparaîtront ici après votre première transaction.
+            </p>
+          )}
           <div className="mt-6 grid h-48 grid-cols-7 items-end gap-2.5 pt-4">
             {chartDays.map((item, idx) => {
-              const caHeightPct = Math.max(14, Math.round((item.caFC / maxCA) * 100));
-              const profitHeightPct = Math.max(
-                8,
-                Math.round((item.netProfitFC / maxCA) * 100)
-              );
+              const caHeightPct = hasWeekSales ? Math.max(14, Math.round((item.caFC / maxCA) * 100)) : 0;
+              const profitHeightPct = hasWeekSales
+                ? Math.max(8, Math.round((item.netProfitFC / maxCA) * 100))
+                : 0;
               const isSelected = idx === selectedDayIdx;
               const isToday = idx === chartDays.length - 1;
 
@@ -440,7 +454,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
             <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-xs bg-emerald-500" />
-              Revenu / Bénéfice Net
+              Marge sur ventes (avant frais)
             </span>
           </div>
         </div>

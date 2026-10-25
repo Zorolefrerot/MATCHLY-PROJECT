@@ -15,7 +15,6 @@ import {
   Package,
   PackagePlus,
   Palette,
-  ReceiptText,
   Settings,
   ShoppingBag,
   Smartphone,
@@ -24,6 +23,7 @@ import {
   X,
 } from 'lucide-react';
 import { AiAssistantView, AiStoreAction } from './components/AiAssistantView';
+import { FirstRunOnboarding } from './components/FirstRunOnboarding';
 import {
   AuthModal,
   AuthModalMode,
@@ -41,10 +41,6 @@ import { SubscriptionView } from './components/SubscriptionView';
 import { VisualReceiptModal } from './components/VisualReceiptModal';
 import { WhatsAppModal } from './components/WhatsAppModal';
 import {
-  INITIAL_CREDITS,
-  INITIAL_EXPENSES,
-  INITIAL_PRODUCTS,
-  INITIAL_SALES,
   INITIAL_SETTINGS,
   PRESET_PRODUCT_PHOTOS,
   SHOPFLOW_APP_LOGO,
@@ -68,11 +64,58 @@ import {
   ShopSettings,
   SubscriptionPlanId,
   VisualReceiptPayload,
-  VoiceModelId,
 } from './types';
 import { formatMoney } from './utils/currency';
+import { parseSaleDate } from './utils/saleDate';
 
 const STORAGE_KEY = 'shopflow_rdc_mockup_v4';
+const FIRST_RUN_TOUR_KEY = 'shopflow_first_run_tour_done_v1';
+
+const LEGACY_SAMPLE_IDS = new Set([
+  'prod-riz-25', 'prod-huile-5l', 'prod-lait-900', 'prod-semoule-10',
+  'prod-sucre-5', 'prod-oeufs-30', 'prod-savon-pack', 'prod-jus-pack',
+  'sale-101', 'sale-102', 'sale-103', 'sale-104',
+  'cred-1', 'cred-2', 'cred-3', 'exp-1', 'exp-2', 'exp-3',
+]);
+
+const removeLegacySampleRecords = <T extends { id?: string }>(records: unknown): T[] =>
+  Array.isArray(records)
+    ? records.filter((record): record is T => {
+        if (!record || typeof record !== 'object') return false;
+        const id = (record as { id?: unknown }).id;
+        return typeof id === 'string' && !LEGACY_SAMPLE_IDS.has(id);
+      })
+    : [];
+
+const sanitizeLegacySettings = (saved: Partial<ShopSettings>): ShopSettings => {
+  const merged: ShopSettings = {
+    ...INITIAL_SETTINGS,
+    ...saved,
+    theme: { ...INITIAL_SETTINGS.theme, ...(saved.theme || {}) },
+  };
+  const oldExampleValues: Partial<ShopSettings> = {
+    shopName: 'Alimentation Maman Grâce',
+    ownerName: 'Grâce Kabongo',
+    city: 'Kinshasa - Ngaliema',
+    whatsappNumber: '+243 81 452 90 12',
+    shopSpecialties: 'ALIMENTATION • GROS & DÉTAIL • LIVRAISON RAPIDE',
+    shopTagline: 'Votre satisfaction, notre priorité !',
+    instagramHandle: '@maman_grace_market',
+    businessActivity: 'Importation & Distribution Alimentaire',
+    defaultDeliveryFeeFC: 2000,
+    deliveryDelayText: 'Livraison le jour même (1h à 24h)',
+    returnPolicyText: 'Aucun retour accepté sauf produit défectueux. Merci de bien conserver ce reçu.',
+    receiptFooterSubtitle: 'Plus qu’une boutique, une famille à votre service !',
+    receiptQuote: '« La qualité au meilleur prix chaque jour pour nourrir votre foyer avec confiance. »',
+  };
+  for (const [key, value] of Object.entries(oldExampleValues)) {
+    const settingKey = key as keyof ShopSettings;
+    if (merged[settingKey] === value) {
+      Object.assign(merged, { [settingKey]: INITIAL_SETTINGS[settingKey] });
+    }
+  }
+  return merged;
+};
 
 export function App() {
   const appRootRef = useRef<HTMLDivElement | null>(null);
@@ -102,10 +145,13 @@ export function App() {
     useState<PreviewViewport>('hybrid');
 
   const [settings, setSettings] = useState<ShopSettings>(INITIAL_SETTINGS);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [sales, setSales] = useState<SaleRecord[]>(INITIAL_SALES);
-  const [credits, setCredits] = useState<CreditEntry[]>(INITIAL_CREDITS);
-  const [expenses, setExpenses] = useState<ExpenseEntry[]>(INITIAL_EXPENSES);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [sales, setSales] = useState<SaleRecord[]>([]);
+  const [credits, setCredits] = useState<CreditEntry[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
+  const [showStartupSplash, setShowStartupSplash] = useState(isInstalledApp);
+  const [showFirstRunTour, setShowFirstRunTour] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
 
   const [isAiTranslating, setIsAiTranslating] = useState(false);
 
@@ -148,25 +194,45 @@ export function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.settings) {
-          setSettings({
-            ...INITIAL_SETTINGS,
-            ...parsed.settings,
-            theme: {
-              ...INITIAL_SETTINGS.theme,
-              ...(parsed.settings.theme || {}),
-            },
-          });
+        if (parsed.settings && typeof parsed.settings === 'object') {
+          setSettings(sanitizeLegacySettings(parsed.settings));
         }
-        if (parsed.products) setProducts(parsed.products);
-        if (parsed.sales) setSales(parsed.sales);
-        if (parsed.credits) setCredits(parsed.credits);
-        if (parsed.expenses) setExpenses(parsed.expenses);
+        // Strip only the old bundled examples; preserve every record created by the merchant.
+        setProducts(removeLegacySampleRecords<Product>(parsed.products));
+        setSales(removeLegacySampleRecords<SaleRecord>(parsed.sales));
+        setCredits(removeLegacySampleRecords<CreditEntry>(parsed.credits));
+        setExpenses(removeLegacySampleRecords<ExpenseEntry>(parsed.expenses));
       }
     } catch {
       // Ignore storage errors
     }
   }, []);
+
+  useEffect(() => {
+    if (!isInstalledApp) return;
+    const timer = window.setTimeout(() => {
+      setShowStartupSplash(false);
+      try {
+        if (localStorage.getItem(FIRST_RUN_TOUR_KEY) !== 'done') setShowFirstRunTour(true);
+      } catch {
+        setShowFirstRunTour(true);
+      }
+    }, 1100);
+    return () => window.clearTimeout(timer);
+  }, [isInstalledApp]);
+
+  const finishFirstRunTour = (configureShop: boolean) => {
+    try {
+      localStorage.setItem(FIRST_RUN_TOUR_KEY, 'done');
+    } catch {
+      // The tutorial can still be dismissed if storage is unavailable.
+    }
+    setShowFirstRunTour(false);
+    setOnboardingStep(0);
+    if (configureShop) {
+      setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' });
+    }
+  };
 
   useEffect(() => {
     try {
@@ -230,12 +296,10 @@ export function App() {
       activePlan: payload.selectedPlan,
       planPaid: false,
     }));
-    if (payload.startEmptyCatalog) {
-      setProducts([]);
-      setSales([]);
-      setCredits([]);
-      setExpenses([]);
-    }
+    setProducts([]);
+    setSales([]);
+    setCredits([]);
+    setExpenses([]);
     setIsVendorLocked(false);
     setAuthModalConfig(null);
     setActiveTab('dashboard');
@@ -290,7 +354,7 @@ export function App() {
   const localizedProducts = products.map((p) => ({
     ...p,
     name: translateStringSync(p.name, settings.language),
-    image: p.image.startsWith('data:') ? p.image : sfAsset(p.image),
+    image: p.image ? (p.image.startsWith('data:') ? p.image : sfAsset(p.image)) : '',
   }));
 
   const localizedSales = sales.map((s) => ({
@@ -318,35 +382,6 @@ export function App() {
     ).padStart(2, '0')}`;
   };
 
-  const openSampleGraphicalReceipt = () => {
-    const sampleItems = localizedProducts.slice(0, 4).map((p, i) => ({
-      id: p.id,
-      refCode: p.refCode || `SF-00${i + 1}`,
-      name: p.name,
-      subtitle: p.unit,
-      image: p.image,
-      quantity: i === 2 ? 2 : 1,
-      unitPriceFC: p.sellingPriceFC,
-    }));
-
-    const now = new Date();
-    const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(
-      now.getMonth() + 1
-    ).padStart(2, '0')}/${now.getFullYear()}  ${nowTime()}`;
-
-    setVisualReceipt({
-      invoiceNumber: '#2026-0427',
-      dateTime: dateStr,
-      customerName: 'KABASELE Merdi',
-      customerPhone: '+243 97 123 4567',
-      customerAddress: 'Kinshasa - Mont-Ngafula',
-      paymentMethodLabel: 'Mobile Money (M-Pesa / Vodacom)',
-      paymentReference: '8F7A-3D9B-6C1E',
-      isPaid: true,
-      items: sampleItems,
-      deliveryFeeFC: settings.defaultDeliveryFeeFC,
-    });
-  };
 
   const handleDirectSellQuantity = (
     product: Product,
@@ -378,7 +413,7 @@ export function App() {
       netProfitFC: unitProfit * qty,
       paymentMethod: method,
       customerName: label,
-      timestamp: nowTime(),
+      timestamp: new Date().toISOString(),
     };
 
     setSales((prev) => [newSale, ...prev]);
@@ -433,7 +468,7 @@ export function App() {
             label: act.label || 'Charge IA',
             category: 'Autre',
             amountFC: act.amountFC!,
-            timestamp: nowTime(),
+            timestamp: new Date().toISOString(),
           },
           ...prev,
         ]);
@@ -470,7 +505,7 @@ export function App() {
       customerPhone,
       customerAddress,
       deliveryFeeFC,
-      timestamp: time,
+      timestamp: new Date().toISOString(),
     }));
 
     setProducts((prev) =>
@@ -552,17 +587,24 @@ export function App() {
   };
 
   const handleOpenDailyWhatsApp = () => {
-    const totalCA = sales.reduce((a, s) => a + s.totalRevenueFC, 0);
-    const totalCost = sales.reduce((a, s) => a + s.totalCostFC, 0);
-    const totalExp = expenses.reduce((a, e) => a + e.amountFC, 0);
+    const today = new Date();
+    const isToday = (timestamp: string) => {
+      const date = parseSaleDate(timestamp);
+      return Boolean(date && date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate());
+    };
+    const todaySales = sales.filter((sale) => isToday(sale.timestamp));
+    const todayExpenses = expenses.filter((expense) => isToday(expense.timestamp));
+    const totalCA = todaySales.reduce((a, s) => a + s.totalRevenueFC, 0);
+    const totalCost = todaySales.reduce((a, s) => a + s.totalCostFC, 0);
+    const totalExp = todayExpenses.reduce((a, e) => a + e.amountFC, 0);
     const netRev = totalCA - totalCost - totalExp;
-    const totalQty = sales.reduce((a, s) => a + s.quantity, 0);
+    const totalQty = todaySales.reduce((a, s) => a + s.quantity, 0);
 
     const msg =
       `📊 *BILAN JOURNALIER — ${settings.shopName.toUpperCase()}*\n` +
       `📍 ${settings.city}\n` +
       `--------------------------\n` +
-      `🛍️ Articles vendus : *${totalQty} unités* (${sales.length} ventes)\n` +
+      `🛍️ Articles vendus : *${totalQty} unités* (${todaySales.length} ventes)\n` +
       `💰 Chiffre d’Affaires (CA) : *${fmt(totalCA)}*\n` +
       `📦 Coût d’achat marchandise : *${fmt(totalCost)}*\n` +
       `🧾 Dépenses boutique : *${fmt(totalExp)}*\n` +
@@ -588,8 +630,86 @@ export function App() {
     showToast(`Abonnement activé (${methodLabel}) !`);
   };
 
+  const handleExportBackup = () => {
+    try {
+      const backup = {
+        format: 'shopflow-local-backup',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        settings,
+        products,
+        sales,
+        credits,
+        expenses,
+        aiConversation: localStorage.getItem('shopflow_ai_conversation_v1'),
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `shopflow-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast('Sauvegarde complète téléchargée sur cet appareil.');
+    } catch {
+      showToast('Impossible de créer la sauvegarde. Vérifiez l’espace disponible.');
+    }
+  };
+
+  const handleImportBackup = async (file: File) => {
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      if (!parsed || typeof parsed !== 'object') throw new Error('invalid backup');
+      const backup = parsed as Record<string, unknown>;
+      const isRecordArray = (value: unknown, shape: Record<string, 'string' | 'number'>) =>
+        Array.isArray(value) && value.every((item) =>
+          Boolean(
+            item && typeof item === 'object' &&
+            Object.entries(shape).every(([key, type]) => typeof (item as Record<string, unknown>)[key] === type)
+          )
+        );
+      const importedSettings = backup.settings as Record<string, unknown> | undefined;
+      if (
+        !importedSettings || Array.isArray(importedSettings) ||
+        typeof importedSettings.shopName !== 'string' ||
+        typeof importedSettings.ownerName !== 'string' ||
+        (importedSettings.currency !== 'FC' && importedSettings.currency !== 'USD') ||
+        !isRecordArray(backup.products, { id: 'string', name: 'string', unit: 'string', image: 'string', stock: 'number', minStockAlert: 'number', purchasePriceFC: 'number', sellingPriceFC: 'number' }) ||
+        !isRecordArray(backup.sales, { id: 'string', productId: 'string', productName: 'string', productImage: 'string', timestamp: 'string', quantity: 'number', totalRevenueFC: 'number', totalCostFC: 'number', netProfitFC: 'number' }) ||
+        !isRecordArray(backup.credits, { id: 'string', customerName: 'string', phone: 'string', itemsSummary: 'string', createdAt: 'string', dueDate: 'string', totalAmountFC: 'number', paidAmountFC: 'number' }) ||
+        !isRecordArray(backup.expenses, { id: 'string', label: 'string', category: 'string', timestamp: 'string', amountFC: 'number' })
+      ) {
+        throw new Error('backup missing required data');
+      }
+      if (!window.confirm('Remplacer les données actuelles par cette sauvegarde ? Cette action ne peut pas être annulée.')) return;
+
+      setSettings(sanitizeLegacySettings(backup.settings as ShopSettings));
+      setProducts(removeLegacySampleRecords<Product>(backup.products));
+      setSales(removeLegacySampleRecords<SaleRecord>(backup.sales));
+      setCredits(removeLegacySampleRecords<CreditEntry>(backup.credits));
+      setExpenses(removeLegacySampleRecords<ExpenseEntry>(backup.expenses));
+      try {
+        localStorage.removeItem('shopflow_ai_conversation_v1');
+        if (typeof backup.aiConversation === 'string') {
+          JSON.parse(backup.aiConversation);
+          localStorage.setItem('shopflow_ai_conversation_v1', backup.aiConversation);
+        }
+      } catch {
+        // Keep the restored shop data even if local chat storage is unavailable.
+      }
+      setActiveTab('dashboard');
+      showToast('Sauvegarde restaurée. Les données restent enregistrées localement.');
+    } catch {
+      showToast('Fichier invalide : sélectionnez une sauvegarde ShopFlow complète.');
+    }
+  };
+
   const handleResetDemo = () => {
+    if (!window.confirm('Effacer les données de cette boutique sur cet appareil ? Cette action est définitive.')) return;
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('shopflow_ai_conversation_v1');
     for (let index = localStorage.length - 1; index >= 0; index -= 1) {
       const key = localStorage.key(index);
       if (key?.startsWith('shopflow_ai_conversations_v1:')) {
@@ -597,11 +717,11 @@ export function App() {
       }
     }
     setSettings(INITIAL_SETTINGS);
-    setProducts(INITIAL_PRODUCTS);
-    setSales(INITIAL_SALES);
-    setCredits(INITIAL_CREDITS);
-    setExpenses(INITIAL_EXPENSES);
-    showToast('Données de démonstration réinitialisées !');
+    setProducts([]);
+    setSales([]);
+    setCredits([]);
+    setExpenses([]);
+    showToast('Les données locales ont été effacées. Votre boutique est vide.');
   };
 
   const unpaidCreditsCount = credits.filter(
@@ -755,13 +875,6 @@ export function App() {
           >
             <Palette className="h-3.5 w-3.5" />
             <span>Thème</span>
-          </button>
-          <button
-            onClick={openSampleGraphicalReceipt}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1 font-bold text-white transition hover:opacity-90"
-          >
-            <ReceiptText className="h-3.5 w-3.5" />
-            <span>Reçu WhatsApp</span>
           </button>
           <button
             onClick={() => setPreviewViewport('hybrid')}
@@ -1032,12 +1145,6 @@ export function App() {
                 </button>
               )}
               <button
-                onClick={openSampleGraphicalReceipt}
-                className="shrink-0 rounded-full bg-[#081844] px-3 py-1 font-bold text-white"
-              >
-                🧾 Reçu WhatsApp
-              </button>
-              <button
                 onClick={() => setIsScannerOpen(true)}
                 className="shrink-0 rounded-full bg-emerald-600 px-3 py-1 font-bold text-white"
               >
@@ -1098,7 +1205,6 @@ export function App() {
                   setRestockQtyInput('10');
                 }}
                 onOpenDailyWhatsApp={handleOpenDailyWhatsApp}
-                onOpenSampleReceipt={openSampleGraphicalReceipt}
                 onOpenScanner={() => setIsScannerOpen(true)}
               />
             )}
@@ -1139,15 +1245,8 @@ export function App() {
                 expenses={expenses}
                 credits={credits}
                 onExecuteAiActions={handleExecuteAiActions}
-                onUpdateVoiceSettings={(
-                  voiceModel: VoiceModelId,
-                  autoSpeak: boolean
-                ) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    voiceModel,
-                    autoSpeakAi: autoSpeak,
-                  }))
+                onUpdateVoiceSettings={(autoSpeak: boolean) =>
+                  setSettings((prev) => ({ ...prev, autoSpeakAi: autoSpeak }))
                 }
               />
             )}
@@ -1254,7 +1353,8 @@ export function App() {
                   showToast('Dépense retirée');
                 }}
                 onUpdateSettings={setSettings}
-                onPreviewSampleReceipt={openSampleGraphicalReceipt}
+                onExportBackup={handleExportBackup}
+                onImportBackup={handleImportBackup}
                 onResetDemo={handleResetDemo}
                 onActivateVendorLock={handleActivateVendorMode}
               />
@@ -1383,7 +1483,7 @@ export function App() {
                     netProfitFC: prod.sellingPriceFC - prod.purchasePriceFC,
                     paymentMethod: 'cash',
                     customerName: 'Scan Photo',
-                    timestamp: nowTime(),
+                    timestamp: new Date().toISOString(),
                   },
                   ...prev,
                 ]);
@@ -1477,6 +1577,25 @@ export function App() {
           recipientLabel={whatsAppModal.recipient}
           message={whatsAppModal.message}
           onClose={() => setWhatsAppModal(null)}
+        />
+      )}
+
+      {screenMode === 'app' && showStartupSplash && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-white" aria-label="Ouverture de ShopFlow">
+          <div className="flex flex-col items-center" style={{ animation: 'sf-logo-pop 1s cubic-bezier(.2,.8,.2,1) both' }}>
+            <div className="flex h-32 w-32 items-center justify-center rounded-[2rem] bg-white p-4 shadow-xl ring-1 ring-slate-200/80">
+              <img src={SHOPFLOW_APP_LOGO} alt="Logo ShopFlow" className="h-full w-full object-contain" />
+            </div>
+            <p className="mt-5 text-lg font-black tracking-tight text-slate-900">Shop<span className="text-[#0A4DFF]">Flow</span></p>
+          </div>
+        </div>
+      )}
+
+      {screenMode === 'app' && showFirstRunTour && !showStartupSplash && (
+        <FirstRunOnboarding
+          step={onboardingStep}
+          onStepChange={setOnboardingStep}
+          onFinish={finishFirstRunTour}
         />
       )}
 

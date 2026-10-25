@@ -4,14 +4,12 @@ import {
   Check,
   Coins,
   Download,
-  Eye,
   Globe2,
   ImagePlus,
   LayoutGrid,
   Lock,
   Moon,
   Palette,
-  Play,
   Plus,
   Receipt,
   RefreshCw,
@@ -20,7 +18,6 @@ import {
   Sun,
   Trash2,
   Upload,
-  Volume2,
 } from 'lucide-react';
 import { THEME_PRESETS } from '../data/initialData';
 import { LANGUAGE_OPTIONS } from '../i18n/translations';
@@ -34,10 +31,9 @@ import {
   FontStyleChoice,
   LayoutDensity,
   ShopSettings,
-  VoiceModelId,
 } from '../types';
 import { formatMoney, fromDisplayAmount } from '../utils/currency';
-import { speakCleanText, VOICE_MODELS } from '../utils/speechCleaner';
+import { formatSaleTime } from '../utils/saleDate';
 
 interface ExpensesSettingsViewProps {
   settings: ShopSettings;
@@ -45,7 +41,8 @@ interface ExpensesSettingsViewProps {
   onAddExpense: (expense: ExpenseEntry) => void;
   onDeleteExpense: (id: string) => void;
   onUpdateSettings: (next: ShopSettings) => void;
-  onPreviewSampleReceipt: () => void;
+  onExportBackup: () => void;
+  onImportBackup: (file: File) => void;
   onResetDemo: () => void;
   onActivateVendorLock?: () => void;
 }
@@ -87,7 +84,8 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
   onAddExpense,
   onDeleteExpense,
   onUpdateSettings,
-  onPreviewSampleReceipt,
+  onExportBackup,
+  onImportBackup,
   onResetDemo,
   onActivateVendorLock,
 }) => {
@@ -137,28 +135,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
     }
   };
 
-  const handleLoadOtakuPreset = () => {
-    onUpdateSettings({
-      ...settings,
-      shopName: 'MB_OTAKU STORE',
-      ownerName: 'KABASELE Merdi',
-      city: 'Kinshasa - Mont-Ngafula',
-      whatsappNumber: '+243 97 123 4567',
-      shopSpecialties: 'ANIME • MANGA • ACCESSOIRES • GOODIES',
-      shopTagline: 'Votre passion, notre priorité !',
-      instagramHandle: '@mb_otaku_store',
-      businessActivity: "Importation & Vente d'articles Otaku",
-      defaultDeliveryFeeFC: 2000,
-      deliveryDelayText: '2 à 5 jours',
-      returnPolicyText:
-        'Aucun retour accepté sauf produit défectueux. Merci de bien conserver ce reçu.',
-      receiptFooterSubtitle: 'Plus qu’une boutique, une communauté !',
-      receiptQuote:
-        '« Les vrais otakus ne collectionnent pas seulement des objets, ils collectionnent des émotions. »',
-      theme: THEME_PRESETS[2].config,
-    });
-    notifySaved('Profil & Thème MB_OTAKU STORE appliqués !');
-  };
+
 
   const handleCreateExpense = (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,34 +146,19 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
     );
     if (!label.trim() || amountFC <= 0) return;
 
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-
     onAddExpense({
       id: `exp-${Date.now()}`,
       label: label.trim(),
       category,
       amountFC,
-      timestamp: `${hh}:${mm}`,
+      timestamp: new Date().toISOString(),
     });
 
     setLabel('');
     setAmountInput('');
   };
 
-  const handleExportBackup = () => {
-    const blob = new Blob([JSON.stringify(settings, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `shopflow-config-${settings.shopName.replace(/\s+/g, '-')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    notifySaved('Sauvegarde téléchargée !');
-  };
+
 
   const shopInitials = settings.shopName
     .split(/\s+/)
@@ -218,7 +180,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               label: '🌍 Langues (5) & Devise',
               icon: Globe2,
             },
-            { id: 'ai_voice', label: '🎙️ Voix IA & Sécurité', icon: Volume2 },
+            { id: 'ai_voice', label: 'IA & Sécurité', icon: Bot },
             {
               id: 'expenses',
               label: `🧾 Dépenses (${expenses.length})`,
@@ -256,14 +218,6 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               {savedNotice}
             </span>
           )}
-          <button
-            type="button"
-            onClick={onPreviewSampleReceipt}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-extrabold text-white shadow-xs transition hover:opacity-90"
-          >
-            <Eye className="h-3.5 w-3.5" />
-            <span>Aperçu Reçu WhatsApp</span>
-          </button>
         </div>
       </div>
 
@@ -587,19 +541,6 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-4 text-xs">
-              <div className="flex items-center gap-1.5 font-extrabold text-slate-900">
-                <Sparkles className="h-4 w-4 text-[#0A4DFF]" />
-                <span>Exemple complet « MB_OTAKU STORE »</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleLoadOtakuPreset}
-                className="mt-3 w-full rounded-xl bg-[#081844] py-2.5 text-xs font-extrabold text-white"
-              >
-                Appliquer le profil & thème « MB_OTAKU STORE »
-              </button>
-            </div>
           </div>
 
           <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 text-xs @lg:col-span-7">
@@ -897,74 +838,10 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
       )}
 
       {/* =========================================================
-          TAB 4: VOICE MODELS STUDIO, AI ENGINE & SECURITY
+          TAB 4: AI STATUS & SECURITY
          ========================================================= */}
       {section === 'ai_voice' && (
         <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2">
-          {/* Voice Models Selector with Preview Button */}
-          <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 text-xs">
-            <div className="flex items-center gap-2.5">
-              <Volume2 className="h-5 w-5 text-[#0A4DFF]" />
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900">
-                  Modèle de Voix de ShopFlow IA
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Nettoyage vocal automatique actif : ne prononce jamais les étoiles, barres ou symboles LaTeX.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {VOICE_MODELS.map((vm) => {
-                const isSelected = settings.voiceModel === vm.id;
-                return (
-                  <div
-                    key={vm.id}
-                    className={`flex items-center justify-between gap-2 rounded-2xl border p-3 transition ${
-                      isSelected
-                        ? 'border-[#0A4DFF] bg-blue-50/40 ring-1 ring-[#0A4DFF]'
-                        : 'border-slate-200'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onUpdateSettings({ ...settings, voiceModel: vm.id });
-                        notifySaved(`Voix sélectionnée : ${vm.name}`);
-                      }}
-                      className="flex-1 text-left"
-                    >
-                      <p className="font-extrabold text-slate-900">{vm.name}</p>
-                      <p className="text-[11px] text-slate-500">
-                        {vm.descriptionFr}
-                      </p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onUpdateSettings({
-                          ...settings,
-                          voiceModel: vm.id as VoiceModelId,
-                        });
-                        speakCleanText(
-                          `Bonjour ${settings.ownerName}, voici ma voix claire sans aucun caractère spécial pour votre boutique ${settings.shopName}.`,
-                          settings.language,
-                          vm.id
-                        );
-                      }}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-slate-900 px-3 py-2 text-[11px] font-bold text-white hover:bg-[#0A4DFF]"
-                    >
-                      <Play className="h-3 w-3 fill-current" />
-                      <span>Tester</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Clear Patron / Vendor Security Lock & Backups (No confusing API keys!) */}
           <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 text-xs">
             <div className="flex items-center gap-2.5">
@@ -982,10 +859,10 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
             {/* Reassuring Automatic AI Banner */}
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-emerald-950">
               <p className="font-extrabold">
-                ✅ ShopFlow AI est 100 % automatique (aucune clé requise)
+                ShopFlow AI : service en ligne gratuit avec secours local
               </p>
               <p className="mt-1 text-[11px] leading-relaxed text-emerald-800">
-                Vous n’avez rien à configurer : l’intelligence artificielle, les calculs financiers et les voix sont directement intégrés à votre compte ShopFlow.
+                Les calculs et actions liés aux données de la boutique restent disponibles sur cet appareil. Les réponses générales peuvent utiliser un fournisseur externe gratuit ; sa disponibilité et sa qualité ne sont pas garanties. Aucun abonnement ChatGPT payant n’est requis par ShopFlow, mais une connexion peut être nécessaire pour les réponses en ligne.
               </p>
             </div>
 
@@ -1040,12 +917,27 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
             <div className="flex flex-col gap-2.5 pt-1">
               <button
                 type="button"
-                onClick={handleExportBackup}
+                onClick={onExportBackup}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-3 font-bold text-slate-800"
               >
                 <Download className="h-4 w-4 text-[#0A4DFF]" />
                 <span>Exporter la sauvegarde de ma boutique</span>
               </button>
+
+              <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 py-3 font-bold text-blue-900 hover:bg-blue-100">
+                <Upload className="h-4 w-4" />
+                <span>Importer une sauvegarde</span>
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0];
+                    if (file) onImportBackup(file);
+                    event.currentTarget.value = '';
+                  }}
+                />
+              </label>
 
               <button
                 type="button"
@@ -1053,7 +945,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50/50 py-3 font-bold text-red-700"
               >
                 <RefreshCw className="h-4 w-4" />
-                <span>Réinitialiser les données de démonstration</span>
+                <span>Effacer les données locales de la boutique</span>
               </button>
             </div>
           </div>
@@ -1131,7 +1023,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                 <div>
                   <p className="font-bold text-slate-900">{exp.label}</p>
                   <p className="text-[11px] text-slate-400">
-                    {exp.timestamp} · {exp.category}
+                    {formatSaleTime(exp.timestamp)} · {exp.category}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

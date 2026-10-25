@@ -59,7 +59,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [currency, setCurrency] = useState<CurrencyCode>(defaultCurrency);
   const [ownerPin, setOwnerPin] = useState('1234');
-  const [startEmptyCatalog, setStartEmptyCatalog] = useState(false);
+  const [startEmptyCatalog] = useState(true);
 
   // Login fields
   const [loginId, setLoginId] = useState('');
@@ -313,17 +313,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
-            <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <input
-                type="checkbox"
-                checked={startEmptyCatalog}
-                onChange={(e) => setStartEmptyCatalog(e.target.checked)}
-                className="h-4 w-4 rounded accent-[#0A4DFF]"
-              />
-              <span className="text-[11px] font-semibold text-slate-700">
-                Démarrer avec un stock 100 % vide (décochez pour garder 8 produits exemples prêts à tester)
-              </span>
-            </label>
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-[11px] font-semibold text-emerald-800">
+              Votre boutique démarrera avec un catalogue vide. Vous ajouterez vos propres articles après la création.
+            </p>
 
             <button
               type="submit"
@@ -336,7 +328,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <p className="flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-500">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              <span>Aucune carte requise aujourd’hui • Sauvegarde Cloud & Hors-Ligne</span>
+              <span>Aucune carte requise aujourd’hui • données stockées localement sur cet appareil</span>
             </p>
           </form>
         )}

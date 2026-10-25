@@ -89,6 +89,17 @@ const BarcodeSvg: React.FC<{ code: string }> = ({ code }) => {
   );
 };
 
+type ReceiptPaperSize = '58mm' | '80mm' | 'A4';
+
+const getSavedPaperSize = (): ReceiptPaperSize => {
+  try {
+    const saved = localStorage.getItem('shopflow_receipt_paper_size_v1');
+    return saved === '58mm' || saved === '80mm' || saved === 'A4' ? saved : '80mm';
+  } catch {
+    return '80mm';
+  }
+};
+
 export const VisualReceiptModal: React.FC<VisualReceiptModalProps> = ({
   settings,
   receipt,
@@ -104,6 +115,7 @@ export const VisualReceiptModal: React.FC<VisualReceiptModalProps> = ({
   );
   const [deliveryFeeFC, setDeliveryFeeFC] = useState(receipt.deliveryFeeFC);
   const [showQuickEdit, setShowQuickEdit] = useState(false);
+  const [paperSize, setPaperSize] = useState<ReceiptPaperSize>(getSavedPaperSize);
 
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -218,7 +230,24 @@ export const VisualReceiptModal: React.FC<VisualReceiptModalProps> = ({
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-start overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-xs md:p-6">
       {/* Top Action Toolbar */}
       <div className="sticky top-0 z-20 mb-3 flex w-full max-w-[700px] flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-700 bg-slate-900/95 px-4 py-3 text-white shadow-xl backdrop-blur-md">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-2.5 py-2 text-[11px] font-bold text-slate-200">
+            Papier
+            <select
+              aria-label="Format du papier du reçu"
+              value={paperSize}
+              onChange={(event) => {
+                const size = event.target.value as ReceiptPaperSize;
+                setPaperSize(size);
+                try { localStorage.setItem('shopflow_receipt_paper_size_v1', size); } catch { /* Keep the current choice for this receipt. */ }
+              }}
+              className="max-w-24 bg-transparent text-white outline-none"
+            >
+              <option value="58mm" className="text-slate-900">Rouleau 58 mm</option>
+              <option value="80mm" className="text-slate-900">Rouleau 80 mm</option>
+              <option value="A4" className="text-slate-900">A4</option>
+            </select>
+          </label>
           <button
             type="button"
             onClick={() => setShowQuickEdit((v) => !v)}
@@ -241,10 +270,10 @@ export const VisualReceiptModal: React.FC<VisualReceiptModalProps> = ({
           <button
             type="button"
             onClick={() => window.print()}
-            className="hidden items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-700 sm:inline-flex"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-700"
           >
             <Printer className="h-3.5 w-3.5 text-slate-300" />
-            <span>PDF</span>
+            <span>Imprimer</span>
           </button>
         </div>
 
@@ -330,15 +359,40 @@ export const VisualReceiptModal: React.FC<VisualReceiptModalProps> = ({
         </div>
       )}
 
+      <style>{`
+        #receipt-paper-sheet[data-paper-size="58mm"] .grid-cols-12, #receipt-paper-sheet[data-paper-size="80mm"] .grid-cols-12 { display: flex; flex-direction: column; gap: 8px; }
+        #receipt-paper-sheet[data-paper-size="58mm"] [class*="col-span-"], #receipt-paper-sheet[data-paper-size="80mm"] [class*="col-span-"] { width: 100%; }
+        #receipt-paper-sheet[data-paper-size="58mm"] .grid-cols-12 > *, #receipt-paper-sheet[data-paper-size="80mm"] .grid-cols-12 > * { border-left: 0; padding-left: 0; }
+        @media print {
+          @page { size: ${paperSize === 'A4' ? 'A4' : `${paperSize} auto`}; margin: 0; }
+          body * { visibility: hidden !important; }
+          #receipt-paper-sheet, #receipt-paper-sheet * { visibility: visible !important; }
+          #receipt-paper-sheet { position: fixed !important; top: 0 !important; left: 0 !important; margin: 0 !important; max-width: none !important; box-shadow: none !important; overflow: visible !important; }
+          #receipt-paper-sheet[data-paper-size="58mm"] { width: 58mm !important; padding: 3mm !important; font-size: 9px !important; }
+          #receipt-paper-sheet[data-paper-size="80mm"] { width: 80mm !important; padding: 4mm !important; font-size: 10px !important; }
+          #receipt-paper-sheet[data-paper-size="A4"] { width: 200mm !important; padding: 8mm !important; }
+          #receipt-paper-sheet[data-paper-size="58mm"] .grid-cols-12, #receipt-paper-sheet[data-paper-size="80mm"] .grid-cols-12 { display: flex !important; flex-direction: column !important; gap: 2mm !important; }
+          #receipt-paper-sheet[data-paper-size="58mm"] [class*="col-span-"], #receipt-paper-sheet[data-paper-size="80mm"] [class*="col-span-"] { width: 100% !important; }
+          #receipt-paper-sheet[data-paper-size="58mm"] .grid-cols-12 > *, #receipt-paper-sheet[data-paper-size="80mm"] .grid-cols-12 > * { border-left: 0 !important; padding-left: 0 !important; }
+          #receipt-paper-sheet img { max-width: 18mm; }
+          #receipt-paper-sheet svg { max-width: 100%; }
+        }
+      `}</style>
+
       {/* =====================================================================
-          THE EXACT GRAPHICAL RECEIPT SHEET (Modeled 1:1 on MB_OTAKU STORE)
+          Receipt sheet, sized for the selected thermal roll or A4 paper
           Scrollable horizontally on narrow phones so exact proportion stays crisp!
          ===================================================================== */}
       <div className="w-full max-w-[700px] overflow-x-auto rounded-2xl shadow-2xl">
         <div
           id="receipt-paper-sheet"
           ref={receiptSheetRef}
-          className="mx-auto w-[680px] bg-[#FAFAFA] px-8 py-8 text-[#14181F] print:w-full print:shadow-none"
+          data-paper-size={paperSize}
+          className="mx-auto max-w-full bg-[#FAFAFA] text-[#14181F] shadow-lg print:shadow-none"
+          style={{
+            width: paperSize === '58mm' ? '220px' : paperSize === '80mm' ? '302px' : '680px',
+            padding: paperSize === '58mm' ? '12px' : paperSize === '80mm' ? '16px' : '32px',
+          }}
         >
           {/* 1. TOP STORE HEADER (Shop Logo Circle + Shop Name & Slogan + Right Contact Column) */}
           <div className="grid grid-cols-12 items-center gap-4 pb-6">

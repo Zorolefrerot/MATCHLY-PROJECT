@@ -20,6 +20,7 @@ import {
   VisualReceiptPayload,
 } from '../types';
 import { formatMoney, fromDisplayAmount } from '../utils/currency';
+import { formatSaleDateTime, formatSaleTime } from '../utils/saleDate';
 
 interface PosSalesViewProps {
   settings: ShopSettings;
@@ -152,8 +153,8 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
     if (cart.length === 0) return;
 
     const finalClient = customerName.trim() || 'Client Comptoir';
-    const finalPhone = customerPhone.trim() || '+243 97 000 0000';
-    const finalAddress = customerAddress.trim() || settings.city;
+    const finalPhone = customerPhone.trim();
+    const finalAddress = customerAddress.trim();
 
     const now = new Date();
     const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(
@@ -224,12 +225,10 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
     const now = new Date();
     onOpenVisualReceipt({
       invoiceNumber: `#2026-${s.id.slice(-4)}`,
-      dateTime: `${String(now.getDate()).padStart(2, '0')}/${String(
-        now.getMonth() + 1
-      ).padStart(2, '0')}/${now.getFullYear()}  ${s.timestamp}`,
+      dateTime: formatSaleDateTime(s.timestamp),
       customerName: s.customerName || 'Client Comptoir',
-      customerPhone: s.customerPhone || '+243 97 000 0000',
-      customerAddress: s.customerAddress || settings.city,
+      customerPhone: s.customerPhone || '',
+      customerAddress: s.customerAddress || '',
       paymentMethodLabel:
         s.paymentMethod === 'mobile_money'
           ? 'Mobile Money (M-Pesa / Vodacom)'
@@ -533,7 +532,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                       type="text"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="Nom client (ex: KABASELE Merdi)"
+                      placeholder="Nom du client (facultatif)"
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium"
                     />
                     <div className="grid grid-cols-2 gap-2">
@@ -623,10 +622,10 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <div className="pb-4">
             <h2 className="text-base font-bold text-slate-900">
-              Ventes enregistrées aujourd’hui
+              Historique des ventes
             </h2>
             <p className="text-xs text-slate-500">
-              Cliquez sur <strong>« Reçu Image »</strong> sur n’importe quelle ligne pour afficher ou envoyer le reçu graphique officiel au client.
+              Les ventes récentes sont affichées en premier. Ouvrez un reçu depuis une ligne pour le consulter ou l’envoyer au client.
             </p>
           </div>
 
@@ -646,7 +645,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                 {sales.map((s) => (
                   <tr key={s.id} className="hover:bg-slate-50">
                     <td className="py-3 pr-3 font-medium text-slate-500 tabular-nums">
-                      {s.timestamp}
+                      {formatSaleTime(s.timestamp)}
                     </td>
                     <td className="py-3 pr-3">
                       <div className="flex items-center gap-2.5">

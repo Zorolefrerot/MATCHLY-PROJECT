@@ -199,10 +199,12 @@ export function detectLocalStoreActions(
   const actions: AiStoreAction[] = [];
 
   // 1. Detect direct sale command ("enregistre la vente de ...", "vends 2 sacs de riz", "encaisse 3 bidons d'huile")
+  const isNegatedOrQuestion =
+    lower.includes('?') ||
+    /\b(?:ne\b[\s\S]{0,28}\bpas\b|n['’]enregistre|pas de vente|comment|pourquoi|faut-il|dois-je|est-ce que)\b/i.test(lower);
   const isSellIntent =
-    /\b(enregistre\s+la\s+vente|vends?|vendre|encaisse|encaisser|sell|record\s+sale)\b/i.test(
-      lower
-    );
+    !isNegatedOrQuestion &&
+    /\b(?:enregistre(?:r)?\s+(?:la\s+)?vente|vends?|encaisse(?:r)?|sell|record\s+sale)\b/i.test(lower);
 
   if (isSellIntent) {
     for (const p of products) {
@@ -279,6 +281,37 @@ export function generateSmartLocalBusinessResponse(
 
   const q = userPrompt.toLowerCase();
 
+  // Never invent product names or prices when a new shop has no catalogue yet.
+  if (
+    products.length === 0 &&
+    sales.length === 0 &&
+    expenses.length === 0 &&
+    credits.length === 0 &&
+    (!executedBadges || executedBadges.length === 0)
+  ) {
+    if (q.includes('whatsapp') || q.includes('tiktok') || q.includes('pub')) {
+      return (
+        `## Message prêt à personnaliser\n\n` +
+        `Bonjour ! Bienvenue chez **${settings.shopName || 'notre boutique'}**. ` +
+        `Nous sommes heureux de vous servir. Écrivez-nous pour connaître les articles disponibles et leurs prix.\n\n` +
+        `*Ajoutez vos premiers articles et coordonnées dans ShopFlow avant de publier des prix ou des disponibilités.*`
+      );
+    }
+    if (q.includes('prix') || q.includes('promo') || q.includes('%')) {
+      return (
+        `## Calcul du prix de vente\n\n` +
+        `Aucun article ni coût d’achat n’est encore enregistré : je ne peux donc pas calculer un prix réel sans inventer de chiffres.\n\n` +
+        `En général : **prix de vente = coût d’achat + marge souhaitée**. Ajoutez d’abord l’article et son coût dans Stock, puis je pourrai vous aider à faire une simulation.`
+      );
+    }
+    return (
+      `## Votre espace est prêt\n\n` +
+      `Aucun produit, vente, crédit ou frais n’est encore enregistré. Je ne vais pas inventer de chiffres. ` +
+      `Ajoutez votre premier article dans **Stock**, puis utilisez **Caisse** pour enregistrer une vente.\n\n` +
+      `Je peux aussi expliquer les fonctions de ShopFlow ou vous aider à rédiger un texte général. Pour des réponses de culture générale, un service IA en ligne gratuit peut être sollicité ; s’il est indisponible, ce mode local reste limité aux données et outils présents sur l’appareil.`
+    );
+  }
+
   // Action confirmation response
   if (executedBadges && executedBadges.length > 0) {
     return (
@@ -290,8 +323,8 @@ export function generateSmartLocalBusinessResponse(
       `| --- | --- |\n` +
       `| **Chiffre d’Affaires (CA)** | **${fmt(totalCA)}** |\n` +
       `| **Coût d’achat marchandise** | **${fmt(totalCost)}** |\n` +
-      `| **Dépenses du jour** | **${fmt(totalExp)}** |\n` +
-      `| **Bénéfice Net Réel** | **+${fmt(netProfit)}** |\n`
+      `| **Dépenses enregistrées** | **${fmt(totalExp)}** |\n` +
+      `| **Bénéfice Net Réel** | **${fmt(netProfit)}** |\n`
     );
   }
 
@@ -302,11 +335,20 @@ export function generateSmartLocalBusinessResponse(
       ? Math.min(25, Math.max(2, parseFloat(pctMatch[1].replace(',', '.'))))
       : 8;
     const topProd = products[0];
+    if (!topProd) {
+      return 'Je ne peux pas simuler une promotion sans article ni prix enregistrés. Ajoutez d’abord un produit et son coût d’achat dans Stock pour éviter un résultat inventé.';
+    }
     const pv = topProd.sellingPriceFC;
     const pa = topProd.purchasePriceFC;
     const oldGain = pv - pa;
     const newPv = Math.round(pv * (1 - discountPct / 100));
-    const newGain = Math.max(500, newPv - pa);
+    const newGain = newPv - pa;
+    if (oldGain <= 0 || newGain <= 0) {
+      return (
+        `## Promotion à éviter\n\n` +
+        `Avec les prix enregistrés pour **${topProd.name}**, une remise de **-${discountPct}%** ferait disparaître la marge ou vendre sous le coût d’achat. Vérifiez les coûts et prix avant de lancer une promotion.`
+      );
+    }
     const ratio = (oldGain / newGain).toFixed(2);
     const extraPct = Math.round((oldGain / newGain - 1) * 100);
 
@@ -326,6 +368,14 @@ export function generateSmartLocalBusinessResponse(
   // WhatsApp / TikTok marketing prompt
   if (q.includes('whatsapp') || q.includes('tiktok') || q.includes('pub') || q.includes('client')) {
     const stars = products.slice(0, 3);
+    if (stars.length === 0) {
+      return (
+        `## Texte à personnaliser\n\n` +
+        `Bonjour, bienvenue chez **${settings.shopName || 'ma boutique'}** ! ` +
+        `Contactez-nous pour connaître les produits disponibles et leurs prix.\n\n` +
+        `Ajoutez vos articles et vos coordonnées dans l’application avant d’annoncer des prix, des stocks ou des services de livraison.`
+      );
+    }
     return (
       `## Plan Marketing Express — **${settings.shopName}**\n\n` +
       `### 1. Message Statut & Groupe WhatsApp (prêt à copier)\n\n` +
@@ -349,14 +399,14 @@ export function generateSmartLocalBusinessResponse(
 
   return (
     `## Bilan Analytique Complet — **${settings.shopName}**\n\n` +
-    `Voici l’analyse exacte en direct de votre activité aujourd’hui :\n\n` +
-    `$$\n\\text{Bénéfice Net Réel} = \\underbrace{${Math.round(totalCA)}}_{\\text{CA}} - \\underbrace{${Math.round(totalCost)}}_{\\text{Coût d'achat}} - \\underbrace{${Math.round(totalExp)}}_{\\text{Dépenses}} = +${Math.round(netProfit)}\\text{ FC}\n$$\n\n` +
+    `Voici un résumé des enregistrements présents sur cet appareil :\n\n` +
+    `$$\n\\text{Bénéfice Net Réel} = ${fmt(totalCA)} - ${fmt(totalCost)} - ${fmt(totalExp)} = ${fmt(netProfit)}\n$$\n\n` +
     `| Indicateur Financier | Montant | Part du CA |\n` +
     `| --- | --- | --- |\n` +
     `| **Chiffre d’Affaires (CA)** | **${fmt(totalCA)}** | **100 %** |\n` +
-    `| **Marge Brute Commerciale** | **+${fmt(grossMargin)}** | **${marginPct} %** |\n` +
-    `| **Charges & Dépenses du jour** | **-${fmt(totalExp)}** | **${totalCA > 0 ? ((totalExp / totalCA) * 100).toFixed(1) : '0.0'} %** |\n` +
-    `| **Bénéfice Net Réel en Caisse** | **+${fmt(netProfit)}** | **${netPct} %** |\n\n` +
+    `| **Marge Brute Commerciale** | **${fmt(grossMargin)}** | **${marginPct} %** |\n` +
+    `| **Charges & Dépenses enregistrées** | **-${fmt(totalExp)}** | **${totalCA > 0 ? ((totalExp / totalCA) * 100).toFixed(1) : '0.0'} %** |\n` +
+    `| **Résultat après dépenses enregistrées** | **${fmt(netProfit)}** | **${netPct} %** |\n\n` +
     `### Actions prioritaires recommandées\n` +
     (lowStock.length > 0
       ? `- **Réapprovisionnement urgent (${lowStock.length} articles bas) :** ${lowStock

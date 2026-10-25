@@ -10,7 +10,6 @@ import {
   Copy,
   Mic,
   MicOff,
-  Plus,
   Square,
   Volume2,
   VolumeX,
@@ -23,7 +22,6 @@ import {
   Product,
   SaleRecord,
   ShopSettings,
-  VoiceModelId,
 } from '../types';
 import {
   cleanRawModelText,
@@ -35,7 +33,6 @@ import { formatMoney } from '../utils/currency';
 import {
   speakCleanText,
   stopAllSpeech,
-  VOICE_MODELS,
 } from '../utils/speechCleaner';
 
 export interface AiStoreAction {
@@ -59,7 +56,7 @@ interface AiAssistantViewProps {
   expenses: ExpenseEntry[];
   credits: CreditEntry[];
   onExecuteAiActions: (actions: AiStoreAction[]) => string[];
-  onUpdateVoiceSettings: (voiceModel: VoiceModelId, autoSpeak: boolean) => void;
+  onUpdateVoiceSettings: (autoSpeak: boolean) => void;
 }
 
 interface ChatMessage {
@@ -89,9 +86,9 @@ const createConversation = (): SavedConversation => ({
   updatedAt: new Date().toISOString(),
 });
 
-const loadConversationStore = (storageKey: string): ConversationStore => {
+const loadConversationStore = (storageKey: string, legacyStorageKey: string): ConversationStore => {
   try {
-    const raw = localStorage.getItem(storageKey);
+    const raw = localStorage.getItem(storageKey) ?? localStorage.getItem(legacyStorageKey);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<ConversationStore>;
       const conversations = Array.isArray(parsed.conversations)
@@ -106,12 +103,20 @@ const loadConversationStore = (storageKey: string): ConversationStore => {
           )
         : [];
       if (conversations.length > 0) {
-        const requestedId = parsed.activeConversationId;
+        // Keep the active thread (or most recently used one) when migrating from the old multi-chat UI.
+        const active = conversations.find(
+          (conversation) => conversation.id === parsed.activeConversationId
+        );
+        const mostRecentWithMessages = [...conversations]
+          .filter((conversation) => conversation.messages.length > 0)
+          .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))[0];
+        const selected =
+          (active?.messages.length ? active : mostRecentWithMessages) ??
+          active ??
+          [...conversations].sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))[0];
         return {
-          conversations,
-          activeConversationId: conversations.some((c) => c.id === requestedId)
-            ? requestedId!
-            : conversations[0].id,
+          activeConversationId: selected.id,
+          conversations: [selected],
         };
       }
     }
@@ -128,23 +133,20 @@ const loadConversationStore = (storageKey: string): ConversationStore => {
 
 const STARTER_CARDS = [
   {
-    title: '📊 Bilan & Formules de Rentabilité',
-    prompt:
-      'Fais-moi un bilan complet de ma journée avec un tableau clair et les formules mathématiques exactes de ma marge brute et mon bénéfice net.',
+    title: '📊 Comprendre mon activité',
+    prompt: 'Explique-moi comment suivre mon chiffre d’affaires et mon bénéfice net dans ShopFlow.',
   },
   {
-    title: '🚀 Pub WhatsApp & Script TikTok',
-    prompt:
-      'Rédige une publication WhatsApp très vendeuse et un script vidéo TikTok de 30 secondes pour attirer plus de clients dans ma boutique.',
+    title: '🚀 Préparer un message WhatsApp',
+    prompt: 'Aide-moi à rédiger un message WhatsApp pour présenter ma boutique, sans inventer de produits ni de prix.',
   },
   {
-    title: '🧮 Simulation Hausse / Baisse de Prix',
-    prompt:
-      'Si je fais une promotion de -8% sur mes produits phares, combien d’unités supplémentaires dois-je vendre pour gagner plus d’argent qu’aujourd’hui ? Montre le calcul.',
+    title: '🧮 Calculer un prix de vente',
+    prompt: 'Quelle formule utiliser pour fixer un prix de vente rentable ?',
   },
   {
-    title: '⚡ Action Directe Caisse & Stock',
-    prompt: 'Enregistre la vente de 2 sacs de riz et 1 bidon d’huile',
+    title: '📦 Ajouter mon premier article',
+    prompt: 'Comment ajouter mon premier article et définir son stock dans ShopFlow ?',
   },
 ];
 
@@ -164,11 +166,12 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     LANGUAGE_OPTIONS.find((l) => l.code === settings.language) ||
     LANGUAGE_OPTIONS[0];
 
-  const conversationStorageKey = `shopflow_ai_conversations_v1:${encodeURIComponent(
+  const conversationStorageKey = 'shopflow_ai_conversation_v1';
+  const legacyConversationStorageKey = `shopflow_ai_conversations_v1:${encodeURIComponent(
     `${settings.shopName}:${settings.ownerName}`.trim().toLocaleLowerCase()
   )}`;
   const [conversationStore, setConversationStore] = useState<ConversationStore>(
-    () => loadConversationStore(conversationStorageKey)
+    () => loadConversationStore(conversationStorageKey, legacyConversationStorageKey)
   );
   const activeConversation = conversationStore.conversations.find(
     (conversation) => conversation.id === conversationStore.activeConversationId
@@ -182,10 +185,18 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   );
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
+
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [input]);
 
   useEffect(() => {
     try {
@@ -221,17 +232,6 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     }));
   };
 
-  const startNewConversation = () => {
-    if (isThinking) return;
-    stopAllSpeech();
-    setSpeakingMessageId(null);
-    setInput('');
-    const conversation = createConversation();
-    setConversationStore((previous) => ({
-      activeConversationId: conversation.id,
-      conversations: [conversation, ...previous.conversations].slice(0, 40),
-    }));
-  };
 
   useEffect(() => {
     return () => {
@@ -262,7 +262,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
         const soldToday = sales
           .filter((s) => s.productId === p.id)
           .reduce((acc, s) => acc + s.quantity, 0);
-        return `- ${p.name} (${p.unit}) : en stock = ${p.stock} (alerte à ${p.minStockAlert}), achat = ${fmt(p.purchasePriceFC)}, vente = ${fmt(p.sellingPriceFC)}, bénéfice unitaire = ${fmt(p.sellingPriceFC - p.purchasePriceFC)}, vendus aujourd'hui = ${soldToday}`;
+        return `- ${p.name} (${p.unit}) : en stock = ${p.stock} (alerte à ${p.minStockAlert}), achat = ${fmt(p.purchasePriceFC)}, vente = ${fmt(p.sellingPriceFC)}, bénéfice unitaire = ${fmt(p.sellingPriceFC - p.purchasePriceFC)}, vendus (historique enregistré) = ${soldToday}`;
       })
       .join('\n');
 
@@ -291,7 +291,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       ``,
       `CHIFFRES EN DIRECT DE LA BOUTIQUE :`,
       `- Devise affichée : ${settings.currency} (1 USD = ${settings.usdRateFC} FC)`,
-      `- Ventes du jour : ${totalUnits} unités vendues en ${sales.length} transactions`,
+      `- Ventes enregistrées localement : ${totalUnits} unités en ${sales.length} transactions`,
       `- Chiffre d'Affaires (CA) : ${fmt(totalCA)}`,
       `- Coût d'achat marchandise vendue : ${fmt(totalCost)}`,
       `- Dépenses du jour : ${fmt(totalExp)}`,
@@ -319,14 +319,15 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       })),
     ];
 
-    // Primary Cloud Model + Automatic Failover Model onShopFlow Cloud Gateway
+    // Deux tentatives via une passerelle externe ; le calcul local prend le relais si elles échouent.
     const candidateModels = ['openai', 'mistral'];
     let lastErr: unknown = null;
 
     for (const modelName of candidateModels) {
+      let timer: number | undefined;
       try {
         const controller = new AbortController();
-        const timer = window.setTimeout(() => controller.abort(), 16000);
+        timer = window.setTimeout(() => controller.abort(), 9000);
         const response = await fetch('https://text.pollinations.ai/openai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -338,7 +339,6 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
             temperature: 0.55,
           }),
         });
-        clearTimeout(timer);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -348,6 +348,8 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
         return parseGatewayResponseText(raw);
       } catch (err) {
         lastErr = err;
+      } finally {
+        if (timer !== undefined) clearTimeout(timer);
       }
     }
 
@@ -394,6 +396,30 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     const actionSummary =
       badges && badges.length > 0 ? badges.join(', ') : undefined;
 
+    // Keep stock, sales and expenses actions local and deterministic; never wait for a model to confirm a completed transaction.
+    if (actionSummary && badges) {
+      const aiMsgId = `ai-local-${Date.now()}`;
+      const localConfirmation =
+        `## Opération enregistrée localement\n\n` +
+        badges.map((badge) => `- **${badge}**`).join('\n') +
+        `\n\nLa caisse et le stock ont été mis à jour sur cet appareil. Vérifiez les détails dans **Caisse** ou **Stock**.`;
+      appendConversationMessage(conversationId, {
+        id: aiMsgId,
+        role: 'assistant',
+        content: localConfirmation,
+        executedBadges: badges,
+        timestamp: nowTime(),
+      });
+      if (settings.autoSpeakAi) {
+        setSpeakingMessageId(aiMsgId);
+        speakCleanText(localConfirmation, settings.language, settings.voiceModel, () => {
+          setSpeakingMessageId((curr) => (curr === aiMsgId ? null : curr));
+        });
+      }
+      setIsThinking(false);
+      return;
+    }
+
     try {
       const cleanAiText = await queryCloudAI(updatedHistory, actionSummary);
       const aiMsgId = `ai-${Date.now()}`;
@@ -433,7 +459,9 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       appendConversationMessage(conversationId, {
         id: aiMsgId,
         role: 'assistant',
-        content: smartLocal,
+        content: `**Mode local de secours :** le service IA en ligne ne répond pas pour le moment. Cette réponse est calculée à partir des données enregistrées sur cet appareil ; les demandes générales peuvent être limitées.
+
+${smartLocal}`,
         executedBadges: badges,
         timestamp: nowTime(),
       });
@@ -497,8 +525,8 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   };
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-135px)] max-h-[820px] min-h-[560px] max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs">
-      {/* Clean ChatGPT-Style Top Bar with Voice Selector + Auto-Audio + New Chat */}
+    <div className="mx-auto flex min-h-[calc(100vh-135px)] max-w-5xl flex-col rounded-3xl border border-slate-200 bg-white shadow-xs">
+      {/* Single persistent conversation and optional speech playback */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-white px-4 py-3 @md:px-6">
         <div className="flex items-center gap-2.5">
           <img
@@ -513,100 +541,37 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Inclus & Actif
+                En ligne si disponible · secours local
               </span>
             </div>
             <p className="mt-0.5 text-[10px] font-medium text-slate-500">
-              Historique enregistré sur cet appareil
+              Une conversation enregistrée sur cet appareil
             </p>
           </div>
         </div>
-
-        {/* Saved conversations + Voice Model Selector + New Conversation */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs">
-            <Volume2 className="h-3.5 w-3.5 shrink-0 text-[#0A4DFF]" />
-            <select
-              aria-label="Choisir la voix de ShopFlow AI"
-              value={settings.voiceModel}
-              onChange={(e) =>
-                onUpdateVoiceSettings(
-                  e.target.value as VoiceModelId,
-                  settings.autoSpeakAi
-                )
-              }
-              className="bg-transparent font-bold text-slate-800 focus:outline-none"
-            >
-              {VOICE_MODELS.map((v) => (
-                <option key={v.id} value={v.id}>
-                  Voix : {v.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (settings.autoSpeakAi) stopAllSpeech();
-              onUpdateVoiceSettings(settings.voiceModel, !settings.autoSpeakAi);
-            }}
-            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
-              settings.autoSpeakAi
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-            title="Activer ou couper la lecture vocale automatique des réponses"
-          >
-            {settings.autoSpeakAi ? (
-              <>
-                <Volume2 className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Lecture auto ON</span>
-              </>
-            ) : (
-              <>
-                <VolumeX className="h-3.5 w-3.5 text-slate-400" />
-                <span>Lecture auto OFF</span>
-              </>
-            )}
-          </button>
-
-          <select
-            aria-label="Discussions IA enregistrées sur cet appareil"
-            value={conversationStore.activeConversationId}
-            disabled={isThinking}
-            onChange={(event) => {
-              stopAllSpeech();
-              setSpeakingMessageId(null);
-              setInput('');
-              setConversationStore((previous) => ({
-                ...previous,
-                activeConversationId: event.target.value,
-              }));
-            }}
-            className="max-w-44 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-60"
-          >
-            {conversationStore.conversations.map((conversation) => (
-              <option key={conversation.id} value={conversation.id}>
-                {conversation.title}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={startNewConversation}
-            disabled={isThinking}
-            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            title="Démarrer une nouvelle discussion sans effacer l’historique"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden @sm:inline">Nouveau</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (settings.autoSpeakAi) stopAllSpeech();
+            onUpdateVoiceSettings(!settings.autoSpeakAi);
+          }}
+          className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+            settings.autoSpeakAi
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+          }`}
+          title="Activer ou couper la lecture vocale automatique des réponses"
+        >
+          {settings.autoSpeakAi ? (
+            <><Volume2 className="h-3.5 w-3.5 text-emerald-600" /><span>Lecture auto ON</span></>
+          ) : (
+            <><VolumeX className="h-3.5 w-3.5 text-slate-400" /><span>Lecture auto OFF</span></>
+          )}
+        </button>
       </div>
 
       {/* Main Conversation Canvas */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 @md:px-10">
+      <div className="min-h-[320px] flex-1 overflow-y-auto px-4 py-6 @md:px-10">
         {messages.length === 0 ? (
           <div className="mx-auto flex min-h-full max-w-2xl flex-col items-center justify-center py-6 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 p-2.5 shadow-2xs ring-1 ring-slate-200/80">
@@ -622,9 +587,9 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
               <span className="text-[#0A4DFF]">{settings.shopName}</span> ?
             </h2>
             <p className="mt-1.5 max-w-lg text-xs leading-relaxed text-slate-500 @md:text-sm">
-              Posez n’importe quelle question sur vos ventes, vos marges, vos
-              prix ou votre marketing WhatsApp — prêt à l’emploi immédiatement,
-              sans aucune clé ni configuration.
+              Je peux consulter les données de votre boutique enregistrées sur cet appareil.
+              Les actions simples fonctionnent localement ; les réponses générales
+              peuvent nécessiter une connexion à un service IA externe gratuit.
             </p>
 
             <div className="mt-7 grid w-full grid-cols-1 gap-3 text-left @sm:grid-cols-2">
@@ -768,7 +733,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       </div>
 
       {/* Floating ChatGPT Composer Bar */}
-      <div className="border-t border-slate-100 bg-white px-4 py-3.5 @md:px-8">
+      <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-3.5 @md:px-8">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -794,6 +759,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
           </button>
 
           <textarea
+            ref={inputRef}
             rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -804,7 +770,8 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
               }
             }}
             placeholder="Posez une question à ShopFlow AI..."
-            className="max-h-36 min-h-[36px] flex-1 resize-none bg-transparent py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+            className="min-h-[36px] flex-1 resize-none overflow-hidden bg-transparent py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+            aria-label="Votre message pour ShopFlow AI"
           />
 
           <button

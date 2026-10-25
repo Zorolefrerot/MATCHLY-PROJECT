@@ -81,11 +81,11 @@ const MARQUEE_ITEMS = [
 const FAQ_LIST = [
   {
     q: 'Est-ce que ShopFlow fonctionne quand Internet coupe ?',
-    a: 'Oui, à 100 %. Vous vendez, modifiez votre stock et éditez vos reçus toute la journée sans connexion. Dès que le téléphone retrouve la 4G ou le Wi-Fi, tout se sauvegarde automatiquement dans le Cloud.',
+    a: 'Les fonctions de gestion et les données déjà enregistrées sur l’appareil restent accessibles hors connexion. Les réponses IA en ligne nécessitent Internet. Les données ne sont pas synchronisées automatiquement dans le Cloud : exportez une sauvegarde avant de changer d’appareil.',
   },
   {
     q: 'Que se passe-t-il si je perds, casse ou change mon téléphone ?',
-    a: 'Aucune donnée n’est perdue. Connectez-vous simplement à votre compte sur un nouveau téléphone ou un ordinateur : vos articles, ventes, crédits clients et paramètres réapparaissent immédiatement.',
+    a: 'Les données ShopFlow sont conservées sur l’appareil et ne se transfèrent pas automatiquement. Exportez régulièrement une sauvegarde depuis les paramètres et conservez-la avant de changer de téléphone.',
   },
   {
     q: 'Mon vendeur peut-il utiliser la caisse sans voir mon bénéfice net ?',
@@ -864,22 +864,22 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       highlight: true,
                       perks: [
                         'Articles, ventes & reçus HD illimités',
-                        'ShopFlow AI illimité + 6 voix naturelles',
-                        'Scanner photo & boutique en ligne WhatsApp',
+                        'Assistant ShopFlow AI avec secours local',
+                        'Scanner photo & catalogue WhatsApp',
                         'Mode Vendeur (PIN) & Cahier de crédits',
                       ],
                     },
                     {
                       id: 'business' as SubscriptionPlanId,
-                      name: 'Business Multi-Boutiques',
-                      desc: 'Pour plusieurs points de vente et gérants.',
+                      name: 'ShopFlow Business',
+                      desc: 'Pour les boutiques qui souhaitent structurer leur suivi quotidien.',
                       usd: 25,
                       highlight: false,
                       perks: [
-                        'Jusqu’à 5 boutiques / dépôts synchronisés',
-                        'Plusieurs téléphones connectés en direct',
+                        'Suivi du catalogue, des ventes et des dépenses',
+                        'Export local des données de la boutique',
                         'Suivi complet par vendeur / caissier',
-                        'Support VIP prioritaire sur WhatsApp 7j/7',
+                        'Paramètres de sécurité propriétaire / vendeur',
                       ],
                     },
                   ].map((plan) => (
@@ -951,7 +951,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <section className="bg-[#050B1C] py-16 text-center text-white sm:py-22">
                 <div className="mx-auto max-w-3xl px-4 sm:px-6">
                   <span className="inline-block rounded-full border border-emerald-400/30 bg-emerald-500/15 px-4 py-1 text-xs font-bold text-emerald-300">
-                    📲 Multi-Appareils & Sauvegarde Garantie
+                    📲 Données locales & fonctionnement hors connexion
                   </span>
                   <h1 className="sf-display-heading mt-5 text-3xl leading-tight font-extrabold sm:text-5xl">
                     Installez ShopFlow. Créez votre boutique dans l’application.
@@ -982,18 +982,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   {[
                     {
                       icon: WifiOff,
-                      title: '100 % Hors-Ligne',
-                      desc: 'Vendez toute la journée même en cas de coupure réseau totale.',
+                      title: 'Fonctions locales hors connexion',
+                      desc: 'La gestion du stock, les ventes et les reçus enregistrés localement restent accessibles sans Internet. Les réponses IA générales nécessitent une connexion.',
                     },
                     {
                       icon: ShieldCheck,
-                      title: 'Sauvegarde Cloud Auto',
-                      desc: 'Téléphone perdu ou changé ? Connectez-vous et retrouvez toute votre boutique.',
+                      title: 'Sauvegarde locale',
+                      desc: 'Les données restent sur cet appareil. Exportez une sauvegarde avant tout changement de téléphone ou de navigateur.',
                     },
                     {
                       icon: Smartphone,
-                      title: 'Android, iPhone & PC',
-                      desc: 'Utilisez ShopFlow au comptoir sur téléphone et suivez vos chiffres à la maison.',
+                      title: 'Pensé pour votre comptoir',
+                      desc: 'Retrouvez votre catalogue, vos ventes et vos reçus dans l’application installée sur votre appareil.',
                     },
                   ].map((g, i) => {
                     const Icon = g.icon;
