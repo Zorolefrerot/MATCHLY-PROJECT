@@ -1,6 +1,6 @@
 # Configuration sécurisée de l’IA ShopFlow
 
-ShopFlow utilise le proxy serveur `/api/ai`. La clé Gemini et le modèle sont conservés côté serveur : ils ne sont ni saisis dans l’application ni inclus dans le code destiné aux utilisateurs. Le modèle fixé par le serveur est `gemini-3.5-flash-lite`.
+ShopFlow utilise le proxy serveur `/api/ai`. La clé Gemini et le modèle sont conservés côté serveur : ils ne sont ni saisis dans l’application ni inclus dans le code destiné aux utilisateurs. Le modèle fixé par le serveur est `gemini-3.8-flash`, choisi pour une meilleure capacité de raisonnement tout en conservant l’analyse d’images.
 
 ## Créer et installer la clé
 
