@@ -16,8 +16,10 @@ Si tu crées le service manuellement au lieu d’utiliser le Blueprint :
 - **Type :** Static Site
 - **Branch :** `arena/0b9f89cc-matchly-project`
 - **Root Directory :** laisser vide (racine du dépôt)
-- **Build Command :** `npm --prefix shopflow ci && npm run build`
+- **Build Command :** `npm --prefix shopflow ci && npm run build:hosted`
 - **Publish Directory :** `dist`
+
+La compilation télécharge l’APK de test depuis la préversion GitHub et l’inclut dans `/downloads/ShopFlow-Android.apk`, pour que le bouton du site lance un téléchargement depuis le domaine Render.
 
 Aucune variable d’environnement n’est nécessaire pour le build statique.
 

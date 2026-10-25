@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#071a34" />
-    <meta name="description" content="ShopFlow aide les commerces en RDC à suivre leurs ventes, leur stock, leur caisse, leurs reçus et leurs crédits, sur Android ou depuis l’iPhone." />
-    <meta property="og:title" content="ShopFlow — Gérez votre commerce simplement" />
-    <meta property="og:description" content="Caisse, stock, reçus et suivi des ventes, pensés pour les commerces du quotidien." />
+    <meta name="theme-color" content="#071827" />
+    <meta name="description" content="ShopFlow rassemble la caisse, le stock, les reçus, les crédits et l’assistant IA dans un outil pensé pour les commerces du quotidien." />
+    <meta property="og:title" content="ShopFlow — Le commerce, mieux organisé" />
+    <meta property="og:description" content="Ventes, stock, reçus et suivi du commerce réunis dans ShopFlow." />
     <meta property="og:image" content="/site-assets/shopflow-hero.jpg" />
     <meta property="og:type" content="website" />
     <link rel="icon" type="image/png" href="/site-assets/shopflow-icon.png" />
@@ -14,149 +14,168 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/site.css" />
-    <title>ShopFlow — Gérez votre commerce simplement</title>
+    <title>ShopFlow — Le commerce, mieux organisé</title>
   </head>
   <body>
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="ShopFlow, accueil">
-        <img src="/site-assets/shopflow-logo.png" alt="ShopFlow — Gérez, calculez, faites grandir" />
-      </a>
-      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav" aria-label="Ouvrir le menu">
-        <span></span><span></span>
-      </button>
+    <div class="scroll-progress" aria-hidden="true"><span></span></div>
+    <div class="topline"><div class="topline-inner"><span><i></i> L’outil de gestion conçu pour les commerces du quotidien</span><span class="topline-meta">KINSHASA · RDC <b>•</b> FRANÇAIS</span></div></div>
+    <header class="site-header" id="top">
+      <a class="brand" href="#top" aria-label="ShopFlow, accueil"><img src="/site-assets/shopflow-logo.png" alt="ShopFlow — Gérez, calculez, faites grandir" /></a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav" aria-label="Ouvrir le menu"><span></span><span></span></button>
       <nav class="main-nav" id="main-nav" aria-label="Navigation principale">
         <a href="#fonctionnalites">Fonctionnalités</a>
+        <a href="#parcours">Comment ça marche</a>
         <a href="#iphone">iPhone</a>
-        <a href="#android">Android</a>
-        <a class="nav-download" href="https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-android-test-v0.1.0/ShopFlow-Android.apk">Télécharger l’APK</a>
+        <a href="#questions">Questions</a>
+        <a class="nav-android" href="/downloads/ShopFlow-Android.apk" download>Android <span aria-hidden="true">↓</span></a>
       </nav>
     </header>
 
     <main>
-      <section class="hero section-wrap">
-        <div class="hero-copy">
-          <div class="eyebrow"><span class="eyebrow-dot"></span> L’outil du commerce au quotidien</div>
-          <h1>Votre boutique.<br /><span>Plus claire. Plus simple.</span></h1>
-          <p class="hero-lede">Suivez les ventes, le stock, les crédits et les dépenses depuis un seul espace, pensé pour les commerçants et les petites équipes.</p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-android-test-v0.1.0/ShopFlow-Android.apk">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3" /></svg>
-              Télécharger la version Android test
-            </a>
-            <a class="button button-quiet" href="#iphone">Utiliser sur iPhone <span aria-hidden="true">↗</span></a>
+      <section class="hero">
+        <div class="hero-grid section-wrap">
+          <div class="hero-copy reveal">
+            <div class="eyebrow"><span class="eyebrow-dot"></span> Plus de clarté, chaque jour</div>
+            <h1>Faites tourner<br />votre commerce.<br /><span>Pas les papiers.</span></h1>
+            <p class="hero-lede">ShopFlow réunit la caisse, le stock, les reçus et le suivi des ventes dans un seul outil simple à prendre en main.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="/downloads/ShopFlow-Android.apk" download>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3" /></svg>
+                Télécharger pour Android
+              </a>
+              <a class="button button-outline" href="#iphone">Découvrir la version iPhone <span aria-hidden="true">↗</span></a>
+            </div>
+            <div class="hero-note"><span class="note-check">✓</span> Version de test · Android APK et web app iPhone</div>
           </div>
-          <p class="hero-note">Android : APK de test. iPhone : ajout à l’écran d’accueil depuis Safari, sans App Store.</p>
-          <div class="hero-proof" aria-label="Les outils ShopFlow">
-            <span><b>01</b> Caisse & ventes</span>
-            <span><b>02</b> Stock & alertes</span>
-            <span><b>03</b> Reçus & crédits</span>
+          <div class="hero-art reveal reveal-delay">
+            <div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
+            <div class="hero-image-frame"><img src="/site-assets/shopflow-hero.jpg" alt="Une commerçante accueille une cliente dans sa boutique" fetchpriority="high" /></div>
+            <div class="hero-float hero-float-top"><span class="float-glyph glyph-blue">↗</span><span><b>Une vue plus claire</b><small>Ventes · stock · activité</small></span></div>
+            <div class="hero-float hero-float-bottom"><span class="live-dot"></span><span><b>Votre commerce, à votre rythme</b><small>Sur téléphone, tablette et ordinateur</small></span></div>
+            <span class="hero-index">SF / GESTION QUOTIDIENNE</span>
           </div>
         </div>
-        <div class="hero-visual">
-          <img class="hero-photo" src="/site-assets/shopflow-hero.jpg" alt="Une commerçante remet un achat à sa cliente dans sa boutique" fetchpriority="high" />
-          <div class="visual-caption">
-            <span class="caption-icon" aria-hidden="true">↗</span>
-            <div><strong>Gardez une vue d’ensemble</strong><small>Ventes, stock et activité réunis.</small></div>
+        <div class="hero-bottom section-wrap"><span>UN OUTIL POUR GÉRER</span><div class="hero-tags"><span>LA CAISSE</span><i></i><span>LE STOCK</span><i></i><span>LES CLIENTS</span><i></i><span>LES RAPPORTS</span></div><span class="hero-bottom-mark">01 — 04</span></div>
+      </section>
+
+      <section class="intro section-wrap reveal" id="fonctionnalites">
+        <div class="intro-label"><span class="eyebrow"><span class="eyebrow-dot"></span> Moins de dispersion</span><span class="intro-index">01 / FONCTIONNALITÉS</span></div>
+        <div class="intro-content"><h2>Tout ce qu’il faut<br />pour <span>garder le fil.</span></h2><p>Une interface pratique pour enregistrer l’activité et retrouver facilement les informations utiles à la gestion d’une boutique.</p></div>
+      </section>
+
+      <section class="feature-showcase section-wrap">
+        <article class="feature-panel feature-panel-dark reveal">
+          <div class="panel-heading"><span class="feature-number">01</span><span class="panel-kicker">ENCAISSEMENT</span><span class="panel-arrow">↗</span></div>
+          <div class="panel-illustration checkout-illustration" aria-hidden="true"><div class="receipt-sheet"><span class="receipt-brand">SHOPFLOW</span><b>Vente enregistrée</b><i></i><i></i><i class="small-line"></i><div class="receipt-total"><span>Total</span><strong>Reçu prêt</strong></div><div class="receipt-wave"></div></div><span class="spark spark-a">✳</span><span class="spark spark-b">✦</span></div>
+          <div class="panel-copy"><h3>La caisse, sans détour.</h3><p>Sélectionnez les articles, enregistrez la vente et retrouvez le reçu dans l’historique.</p><div class="panel-foot"><span>VENTES</span><span>REÇUS</span><span>HISTORIQUE</span></div></div>
+        </article>
+        <article class="feature-panel feature-panel-soft reveal reveal-delay">
+          <div class="panel-heading"><span class="feature-number">02</span><span class="panel-kicker">GESTION DE STOCK</span><span class="panel-arrow">↗</span></div>
+          <div class="stock-visual"><div class="stock-visual-top"><span>CATALOGUE</span><span class="stock-chip"><i></i> Suivi des quantités</span></div><div class="product-row"><img src="/site-assets/product-riz.jpg" alt="Sacs de riz" loading="lazy" /><span><b>Riz</b><small>Article du catalogue</small></span><em>Stock</em></div><div class="product-row"><img src="/site-assets/product-oil.jpg" alt="Bidon d’huile" loading="lazy" /><span><b>Huile</b><small>Article du catalogue</small></span><em>Stock</em></div><div class="product-row"><img src="/site-assets/product-drinks.jpg" alt="Boissons en pack" loading="lazy" /><span><b>Boissons</b><small>Article du catalogue</small></span><em>Stock</em></div><div class="stock-visual-bottom"><span>ARTICLES</span><span>PRIX</span><span>ALERTES DE STOCK</span></div></div>
+          <div class="panel-copy"><h3>Le stock, à portée de main.</h3><p>Consultez votre catalogue, ajustez les quantités et repérez les articles qui approchent du seuil d’alerte.</p><div class="panel-foot"><span>CATALOGUE</span><span>QUANTITÉS</span><span>ALERTES</span></div></div>
+        </article>
+        <article class="feature-panel feature-panel-green reveal">
+          <div class="panel-heading"><span class="feature-number">03</span><span class="panel-kicker">SUIVI D’ACTIVITÉ</span><span class="panel-arrow">↗</span></div>
+          <div class="report-visual" aria-hidden="true"><div class="report-ring"><span>SF</span></div><div class="report-bars"><i style="--height:34%"></i><i style="--height:52%"></i><i style="--height:43%"></i><i style="--height:73%"></i><i style="--height:61%"></i><i style="--height:88%"></i><i style="--height:69%"></i><i style="--height:100%"></i></div><div class="report-legend"><span><i></i> Ventes enregistrées</span><span><i></i> Dépenses enregistrées</span></div></div>
+          <div class="panel-copy"><h3>Des repères pour décider.</h3><p>Consultez les ventes, dépenses et crédits enregistrés pour mieux suivre l’activité de votre commerce.</p><div class="panel-foot"><span>RAPPORTS</span><span>DÉPENSES</span><span>CRÉDITS</span></div></div>
+        </article>
+      </section>
+
+      <section class="journee-section" id="parcours">
+        <div class="section-wrap journee-wrap">
+          <div class="journee-head reveal"><div><span class="eyebrow eyebrow-light"><span class="eyebrow-dot"></span> Votre journée, mieux rangée</span><h2>Les bons outils<br /><span>au bon moment.</span></h2></div><p>Explorez les étapes de gestion. Ces visuels sont des illustrations statiques du projet — pas une démo interactive de la caisse.</p></div>
+          <div class="journee-tabs reveal" role="tablist" aria-label="Étapes de gestion">
+            <button class="journee-tab is-active" type="button" role="tab" aria-selected="true" data-step="0"><span>01</span> Encaisser</button>
+            <button class="journee-tab" type="button" role="tab" aria-selected="false" data-step="1"><span>02</span> Suivre le stock</button>
+            <button class="journee-tab" type="button" role="tab" aria-selected="false" data-step="2"><span>03</span> Faire le point</button>
           </div>
-          <div class="visual-stamp"><span>SHOPFLOW</span><b>Gérer<br />avec clarté.</b></div>
+          <div class="journee-content reveal" aria-live="polite">
+            <div class="journee-copy"><span class="journee-copy-kicker" id="step-kicker">01 — VENTE</span><h3 id="step-title">Chaque vente retrouve sa place.</h3><p id="step-description">Enregistrez les articles vendus, le mode de paiement et consultez le reçu depuis l’historique.</p><div class="journee-tags" id="step-tags"><span>Caisse</span><span>Reçu</span><span>Historique</span></div></div>
+            <div class="journee-picture" id="step-picture"><img src="/site-assets/step-checkout.jpg" alt="Illustration statique d’une vente en boutique" loading="lazy"/><div class="picture-label"><span>SHOPFLOW / GESTION</span><b id="step-image-caption">Une caisse organisée</b></div><span class="picture-deco">SF<span>.</span></span></div>
+          </div>
         </div>
       </section>
 
-      <section class="feature-strip" aria-label="Outils inclus">
-        <div class="strip-inner">
-          <span>Une caisse rapide</span><i></i><span>Un stock suivi</span><i></i><span>Des reçus prêts à partager</span><i></i><span>Des données enregistrées sur l’appareil</span>
+      <section class="trust-section section-wrap reveal">
+        <div class="trust-mark"><img src="/site-assets/shopflow-icon.png" alt="" /></div>
+        <div class="trust-copy"><span class="eyebrow"><span class="eyebrow-dot"></span> Pensé pour le terrain</span><h2>Gardez la main<br />sur <span>vos informations.</span></h2><p>Les données de la version web sont enregistrées sur l’appareil utilisé. Faites des sauvegardes régulières : elles ne se synchronisent pas automatiquement entre iPhone et Android.</p></div>
+        <div class="trust-list"><div><span>01</span><b>Vos ventes</b><small>Consultez les transactions saisies.</small></div><div><span>02</span><b>Vos articles</b><small>Retrouvez le catalogue et les quantités.</small></div><div><span>03</span><b>Vos reçus</b><small>Accédez aux formats disponibles dans l’application.</small></div></div>
+      </section>
+
+      <section class="iphone-section" id="iphone">
+        <div class="iphone-inner section-wrap reveal">
+          <div class="iphone-copy"><span class="eyebrow eyebrow-light"><span class="eyebrow-dot"></span> iPhone · web app installable</span><h2>Sur iPhone aussi,<br /><span>sans App Store.</span></h2><p>ShopFlow est accessible comme application web. Ouvre l’adresse de l’application dans Safari et ajoute son icône à l’écran d’accueil. Aucun abonnement Apple Developer n’est nécessaire.</p><ol class="iphone-steps"><li><b>1</b><span>Ouvre dans Safari l’adresse de l’application terminée par <code>/app/</code>.</span></li><li><b>2</b><span>Touche <strong>Partager</strong>, puis <strong>Ajouter à l’écran d’accueil</strong>.</span></li><li><b>3</b><span>Confirme <strong>Ajouter</strong>. ShopFlow apparaîtra comme une icône.</span></li></ol><div class="iphone-url-note"><span>ADRESSE DE L’APPLICATION</span><code>/app/</code></div></div>
+          <div class="iphone-art" aria-label="Illustration statique de l’application ShopFlow sur un téléphone"><div class="phone-shell"><div class="phone-notch"></div><div class="phone-screen"><div class="phone-webapp"><img src="/site-assets/shopflow-logo.png" alt="Logo ShopFlow"/><span>APPLICATION WEB</span><b>ShopFlow<br/>sur votre iPhone.</b><p>Ouvrez l’adresse dans Safari, puis ajoutez l’icône à l’écran d’accueil.</p><div class="phone-safari"><i>↗</i><span>Ajouter à l’écran d’accueil</span></div></div></div></div><div class="iphone-sticker"><img src="/site-assets/shopflow-icon.png" alt="Icône ShopFlow"/><span>AJOUTER À<br />L’ÉCRAN D’ACCUEIL</span></div><span class="iphone-orbit"></span></div>
         </div>
       </section>
 
-      <section class="features section-wrap" id="fonctionnalites">
-        <div class="section-heading">
-          <div class="eyebrow eyebrow-light"><span class="eyebrow-dot"></span> L’essentiel, sans détour</div>
-          <h2>Tout le suivi du commerce,<br /><span>au même endroit.</span></h2>
-          <p>ShopFlow rassemble les tâches de chaque journée dans une interface pratique, sur téléphone, tablette ou ordinateur.</p>
-        </div>
-        <div class="feature-grid">
-          <article class="feature-card feature-card-blue">
-            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5M8 17h3" /></svg></div>
-            <span class="card-index">01 / ENCAISSER</span>
-            <h3>Une caisse facile à suivre</h3>
-            <p>Retrouvez les articles, enregistrez les ventes et consultez les reçus au même endroit.</p>
-            <div class="mini-receipt" aria-hidden="true"><div><span>Vente du jour</span><b>Reçu prêt</b></div><i></i><i></i><i class="short"></i></div>
-          </article>
-          <article class="feature-card feature-card-green">
-            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5zM4.5 7.7 12 12l7.5-4.3M12 12v8.5M8 5.3l8 4.5" /></svg></div>
-            <span class="card-index">02 / ORGANISER</span>
-            <h3>Un stock sous contrôle</h3>
-            <p>Consultez les quantités, repérez les niveaux bas et gardez votre catalogue à jour.</p>
-            <div class="stock-bars" aria-hidden="true"><span style="--bar:72%"></span><span style="--bar:48%"></span><span style="--bar:88%"></span><span style="--bar:34%"></span><span style="--bar:62%"></span></div>
-          </article>
-          <article class="feature-card feature-card-warm">
-            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6zM9 12l2 2 4-4" /></svg></div>
-            <span class="card-index">03 / COMPRENDRE</span>
-            <h3>Des chiffres plus lisibles</h3>
-            <p>Suivez les ventes, les dépenses enregistrées et les crédits clients dans vos rapports.</p>
-            <div class="metric-note" aria-hidden="true"><small>RAPPORT D’ACTIVITÉ</small><strong>Vos données, <em>en clair.</em></strong></div>
-          </article>
-        </div>
-        <p class="section-footnote">Les indicateurs reflètent les données que vous enregistrez dans ShopFlow. Ils ne remplacent pas une comptabilité certifiée.</p>
+      <section class="android-section section-wrap" id="android">
+        <div class="android-panel reveal"><div class="android-copy"><span class="eyebrow"><span class="eyebrow-dot"></span> Android · APK de test</span><h2>Prêt à tester<br /><span>ShopFlow sur Android ?</span></h2><p>Télécharge l’APK directement depuis ce site. Android peut demander l’autorisation d’installer une application depuis le navigateur.</p><div class="android-note"><span>✓</span> Fichier servi depuis ce site après déploiement sur Render.</div></div><a class="button button-download" href="/downloads/ShopFlow-Android.apk" download><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3" /></svg><span><b>Télécharger l’APK</b><small>Version de test · Android</small></span><i>↓</i></a></div>
+        <p class="release-note">Cette version Android est un APK de test signé en mode debug, pas une version Play Store. Installe-le uniquement si tu fais confiance à la source.</p>
       </section>
 
-      <section class="install-section section-wrap" id="iphone">
-        <div class="install-copy">
-          <div class="eyebrow"><span class="eyebrow-dot"></span> iPhone · sans compte Apple payant</div>
-          <h2>Ajoutez ShopFlow<br /><span>à votre écran d’accueil.</span></h2>
-          <p>La version web s’ouvre dans Safari. Ajoutez son adresse à l’écran d’accueil pour y accéder comme à une application. Aucun téléchargement d’IPA ni passage par l’App Store.</p>
-          <ol class="install-steps">
-            <li><b>1</b><span>Ouvrez dans <strong>Safari</strong> l’adresse de l’application ShopFlow terminée par <code>/app/</code>.</span></li>
-            <li><b>2</b><span>Touchez <strong>Partager</strong>, puis <strong>Ajouter à l’écran d’accueil</strong>.</span></li>
-            <li><b>3</b><span>Laissez l’option d’ouverture en web app activée si elle apparaît, puis touchez <strong>Ajouter</strong>.</span></li>
-          </ol>
-          <p class="install-caveat">La vitrine ne lance pas l’application : ouvrez directement son adresse <code>/app/</code>. Les données de la version web restent séparées de celles de l’application Android.</p>
-        </div>
-        <div class="install-card">
-          <div class="install-card-top"><img src="/site-assets/shopflow-icon.png" alt="" /><div><strong>ShopFlow</strong><span>Application web</span></div><span class="install-badge">PWA</span></div>
-          <div class="install-card-body"><span class="phone-line"></span><div class="app-tile"><img src="/site-assets/shopflow-icon.png" alt="Icône ShopFlow" /></div><strong>Votre commerce, à portée de main.</strong><p>Ouvrez l’adresse de l’application dans Safari pour l’ajouter à l’écran d’accueil.</p></div>
-          <div class="install-card-bottom"><span>CAISSE</span><span>STOCK</span><span>RAPPORTS</span></div>
-        </div>
-      </section>
-
-      <section class="android-section" id="android">
-        <div class="android-inner section-wrap">
-          <div class="android-mark" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M12 18h24v19H12zM16 13l-3-5m19 5 3-5M18 24v7m12-7v7M8 20v13m32-13v13M16 37v5m16-5v5" /></svg></div>
-          <div class="android-copy"><span class="card-index">ANDROID · VERSION DE TEST</span><h2>Déjà sur Android ?<br /><span>Installez l’APK ShopFlow.</span></h2><p>Le fichier de test est signé pour l’installation directe. Android peut demander d’autoriser temporairement l’installation depuis le navigateur utilisé.</p></div>
-          <a class="button button-light" href="https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-android-test-v0.1.0/ShopFlow-Android.apk" download>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3" /></svg>
-            Télécharger l’APK <span aria-hidden="true">↓</span>
-          </a>
-        </div>
-      </section>
-
-      <section class="faq-section section-wrap">
-        <div class="faq-intro"><div class="eyebrow"><span class="eyebrow-dot"></span> À savoir</div><h2>Quelques réponses<br /><span>avant de commencer.</span></h2></div>
-        <div class="faq-list">
-          <details><summary>Est-ce que l’application iPhone est native ?</summary><p>Non. Sur iPhone, ShopFlow est une application web installable (PWA), ouverte depuis Safari et ajoutée à l’écran d’accueil. Elle n’est pas distribuée par l’App Store.</p></details>
-          <details><summary>Mes données Android apparaîtront-elles sur iPhone ?</summary><p>Non, pas automatiquement. Chaque appareil conserve ses données localement. La synchronisation entre appareils demanderait un service de compte et de stockage partagé.</p></details>
-          <details><summary>L’assistant IA fonctionne-t-il hors connexion ?</summary><p>L’assistant peut fournir des réponses locales et des indicateurs calculés à partir des données enregistrées. Les réponses générales par IA nécessitent une connexion et un fournisseur disponible.</p></details>
-          <details><summary>Comment installer l’APK Android ?</summary><p>Téléchargez le fichier sur Android, ouvrez-le, puis suivez l’avertissement d’installation affiché par le système. N’autorisez l’installation que si vous faites confiance au fichier et à sa source.</p></details>
-        </div>
+      <section class="faq-section section-wrap" id="questions">
+        <div class="faq-intro reveal"><span class="eyebrow"><span class="eyebrow-dot"></span> Questions fréquentes</span><h2>Avant de<br /><span>commencer.</span></h2><p>Les informations essentielles sur ShopFlow et ses versions de test.</p></div>
+        <div class="faq-list reveal"><details><summary>ShopFlow est-il une application iPhone native ?</summary><p>Non. Sur iPhone, ShopFlow est une application web installable depuis Safari. Elle n’est pas distribuée par l’App Store.</p></details><details><summary>Mes données Android seront-elles sur mon iPhone ?</summary><p>Non, pas automatiquement. Les données sont enregistrées séparément sur chaque appareil. Il n’y a pas encore de synchronisation entre les installations.</p></details><details><summary>L’assistant IA fonctionne-t-il hors connexion ?</summary><p>Les fonctions locales peuvent utiliser les données enregistrées. Les réponses générales du service IA en ligne nécessitent une connexion et un fournisseur disponible.</p></details><details><summary>Quels formats de reçus sont disponibles ?</summary><p>Dans l’application, les choix comprennent les rouleaux 58 mm et 80 mm, ainsi que le format A4. La compatibilité dépend aussi de l’imprimante.</p></details></div>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <div class="footer-inner"><a class="footer-brand" href="/" aria-label="ShopFlow, accueil"><img src="/site-assets/shopflow-logo.png" alt="ShopFlow" /></a><p>Un outil de gestion pratique pour les commerces du quotidien.</p><span>© <span id="year">2026</span> ShopFlow</span></div>
-      <div class="footer-note">Les versions web et Android sont proposées à titre de test. Faites régulièrement une sauvegarde de vos données.</div>
-    </footer>
+    <footer class="site-footer"><div class="footer-main section-wrap"><a class="footer-brand" href="#top"><img src="/site-assets/shopflow-logo.png" alt="ShopFlow" /></a><p>Une gestion plus claire pour les commerces du quotidien.</p><a class="back-top" href="#top">RETOUR EN HAUT ↑</a></div><div class="footer-bottom section-wrap"><span>© <span id="year">2026</span> ShopFlow</span><span>Ventes · Stock · Reçus · Suivi</span><span>Versions de test</span></div></footer>
+
     <script>
-      const toggle = document.querySelector('.menu-toggle');
-      const nav = document.querySelector('.main-nav');
-      toggle?.addEventListener('click', () => {
-        const open = toggle.getAttribute('aria-expanded') === 'true';
-        toggle.setAttribute('aria-expanded', String(!open));
-        nav?.classList.toggle('is-open', !open);
+      const menuButton = document.querySelector('.menu-toggle');
+      const navigation = document.querySelector('.main-nav');
+      menuButton?.addEventListener('click', () => {
+        const expanded = menuButton.getAttribute('aria-expanded') === 'true';
+        menuButton.setAttribute('aria-expanded', String(!expanded));
+        menuButton.setAttribute('aria-label', expanded ? 'Ouvrir le menu' : 'Fermer le menu');
+        navigation?.classList.toggle('is-open', !expanded);
       });
-      nav?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => {
-        toggle?.setAttribute('aria-expanded', 'false');
-        nav?.classList.remove('is-open');
+      navigation?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => {
+        menuButton?.setAttribute('aria-expanded', 'false');
+        navigation?.classList.remove('is-open');
       }));
+
+      const progressBar = document.querySelector('.scroll-progress span');
+      const updateProgress = () => {
+        const room = document.documentElement.scrollHeight - window.innerHeight;
+        progressBar.style.width = `${room > 0 ? (window.scrollY / room) * 100 : 0}%`;
+      };
+      window.addEventListener('scroll', updateProgress, { passive: true });
+      updateProgress();
+
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12 });
+      document.querySelectorAll('.reveal').forEach((element) => revealObserver.observe(element));
+
+      const stepContent = [
+        { kicker: '01 — VENTE', title: 'Chaque vente retrouve sa place.', description: 'Enregistre les articles vendus, le mode de paiement et retrouve le reçu depuis l’historique.', caption: 'Une caisse organisée', tags: ['Caisse', 'Reçu', 'Historique'], image: '/site-assets/step-checkout.jpg', alt: 'Illustration statique d’une vente en boutique' },
+        { kicker: '02 — STOCK', title: 'Les quantités restent visibles.', description: 'Consulte le catalogue, ajuste les quantités et repère les articles à réapprovisionner.', caption: 'Un catalogue plus clair', tags: ['Articles', 'Quantités', 'Alertes'], image: '/site-assets/step-stock.jpg', alt: 'Produits du catalogue ShopFlow' },
+        { kicker: '03 — RAPPORT', title: 'Fais le point sur l’activité.', description: 'Retrouve les ventes, dépenses et crédits saisis pour suivre les mouvements de la boutique.', caption: 'Les repères du commerce', tags: ['Ventes', 'Dépenses', 'Crédits'], image: '/site-assets/step-report.jpg', alt: 'Une commerçante utilise ShopFlow dans sa boutique' },
+      ];
+      const stepButtons = document.querySelectorAll('.journee-tab');
+      const setStep = (index) => {
+        const step = stepContent[index];
+        document.querySelector('#step-kicker').textContent = step.kicker;
+        document.querySelector('#step-title').textContent = step.title;
+        document.querySelector('#step-description').textContent = step.description;
+        document.querySelector('#step-image-caption').textContent = step.caption;
+        document.querySelector('#step-tags').innerHTML = step.tags.map((tag) => `<span>${tag}</span>`).join('');
+        const image = document.querySelector('#step-picture img');
+        image.src = step.image;
+        image.alt = step.alt;
+        stepButtons.forEach((button, buttonIndex) => {
+          button.classList.toggle('is-active', buttonIndex === index);
+          button.setAttribute('aria-selected', String(buttonIndex === index));
+        });
+      };
+      stepButtons.forEach((button) => button.addEventListener('click', () => setStep(Number(button.dataset.step))));
       document.querySelector('#year').textContent = new Date().getFullYear();
     </script>
   </body>
