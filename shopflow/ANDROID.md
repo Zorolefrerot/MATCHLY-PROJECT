@@ -17,7 +17,7 @@ L'APK debug installable est généré dans :
 android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Le workflow GitHub Actions `ShopFlow Android APK` construit également cet APK et le publie comme artefact téléchargeable (rétention de 30 jours). C'est une build de test signée avec la clé debug Android, pas un paquet Play Store de production. La publication exige une clé de signature release et la configuration de la fiche Play Store.
+C'est une build de test signée avec la clé debug Android, pas un paquet Play Store de production. La publication exige une clé de signature release et la configuration de la fiche Play Store. La génération de l'APK n'a pas pu être exécutée dans l'environnement de travail actuel, car il ne contient pas de JDK ni d'Android SDK.
 
 ## Fonctions natives
 
