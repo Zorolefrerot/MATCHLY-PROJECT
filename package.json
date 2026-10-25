@@ -1,0 +1,8 @@
+{
+  "name": "shopflow-vercel-site",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npm --prefix shopflow run build && node scripts/assemble-vercel.mjs"
+  }
+}

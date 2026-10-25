@@ -1,0 +1,65 @@
+name: ShopFlow Android Test Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish-test-apk:
+    name: Build and publish ShopFlow test APK
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: shopflow/package-lock.json
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0'
+
+      - name: Install web dependencies
+        working-directory: shopflow
+        run: npm ci
+
+      - name: Build ShopFlow web application
+        working-directory: shopflow
+        run: npm run build
+
+      - name: Sync Capacitor Android project
+        working-directory: shopflow
+        run: npx cap sync android
+
+      - name: Assemble debug APK for testing
+        working-directory: shopflow/android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Prepare release asset
+        run: cp shopflow/android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/ShopFlow-Android.apk"
+
+      - name: Publish test APK as a GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create shopflow-android-test-v0.1.0 \
+            "$RUNNER_TEMP/ShopFlow-Android.apk" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "ShopFlow Android — test 0.1.0" \
+            --notes "Version Android de test ShopFlow. Il s'agit d'un APK de débogage non destiné à une distribution commerciale. L'installation peut demander l'autorisation Android d'installer des applications provenant de cette source." \
+            --prerelease \
+            --target "$GITHUB_SHA"
