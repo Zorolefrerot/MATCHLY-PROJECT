@@ -1,26 +1,31 @@
 # ShopFlow
 
-Site vitrine statique et application ShopFlow réunis dans un dépôt, prêts à être compilés pour Vercel.
+Vitrine statique et application ShopFlow réunies dans un dépôt. Le build produit le site vitrine à la racine et l’application web installable (PWA) à `/app/`.
 
-## Déployer sur Vercel
+## Héberger sur Render
 
-1. Importer ce dépôt dans Vercel.
-2. Garder le **Root Directory** à la racine du dépôt.
-3. Vercel lit `vercel.json` : l’installation npm, la compilation et le dossier de sortie `dist/` sont configurés.
-4. Lancer le déploiement. La vitrine sera à la racine et l’application web/PWA dans `/app/`.
+Un Blueprint Render est fourni dans `render.yaml`.
 
-Commandes équivalentes pour vérifier le build localement :
+1. Ouvrir [dashboard.render.com](https://dashboard.render.com/) et connecter le compte GitHub qui a accès à ce dépôt.
+2. Choisir **New + → Blueprint** et importer `Zorolefrerot/MATCHLY-PROJECT`.
+3. Vérifier que Render sélectionne la branche `arena/0b9f89cc-matchly-project` et que le service est de type **Static Site** (`runtime: static`).
+4. Confirmer la création du Blueprint et attendre le build. Render exécute les commandes définies dans `render.yaml` et publie `dist/`.
 
-```bash
-npm --prefix shopflow ci
-npm run build
-```
+Si tu crées le service manuellement au lieu d’utiliser le Blueprint :
+
+- **Type :** Static Site
+- **Branch :** `arena/0b9f89cc-matchly-project`
+- **Root Directory :** laisser vide (racine du dépôt)
+- **Build Command :** `npm --prefix shopflow ci && npm run build`
+- **Publish Directory :** `dist`
+
+Aucune variable d’environnement n’est nécessaire pour le build statique.
 
 ## Installer la PWA sur iPhone
 
-Après déploiement en HTTPS, ouvrir directement `https://<domaine-vercel>/app/` dans Safari, puis **Partager → Ajouter à l’écran d’accueil**. Cette version web installable ne requiert pas d’adhésion Apple Developer et n’est pas une IPA/App Store.
+Après déploiement, ouvrir `https://<adresse-render>/app/` dans Safari, puis choisir **Partager → Ajouter à l’écran d’accueil**. La version web installable ne requiert pas d’adhésion Apple Developer et n’est pas une IPA/App Store.
 
-La PWA conserve ses données localement sur l’appareil. Elle ne synchronise pas automatiquement avec une installation Android.
+Les données sont conservées localement sur chaque appareil et ne sont pas synchronisées automatiquement entre la PWA iPhone et Android.
 
 ## APK Android
 

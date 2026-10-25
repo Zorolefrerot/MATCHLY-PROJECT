@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: shopflow-site
+    runtime: static
+    branch: arena/0b9f89cc-matchly-project
+    buildCommand: npm --prefix shopflow ci && npm run build
+    staticPublishPath: ./dist
+    headers:
+      - path: /app/sw.js
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
