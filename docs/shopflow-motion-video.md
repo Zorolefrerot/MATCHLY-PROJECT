@@ -1,25 +1,30 @@
-# Film motion ShopFlow — présentation et export TikTok
+# Film motion ShopFlow — narration et export
 
-## Intention et contenu
+## Le déroulé du film
 
-Le film est accessible sur `/motion/` et depuis le bouton **Voir le film de présentation** de la vitrine. Cette édition est pensée comme une présentation officielle verticale pour TikTok, Reels et Shorts : 9:16, 1080 × 1920, 30 images/s, 36 secondes.
+Le présentateur reprend le personnage fourni, ses poses et expressions; les poses de marche alternent pour créer une courte animation, et les lunettes sont teintées chocolat. La vidéo raconte dans cet ordre :
 
-Un jeune présentateur illustré avec des lunettes teintées chocolat accompagne le récit. Le montage varie les transitions et les mouvements, puis montre :
+1. **Présentation du guide** : « Bonjour ! Je suis votre guide ShopFlow. »
+2. **La question** : « Mais au fait… c’est quoi ShopFlow ? »
+3. **La définition** : un outil de gestion pour organiser les ventes, les articles et le suivi quotidien d’un commerce.
+4. **Exemple Android — vente** : sélectionner du riz et une boisson, enregistrer la vente, puis retrouver le reçu.
+5. **Exemple — stock** : consulter le catalogue et repérer un article à vérifier.
+6. **Exemple iPhone** : ouvrir la web app dans Safari à `/app/`, puis ajouter son icône à l’écran d’accueil.
+7. **Conclusion** : repères sur les ventes, les dépenses et les crédits saisis.
 
-1. **L’essentiel de ShopFlow** : caisse, articles/stock et suivi des informations saisies.
-2. **Android** : un parcours de vente illustratif, l’enregistrement et le reçu dans l’historique; puis un aperçu du catalogue et d’un repère de stock.
-3. **iPhone** : la web app ouverte dans Safari à `/app/`, avec le chemin **Partager → Ajouter à l’écran d’accueil**. Il est précisé qu’il s’agit d’une web app, pas d’une IPA/App Store.
-4. **Conclusion** : le positionnement de ShopFlow et les deux chemins mobile.
+Les écrans du film sont des **illustrations animées**, pas une capture de l’application ni de vraies transactions. Ils sont présentés comme des exemples pour expliquer le produit.
 
-Les interfaces animées sont des **illustrations** : elles ne sont pas des captures de données réelles ni une démo interactive de l’application. Aucun montant ou résultat de transaction réel n’est montré.
+## Voix off proposée
 
-## Exporter la vidéo depuis le lecteur
+> Bonjour ! Je suis votre guide ShopFlow. Mais au fait, c’est quoi ShopFlow ? ShopFlow est un outil de gestion qui aide les commerces à organiser leurs ventes, leurs articles et leur suivi quotidien. Par exemple, vous vendez du riz et une boisson : sélectionnez les articles, enregistrez la vente, puis retrouvez le reçu dans l’historique. Vous pouvez aussi consulter le catalogue pour repérer le stock à vérifier. Sur iPhone, ouvrez la web app dans Safari à l’adresse /app/, puis ajoutez son icône à l’écran d’accueil. ShopFlow, le commerce mieux organisé. Les scènes sont illustratives.
 
-1. Ouvrir `/motion/` depuis la vitrine ShopFlow.
-2. Cliquer sur **Enregistrer la vidéo** et garder l’onglet au premier plan jusqu’à la fin (36 secondes).
-3. Si le navigateur sait encoder le MP4, `ShopFlow-motion.mp4` est téléchargé directement. Sinon, le fichier sera `ShopFlow-motion.webm`.
-4. Pour convertir le WebM, l’importer dans CapCut ou Shotcut et exporter en **MP4 / H.264**, 1080 × 1920, 30 images/s.
-5. Ajouter facultativement la voix off ci-dessous et une musique dont tu as les droits. Pour une présentation parlée, garder les sous-titres français lisibles et laisser visible la mention « scènes illustratives ».
+Le personnage à l’écran ne produit pas de son. Enregistre cette voix off séparément, puis ajoute-la au montage dans CapCut ou Shotcut.
+
+## Obtenir le fichier vidéo
+
+1. Ouvrir `/motion/` depuis la vitrine et cliquer sur **Enregistrer la vidéo**. L’enregistrement dure environ 38 secondes; garde la page au premier plan.
+2. Le navigateur télécharge un MP4 s’il prend en charge ce format. Sinon, il télécharge un WebM.
+3. Si tu obtiens un WebM, importe-le dans CapCut ou Shotcut, ajoute si tu le souhaites la voix off ci-dessus, puis exporte en **MP4 / H.264**, vertical 1080 × 1920, 30 images/s.
 
 ### Conversion FFmpeg (facultative)
 
@@ -27,18 +32,12 @@ Les interfaces animées sont des **illustrations** : elles ne sont pas des captu
 ffmpeg -i ShopFlow-motion.webm -c:v libx264 -pix_fmt yuv420p -movflags +faststart -an ShopFlow-motion.mp4
 ```
 
-Cette commande crée une vidéo MP4 silencieuse. Pour la voix off, importer le WebM dans CapCut/Shotcut, ajouter la piste, puis exporter en MP4.
-
-## Script voix off proposé (environ 36 secondes)
-
-> Bonjour ! Je vous présente ShopFlow, l’outil qui rassemble les essentiels du commerce. Sur Android, enregistrez les ventes, retrouvez les reçus et gardez un œil sur vos articles en stock. Suivez aussi les dépenses et les crédits saisis pour retrouver vos repères d’activité. Sur iPhone, ouvrez la web app dans Safari à l’adresse /app/, puis ajoutez-la à l’écran d’accueil. ShopFlow : gérez, calculez, faites grandir. Les scènes de cette vidéo sont illustratives.
-
-Le présentateur est un personnage visuel dessiné dans l’animation; cette voix off est un texte à enregistrer ou à faire lire par un outil de voix si tu en as un.
+Cette commande crée un MP4 silencieux. Pour utiliser la voix off, fais plutôt l’assemblage audio dans CapCut ou Shotcut.
 
 ## Avec Claude Sonnet gratuit
 
-Claude peut aider à réécrire le scénario ou modifier le code, mais **le chat Claude ne rend pas lui-même le fichier MP4**. Le rendu se fait avec le lecteur Motion dans le navigateur; le WebM peut ensuite être converti avec CapCut, Shotcut ou FFmpeg. Il n’y a pas besoin d’une clé IA pour lire ni enregistrer le film.
+Claude peut aider à reformuler le script ou modifier le code; le chat Claude ne rend pas lui-même le MP4. Le rendu se fait dans le lecteur Motion, puis CapCut, Shotcut ou FFmpeg convertit le WebM si besoin.
 
-Prompt pour demander une amélioration ciblée à Claude :
+Prompt de modification à donner à Claude :
 
-> Améliore le film motion ShopFlow dans `motion/index.html` et `motion/motion.js` pour une publication verticale TikTok. Garde 1080x1920, 30 images/s, environ 36 secondes, le logo officiel et le présentateur aux lunettes teintées chocolat. Le message doit expliquer simplement la caisse, les reçus et le stock sur Android, puis l’accès à la web app iPhone dans Safari via `/app/`. Conserve la mention que les scènes sont des illustrations, pas de vraies transactions, et ne présente pas l’iPhone comme une IPA ou une application App Store. Varie le rythme, les gestes et les transitions; garde le bouton d’export MediaRecorder MP4/WebM. N’invente pas de fonctions, tarifs ou chiffres. Donne le diff et indique comment vérifier le rendu.
+> Améliore la vidéo ShopFlow dans `motion/index.html` et `motion/motion.js`. Garde le personnage fourni dans `motion/assets/`, ses lunettes chocolat, le logo ShopFlow et le bouton d’export. Respecte l’ordre du récit : présentation du guide, question « C’est quoi ShopFlow ? », réponse simple, exemple de vente Android, exemple de stock, exemple iPhone dans Safari via `/app/`, conclusion. Garde les écrans clairement illustratifs; ne montre aucune vraie donnée, n’invente pas de fonction ou de prix et ne présente pas l’iPhone comme une IPA/App Store. Varie les poses, les déplacements et les transitions. Fournis un diff et les étapes de vérification.
