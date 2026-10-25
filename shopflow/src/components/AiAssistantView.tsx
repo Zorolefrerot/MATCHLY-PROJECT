@@ -173,6 +173,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   const [conversationStore, setConversationStore] = useState<ConversationStore>(
     () => loadConversationStore(conversationStorageKey, legacyConversationStorageKey)
   );
+  const conversationStoreRef = useRef(conversationStore);
   const activeConversation = conversationStore.conversations.find(
     (conversation) => conversation.id === conversationStore.activeConversationId
   );
@@ -199,6 +200,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   }, [input]);
 
   useEffect(() => {
+    conversationStoreRef.current = conversationStore;
     try {
       localStorage.setItem(conversationStorageKey, JSON.stringify(conversationStore));
     } catch {
@@ -210,7 +212,8 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     conversationId: string,
     message: ChatMessage
   ) => {
-    setConversationStore((previous) => ({
+    const previous = conversationStoreRef.current;
+    const next: ConversationStore = {
       ...previous,
       conversations: previous.conversations.map((conversation) => {
         if (conversation.id !== conversationId) return conversation;
@@ -229,9 +232,17 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
           updatedAt: new Date().toISOString(),
         };
       }),
-    }));
+    };
+    // Persist synchronously as well as in the React effect so leaving the AI tab mid-request
+    // cannot discard the response when the view unmounts.
+    conversationStoreRef.current = next;
+    try {
+      localStorage.setItem(conversationStorageKey, JSON.stringify(next));
+    } catch {
+      // State remains usable for this session when local storage is full/unavailable.
+    }
+    setConversationStore(next);
   };
-
 
   useEffect(() => {
     return () => {
@@ -294,8 +305,8 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       `- Ventes enregistrées localement : ${totalUnits} unités en ${sales.length} transactions`,
       `- Chiffre d'Affaires (CA) : ${fmt(totalCA)}`,
       `- Coût d'achat marchandise vendue : ${fmt(totalCost)}`,
-      `- Dépenses du jour : ${fmt(totalExp)}`,
-      `- Bénéfice Net Réel : ${fmt(netProfit)}`,
+      `- Dépenses enregistrées localement : ${fmt(totalExp)}`,
+      `- Résultat après dépenses enregistrées : ${fmt(netProfit)}`,
       ``,
       `CATALOGUE & STOCK ACTUEL :`,
       stockLines,
@@ -327,7 +338,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       let timer: number | undefined;
       try {
         const controller = new AbortController();
-        timer = window.setTimeout(() => controller.abort(), 9000);
+        timer = window.setTimeout(() => controller.abort(), 6000);
         const response = await fetch('https://text.pollinations.ai/openai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -345,7 +356,9 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
         }
 
         const raw = await response.text();
-        return parseGatewayResponseText(raw);
+        const parsed = parseGatewayResponseText(raw);
+        if (!parsed.trim()) throw new Error('Empty AI response');
+        return parsed;
       } catch (err) {
         lastErr = err;
       } finally {
@@ -382,100 +395,97 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       content: promptText,
       timestamp: nowTime(),
     };
-
     const conversationId = conversationStore.activeConversationId;
     const updatedHistory = [...messages, userMsg];
     appendConversationMessage(conversationId, userMsg);
     if (!overridePrompt) setInput('');
     setIsThinking(true);
 
-    // 1. Execute direct local POS / Stock / Expense actions immediately & reliably without asking the LLM for JSON code!
-    const localActions = detectLocalStoreActions(promptText, products);
-    const badges =
-      localActions.length > 0 ? onExecuteAiActions(localActions) : undefined;
-    const actionSummary =
-      badges && badges.length > 0 ? badges.join(', ') : undefined;
-
-    // Keep stock, sales and expenses actions local and deterministic; never wait for a model to confirm a completed transaction.
-    if (actionSummary && badges) {
-      const aiMsgId = `ai-local-${Date.now()}`;
-      const localConfirmation =
-        `## Opération enregistrée localement\n\n` +
-        badges.map((badge) => `- **${badge}**`).join('\n') +
-        `\n\nLa caisse et le stock ont été mis à jour sur cet appareil. Vérifiez les détails dans **Caisse** ou **Stock**.`;
-      appendConversationMessage(conversationId, {
-        id: aiMsgId,
-        role: 'assistant',
-        content: localConfirmation,
-        executedBadges: badges,
-        timestamp: nowTime(),
-      });
-      if (settings.autoSpeakAi) {
-        setSpeakingMessageId(aiMsgId);
-        speakCleanText(localConfirmation, settings.language, settings.voiceModel, () => {
-          setSpeakingMessageId((curr) => (curr === aiMsgId ? null : curr));
-        });
-      }
-      setIsThinking(false);
-      return;
-    }
+    let localActions: AiStoreAction[] = [];
+    let badges: string[] = [];
+    let actionExecutionFailed = false;
 
     try {
-      const cleanAiText = await queryCloudAI(updatedHistory, actionSummary);
-      const aiMsgId = `ai-${Date.now()}`;
+      // Deterministic store actions never depend on a remote model.
+      try {
+        localActions = detectLocalStoreActions(promptText, products);
+        if (localActions.length > 0) badges = onExecuteAiActions(localActions);
+      } catch {
+        actionExecutionFailed = true;
+      }
 
+      let answer = '';
+      let usedLocalFallback = false;
+      if (actionExecutionFailed) {
+        answer =
+          'Je n’ai pas pu confirmer cette opération. Vérifiez la caisse et le stock avant de réessayer ; aucune confirmation automatique n’est donnée.';
+      } else if (badges.length > 0) {
+        answer =
+          `## Opération enregistrée localement\n\n` +
+          badges.map((badge) => `- **${badge}**`).join('\n') +
+          `\n\nLa caisse et le stock ont été mis à jour sur cet appareil. Vérifiez les détails dans **Caisse** ou **Stock**.`;
+        usedLocalFallback = true;
+      } else {
+        try {
+          if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            throw new Error('Offline');
+          }
+          answer = await queryCloudAI(updatedHistory);
+        } catch {
+          usedLocalFallback = true;
+          try {
+            answer = generateSmartLocalBusinessResponse(
+              promptText,
+              settings,
+              products,
+              sales,
+              expenses,
+              credits,
+              badges
+            );
+          } catch {
+            answer = '';
+          }
+          if (!answer.trim()) {
+            answer =
+              'Je suis momentanément limitée. Vos données restent intactes. Vous pouvez consulter Stock, Caisse ou Paramètres pendant que le service IA en ligne est indisponible.';
+          }
+        }
+      }
+
+      const content = usedLocalFallback && badges.length === 0
+        ? `**Mode local :** le service IA en ligne est indisponible ou n’a pas répondu à temps. Je réponds avec les données et fonctions disponibles sur cet appareil ; les questions générales peuvent être limitées.\n\n${answer}`
+        : answer;
+      const aiMsgId = `ai-${Date.now()}`;
       appendConversationMessage(conversationId, {
         id: aiMsgId,
         role: 'assistant',
-        content: cleanAiText,
-        executedBadges: badges,
+        content,
+        executedBadges: badges.length ? badges : undefined,
         timestamp: nowTime(),
       });
 
       if (settings.autoSpeakAi) {
-        setSpeakingMessageId(aiMsgId);
-        speakCleanText(
-          cleanAiText,
-          settings.language,
-          settings.voiceModel,
-          () => {
+        try {
+          setSpeakingMessageId(aiMsgId);
+          speakCleanText(content, settings.language, settings.voiceModel, () => {
             setSpeakingMessageId((curr) => (curr === aiMsgId ? null : curr));
-          }
-        );
+          });
+        } catch {
+          setSpeakingMessageId(null);
+        }
       }
     } catch {
-      // Seamless local analytical fallback with full KaTeX formulas & GFM tables (never shows errors or code!)
-      const smartLocal = generateSmartLocalBusinessResponse(
-        promptText,
-        settings,
-        products,
-        sales,
-        expenses,
-        credits,
-        badges
-      );
-      const aiMsgId = `ai-smart-${Date.now()}`;
-
-      appendConversationMessage(conversationId, {
-        id: aiMsgId,
-        role: 'assistant',
-        content: `**Mode local de secours :** le service IA en ligne ne répond pas pour le moment. Cette réponse est calculée à partir des données enregistrées sur cet appareil ; les demandes générales peuvent être limitées.
-
-${smartLocal}`,
-        executedBadges: badges,
-        timestamp: nowTime(),
-      });
-
-      if (settings.autoSpeakAi) {
-        setSpeakingMessageId(aiMsgId);
-        speakCleanText(
-          smartLocal,
-          settings.language,
-          settings.voiceModel,
-          () => {
-            setSpeakingMessageId((curr) => (curr === aiMsgId ? null : curr));
-          }
-        );
+      // Last-resort guard: a rendering, storage, or local analysis error must not leave the spinner running.
+      try {
+        appendConversationMessage(conversationId, {
+          id: `ai-safe-${Date.now()}`,
+          role: 'assistant',
+          content: 'Je n’ai pas pu traiter cette demande. Aucune donnée n’a été effacée. Réessayez ou utilisez les écrans Stock et Caisse.',
+          timestamp: nowTime(),
+        });
+      } catch {
+        // Keep the UI responsive even if local storage/state is unavailable.
       }
     } finally {
       setIsThinking(false);
@@ -525,7 +535,7 @@ ${smartLocal}`,
   };
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-135px)] max-w-5xl flex-col rounded-3xl border border-slate-200 bg-white shadow-xs">
+    <div className="sf-ai-view mx-auto flex min-h-[calc(100vh-135px)] min-w-0 max-w-5xl flex-col rounded-3xl border border-slate-200 bg-white shadow-xs">
       {/* Single persistent conversation and optional speech playback */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-white px-4 py-3 @md:px-6">
         <div className="flex items-center gap-2.5">

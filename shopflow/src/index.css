@@ -122,6 +122,24 @@
   color: #CBD5E1 !important;
 }
 
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .text-slate-500,
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .text-slate-400 {
+  color: #A8B5C8 !important;
+}
+
+/* Semantic callouts must stay readable when the surface changes to AMOLED dark. */
+#shopflow-theme-root[data-mode="dark"] :is(.bg-blue-50, .bg-sky-50, .bg-indigo-50, .bg-emerald-50, .bg-green-50, .bg-amber-50, .bg-yellow-50, .bg-red-50, .bg-orange-50, .bg-purple-50, .bg-pink-50, .bg-teal-50) {
+  background-color: #1E293B !important;
+}
+#shopflow-theme-root[data-mode="dark"] :is(.text-blue-700, .text-blue-800, .text-blue-900, .text-sky-700, .text-sky-800, .text-sky-900, .text-indigo-700, .text-indigo-800, .text-indigo-900, .text-emerald-700, .text-emerald-800, .text-emerald-900, .text-green-700, .text-green-800, .text-green-900, .text-amber-700, .text-amber-800, .text-amber-900, .text-yellow-700, .text-yellow-800, .text-yellow-900, .text-red-700, .text-red-800, .text-red-900, .text-orange-700, .text-orange-800, .text-orange-900, .text-purple-700, .text-purple-800, .text-purple-900, .text-teal-700, .text-teal-800, .text-teal-900) {
+  color: #DCE7F5 !important;
+}
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) input::placeholder,
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) textarea::placeholder {
+  color: #94A3B8 !important;
+  opacity: 1;
+}
+
 #shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) input,
 #shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) select,
 #shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) textarea {
@@ -298,4 +316,30 @@
   0% { opacity: 0; transform: translateY(10px) scale(0.88); }
   55% { opacity: 1; transform: translateY(0) scale(1.04); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+
+/* Device-safe, horizontally constrained application surfaces (iPhone/iPad/Android/desktop). */
+#root,
+#shopflow-theme-root {
+  min-width: 0;
+  width: 100%;
+}
+#shopflow-theme-root {
+  overflow-x: clip;
+}
+.sf-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.sf-safe-bottom {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+.sf-app-main {
+  min-width: 0;
+  width: 100%;
+}
+@supports (min-height: 100dvh) {
+  .sf-ai-view {
+    min-height: calc(100dvh - 9.5rem);
+  }
 }

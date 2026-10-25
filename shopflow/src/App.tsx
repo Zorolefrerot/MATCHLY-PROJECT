@@ -1069,7 +1069,7 @@ export function App() {
           {/* Sticky Mobile Header */}
           <header
             className={`sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-xs ${
-              isPhoneFrame ? 'block' : 'lg:hidden'
+              isPhoneFrame ? 'sf-safe-top block' : 'sf-safe-top lg:hidden'
             }`}
           >
             <div className="flex items-center justify-between px-3.5 py-2.5">
@@ -1187,7 +1187,7 @@ export function App() {
 
           {/* Main View Container */}
           <main
-            className={`mx-auto w-full max-w-7xl flex-1 p-4 @md:p-6 ${
+            className={`sf-app-main mx-auto max-w-7xl flex-1 p-4 @md:p-6 ${
               isPhoneFrame ? 'pb-24' : 'pb-24 lg:pb-8'
             }`}
           >
@@ -1367,7 +1367,7 @@ export function App() {
               isPhoneFrame
                 ? 'sticky bottom-0 flex'
                 : 'fixed right-0 bottom-0 left-0 flex lg:hidden'
-            } z-30 items-center justify-around border-t border-slate-200 bg-white px-1 py-2 shadow-lg`}
+            } sf-safe-bottom z-30 items-center justify-around border-t border-slate-200 bg-white px-1 pt-2 shadow-lg`}
           >
             {mobileBottomItems.map((item) => {
               const Icon = item.icon;

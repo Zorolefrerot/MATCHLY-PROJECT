@@ -329,7 +329,7 @@ export function generateSmartLocalBusinessResponse(
   }
 
   // Promo / price simulation question
-  if (q.includes('promo') || q.includes('%') || q.includes('baisse') || q.includes('prix')) {
+  if (q.includes('promo') || q.includes('%') || q.includes('baisse') || q.includes('prix') || q.includes('price') || q.includes('discount')) {
     const pctMatch = q.match(/(\d+(?:[.,]\d+)?)\s*%/);
     const discountPct = pctMatch
       ? Math.min(25, Math.max(2, parseFloat(pctMatch[1].replace(',', '.'))))
@@ -366,7 +366,7 @@ export function generateSmartLocalBusinessResponse(
   }
 
   // WhatsApp / TikTok marketing prompt
-  if (q.includes('whatsapp') || q.includes('tiktok') || q.includes('pub') || q.includes('client')) {
+  if (q.includes('whatsapp') || q.includes('tiktok') || q.includes('pub') || q.includes('marketing') || q.includes('client')) {
     const stars = products.slice(0, 3);
     if (stars.length === 0) {
       return (
@@ -390,7 +390,37 @@ export function generateSmartLocalBusinessResponse(
     );
   }
 
-  // Default comprehensive financial analysis with clean LaTeX & table
+  // Common in-app how-to questions have reliable local answers.
+  if (/\b(ajouter|créer|enregistrer|add|create)\b/.test(q) && /\b(article|produit|stock|item|product)\b/.test(q)) {
+    return '## Ajouter un article\n\nOuvrez **Stock**, touchez **Ajouter un article**, puis renseignez le nom, l’unité, la quantité, le coût d’achat et le prix de vente. Une photo est facultative. Les changements sont enregistrés sur cet appareil.';
+  }
+  if (/\b(caisse|vente|encaisser|checkout|sell)\b/.test(q) && /\b(comment|aide|utiliser|faire|how|help)\b/.test(q)) {
+    return '## Enregistrer une vente\n\nOuvrez **Caisse**, sélectionnez les articles et leurs quantités, choisissez le moyen de paiement, puis validez. Le stock est mis à jour et le reçu est accessible depuis l’historique.';
+  }
+  if (/\b(reçu|receipt|imprimer|print)\b/.test(q) && /\b(comment|format|papier|imprimer|print|how)\b/.test(q)) {
+    return '## Reçu et impression\n\nAprès une vente, ouvrez son reçu depuis l’historique. Choisissez **Rouleau 58 mm**, **Rouleau 80 mm** ou **A4**, puis touchez **Imprimer**. La taille peut dépendre aussi du pilote de votre imprimante.';
+  }
+
+  if (/\b(crédit|crédits|impayé|impayés|credit|credits|unpaid)\b/.test(q)) {
+    const unpaid = credits.filter((credit) => credit.totalAmountFC > credit.paidAmountFC);
+    const total = unpaid.reduce((sum, credit) => sum + credit.totalAmountFC - credit.paidAmountFC, 0);
+    return unpaid.length
+      ? `## Crédits à recouvrer\n\n**Total restant : ${fmt(total)}**\n\n${unpaid.map((credit) => `- **${credit.customerName}** : ${fmt(Math.max(0, credit.totalAmountFC - credit.paidAmountFC))} (échéance : ${credit.dueDate})`).join('\n')}`
+      : 'Aucun crédit impayé n’est enregistré dans la boutique.';
+  }
+  if (/\b(stock|inventaire|inventory)\b/.test(q) && products.length > 0 && !/\b(vente|ventes|bilan|sales|revenue)\b/.test(q)) {
+    return `## État du stock\n\n${products.map((product) => `- **${product.name}** : ${product.stock} ${product.unit} (seuil d’alerte : ${product.minStockAlert})`).join('\n')}`;
+  }
+
+  const asksBusinessMetrics = /\b(bilan|analyse|chiffre|ventes?|marge|bénéfice|profit|revenu|stock|crédit|charge|dépense|report|sales|revenue|margin|profit|inventory|credit|expense|report)\b/.test(q);
+  if (!asksBusinessMetrics) {
+    return (
+      `**Mode local :** le service IA en ligne est indisponible. Je peux toujours calculer les indicateurs enregistrés et expliquer les fonctions de ShopFlow, mais je ne peux pas garantir une réponse générale à cette question sans connexion.\n\n` +
+      `Vous pouvez demander un bilan des ventes, un état du stock, les crédits en cours ou une aide sur la caisse.`
+    );
+  }
+
+  // Local financial analysis based only on saved records.
   const lowStock = products.filter((p) => p.stock <= p.minStockAlert);
   const unpaidTotal = credits.reduce(
     (s, c) => s + Math.max(0, c.totalAmountFC - c.paidAmountFC),

@@ -1,0 +1,63 @@
+name: ShopFlow iOS Simulator
+
+on:
+  push:
+    branches:
+      - arena/0b9f89cc-matchly-project
+    paths:
+      - 'shopflow/**'
+      - '.github/workflows/shopflow-ios-simulator.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios-simulator:
+    name: Build unsigned iOS Simulator app
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: shopflow/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: shopflow
+        run: npm ci
+
+      - name: Build ShopFlow web application
+        working-directory: shopflow
+        run: npm run build
+
+      - name: Sync Capacitor iOS project
+        working-directory: shopflow
+        run: npx cap sync ios
+
+      - name: Build for iOS Simulator
+        working-directory: shopflow/ios/App
+        run: >-
+          xcodebuild
+          -project App.xcodeproj
+          -scheme App
+          -destination 'generic/platform=iOS Simulator'
+          -configuration Release
+          -derivedDataPath "$RUNNER_TEMP/ShopFlowDerived"
+          CODE_SIGNING_ALLOWED=NO
+          build
+
+      - name: Package simulator app
+        run: ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/ShopFlowDerived/Build/Products/Release-iphonesimulator/App.app" "$RUNNER_TEMP/ShopFlow-iOS-Simulator.zip"
+
+      - name: Publish simulator build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShopFlow-iOS-Simulator-unsigned
+          path: ${{ runner.temp }}/ShopFlow-iOS-Simulator.zip
+          if-no-files-found: error
+          retention-days: 30
