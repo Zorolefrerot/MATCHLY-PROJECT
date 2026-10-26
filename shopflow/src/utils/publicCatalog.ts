@@ -34,6 +34,39 @@ export interface PublicCatalogSnapshot {
   products: PublicCatalogProduct[];
 }
 
+export interface PublicCatalogOrder {
+  version: 1;
+  reference: string;
+  createdAt: string;
+  catalogId?: string;
+  shop: {
+    name: string;
+    whatsappNumber: string;
+    city: string;
+    logo?: string;
+    currency: CurrencyCode;
+    usdRateFC: number;
+  };
+  customer: {
+    name: string;
+    phone: string;
+    address: string;
+  };
+  items: Array<{
+    id: string;
+    name: string;
+    unit: string;
+    quantity: number;
+    unitPriceFC: number;
+  }>;
+  subtotalFC: number;
+  deliveryFeeFC: number;
+  totalFC: number;
+}
+
+const PUBLIC_ORDER_MAX_TOKEN_LENGTH = 12_000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function safeImage(value: string | undefined, publicBase: string): string | undefined {
   if (!value || value.length > 2_000 || /^(data:|blob:|javascript:)/i.test(value)) {
     return undefined;
@@ -170,6 +203,92 @@ export function makePublicCatalogUrl(catalogId: string): string {
   const appBase = getPublicCatalogAppBase();
   const url = new URL(appBase);
   url.searchParams.set(PUBLIC_CATALOG_QUERY, catalogId);
+  return url.toString();
+}
+
+export function encodePublicCatalogOrder(order: PublicCatalogOrder): string {
+  const token = compressToEncodedURIComponent(JSON.stringify(order));
+  if (!token || token.length > PUBLIC_ORDER_MAX_TOKEN_LENGTH) {
+    throw new Error('catalog_order_link_too_long');
+  }
+  return token;
+}
+
+export function decodePublicCatalogOrder(token: string): PublicCatalogOrder | null {
+  if (!token || token.length > PUBLIC_ORDER_MAX_TOKEN_LENGTH) return null;
+  try {
+    const json = decompressFromEncodedURIComponent(token);
+    if (!json || json.length > 100_000) return null;
+    const value = JSON.parse(json) as Partial<PublicCatalogOrder>;
+    if (
+      value.version !== 1 ||
+      typeof value.reference !== 'string' ||
+      typeof value.createdAt !== 'string' ||
+      !value.shop || typeof value.shop.name !== 'string' ||
+      typeof value.shop.whatsappNumber !== 'string' ||
+      !value.customer || typeof value.customer.name !== 'string' ||
+      typeof value.customer.phone !== 'string' || typeof value.customer.address !== 'string' ||
+      !Array.isArray(value.items) || value.items.length < 1 || value.items.length > 100
+    ) return null;
+
+    const items = value.items.flatMap((candidate) => {
+      if (!candidate || typeof candidate !== 'object') return [];
+      const item = candidate as Partial<PublicCatalogOrder['items'][number]>;
+      if (
+        typeof item.id !== 'string' || typeof item.name !== 'string' ||
+        !Number.isFinite(item.quantity) || Number(item.quantity) < 1 ||
+        !Number.isFinite(item.unitPriceFC) || Number(item.unitPriceFC) < 0
+      ) return [];
+      return [{
+        id: item.id.slice(0, 100),
+        name: item.name.slice(0, 160),
+        unit: typeof item.unit === 'string' ? item.unit.slice(0, 40) : '',
+        quantity: Math.max(1, Math.min(10_000, Math.floor(Number(item.quantity)))),
+        unitPriceFC: clampMoney(item.unitPriceFC),
+      }];
+    });
+    if (!items.length) return null;
+
+    const subtotalFC = items.reduce((sum, item) => sum + item.unitPriceFC * item.quantity, 0);
+    const deliveryFeeFC = clampMoney(value.deliveryFeeFC);
+    const usdRateFC = Number(value.shop.usdRateFC);
+    const catalogId = typeof value.catalogId === 'string' && UUID_RE.test(value.catalogId)
+      ? value.catalogId
+      : undefined;
+    return {
+      version: 1,
+      reference: value.reference.slice(0, 24),
+      createdAt: value.createdAt.slice(0, 40),
+      ...(catalogId ? { catalogId } : {}),
+      shop: {
+        name: value.shop.name.slice(0, 100),
+        whatsappNumber: value.shop.whatsappNumber.replace(/\D/g, '').slice(0, 20),
+        city: typeof value.shop.city === 'string' ? value.shop.city.slice(0, 100) : '',
+        logo: safeHttpUrl(value.shop.logo),
+        currency: value.shop.currency === 'USD' ? 'USD' : 'FC',
+        usdRateFC: Number.isFinite(usdRateFC) && usdRateFC > 0 ? Math.min(usdRateFC, 1_000_000) : 1,
+      },
+      customer: {
+        name: value.customer.name.trim().slice(0, 100),
+        phone: value.customer.phone.trim().slice(0, 30),
+        address: value.customer.address.trim().slice(0, 300),
+      },
+      items,
+      subtotalFC,
+      deliveryFeeFC,
+      totalFC: subtotalFC + deliveryFeeFC,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function makePublicCatalogOrderUrl(order: PublicCatalogOrder): string {
+  const url = new URL(getPublicCatalogAppBase());
+  if (order.catalogId && UUID_RE.test(order.catalogId)) {
+    url.searchParams.set(PUBLIC_CATALOG_QUERY, order.catalogId);
+  }
+  url.hash = new URLSearchParams({ order: encodePublicCatalogOrder(order) }).toString();
   return url.toString();
 }
 

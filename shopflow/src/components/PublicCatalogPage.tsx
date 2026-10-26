@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Check, ImageOff, ShoppingBag, Store } from 'lucide-react';
 import { AppLanguage } from '../types';
 import { formatMoney } from '../utils/currency';
-import { decodePublicCatalog, PublicCatalogProduct, PublicCatalogSnapshot, readLivePublicCatalog } from '../utils/publicCatalog';
+import { decodePublicCatalog, makePublicCatalogOrderUrl, PublicCatalogOrder, PublicCatalogProduct, PublicCatalogSnapshot, readLivePublicCatalog } from '../utils/publicCatalog';
 
 interface PublicCatalogPageProps {
   token: string;
 }
 
-type CatalogStep = 'browse' | 'details' | 'review';
+type CatalogStep = 'browse' | 'details' | 'review' | 'share';
 interface BasketLine {
   product: PublicCatalogProduct;
   quantity: number;
@@ -27,13 +27,20 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     snapshot: 'Mis à jour le', snapshotNote: 'Ce catalogue se met à jour automatiquement. Vérifiez le récapitulatif avec la boutique avant tout paiement.',
     deliveryNote: 'Frais de livraison indicatifs; la boutique les confirmera.',
     chooser: 'Si plusieurs applications WhatsApp sont installées, choisissez celle proposée par votre téléphone. Vérifiez le message dans WhatsApp puis touchez Envoyer.',
-    privacy: 'Vos coordonnées restent dans cette page jusqu’à l’ouverture de WhatsApp. ShopFlow ne les enregistre pas sur un serveur.',
+    privacy: 'ShopFlow ne sauvegarde pas vos coordonnées. Le lien de commande les contiendra : partagez-le uniquement avec la boutique; toute personne qui le possède pourra voir la demande.',
     noContact: 'La boutique n’a pas renseigné de numéro WhatsApp.',
     unavailable: 'Ce catalogue est invalide ou n’est plus disponible.',
     emptyCatalog: 'Aucun article n’est affiché pour le moment.',
     selectError: 'Ajoutez au moins un article et remplissez votre nom, votre numéro et votre adresse.',
     waError: 'Impossible d’ouvrir WhatsApp. Vérifiez que l’application ou WhatsApp Web est disponible.',
     city: 'Ville',
+    createLink: 'Créer le lien de la demande', shareTitle: 'Transmettre la demande',
+    linkPrompt: 'Copiez ce lien puis envoyez-le à la boutique. Le propriétaire pourra l’ouvrir pour consulter la commande.',
+    orderLink: 'Lien de la demande', copyLink: 'Copier le lien', sendLink: 'Envoyer au propriétaire sur WhatsApp',
+    copied: 'Lien copié. Collez-le dans WhatsApp pour le propriétaire.',
+    copyManual: 'La copie automatique est indisponible. Touchez le lien, sélectionnez-le puis copiez-le.',
+    linkPrivacy: 'Le lien contient vos coordonnées et votre sélection. Toute personne qui le possède peut voir la demande : partagez-le uniquement avec la boutique.',
+    linkTooLong: 'Le lien est trop long pour être partagé. Réduisez votre sélection et réessayez.',
   },
   en: {
     catalog: 'Catalog', available: 'available', soldOut: 'Sold out', add: 'Add',
@@ -47,13 +54,20 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     snapshot: 'Updated on', snapshotNote: 'This catalog updates automatically. Confirm the summary with the shop before paying.',
     deliveryNote: 'Delivery fee is an estimate and must be confirmed by the shop.',
     chooser: 'If you have multiple WhatsApp apps, choose the one shown by your phone. Review the message in WhatsApp and tap Send.',
-    privacy: 'Your details stay on this page until WhatsApp opens. ShopFlow does not store them on a server.',
+    privacy: 'ShopFlow does not store your details. The order link will contain them: share it only with the shop; anyone with the link can view the request.',
     noContact: 'The shop has not provided a WhatsApp number.',
     unavailable: 'This catalog is invalid or no longer available.',
     emptyCatalog: 'No items are listed yet.',
     selectError: 'Add at least one item and enter your name, number and address.',
     waError: 'Could not open WhatsApp. Check that the app or WhatsApp Web is available.',
     city: 'City',
+    createLink: 'Create request link', shareTitle: 'Send your request',
+    linkPrompt: 'Copy this link and send it to the shop. The owner can open it to view your order request.',
+    orderLink: 'Request link', copyLink: 'Copy link', sendLink: 'Send to the owner on WhatsApp',
+    copied: 'Link copied. Paste it into WhatsApp for the owner.',
+    copyManual: 'Automatic copying is unavailable. Tap the link, select it, then copy it.',
+    linkPrivacy: 'The link contains your contact details and selection. Anyone with it can view the request; share it only with the shop.',
+    linkTooLong: 'The link is too long to share. Reduce your selection and try again.',
   },
   ln: {
     catalog: 'Catalogue', available: 'ezali', soldOut: 'Esili', add: 'Bakisa',
@@ -67,13 +81,20 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     snapshot: 'Ebongisamaki na', snapshotNote: 'Catalogue oyo emibongisaka yango moko. Talá résumé na boutique liboso ya kofuta.',
     deliveryNote: 'Frais ya livraison ezali estimation; boutique ekondimisa yango.',
     chooser: 'Soki ozali na ba-app WhatsApp mibale, poná oyo telefone na yo ekolakisa. Talá message na WhatsApp mpe finá Tinda.',
-    privacy: 'Makambo na yo etikalaka na lokasa oyo kino WhatsApp efungwami. ShopFlow ebombaka yango na serveur te.',
+    privacy: 'ShopFlow ebombaka makambo na yo te. Lien ya commande ekozala na yango: tinda yango kaka na boutique; moto nyonso oyo azali na lien akoki kotala demande.',
     noContact: 'Boutique epesi numéro ya WhatsApp te.',
     unavailable: 'Catalogue oyo ezali ya solo te to ezali lisusu te.',
     emptyCatalog: 'Eloko moko te ezali awa naino.',
     selectError: 'Bakisa eloko moko mpe kotisa kombo, numéro mpe adresse na yo.',
     waError: 'WhatsApp efungwami te. Talá soki application to WhatsApp Web ezali.',
     city: 'Engumba',
+    createLink: 'Sala lien ya demande', shareTitle: 'Tinda demande',
+    linkPrompt: 'Kopiá lien oyo mpe tinda yango na boutique. Mokolo ya boutique akofungola yango mpo na kotala commande.',
+    orderLink: 'Lien ya demande', copyLink: 'Kopiá lien', sendLink: 'Tinda na WhatsApp ya boutique',
+    copied: 'Lien ekopiami. Tia yango na WhatsApp mpo na boutique.',
+    copyManual: 'Kopi automatique ezali te. Finá na lien, poná yango mpe kopi.',
+    linkPrivacy: 'Lien ezali na makambo na yo mpe biloko oyo oponi. Moto nyonso oyo azali na yango akoki kotala demande; tinda yango kaka na boutique.',
+    linkTooLong: 'Lien eleki molai mpo na kotinda. Kitisa motango ya biloko mpe meka lisusu.',
   },
   sw: {
     catalog: 'Katalogi', available: 'inapatikana', soldOut: 'Imeisha', add: 'Ongeza',
@@ -87,13 +108,20 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     snapshot: 'Ilisasishwa tarehe', snapshotNote: 'Katalogi hii husasishwa kiotomatiki. Thibitisha muhtasari na duka kabla ya kulipa.',
     deliveryNote: 'Ada ya usafirishaji ni makadirio; duka litathibitisha.',
     chooser: 'Ikiwa una WhatsApp zaidi ya moja, chagua programu inayoonyeshwa na simu yako. Kagua ujumbe kwenye WhatsApp kisha uguse Tuma.',
-    privacy: 'Maelezo yako hubaki kwenye ukurasa huu hadi WhatsApp ifunguke. ShopFlow haihifadhi kwenye seva.',
+    privacy: 'ShopFlow haihifadhi maelezo yako. Kiungo cha agizo kitakuwa nayo: kitumie kwa duka pekee; mtu yeyote mwenye kiungo anaweza kuona ombi.',
     noContact: 'Duka halijaweka nambari ya WhatsApp.',
     unavailable: 'Katalogi hii si sahihi au haipatikani tena.',
     emptyCatalog: 'Hakuna bidhaa zilizowekwa kwa sasa.',
     selectError: 'Ongeza bidhaa angalau moja na ujaze jina, nambari na anwani yako.',
     waError: 'WhatsApp haikufunguka. Hakikisha programu au WhatsApp Web inapatikana.',
     city: 'Mji',
+    createLink: 'Tengeneza kiungo cha ombi', shareTitle: 'Tuma ombi lako',
+    linkPrompt: 'Nakili kiungo hiki na umtumie mwenye duka. Anaweza kukifungua ili kuona agizo lako.',
+    orderLink: 'Kiungo cha ombi', copyLink: 'Nakili kiungo', sendLink: 'Mtumie mwenye duka kupitia WhatsApp',
+    copied: 'Kiungo kimenakiliwa. Bandika kwenye WhatsApp kwa mwenye duka.',
+    copyManual: 'Kunakili kiotomatiki hakupatikani. Gusa kiungo, kichague kisha ukinakili.',
+    linkPrivacy: 'Kiungo kina maelezo yako ya mawasiliano na bidhaa ulizochagua. Mtu yeyote mwenye kiungo anaweza kuona ombi; mtumie duka pekee.',
+    linkTooLong: 'Kiungo ni kirefu sana kushiriki. Punguza bidhaa ulizochagua kisha ujaribu tena.',
   },
   zh: {
     catalog: '商品目录', available: '件可售', soldOut: '缺货', add: '加入',
@@ -107,13 +135,20 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     snapshot: '更新时间', snapshotNote: '此目录会自动更新。付款前请与商家确认摘要。',
     deliveryNote: '配送费为估算值，需由商家确认。',
     chooser: '如果安装了多个 WhatsApp 应用，请在手机提示时选择。请在 WhatsApp 中核对消息并点击发送。',
-    privacy: '在打开 WhatsApp 前，您的信息仅保留在本页面。ShopFlow 不会将其保存在服务器上。',
+    privacy: 'ShopFlow 不会保存您的信息。订单链接会包含这些信息：请只发送给商家，任何拥有链接的人都可以查看请求。',
     noContact: '商家尚未填写 WhatsApp 号码。',
     unavailable: '此目录无效或已不可用。',
     emptyCatalog: '目前没有商品。',
     selectError: '请至少添加一件商品，并填写姓名、电话和地址。',
     waError: '无法打开 WhatsApp。请检查应用或 WhatsApp 网页版是否可用。',
     city: '城市',
+    createLink: '创建请求链接', shareTitle: '发送您的请求',
+    linkPrompt: '复制此链接并发送给商家。商家可以打开链接查看您的订单请求。',
+    orderLink: '请求链接', copyLink: '复制链接', sendLink: '通过 WhatsApp 发送给商家',
+    copied: '链接已复制。请粘贴到 WhatsApp 并发送给商家。',
+    copyManual: '无法自动复制。点击链接，选中后复制。',
+    linkPrivacy: '链接包含您的联系方式和选择内容。任何拥有链接的人都能查看请求，请只发送给商家。',
+    linkTooLong: '链接太长，无法分享。请减少所选商品后重试。',
   },
 };
 
@@ -136,6 +171,9 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [reference] = useState(() => `SF-${Date.now().toString(36).slice(-6).toUpperCase()}`);
+  const [orderUrl, setOrderUrl] = useState('');
+  const [copyNotice, setCopyNotice] = useState('');
+  const orderLinkInput = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [imageFailed, setImageFailed] = useState<string[]>([]);
   const [shopLogoFailed, setShopLogoFailed] = useState(false);
@@ -215,32 +253,77 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const sendToWhatsApp = () => {
+  const createOrderLink = () => {
+    if (!basket.length || !customerName.trim() || !customerPhone.trim() || !deliveryAddress.trim()) {
+      setError(text.selectError);
+      return;
+    }
     if (snapshot.shop.whatsappNumber.length < 8) {
       setError(text.noContact);
       return;
     }
-    const lines = basket.map(({ product, quantity }) =>
-      `• ${quantity} × ${product.name} — ${fmt(product.priceFC * quantity)}`
-    );
-    const message = [
-      `🛍️ DEMANDE DE COMMANDE — ${snapshot.shop.name}`,
-      `Référence : ${reference}`,
-      `Client : ${customerName.trim()}`,
-      `WhatsApp client : ${customerPhone.trim()}`,
-      `Adresse : ${deliveryAddress.trim()}`,
-      '',
-      ...lines,
-      '',
-      `Sous-total : ${fmt(subtotal)}`,
-      `Livraison estimée : ${fmt(deliveryFee)}`,
-      `TOTAL ESTIMÉ : ${fmt(total)}`,
-      '',
-      'Non payé. Merci de confirmer le stock, la livraison et le montant final.',
-    ].join('\n');
-    const url = `https://wa.me/${snapshot.shop.whatsappNumber}?text=${encodeURIComponent(message)}`;
+    const order: PublicCatalogOrder = {
+      version: 1,
+      reference,
+      createdAt: new Date().toISOString(),
+      ...(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token) ? { catalogId: token } : {}),
+      shop: {
+        name: snapshot.shop.name,
+        whatsappNumber: snapshot.shop.whatsappNumber,
+        city: snapshot.shop.city,
+        logo: snapshot.shop.logo,
+        currency: snapshot.shop.currency,
+        usdRateFC: snapshot.shop.usdRateFC,
+      },
+      customer: {
+        name: customerName.trim(),
+        phone: customerPhone.trim(),
+        address: deliveryAddress.trim(),
+      },
+      items: basket.map(({ product, quantity }) => ({
+        id: product.id,
+        name: product.name,
+        unit: product.unit,
+        quantity,
+        unitPriceFC: product.priceFC,
+      })),
+      subtotalFC: subtotal,
+      deliveryFeeFC: deliveryFee,
+      totalFC: total,
+    };
     try {
-      window.location.assign(url);
+      setOrderUrl(makePublicCatalogOrderUrl(order));
+      setCopyNotice('');
+      setError('');
+      setStep('share');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      setError(text.linkTooLong);
+    }
+  };
+
+  const copyOrderLink = async () => {
+    if (!orderUrl) return;
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('clipboard_unavailable');
+      await navigator.clipboard.writeText(orderUrl);
+      setCopyNotice(text.copied);
+    } catch {
+      setCopyNotice(text.copyManual);
+      orderLinkInput.current?.focus();
+      orderLinkInput.current?.select();
+    }
+  };
+
+  const sendToWhatsApp = () => {
+    if (!orderUrl || snapshot.shop.whatsappNumber.length < 8) {
+      setError(text.noContact);
+      return;
+    }
+    const message = `Bonjour ${snapshot.shop.name}, voici ma demande de commande ${reference}. Ouvrez ce lien pour consulter les articles choisis et mes coordonnées : ${orderUrl}. Merci de confirmer le stock, la livraison et le montant final.`;
+    const whatsappUrl = `https://wa.me/${snapshot.shop.whatsappNumber}?text=${encodeURIComponent(message)}`;
+    try {
+      window.location.assign(whatsappUrl);
     } catch {
       setError(text.waError);
     }
@@ -448,10 +531,38 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
             <button type="button" onClick={() => setStep('browse')} className="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-800">
               {text.edit}
             </button>
+            <button type="button" onClick={createOrderLink} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0A4DFF] px-4 py-3.5 text-sm font-extrabold text-white">
+              <Check className="h-4 w-4" /> {text.createLink}
+            </button>
+          </section>
+        )}
+
+        {step === 'share' && (
+          <section className="mx-auto max-w-xl rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+              <Check className="h-6 w-6" />
+            </div>
+            <h1 className="mt-4 text-2xl font-black">{text.shareTitle}</h1>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">{text.linkPrompt}</p>
+            <label htmlFor="catalog-order-link" className="mt-5 block text-xs font-bold uppercase tracking-wide text-slate-500">{text.orderLink}</label>
+            <input
+              id="catalog-order-link"
+              ref={orderLinkInput}
+              readOnly
+              value={orderUrl}
+              onFocus={(event) => event.currentTarget.select()}
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm text-slate-800 outline-none focus:border-blue-500"
+            />
+            {copyNotice && <p role="status" className="mt-3 rounded-xl bg-blue-50 p-3 text-xs leading-relaxed text-blue-900">{copyNotice}</p>}
+            {error && <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-800">{error}</p>}
+            <button type="button" onClick={copyOrderLink} className="mt-5 w-full rounded-xl border border-slate-300 px-4 py-3.5 text-sm font-extrabold text-slate-800">
+              {text.copyLink}
+            </button>
             <button type="button" onClick={sendToWhatsApp} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-extrabold text-white">
-              <Check className="h-4 w-4" /> {text.send}
+              <Check className="h-4 w-4" /> {text.sendLink}
             </button>
             <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">{text.chooser}</p>
+            <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">{text.linkPrivacy}</p>
           </section>
         )}
       </div>

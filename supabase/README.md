@@ -1,6 +1,6 @@
 # Catalogue ShopFlow en direct (Supabase)
 
-Le catalogue public utilise un identifiant UUID stable (`?catalog=<uuid>`). Les visiteurs lisent le catalogue courant à l’ouverture; l’application met à jour la même ligne après chaque changement de paramètres publics, prix ou stock. Les demandes des visiteurs restent des brouillons WhatsApp et ne créent aucune vente.
+Le catalogue public utilise un identifiant UUID stable (`?catalog=<uuid>`). Les visiteurs lisent le catalogue courant à l’ouverture; l’application met à jour la même ligne après chaque changement de paramètres publics, prix ou stock. Une demande client est encodée dans le fragment d’un lien partageable (`#order=…`) : elle n’est pas enregistrée sur le serveur et ne crée aucune vente. Toute personne possédant ce lien peut toutefois consulter les coordonnées et la sélection; l’acheteur doit le transmettre uniquement à la boutique.
 
 ## Mise en service
 

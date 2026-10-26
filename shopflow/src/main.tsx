@@ -3,21 +3,38 @@ import { Capacitor } from '@capacitor/core';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { PublicCatalogPage } from './components/PublicCatalogPage';
+import { PublicOrderPage } from './components/PublicOrderPage';
 import './index.css';
 
+interface PublicRoute {
+  catalogToken: string | null;
+  orderToken: string | null;
+}
+
+function readPublicRoute(): PublicRoute {
+  const query = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  return {
+    catalogToken: query.get('catalog'),
+    orderToken: hash.get('order'),
+  };
+}
+
 function ApplicationEntry() {
-  const [catalogToken, setCatalogToken] = useState(() =>
-    new URLSearchParams(window.location.search).get('catalog')
-  );
+  const [route, setRoute] = useState(readPublicRoute);
 
   useEffect(() => {
-    const updateRoute = () =>
-      setCatalogToken(new URLSearchParams(window.location.search).get('catalog'));
+    const updateRoute = () => setRoute(readPublicRoute());
     window.addEventListener('popstate', updateRoute);
-    return () => window.removeEventListener('popstate', updateRoute);
+    window.addEventListener('hashchange', updateRoute);
+    return () => {
+      window.removeEventListener('popstate', updateRoute);
+      window.removeEventListener('hashchange', updateRoute);
+    };
   }, []);
 
-  return catalogToken ? <PublicCatalogPage token={catalogToken} /> : <App />;
+  if (route.orderToken) return <PublicOrderPage token={route.orderToken} />;
+  return route.catalogToken ? <PublicCatalogPage token={route.catalogToken} /> : <App />;
 }
 
 createRoot(document.getElementById('root')!).render(
