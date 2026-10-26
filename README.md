@@ -1,6 +1,6 @@
 # ShopFlow
 
-Vitrine statique et application ShopFlow réunies dans un dépôt. Le build produit le site vitrine à la racine et l’application web installable (PWA) à `/app/`.
+Vitrine ShopFlow et application installable réunies dans un dépôt. Le build produit la vitrine à la racine, le film animé indépendant à `/motion/`, les tutoriels illustratifs à `/tutoriels/` et la PWA distincte à `/app/`. La création d’une boutique se fait dans l’application, pas sur la vitrine.
 
 ## Héberger sur Render
 

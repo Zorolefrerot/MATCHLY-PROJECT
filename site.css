@@ -79,3 +79,21 @@
 }
 .hero-motion-link > b { margin-left: 1px; color: #80a2bd; font-size: 13px; }
 @media(max-width:700px) { .hero-motion-link { margin-top: 13px; font-size: 9px; } }
+
+/* Broader catalogue examples: products are representative, not a one-sector shop. */
+.product-row .product-category-icon { display:grid; flex:0 0 29px; width:29px; height:29px; place-items:center; border-radius:8px; font-size:18px; font-weight:800; }
+.icon-jewel { color:#9a6719; background:#fff1d7; }
+.icon-accessory { color:#256d77; background:#e3f5f1; }
+.icon-ebook { color:#7154a8; background:#f0eaff; }
+
+/* Brand motion is visible lower on the public landing page; it remains a separate illustrative film. */
+.film-home-section { overflow:hidden; padding:96px 0; color:#f4f8fc; background:radial-gradient(ellipse at 75% 45%,#123b5a 0,#071827 64%); }
+.film-home-inner { display:grid; grid-template-columns:minmax(0,1fr) 380px; align-items:center; gap:72px; }
+.film-home-copy { max-width:600px; }
+.film-home-copy h2 { margin:18px 0 16px; color:#f7fbff; font-family:Manrope,"DM Sans",sans-serif; font-size:clamp(36px,4.6vw,58px); font-weight:850; line-height:1.02; letter-spacing:-.065em; }
+.film-home-copy h2 span { color:#82e0b2; }
+.film-home-copy p { max-width:540px; color:#bdcbd7; font-size:13px; line-height:1.85; }
+.film-home-copy small { display:block; margin-top:12px; color:#8fa5b7; font-size:9px; }
+.film-home-player { width:100%; max-width:380px; justify-self:end; overflow:hidden; border:1px solid #45617a; border-radius:21px; background:#06131f; box-shadow:0 26px 75px #0007; }
+.film-home-player iframe { display:block; width:100%; aspect-ratio:9/16; border:0; background:#071827; }
+@media(max-width:700px) { .film-home-section { padding:70px 0; } .film-home-inner { grid-template-columns:1fr; gap:26px; } .film-home-copy h2 { font-size:38px; } .film-home-copy p { font-size:10px; } .film-home-player { width:min(100%,340px); justify-self:center; } }

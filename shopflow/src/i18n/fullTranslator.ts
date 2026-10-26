@@ -244,6 +244,11 @@ export const PHRASE_DICTIONARY: Record<
     sw: 'Mitindo & Vifaa',
     zh: '服饰与周边',
   },
+  Bijoux: { en: 'Jewelry', ln: 'Bijoux', sw: 'Vito', zh: '珠宝首饰' },
+  Accessoires: { en: 'Accessories', ln: 'Accessoires', sw: 'Vifaa', zh: '配饰' },
+  Vêtements: { en: 'Clothing', ln: 'Bilamba', sw: 'Mavazi', zh: '服装' },
+  Chaussures: { en: 'Shoes', ln: 'Sapato', sw: 'Viatu', zh: '鞋类' },
+  'E-books': { en: 'E-books', ln: 'Mikanda ya numérique', sw: 'Vitabu vya kidijitali', zh: '电子书' },
   'Valider + Générer Reçu Image WhatsApp': {
     en: 'Checkout + Generate WhatsApp Image Receipt',
     ln: 'Ndimá + Bimisá Reçu Image WhatsApp',
@@ -274,12 +279,54 @@ export const PHRASE_DICTIONARY: Record<
     sw: 'Kadi za Picha',
     zh: '图片卡片视图',
   },
-  // Default Products translated cleanly across ALL 5 languages!
-  'Sac de Riz Parfumé 25 kg': {
-    en: 'Fragrant White Rice Sack 25 kg',
-    ln: 'Saki ya Loso ya Solo 25 kg',
-    sw: 'Mfuko wa Mchele Wenye Harufu Nzuri 25 kg',
-    zh: '25公斤特级香米（袋装）',
+  // Sample products, translated across the app languages.
+  'Collier doré délicat': {
+    en: 'Delicate gold-tone necklace',
+    ln: 'Collier ya wolo ya pete',
+    sw: 'Mkufu mwembamba wa rangi ya dhahabu',
+    zh: '精致金色项链',
+  },
+  'Bracelet perlé': {
+    en: 'Beaded bracelet',
+    ln: 'Bracelet ya ba perles',
+    sw: 'Bangili ya shanga',
+    zh: '串珠手链',
+  },
+  'Sac à main structuré': {
+    en: 'Structured handbag',
+    ln: 'Saki ya loboko ya makasi',
+    sw: 'Mkoba wenye muundo thabiti',
+    zh: '挺括手提包',
+  },
+  'Lunettes de soleil': {
+    en: 'Sunglasses',
+    ln: 'Lunettes ya moi',
+    sw: 'Miwani ya jua',
+    zh: '太阳镜',
+  },
+  'Blouse en coton': {
+    en: 'Cotton blouse',
+    ln: 'Blouse ya coton',
+    sw: 'Blauzi ya pamba',
+    zh: '棉质上衣',
+  },
+  'Mocassins classiques': {
+    en: 'Classic loafers',
+    ln: 'Sapato ya lolenge classique',
+    sw: 'Viatu vya mtindo wa kawaida',
+    zh: '经典乐福鞋',
+  },
+  'E-book pratique pour entrepreneurs': {
+    en: 'Practical e-book for entrepreneurs',
+    ln: 'E-book pona ba entrepreneurs',
+    sw: 'Kitabu pepe cha wajasiriamali',
+    zh: '创业实用电子书',
+  },
+  'Panier de fruits et légumes': {
+    en: 'Fruit and vegetable basket',
+    ln: 'Panier ya mbuma na ndunda',
+    sw: 'Kikapu cha matunda na mboga',
+    zh: '果蔬篮',
   },
   'Huile Végétale Dorée 5 L': {
     en: 'Golden Vegetable Cooking Oil 5 L',

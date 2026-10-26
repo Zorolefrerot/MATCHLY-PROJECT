@@ -257,7 +257,7 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
 
               <div className="rounded-xl bg-[#0A4DFF] p-3 text-center text-white shadow-xs">
                 <p className="text-[11px] font-black">
-                  ③ Encaisser 97 500 FC & Reçu WhatsApp →
+                  ③ Encaisser 73 000 FC & Reçu WhatsApp →
                 </p>
               </div>
             </>
@@ -273,10 +273,10 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
                   </div>
                   <div>
                     <p className="text-[11px] font-black text-slate-900">
-                      ① MAMAN GRÂCE MARKET
+                      ① BOUTIQUE DÉMO
                     </p>
                     <p className="text-[9px] text-slate-400">
-                      REÇU #2026-0427 • Kinshasa
+                      EXEMPLE DE REÇU • Kinshasa
                     </p>
                   </div>
                 </div>
@@ -287,18 +287,18 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
 
               <div className="my-2.5 space-y-1.5 text-[10px]">
                 <div className="flex justify-between font-semibold text-slate-700">
-                  <span>1× Sac de Riz 25 kg</span>
-                  <span className="font-bold">68 000 FC</span>
+                  <span>1× Collier doré</span>
+                  <span className="font-bold">45 000 FC</span>
                 </div>
                 <div className="flex justify-between font-semibold text-slate-700">
-                  <span>1× Huile Végétale 5 L</span>
-                  <span className="font-bold">29 500 FC</span>
+                  <span>1× Bracelet perlé</span>
+                  <span className="font-bold">28 000 FC</span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between rounded-xl bg-[#081844] px-3 py-2 text-white">
                 <span className="text-[10px] font-bold">② TOTAL PAYÉ</span>
-                <span className="text-xs font-black">97 500 FC</span>
+                <span className="text-xs font-black">73 000 FC</span>
               </div>
 
               <div className="mt-2.5 rounded-lg bg-emerald-600 py-1.5 text-center text-[10px] font-black text-white">
@@ -369,17 +369,17 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
                 <div className="relative z-10 h-20 w-44 rounded-xl border-2 border-emerald-400 bg-black/25 p-2 text-center">
                   <div className="mt-6 h-0.5 w-full bg-red-500 shadow-[0_0_8px_#ef4444]" />
                   <p className="mt-2 text-[9px] font-bold text-emerald-300">
-                    ① Code détecté : 6201045900124
+                    ① Code détecté : 6201045901001
                   </p>
                 </div>
               </div>
               <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-2.5">
                 <div>
                   <p className="text-[11px] font-black text-slate-900">
-                    ② Sac de Riz Parfumé 25 kg
+                    ② Collier doré délicat
                   </p>
                   <p className="text-[10px] font-bold text-emerald-700">
-                    68 000 FC • En stock (14)
+                    45 000 FC • En stock (12)
                   </p>
                 </div>
                 <span className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white">
@@ -412,7 +412,7 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
                 </p>
                 <p className="text-slate-600">
                   Votre article le plus rentable est{' '}
-                  <strong className="text-slate-900">Riz 25 kg</strong> (+30 000
+                  <strong className="text-slate-900">Mocassins classiques</strong> (+20 000
                   FC).
                 </p>
               </div>

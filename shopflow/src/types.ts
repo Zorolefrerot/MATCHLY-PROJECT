@@ -50,11 +50,16 @@ export interface Product {
   barcode?: string;
   name: string;
   category:
+    | 'Bijoux'
+    | 'Accessoires'
+    | 'Vêtements'
+    | 'Chaussures'
+    | 'E-books'
     | 'Alimentation'
-    | 'Huiles & Lait'
     | 'Boissons'
     | 'Hygiène'
-    | 'Mode & Accessoires';
+    | 'Mode & Accessoires'
+    | 'Huiles & Lait';
   unit: string;
   image: string;
   stock: number;

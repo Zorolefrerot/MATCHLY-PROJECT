@@ -2,3 +2,4 @@
 /dist/
 /.vercel/
 /shopflow/android/app/shopflow-test-debug.keystore
+*.tsbuildinfo

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#071827" />
+  <meta name="description" content="Tutoriels ShopFlow : articles, stock, ventes, reçus, assistant IA, boutique et sauvegardes." />
+  <title>Tutoriels ShopFlow — Guides pas à pas</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, "DM Sans", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; color:#edf5fb; background:radial-gradient(ellipse at 18% 0%,#153758 0,#0a1d31 40%,#06131f 100%); }
+    a { color:inherit; text-decoration:none; }
+    .shell { width:min(1160px,calc(100% - 36px)); margin:auto; padding:24px 0 46px; }
+    .top { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:42px; }
+    .brand { display:flex; align-items:center; gap:11px; font-size:18px; font-weight:900; letter-spacing:-.05em; }
+    .brand img { width:42px; height:42px; border-radius:12px; background:white; }
+    .brand span { color:#65b4ff; }
+    .back { color:#bbcada; font-size:12px; font-weight:750; }
+    .eyebrow { color:#83e0b4; font-size:10px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; }
+    h1 { max-width:730px; margin:13px 0 12px; font-size:clamp(38px,6vw,68px); line-height:.98; letter-spacing:-.065em; }
+    .intro { max-width:680px; color:#b4c4d2; font-size:14px; line-height:1.7; }
+    .guide-layout { display:grid; grid-template-columns:minmax(0,1fr) 380px; align-items:start; gap:28px; margin-top:34px; }
+    .list-panel,.player-panel { border:1px solid #27415a; border-radius:22px; background:#0a2032d9; box-shadow:0 25px 70px #0003; }
+    .list-panel { padding:20px; }
+    .search { width:100%; height:46px; padding:0 14px; border:1px solid #304b64; border-radius:12px; outline:none; color:#f4f8fc; background:#071827; font:inherit; font-size:13px; }
+    .search:focus { border-color:#4aa7ee; box-shadow:0 0 0 3px #4aa7ee20; }
+    .topic-list { display:grid; gap:9px; margin-top:15px; }
+    .topic { display:grid; grid-template-columns:43px 1fr 20px; align-items:center; gap:12px; width:100%; min-height:70px; padding:11px 13px; border:1px solid transparent; border-radius:14px; text-align:left; color:#eaf2f8; background:#112a3c; cursor:pointer; transition:.2s ease; }
+    .topic:hover { border-color:#3c6381; transform:translateY(-1px); background:#15334a; }
+    .topic[aria-current="true"] { border-color:#2c89ca; background:linear-gradient(110deg,#123451,#16334a); box-shadow:inset 3px 0 #67daa6; }
+    .topic-icon { display:grid; width:42px; height:42px; place-items:center; border-radius:12px; color:#80e1b3; background:#1b4256; font-size:19px; }
+    .topic b { display:block; font-size:13px; }
+    .topic small { display:block; margin-top:4px; color:#9fb1c0; font-size:10px; line-height:1.4; }
+    .topic-arrow { color:#6f95af; font-size:18px; }
+    .empty { display:none; padding:24px 4px 8px; color:#adbecd; font-size:13px; }
+    .player-panel { padding:13px; }
+    .player-head { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:5px 4px 12px; color:#9eb4c6; font-size:10px; font-weight:900; letter-spacing:.12em; }
+    .player-head span:last-child { color:#70dca9; }
+    .screen { overflow:hidden; border:1px solid #30475e; border-radius:17px; background:#06131f; aspect-ratio:9/16; }
+    canvas { display:block; width:100%; height:100%; }
+    .player-controls { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+    button { font:inherit; }
+    .control { min-height:40px; border:1px solid #36536c; border-radius:10px; color:#ecf5fb; background:#142d42; font-size:11px; font-weight:800; cursor:pointer; }
+    .control.primary { border-color:#1477cb; background:#1269d3; }
+    .control:disabled { opacity:.65; cursor:wait; }
+    .status { min-height:30px; padding:8px 3px 2px; color:#9db1c2; font-size:10px; }
+    .explanation { margin-top:15px; padding:16px; border:1px solid #28455c; border-radius:15px; background:#081a2a; }
+    .explanation h2 { margin:0 0 8px; font-size:16px; letter-spacing:-.03em; }
+    .explanation p { margin:0; color:#b5c5d3; font-size:11px; line-height:1.65; }
+    .steps { display:grid; gap:8px; margin:13px 0 0; padding:0; list-style:none; counter-reset:step; }
+    .steps li { display:grid; grid-template-columns:23px 1fr; gap:8px; align-items:start; color:#dce8f1; font-size:11px; line-height:1.55; counter-increment:step; }
+    .steps li:before { content:counter(step); display:grid; width:22px; height:22px; place-items:center; border-radius:50%; color:#08241b; background:#77dfad; font-size:10px; font-weight:900; }
+    .note { margin-top:15px; padding:12px 14px; border:1px solid #665537; border-radius:13px; color:#e5d7b7; background:#382d1c66; font-size:10px; line-height:1.6; }
+    footer { margin-top:28px; color:#8196a8; font-size:10px; line-height:1.6; }
+    @media(max-width:900px) { .guide-layout { grid-template-columns:1fr; } .player-panel { width:min(420px,100%); margin:auto; } }
+    @media(max-width:600px) { .shell { width:calc(100% - 26px); padding-top:16px; } .top { margin-bottom:31px; } .list-panel { padding:13px; } .player-panel { padding:10px; } .topic { min-height:64px; } h1 { font-size:clamp(38px,12vw,56px); } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <a class="brand" href="/" aria-label="Retour à la vitrine ShopFlow"><img src="../site-assets/shopflow-icon.png" alt="" />Shop<span>Flow</span></a>
+      <a class="back" href="/">← Retour au site</a>
+    </header>
+    <div class="eyebrow">CENTRE D’AIDE · GUIDES VISUELS</div>
+    <h1>Une question ?<br />Voyez les étapes.</h1>
+    <p class="intro">Choisissez un sujet pour lancer un mini tutoriel animé, puis suivez les explications écrites. Les gestes à l’écran sont simulés : la vitrine ne lance pas l’application.</p>
+    <section class="guide-layout" aria-label="Tutoriels et lecteur animé">
+      <div class="list-panel">
+        <label class="eyebrow" for="topic-search">QUELLE ÉTAPE CHERCHEZ-VOUS ?</label>
+        <input class="search" id="topic-search" type="search" placeholder="Ex. ajouter un article, reçu, IA…" autocomplete="off" />
+        <div class="topic-list" id="topic-list" role="list"></div>
+        <div class="empty" id="empty-state">Aucun guide ne correspond à cette recherche.</div>
+      </div>
+      <div>
+        <div class="player-panel">
+          <div class="player-head"><span id="player-kicker">TUTORIEL SHOPFLOW</span><span>● SIMULATION</span></div>
+          <div class="screen"><canvas id="tutorial-canvas" width="720" height="1280" aria-label="Animation pédagogique de l’interface ShopFlow"></canvas></div>
+          <div class="player-controls">
+            <button class="control" id="replay" type="button">↻ Revoir</button>
+            <button class="control primary" id="play" type="button">▶ Lancer le guide</button>
+          </div>
+          <div class="status" id="play-status" role="status">Choisissez une question dans la liste.</div>
+        </div>
+        <article class="explanation" aria-live="polite">
+          <h2 id="guide-title">Choisissez un tutoriel</h2>
+          <p id="guide-summary">Les explications étape par étape apparaîtront ici.</p>
+          <ol class="steps" id="guide-steps"></ol>
+        </article>
+        <div class="note" id="guide-note">Les animations utilisent des maquettes pédagogiques. Elles n’enregistrent aucune donnée et ne représentent pas de vraies transactions.</div>
+      </div>
+    </section>
+    <footer>Pour commencer, installez l’application sur Android ou ouvrez la web app sur iPhone à l’adresse <code>/app/</code>. La création de boutique se fait dans l’application après installation, pas sur cette vitrine.</footer>
+  </main>
+  <script src="./tutorials.js" defer></script>
+</body>
+</html>

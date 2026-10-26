@@ -19,14 +19,12 @@ await Promise.all([
   cp(resolve(root, 'index.html'), resolve(output, 'index.html')),
   cp(resolve(root, 'site.css'), resolve(output, 'site.css')),
   cp(resolve(root, 'motion'), resolve(output, 'motion'), { recursive: true }),
+  cp(resolve(root, 'tutoriels'), resolve(output, 'tutoriels'), { recursive: true }),
   cp(resolve(root, 'shopflow/public/landing-hero-merchant.jpg'), resolve(assets, 'shopflow-hero.jpg')),
   cp(resolve(root, 'shopflow/public/shopflow-logo.png'), resolve(assets, 'shopflow-logo.png')),
   cp(resolve(root, 'shopflow/native-assets/shopflow-icon.png'), resolve(assets, 'shopflow-icon.png')),
-  cp(resolve(root, 'shopflow/public/products/riz-25kg.jpg'), resolve(assets, 'product-riz.jpg')),
-  cp(resolve(root, 'shopflow/public/products/huile-5l.jpg'), resolve(assets, 'product-oil.jpg')),
-  cp(resolve(root, 'shopflow/public/products/boissons-pack.jpg'), resolve(assets, 'product-drinks.jpg')),
   cp(resolve(root, 'shopflow/public/landing-hero-merchant.jpg'), resolve(assets, 'step-checkout.jpg')),
-  cp(resolve(root, 'shopflow/public/products/farine-semoule.jpg'), resolve(assets, 'step-stock.jpg')),
+  cp(resolve(root, 'shopflow/public/landing-hero-merchant.jpg'), resolve(assets, 'step-stock.jpg')),
   cp(resolve(root, 'shopflow/public/landing-hero-merchant.jpg'), resolve(assets, 'step-report.jpg')),
   cp(shopflowDist, resolve(output, 'app'), { recursive: true }),
 ]);
@@ -42,4 +40,4 @@ try {
   console.warn(`Android APK not bundled in this local build: ${error.message}`);
 }
 
-console.log('Render/Vercel output ready: showcase at /, motion film at /motion/, full PWA at /app/, APK download at /downloads/ShopFlow-Android.apk.');
+console.log('Render/Vercel output ready: showcase at /, motion film at /motion/, tutorials at /tutoriels/, full PWA at /app/, APK download at /downloads/ShopFlow-Android.apk.');

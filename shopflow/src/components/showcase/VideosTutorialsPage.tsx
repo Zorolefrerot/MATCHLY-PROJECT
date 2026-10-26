@@ -57,7 +57,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     frames: [
       {
         subtitle:
-          '1. Le client choisit un Sac de Riz 25 kg et un Bidon d’Huile 5 L au comptoir.',
+          '1. Le client choisit un collier et un bracelet dans le catalogue.',
         cursorPos: { x: '76%', y: '38%' },
       },
       {
@@ -68,7 +68,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
       },
       {
         subtitle:
-          '3. Le stock descend automatiquement de 14 à 13 sacs sans rien calculer.',
+          '3. Les quantités des articles vendus sont déduites du stock enregistré.',
         cursorPos: { x: '80%', y: '56%' },
         clicking: true,
       },
@@ -136,7 +136,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
       },
       {
         subtitle:
-          '3. Bip instantané ! Le produit et son prix exact (68 000 FC) sont reconnus.',
+          '3. Vérifiez le nom et le prix proposés avant de confirmer : la reconnaissance peut se tromper.',
         cursorPos: { x: '65%', y: '68%' },
       },
       {
@@ -159,7 +159,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     frames: [
       {
         subtitle:
-          '1. ShopFlow signale en rouge les articles proches de la rupture (ex: Huile 5 L : 4 restants).',
+          '1. Repérez dans le catalogue les articles sous leur seuil d’alerte, par exemple une paire de mocassins.',
         cursorPos: { x: '35%', y: '42%' },
       },
       {
@@ -170,7 +170,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
       },
       {
         subtitle:
-          '3. Entrez la quantité reçue (+20 bidons) et validez.',
+          '3. Saisissez la quantité reçue, puis validez le réapprovisionnement.',
         cursorPos: { x: '55%', y: '62%' },
         clicking: true,
       },
@@ -482,18 +482,18 @@ const AnimatedModuleVideoStage: React.FC<{
               >
                 <div className="flex items-center justify-between">
                   <span className="font-black text-slate-900">
-                    REÇU DE VENTE #2026-0427
+                    APERÇU — REÇU ILLUSTRATIF
                   </span>
                   <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-black text-white">
                     ✓ PAYÉ
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-600">
-                  Client : <strong>KABASELE Merdi</strong> (+243 97 123 4567)
+                  Exemple client : <strong>Client boutique</strong>
                 </p>
                 <div className="flex items-center justify-between rounded-xl bg-[#081844] px-3 py-2 text-white">
                   <span className="text-[11px] font-bold">TOTAL ENCAISSÉ</span>
-                  <span className="font-black">97 500 FC</span>
+                  <span className="font-black">73 000 FC</span>
                 </div>
                 <div
                   className={`rounded-xl py-2 text-center text-[11px] font-black text-white transition ${
@@ -522,7 +522,7 @@ const AnimatedModuleVideoStage: React.FC<{
                   />
                   {stepIdx >= 2 && (
                     <span className="absolute rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-black text-slate-950 shadow-lg">
-                      ✓ Code reconnu : Sac de Riz 25 kg (68 000 FC)
+                      ✓ Code reconnu : Collier doré délicat (45 000 FC)
                     </span>
                   )}
                 </div>
@@ -534,18 +534,18 @@ const AnimatedModuleVideoStage: React.FC<{
                 <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-center gap-3">
                     <img
-                      src={INITIAL_PRODUCTS[1].image}
-                      alt="Huile"
+                      src={INITIAL_PRODUCTS[5].image}
+                      alt={INITIAL_PRODUCTS[5].name}
                       className="h-11 w-11 rounded-lg object-cover"
                     />
                     <div>
                       <p className="font-black text-slate-900">
-                        Huile Végétale Dorée 5 L
+                        {INITIAL_PRODUCTS[5].name}
                       </p>
                       <p className="text-[11px] text-slate-500">
                         {stepIdx < 3
-                          ? '⚠️ Alerte stock bas : 4 bidons'
-                          : '✅ Stock confortable : 24 bidons'}
+                          ? '⚠️ Alerte stock bas : 4 paires'
+                          : '✅ Stock confortable : 24 paires'}
                       </p>
                     </div>
                   </div>
@@ -753,12 +753,10 @@ export const VideosTutorialsPage: React.FC<VideosTutorialsPageProps> = ({
               🎬 Tutoriels Vidéo Interactifs (7 Parties)
             </span>
             <h1 className="sf-display-heading mt-4 text-3xl font-extrabold tracking-tight sm:text-5xl">
-              Chaque partie de ShopFlow démontrée en vidéo
+              Les parcours ShopFlow expliqués en animation
             </h1>
-            <p className="mt-3 text-sm leading-relaxed text-slate-300 sm:text-base">
-              Sélectionnez n’importe quelle fonctionnalité ci-dessous pour voir
-              son fonctionnement exact en mouvement, avec sous-titres et voix
-              explicative en français.
+              <p className="mt-3 text-sm leading-relaxed text-slate-300 sm:text-base">
+              Choisissez une animation pour parcourir les étapes avec des sous-titres écrits. Les gestes, produits et montants affichés sont des exemples simulés; aucun achat ni aucune vente réelle n’est effectué.
             </p>
           </div>
 

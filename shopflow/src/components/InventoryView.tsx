@@ -54,7 +54,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
 
   // Modal Form State
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<Product['category']>('Alimentation');
+  const [category, setCategory] = useState<Product['category']>('Bijoux');
   const [unit, setUnit] = useState('Pièce');
   const [image, setImage] = useState('');
   const [stockInput, setStockInput] = useState('0');
@@ -67,7 +67,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const openCreateModal = () => {
     setEditingProduct(null);
     setName('');
-    setCategory('Alimentation');
+    setCategory('Bijoux');
     setUnit('Pièce');
     setImage('');
     setStockInput('0');
@@ -564,7 +564,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Ex: Sac de Riz 25 kg, Huile 5 L..."
+                    placeholder="Ex. Collier doré, sac à main, e-book…"
                     className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-emerald-500 focus:outline-hidden"
                   />
                 </div>
@@ -579,11 +579,16 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     }
                     className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 focus:border-emerald-500 focus:outline-hidden"
                   >
+                    <option value="Bijoux">Bijoux</option>
+                    <option value="Accessoires">Accessoires</option>
+                    <option value="Vêtements">Vêtements</option>
+                    <option value="Chaussures">Chaussures</option>
+                    <option value="E-books">E-books</option>
                     <option value="Alimentation">Alimentation</option>
-                    <option value="Huiles & Lait">Huiles & Lait</option>
-                    <option value="Hygiène">Hygiène</option>
                     <option value="Boissons">Boissons</option>
+                    <option value="Hygiène">Hygiène</option>
                     <option value="Mode & Accessoires">Mode & Accessoires</option>
+                    <option value="Huiles & Lait">Huiles & Lait</option>
                   </select>
                 </div>
               </div>

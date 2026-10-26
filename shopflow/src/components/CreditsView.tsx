@@ -330,7 +330,7 @@ export const CreditsView: React.FC<CreditsViewProps> = ({
                   type="text"
                   value={newItems}
                   onChange={(e) => setNewItems(e.target.value)}
-                  placeholder="Ex: 1x Sac de Riz 25 kg + 1x Sucre"
+                  placeholder="Ex. 1x Collier, 1x Bracelet"
                   className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-emerald-500 focus:outline-hidden"
                 />
               </div>

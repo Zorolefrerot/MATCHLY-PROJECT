@@ -441,7 +441,7 @@ export function App() {
           id: `prod-${Date.now()}`,
           refCode: `SF-0${products.length + 1}`,
           name: act.name,
-          category: act.category || 'Alimentation',
+          category: act.category || 'Bijoux',
           unit: act.unit || 'Pièce',
           image: PRESET_PRODUCT_PHOTOS[0].url,
           stock: Math.max(1, act.stock || 10),

@@ -436,7 +436,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               content: [
                 {
                   type: 'text',
-                  text: `Analyse cette photo prise par un commerçant. Produits existants dans son stock: [${stockNames}].\nRéponds UNIQUEMENT avec un objet JSON strict sans balises markdown de la forme:\n{"matchedProductId": "id exact si c'est clairement l'un des produits du stock sinon null", "detectedName": "nom commercial court et précis en français de l'objet sur la photo", "barcodeRead": "chiffres du code-barres si visible sinon null", "estimatedPriceFC": 15000, "category": "Alimentation"}`,
+                  text: `Analyse cette photo prise par un commerçant. Produits existants dans son stock: [${stockNames}].\nRéponds UNIQUEMENT avec un objet JSON strict sans balises markdown de la forme:\n{"matchedProductId": "id exact si c'est clairement l'un des produits du stock sinon null", "detectedName": "nom commercial court et précis en français de l'objet sur la photo", "barcodeRead": "chiffres du code-barres si visible sinon null", "estimatedPriceFC": 15000, "category": "une seule catégorie parmi Bijoux, Accessoires, Vêtements, Chaussures, E-books, Alimentation, Boissons, Hygiène ou Mode & Accessoires"}`,
                 },
                 { type: 'image_url', image_url: { url: compactDataUrl } },
               ],
@@ -467,7 +467,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             setAiVisionSuggestion({
               detectedName: info.detectedName,
               estimatedPriceFC: Number(info.estimatedPriceFC) || 15000,
-              category: info.category || 'Alimentation',
+              category: info.category || 'Bijoux',
             });
             setQuickNewName(info.detectedName);
             setQuickNewSellPrice(String(Number(info.estimatedPriceFC) || 15000));
@@ -520,7 +520,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       refCode: `SF-${Math.floor(100 + Math.random() * 900)}`,
       barcode: decodedCode || undefined,
       name: quickNewName.trim() || 'Marchandise Scannée',
-      category: aiVisionSuggestion?.category || 'Alimentation',
+      category: aiVisionSuggestion?.category || 'Bijoux',
       unit: 'Pièce',
       image: capturedPhotoUrl || products[0].image,
       stock: 15,

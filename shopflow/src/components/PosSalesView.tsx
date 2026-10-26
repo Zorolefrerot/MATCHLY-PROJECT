@@ -43,11 +43,16 @@ interface PosSalesViewProps {
 
 const CATEGORIES = [
   'Tous',
+  'Bijoux',
+  'Accessoires',
+  'Vêtements',
+  'Chaussures',
+  'E-books',
   'Alimentation',
-  'Huiles & Lait',
-  'Hygiène',
   'Boissons',
+  'Hygiène',
   'Mode & Accessoires',
+  'Huiles & Lait',
 ] as const;
 
 export const PosSalesView: React.FC<PosSalesViewProps> = ({
