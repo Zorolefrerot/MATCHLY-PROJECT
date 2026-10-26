@@ -37,6 +37,7 @@ async function waitUntilReady(url, child) {
 
 test('catalog HTTP routes create, update and read a stable public URL without exposing service credentials', async (t) => {
   const rows = new Map();
+  const uploadedObjects = [];
   const database = createServer(async (req, res) => {
     assert.equal(req.headers.apikey, serviceSecret);
     assert.equal(req.headers.authorization, undefined);
@@ -44,11 +45,26 @@ test('catalog HTTP routes create, update and read a stable public URL without ex
     const id = url.searchParams.get('catalog_id')?.replace(/^eq\./, '');
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
-    const bodyText = Buffer.concat(chunks).toString('utf8');
+    const bodyBuffer = Buffer.concat(chunks);
+    const bodyText = bodyBuffer.toString('utf8');
+    if (url.pathname.startsWith('/storage/v1/object/')) {
+      assert.equal(req.headers['content-type'], 'image/jpeg');
+      assert.equal(req.headers['x-upsert'], 'true');
+      uploadedObjects.push({ path: url.pathname, body: bodyBuffer });
+      res.writeHead(200, { 'Content-Type': 'application/json' }).end('{}');
+      return;
+    }
     if (req.method === 'POST') {
       const row = JSON.parse(bodyText);
       rows.set(row.catalog_id, row);
       res.writeHead(201).end();
+      return;
+    }
+    if (req.method === 'GET' && url.searchParams.get('select') === 'catalog_id') {
+      const row = rows.get(id);
+      const ownerHash = url.searchParams.get('owner_token_hash')?.replace(/^eq\./, '');
+      const result = row?.owner_token_hash === ownerHash ? [{ catalog_id: id }] : [];
+      res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(result));
       return;
     }
     if (req.method === 'PATCH') {
@@ -97,7 +113,20 @@ test('catalog HTTP routes create, update and read a stable public URL without ex
   });
   assert.equal(create.status, 201);
 
-  const updated = { ...payload, publishedAt: '2026-10-26T11:00:00.000Z', products: [{ ...payload.products[0], stock: 2, priceFC: 17000 }] };
+  const imageData = `data:image/jpeg;base64,${Buffer.from('small-jpeg-image').toString('base64')}`;
+  const imageUpload = await fetch(`${api}/api/catalogs/${catalogId}/images/product-1`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ownerToken}` },
+    body: JSON.stringify({ imageData }),
+  });
+  assert.equal(imageUpload.status, 200);
+  const hostedImage = await imageUpload.json();
+  assert.match(hostedImage.url, /^http:\/\/127\.0\.0\.1:/);
+  assert.equal(uploadedObjects.length, 1);
+  assert.equal(uploadedObjects[0].body.toString(), 'small-jpeg-image');
+
+  const publishedImage = 'https://project.supabase.co/storage/v1/object/public/shopflow-catalog-images/catalog/product.jpg';
+  const updated = { ...payload, publishedAt: '2026-10-26T11:00:00.000Z', products: [{ ...payload.products[0], stock: 2, priceFC: 17000, image: publishedImage }] };
   const update = await fetch(`${api}/api/catalogs/${catalogId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ownerToken}` },
@@ -110,6 +139,7 @@ test('catalog HTTP routes create, update and read a stable public URL without ex
   const current = await read.json();
   assert.equal(current.payload.products[0].stock, 2);
   assert.equal(current.payload.products[0].priceFC, 17000);
+  assert.equal(current.payload.products[0].image, publishedImage);
   assert.equal('purchasePriceFC' in current.payload.products[0], false);
   assert.equal(JSON.stringify(current).includes(serviceSecret), false);
 });

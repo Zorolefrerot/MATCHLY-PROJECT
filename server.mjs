@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { callGeminiProxy } from './lib/gemini-proxy.mjs';
-import { createPublicCatalog, readPublicCatalog, updatePublicCatalog, CatalogStoreError } from './lib/catalog-store.mjs';
+import { createPublicCatalog, readPublicCatalog, updatePublicCatalog, uploadPublicCatalogImage, CatalogStoreError } from './lib/catalog-store.mjs';
 
 const ROOT_DIR = fileURLToPath(new URL('.', import.meta.url));
 const DIST_DIR = resolve(ROOT_DIR, 'dist');
@@ -14,6 +14,7 @@ const AI_REQUESTS_PER_MINUTE = 30;
 const CATALOG_REQUESTS_PER_MINUTE = 120;
 const rateBuckets = new Map();
 const catalogRateBuckets = new Map();
+const catalogImageRateBuckets = new Map();
 const nativeOrigins = new Set(['capacitor://localhost', 'http://localhost', 'https://localhost']);
 const mimeTypes = {
   '.avif': 'image/avif',
@@ -128,6 +129,17 @@ function isCatalogRateLimited(ip) {
   return false;
 }
 
+function isCatalogImageRateLimited(ip) {
+  const now = Date.now();
+  const bucket = catalogImageRateBuckets.get(ip);
+  if (!bucket || now - bucket.startedAt >= 60_000) {
+    catalogImageRateBuckets.set(ip, { startedAt: now, count: 1 });
+    return false;
+  }
+  bucket.count += 1;
+  return bucket.count > 360;
+}
+
 function sendCatalogError(response, error) {
   const status = error instanceof CatalogStoreError ? error.status : Number(error?.status) || 400;
   const code = error instanceof CatalogStoreError ? error.code : 'catalog_request_failed';
@@ -171,6 +183,33 @@ async function handleApi(request, response, pathname) {
       const token = String(request.headers.authorization || '').replace(/^Bearer\s+/i, '');
       const result = await createPublicCatalog({ id: payload?.id, token, payload: payload?.snapshot });
       sendJson(response, 201, result);
+    } catch (error) {
+      sendCatalogError(response, error);
+    }
+    return;
+  }
+
+  const catalogImageMatch = pathname.match(/^\/api\/catalogs\/([0-9a-f-]+)\/images\/([A-Za-z0-9._-]+)$/i);
+  if (catalogImageMatch) {
+    if (request.method !== 'PUT') {
+      response.setHeader('Allow', 'PUT, OPTIONS');
+      sendJson(response, 405, { error: { code: 'method_not_allowed', message: 'Méthode non autorisée.' } });
+      return;
+    }
+    if (isCatalogImageRateLimited(clientIp)) {
+      sendJson(response, 429, { error: { code: 'rate_limited', message: 'Trop de demandes. Réessayez dans une minute.' } });
+      return;
+    }
+    try {
+      const payload = await readJsonBody(request);
+      const token = String(request.headers.authorization || '').replace(/^Bearer\s+/i, '');
+      const result = await uploadPublicCatalogImage({
+        id: catalogImageMatch[1],
+        productId: catalogImageMatch[2],
+        token,
+        imageData: payload?.imageData,
+      });
+      sendJson(response, 200, result);
     } catch (error) {
       sendCatalogError(response, error);
     }

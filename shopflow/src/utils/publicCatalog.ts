@@ -34,6 +34,19 @@ export interface PublicCatalogSnapshot {
   products: PublicCatalogProduct[];
 }
 
+function safeImage(value: string | undefined, publicBase: string): string | undefined {
+  if (!value || value.length > 2_000 || /^(data:|blob:|javascript:)/i.test(value)) {
+    return undefined;
+  }
+  try {
+    const resolved = new URL(value, publicBase);
+    if (resolved.protocol !== 'https:' && resolved.protocol !== 'http:') return undefined;
+    return resolved.href;
+  } catch {
+    return undefined;
+  }
+}
+
 export function makePublicCatalogSnapshot(
   settings: ShopSettings,
   products: Product[],
@@ -43,19 +56,6 @@ export function makePublicCatalogSnapshot(
     throw new Error('catalog_limit');
   }
 
-  const safeImage = (value: string | undefined): string | undefined => {
-    if (!value || value.length > 2_000 || /^(data:|blob:|javascript:)/i.test(value)) {
-      return undefined;
-    }
-    try {
-      const resolved = new URL(value, publicBase);
-      if (resolved.protocol !== 'https:' && resolved.protocol !== 'http:') return undefined;
-      return resolved.href;
-    } catch {
-      return undefined;
-    }
-  };
-
   return {
     version: 1,
     publishedAt: new Date().toISOString(),
@@ -63,7 +63,7 @@ export function makePublicCatalogSnapshot(
       name: settings.shopName.trim().slice(0, 100) || 'ShopFlow',
       whatsappNumber: settings.whatsappNumber.replace(/[^\d]/g, '').slice(0, 20),
       city: settings.city.trim().slice(0, 100),
-      logo: safeImage(settings.shopLogo),
+      logo: safeImage(settings.shopLogo, publicBase),
       currency: settings.currency === 'USD' ? 'USD' : 'FC',
       usdRateFC:
         Number.isFinite(settings.usdRateFC) && settings.usdRateFC > 0
@@ -76,11 +76,16 @@ export function makePublicCatalogSnapshot(
       name: String(product.name).trim().slice(0, 160) || 'Article',
       category: String(product.category || '').slice(0, 80),
       unit: String(product.unit || '').slice(0, 40),
-      image: safeImage(product.image),
+      image: safeProductImage(product.image, publicBase),
       priceFC: clampMoney(product.sellingPriceFC),
       stock: Math.max(0, Math.min(1_000_000, Math.floor(Number(product.stock) || 0))),
     })),
   };
+}
+
+function safeProductImage(value: string | undefined, publicBase: string): string | undefined {
+  if (typeof value === 'string' && /^data:image\/[^;,]+;base64,/i.test(value)) return value;
+  return safeImage(value, publicBase);
 }
 
 export function encodePublicCatalog(snapshot: PublicCatalogSnapshot): string {
@@ -180,20 +185,22 @@ export async function createLivePublicCatalog(
   await catalogApiRequest('/api/catalogs', {
     method: 'POST',
     headers: { Authorization: `Bearer ${credentials.token}` },
-    body: JSON.stringify({ id: credentials.id, snapshot }),
+    body: JSON.stringify({ id: credentials.id, snapshot: withoutDeviceImages(snapshot) }),
   });
   return credentials;
 }
+
 
 export async function updateLivePublicCatalog(
   id: string,
   token: string,
   snapshot: PublicCatalogSnapshot
 ): Promise<void> {
+  const snapshotWithHostedImages = await uploadDeviceImages(id, token, snapshot);
   await catalogApiRequest(`/api/catalogs/${encodeURIComponent(id)}`, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ snapshot }),
+    body: JSON.stringify({ snapshot: snapshotWithHostedImages }),
   });
 }
 
@@ -204,6 +211,113 @@ export async function readLivePublicCatalog(id: string): Promise<PublicCatalogSn
     throw new Error('invalid_catalog_response');
   }
   return result.payload;
+}
+
+const pendingImageUploads = new Map<string, Promise<string>>();
+
+function withoutDeviceImages(snapshot: PublicCatalogSnapshot): PublicCatalogSnapshot {
+  return {
+    ...snapshot,
+    products: snapshot.products.map((product) => {
+      if (product.image?.startsWith('data:image/')) {
+        return { ...product, image: undefined };
+      }
+      return product;
+    }),
+  };
+}
+
+async function uploadDeviceImages(
+  catalogId: string,
+  token: string,
+  snapshot: PublicCatalogSnapshot
+): Promise<PublicCatalogSnapshot> {
+  const products = await Promise.all(snapshot.products.map(async (product) => {
+    if (!product.image?.startsWith('data:image/')) return product;
+    const imageHash = await hashImage(product.image);
+    const cacheKey = `shopflow_catalog_image:${catalogId}:${product.id}`;
+    const cached = readImageCache(cacheKey);
+    if (cached?.hash === imageHash) return { ...product, image: cached.url };
+
+    const pendingKey = `${catalogId}:${product.id}:${imageHash}`;
+    let upload = pendingImageUploads.get(pendingKey);
+    if (!upload) {
+      upload = (async () => {
+        const compressed = await compressProductImage(product.image!);
+        const response = await catalogApiRequest(
+          `/api/catalogs/${encodeURIComponent(catalogId)}/images/${encodeURIComponent(product.id)}`,
+          {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ imageData: compressed }),
+          }
+        );
+        const result = (await response.json()) as { url?: string };
+        if (typeof result.url !== 'string' || !result.url.startsWith('https://')) {
+          throw new Error('catalog_image_invalid_response');
+        }
+        writeImageCache(cacheKey, { hash: imageHash, url: result.url });
+        return result.url;
+      })().finally(() => pendingImageUploads.delete(pendingKey));
+      pendingImageUploads.set(pendingKey, upload);
+    }
+    return { ...product, image: await upload };
+  }));
+  return { ...snapshot, products };
+}
+
+async function hashImage(imageData: string): Promise<string> {
+  if (!globalThis.crypto?.subtle) return `${imageData.length}-${imageData.slice(-80)}`;
+  const bytes = new TextEncoder().encode(imageData);
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('');
+}
+
+function readImageCache(key: string): { hash: string; url: string } | null {
+  try {
+    const value = localStorage.getItem(key);
+    if (!value) return null;
+    const parsed = JSON.parse(value);
+    return typeof parsed?.hash === 'string' && typeof parsed?.url === 'string' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeImageCache(key: string, value: { hash: string; url: string }): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Keep the catalog functional if storage is unavailable; the image can be uploaded again later.
+  }
+}
+
+async function compressProductImage(source: string): Promise<string> {
+  const image = new Image();
+  image.src = source;
+  try {
+    await image.decode();
+  } catch {
+    throw new Error('catalog_image_invalid');
+  }
+  const maxSide = 1280;
+  let scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('catalog_image_invalid');
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const compressed = canvas.toDataURL('image/jpeg', Math.max(0.55, 0.82 - attempt * 0.07));
+    if (Math.floor((compressed.length - compressed.indexOf(',') - 1) * 0.75) <= 1_500_000) {
+      return compressed;
+    }
+    scale *= 0.78;
+  }
+  throw new Error('catalog_image_too_large');
 }
 
 function createCatalogCredentials(): PublicCatalogCredentials {

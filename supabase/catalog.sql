@@ -13,3 +13,18 @@ create table if not exists public.shopflow_catalogs (
 alter table public.shopflow_catalogs enable row level security;
 revoke all on table public.shopflow_catalogs from anon, authenticated;
 grant all on table public.shopflow_catalogs to service_role;
+
+-- Public read access is enabled for this dedicated image bucket. Only the server's
+-- secret key can upload or replace objects; no anon/authenticated write policy is added.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'shopflow-catalog-images',
+  'shopflow-catalog-images',
+  true,
+  1500000,
+  array['image/jpeg', 'image/png', 'image/webp']::text[]
+)
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
