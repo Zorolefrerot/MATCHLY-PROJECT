@@ -25,7 +25,7 @@ function setDatabaseEnv(t) {
     fetch: globalThis.fetch,
   };
   process.env.SUPABASE_URL = 'https://project.supabase.co';
-  process.env.SUPABASE_SECRET_KEY = 'server-only-test-key';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_server-only-test-key';
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   t.after(() => {
     if (previous.url === undefined) delete process.env.SUPABASE_URL;
@@ -77,8 +77,8 @@ test('create hashes the owner token; update and public read use the server-only 
 
   assert.equal(calls.length, 3);
   for (const call of calls) {
-    assert.equal(call.init.headers.apikey, 'server-only-test-key');
-    assert.equal(call.init.headers.Authorization, 'Bearer server-only-test-key');
+    assert.equal(call.init.headers.apikey, 'sb_secret_server-only-test-key');
+    assert.equal(call.init.headers.Authorization, undefined);
   }
   const created = JSON.parse(calls[0].init.body);
   assert.notEqual(created.owner_token_hash, token);
@@ -95,4 +95,19 @@ test('updates reject a wrong owner token without returning database credentials'
     updatePublicCatalog({ id: uuid, token: 'B'.repeat(43), payload: sample }),
     (error) => error instanceof CatalogStoreError && error.status === 403
   );
+});
+
+
+test('legacy service_role credentials retain the Authorization JWT header', async (t) => {
+  setDatabaseEnv(t);
+  process.env.SUPABASE_SECRET_KEY = '';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'legacy-service-role-jwt';
+  let requestHeaders;
+  globalThis.fetch = async (_url, init) => {
+    requestHeaders = init.headers;
+    return new Response('[]', { status: 200 });
+  };
+  await assert.rejects(readPublicCatalog(uuid), (error) => error instanceof CatalogStoreError && error.status === 404);
+  assert.equal(requestHeaders.apikey, 'legacy-service-role-jwt');
+  assert.equal(requestHeaders.Authorization, 'Bearer legacy-service-role-jwt');
 });

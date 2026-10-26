@@ -5,7 +5,7 @@ import { createServer } from 'node:http';
 
 const catalogId = '4f0b7635-a286-4c17-87f1-eaaf6d7968bd';
 const ownerToken = 'A'.repeat(43);
-const serviceSecret = 'server-only-integration-secret';
+const serviceSecret = 'sb_secret_server-only-integration-secret';
 const payload = {
   version: 1,
   publishedAt: '2026-10-26T10:00:00.000Z',
@@ -39,7 +39,7 @@ test('catalog HTTP routes create, update and read a stable public URL without ex
   const rows = new Map();
   const database = createServer(async (req, res) => {
     assert.equal(req.headers.apikey, serviceSecret);
-    assert.equal(req.headers.authorization, `Bearer ${serviceSecret}`);
+    assert.equal(req.headers.authorization, undefined);
     const url = new URL(req.url, 'http://supabase.test');
     const id = url.searchParams.get('catalog_id')?.replace(/^eq\./, '');
     const chunks = [];
