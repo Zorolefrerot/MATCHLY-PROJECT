@@ -879,7 +879,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       usd: 25,
                       highlight: false,
                       perks: [
-                        'Jusqu’à 5 boutiques ou dépôts synchronisés',
+                        'Gestion de plusieurs boutiques ou dépôts',
                         'Comptes vendeurs et gérants séparés',
                         'Assistant IA pour le suivi des stocks multi-boutiques',
                         'Export comptable PDF et Excel',

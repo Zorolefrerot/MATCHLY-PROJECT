@@ -15,3 +15,15 @@ services:
         sync: false
       - key: SUPABASE_SECRET_KEY
         sync: false
+      - key: VITE_SUPABASE_URL
+        value: https://sgiyuxpzqyyquvvznomn.supabase.co
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_SUPABASE_AUTH_REDIRECT_URL
+        value: https://shopflow-drc.onrender.com/app/
+      - key: VITE_SHOPFLOW_GOOGLE_OAUTH_ENABLED
+        value: "false"
+      - key: VITE_SHOPFLOW_GITHUB_OAUTH_ENABLED
+        value: "false"
+      - key: VITE_SHOPFLOW_FACEBOOK_OAUTH_ENABLED
+        value: "false"

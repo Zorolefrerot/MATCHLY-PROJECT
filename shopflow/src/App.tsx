@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import {
   BookOpenCheck,
@@ -9,7 +10,9 @@ import {
   ExternalLink,
   Globe,
   LayoutDashboard,
+  LoaderCircle,
   Lock,
+  LogOut,
   Monitor,
   Package,
   PackagePlus,
@@ -17,6 +20,7 @@ import {
   Settings,
   ShoppingBag,
   Smartphone,
+  Store,
   Unlock,
   Wifi,
   X,
@@ -68,6 +72,39 @@ import {
 import { formatMoney } from './utils/currency';
 import { getPublicCatalogAppBase, makePublicCatalogSnapshot, updateLivePublicCatalog } from './utils/publicCatalog';
 import { parseSaleDate } from './utils/saleDate';
+import {
+  authRedirectUrl,
+  isOAuthProviderEnabled,
+  isSupabaseConfigured,
+  supabase,
+  type OAuthProvider,
+} from './lib/supabase';
+import {
+  clearPendingOAuthShopSetup,
+  createOwnedShop,
+  getAuthErrorMessage,
+  getMyBillingAccount,
+  getPendingOAuthShopOwnerPin,
+  getPendingOAuthShopSetup,
+  getPendingOwnerPin,
+  getShopOnboardingFromUser,
+  clearPendingOwnerPin,
+  listMyShops,
+  sendPasswordReset,
+  signInWithEmail,
+  signInWithOAuth,
+  updatePassword,
+  type BillingAccountSummary,
+  type ShopOnboardingInput,
+  type ShopSummary,
+} from './services/supabaseAuth';
+import {
+  importLocalSnapshotToShop,
+  loadShopSnapshot,
+  refreshCachedSnapshotImages,
+  snapshotCounts,
+  type ShopDataSnapshot,
+} from './services/shopData';
 
 const STORAGE_KEY = 'shopflow_rdc_mockup_v4';
 const FIRST_RUN_TOUR_KEY = 'shopflow_first_run_tour_done_v1';
@@ -129,6 +166,41 @@ const sanitizeLegacySettings = (saved: Partial<ShopSettings>): ShopSettings => {
   return merged;
 };
 
+const shopStorageKey = (shopId: string) => `shopflow_account_shop_v1_${shopId}`;
+const accountLegacyBackupKey = (userId: string) => `shopflow_legacy_backup_v1_${userId}`;
+const legacyImportMarkerKey = (userId: string) => `shopflow_legacy_imported_by_${userId}`;
+
+const readLocalSnapshot = (key: string): ShopDataSnapshot | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!parsed.settings || typeof parsed.settings !== 'object') return null;
+    return {
+      settings: sanitizeLegacySettings(parsed.settings as Partial<ShopSettings>),
+      products: removeLegacySampleRecords<Product>(parsed.products),
+      sales: removeLegacySampleRecords<SaleRecord>(parsed.sales),
+      credits: removeLegacySampleRecords<CreditEntry>(parsed.credits),
+      expenses: removeLegacySampleRecords<ExpenseEntry>(parsed.expenses),
+    };
+  } catch {
+    return null;
+  }
+};
+
+const snapshotHasMerchantData = (snapshot: ShopDataSnapshot | null): boolean => {
+  if (!snapshot) return false;
+  const localOnlySettings = new Set(['ownerPin', 'activePlan', 'planPaid', 'trialStartedAt', 'publicCatalogToken']);
+  const defaultSettings = INITIAL_SETTINGS as unknown as Record<string, unknown>;
+  const settingsWereCustomized = Object.entries(snapshot.settings).some(([key, value]) =>
+    !localOnlySettings.has(key) && JSON.stringify(value) !== JSON.stringify(defaultSettings[key])
+  );
+  return Boolean(
+    snapshot.products.length || snapshot.sales.length || snapshot.credits.length ||
+    snapshot.expenses.length || settingsWereCustomized
+  );
+};
+
 export function App() {
   const appRootRef = useRef<HTMLDivElement | null>(null);
 
@@ -148,6 +220,22 @@ export function App() {
     mode: AuthModalMode;
     plan?: SubscriptionPlanId;
   } | null>(null);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [accountShops, setAccountShops] = useState<ShopSummary[]>([]);
+  const [activeShop, setActiveShop] = useState<ShopSummary | null>(null);
+  const [billingAccount, setBillingAccount] = useState<BillingAccountSummary | null>(null);
+  const [activeStorageKey, setActiveStorageKey] = useState(STORAGE_KEY);
+  const [shopDataReady, setShopDataReady] = useState(false);
+  const [legacyImportPending, setLegacyImportPending] = useState(false);
+  const [importSource, setImportSource] = useState<'legacy' | 'shop_cache' | null>(null);
+  const [importPreviewCounts, setImportPreviewCounts] = useState({ products: 0, sales: 0, credits: 0, expenses: 0 });
+  const [isImportingLocal, setIsImportingLocal] = useState(false);
+  const [accountLoadError, setAccountLoadError] = useState<string | null>(null);
+  const authUserRef = useRef<User | null>(null);
+  const authProcessingRef = useRef(false);
+  const accountLoadedUserRef = useRef<string | null>(null);
+  const shopActivationRef = useRef<string | null>(null);
+  const shopActivationSequenceRef = useRef(0);
   const deferredInstallPromptRef = useRef<{
     prompt: () => Promise<void>;
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -214,22 +302,15 @@ export function App() {
   } | null>(null);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.settings && typeof parsed.settings === 'object') {
-          setSettings(sanitizeLegacySettings(parsed.settings));
-        }
-        // Strip only the old bundled examples; preserve every record created by the merchant.
-        setProducts(removeLegacySampleRecords<Product>(parsed.products));
-        setSales(removeLegacySampleRecords<SaleRecord>(parsed.sales));
-        setCredits(removeLegacySampleRecords<CreditEntry>(parsed.credits));
-        setExpenses(removeLegacySampleRecords<ExpenseEntry>(parsed.expenses));
-      }
-    } catch {
-      // Ignore storage errors
+    const snapshot = readLocalSnapshot(STORAGE_KEY);
+    if (snapshot) {
+      setSettings(snapshot.settings);
+      setProducts(snapshot.products);
+      setSales(snapshot.sales);
+      setCredits(snapshot.credits);
+      setExpenses(snapshot.expenses);
     }
+    setActiveStorageKey(STORAGE_KEY);
     setHasLoadedSettings(true);
   }, []);
 
@@ -260,16 +341,16 @@ export function App() {
   };
 
   useEffect(() => {
-    if (!hasLoadedSettings) return;
+    if (!hasLoadedSettings || (authUserRef.current && !shopDataReady)) return;
     try {
       localStorage.setItem(
-        STORAGE_KEY,
+        activeStorageKey,
         JSON.stringify({ settings, products, sales, credits, expenses })
       );
     } catch {
       // Ignore quota errors
     }
-  }, [hasLoadedSettings, settings, products, sales, credits, expenses]);
+  }, [hasLoadedSettings, activeStorageKey, shopDataReady, settings, products, sales, credits, expenses]);
 
   useEffect(() => {
     const retryCatalogSync = () => setCatalogNetworkEpoch((current) => current + 1);
@@ -348,38 +429,163 @@ export function App() {
     authModalConfig,
   ]);
 
-  const handleCompleteSignup = (payload: SignupPayload) => {
-    if (isTrialExpired) {
-      setAuthModalConfig(null);
-      setActiveTab('subscription');
-      showToast('Votre essai est terminé. Choisissez une formule pour continuer.');
-      return;
-    }
-    setSettings((prev) => ({
-      ...prev,
+  const handleCompleteSignup = async (payload: SignupPayload): Promise<void> => {
+    if (!authUserRef.current) throw new Error('SOCIAL_SIGNUP_REQUIRED');
+    const onboarding: ShopOnboardingInput = {
       shopName: payload.shopName,
       ownerName: payload.ownerName,
       city: payload.city,
       whatsappNumber: payload.whatsappNumber,
       currency: payload.currency,
-      ownerPin: payload.ownerPin || '1234',
-      activePlan: payload.selectedPlan,
-      planPaid: false,
-      trialStartedAt: new Date().toISOString(),
-    }));
-    setProducts([]);
-    setSales([]);
-    setCredits([]);
-    setExpenses([]);
-    setIsVendorLocked(false);
-    setAuthModalConfig(null);
+      selectedPlan: payload.selectedPlan,
+    };
+
+    const createdShopId = await createOwnedShop(onboarding);
+    clearPendingOAuthShopSetup();
+    const [shops, billing] = await Promise.all([listMyShops(), getMyBillingAccount()]);
+    setAccountShops(shops);
+    setBillingAccount(billing);
+    const newShop = shops.find((shop) => shop.id === createdShopId);
+    if (!newShop) throw new Error('SHOP_CREATION_FAILED');
+    await activateAccountShop(newShop, shops, billing);
+    setSettings((previous) => ({ ...previous, ownerPin: payload.ownerPin || previous.ownerPin }));
     setActiveTab('dashboard');
-    setScreenMode('app');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast(
-      `🎉 Bienvenue ${payload.ownerName} ! Votre boutique « ${payload.shopName} » est prête !`
-    );
+    showToast(`La boutique « ${newShop.name} » est prête.`);
   };
+
+  const handleLoginExisting = async (email: string, password: string) => {
+    const { error } = await signInWithEmail(email, password);
+    if (error) throw error;
+  };
+
+  const handleOAuthSignIn = async (provider: OAuthProvider, payload?: SignupPayload) => {
+    const onboarding = payload ? {
+      shopName: payload.shopName,
+      ownerName: payload.ownerName,
+      city: payload.city,
+      whatsappNumber: payload.whatsappNumber,
+      currency: payload.currency,
+      selectedPlan: payload.selectedPlan,
+    } satisfies ShopOnboardingInput : undefined;
+    const { error } = await signInWithOAuth(provider, onboarding, payload?.ownerPin);
+    if (error) throw error;
+  };
+
+  const handlePasswordReset = async (email: string) => {
+    if (!email.trim()) throw new Error('EMAIL_REQUIRED');
+    const { error } = await sendPasswordReset(email);
+    if (error) throw error;
+  };
+
+  const handlePasswordUpdate = async (password: string) => {
+    await updatePassword(password);
+    setAuthModalConfig(null);
+    showToast('Votre mot de passe a été mis à jour.');
+  };
+
+  useEffect(() => {
+    if (!hasLoadedSettings || !supabase) return;
+    let cancelled = false;
+
+    const processAuthUser = async (user: User | null) => {
+      if (cancelled) return;
+      if (!user) {
+        if (!authUserRef.current) return;
+        shopActivationSequenceRef.current += 1;
+        shopActivationRef.current = null;
+        authUserRef.current = null;
+        accountLoadedUserRef.current = null;
+        setAuthUser(null);
+        setAccountShops([]);
+        setActiveShop(null);
+        setBillingAccount(null);
+        setActiveStorageKey(STORAGE_KEY);
+        setShopDataReady(false);
+        setLegacyImportPending(false);
+        setImportSource(null);
+        setImportPreviewCounts({ products: 0, sales: 0, credits: 0, expenses: 0 });
+        const local = readLocalSnapshot(STORAGE_KEY);
+        setSettings(local?.settings || INITIAL_SETTINGS);
+        setProducts(local?.products || []);
+        setSales(local?.sales || []);
+        setCredits(local?.credits || []);
+        setExpenses(local?.expenses || []);
+        setAuthModalConfig(null);
+        setScreenMode(isInstalledApp ? 'app' : 'landing');
+        return;
+      }
+      if (accountLoadedUserRef.current === user.id || authProcessingRef.current) return;
+      authProcessingRef.current = true;
+      try {
+        authUserRef.current = user;
+        setAuthUser(user);
+        setAccountLoadError(null);
+        let [shops, billing] = await Promise.all([listMyShops(), getMyBillingAccount()]);
+        let createdFromPendingSetup = false;
+        let pendingOwnerPin: string | null = null;
+        if (!shops.length) {
+          const metadataOnboarding = getShopOnboardingFromUser(user);
+          const oauthOnboarding = getPendingOAuthShopSetup();
+          const onboarding = metadataOnboarding || oauthOnboarding;
+          if (onboarding) {
+            pendingOwnerPin = getPendingOAuthShopOwnerPin() || (user.email ? getPendingOwnerPin(user.email) : null);
+            await createOwnedShop(onboarding);
+            createdFromPendingSetup = true;
+            clearPendingOAuthShopSetup();
+            if (user.email) clearPendingOwnerPin(user.email);
+            [shops, billing] = await Promise.all([listMyShops(), getMyBillingAccount()]);
+          }
+        } else {
+          clearPendingOAuthShopSetup();
+          if (user.email) clearPendingOwnerPin(user.email);
+        }
+        if (!shops.length) {
+          setAccountShops([]);
+          setBillingAccount(billing);
+          setScreenMode('app');
+          setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' });
+          accountLoadedUserRef.current = user.id;
+          return;
+        }
+        setAccountShops(shops);
+        setBillingAccount(billing);
+        const selected = shops[0];
+        await activateAccountShop(selected, shops, billing);
+        if (createdFromPendingSetup && pendingOwnerPin) {
+          setSettings((previous) => ({ ...previous, ownerPin: pendingOwnerPin! }));
+        }
+        accountLoadedUserRef.current = user.id;
+        setActiveTab('dashboard');
+        showToast(`Compte connecté : ${shops.length} boutique(s) disponible(s).`);
+      } catch (error) {
+        setAccountLoadError(getAuthErrorMessage(error));
+        showToast(getAuthErrorMessage(error));
+      } finally {
+        authProcessingRef.current = false;
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      window.setTimeout(() => {
+        void (async () => {
+          await processAuthUser(session?.user || null);
+          if (event === 'PASSWORD_RECOVERY') setAuthModalConfig({ mode: 'reset_password' });
+        })();
+      }, 0);
+    });
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (error) throw error;
+      void processAuthUser(data.session?.user || null);
+    }).catch((error) => {
+      if (!cancelled) setAccountLoadError(getAuthErrorMessage(error));
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [hasLoadedSettings, isInstalledApp]);
 
   const handleRequestTab = (targetTab: NavTab) => {
     if (isTrialExpired && targetTab !== 'subscription') {
@@ -446,6 +652,167 @@ export function App() {
     setTimeout(() => {
       setToastMessage((current) => (current === msg ? null : current));
     }, 3000);
+  };
+
+  const activateAccountShop = async (
+    shop: ShopSummary,
+    shops: ShopSummary[],
+    billing: BillingAccountSummary | null,
+  ) => {
+    if (shopActivationRef.current === shop.id) return;
+    const activationSequence = ++shopActivationSequenceRef.current;
+    shopActivationRef.current = shop.id;
+    setShopDataReady(false);
+    setAccountLoadError(null);
+    try {
+      const storageKey = shopStorageKey(shop.id);
+      const cachedSnapshot = readLocalSnapshot(storageKey);
+      let remoteSnapshot: ShopDataSnapshot | null = null;
+      try {
+        remoteSnapshot = await loadShopSnapshot(shop.id);
+      } catch (error) {
+        if (!cachedSnapshot) throw error;
+        setAccountLoadError('Connexion indisponible : données locales de cette boutique chargées.');
+      }
+      if (activationSequence !== shopActivationSequenceRef.current) return;
+      let legacySnapshot: ShopDataSnapshot | null = null;
+      const importingUserId = authUserRef.current?.id;
+      if (importingUserId) {
+        const backupKey = accountLegacyBackupKey(importingUserId);
+        try {
+          if (!localStorage.getItem(legacyImportMarkerKey(importingUserId)) && !localStorage.getItem(backupKey)) {
+            const originalLocalData = localStorage.getItem(STORAGE_KEY);
+            if (originalLocalData) localStorage.setItem(backupKey, originalLocalData);
+          }
+          legacySnapshot = readLocalSnapshot(backupKey);
+        } catch { /* Never block cloud shop access if local backup storage is unavailable. */ }
+      } else {
+        legacySnapshot = readLocalSnapshot(STORAGE_KEY);
+      }
+      // Prefer the account-scoped device cache to preserve edits made after a one-time import.
+      // A new device has no cache and therefore loads the authenticated cloud snapshot.
+      const selectedSnapshot = cachedSnapshot
+        ? await refreshCachedSnapshotImages(cachedSnapshot)
+        : remoteSnapshot;
+      if (activationSequence !== shopActivationSequenceRef.current) return;
+      const initialSettings = sanitizeLegacySettings({
+        ...INITIAL_SETTINGS,
+        ...(selectedSnapshot?.settings || {}),
+        shopName: shop.name,
+        city: shop.city,
+        whatsappNumber: shop.whatsapp_number,
+        currency: shop.currency,
+        activePlan: billing?.plan_id || 'starter',
+        planPaid: billing?.status === 'active',
+        trialStartedAt: billing?.trial_started_at || '',
+        ownerPin: cachedSnapshot?.settings.ownerPin || INITIAL_SETTINGS.ownerPin,
+        publicCatalogId: cachedSnapshot?.settings.publicCatalogId,
+        publicCatalogToken: cachedSnapshot?.settings.publicCatalogToken,
+      });
+      setAuthUser(authUserRef.current);
+      setAccountShops(shops);
+      setBillingAccount(billing);
+      setActiveShop(shop);
+      setSettings(initialSettings);
+      setProducts(selectedSnapshot?.products || []);
+      setSales(selectedSnapshot?.sales || []);
+      setCredits(selectedSnapshot?.credits || []);
+      setExpenses(selectedSnapshot?.expenses || []);
+      setActiveStorageKey(storageKey);
+      let legacyAlreadyImported = false;
+      try {
+        const userId = authUserRef.current?.id;
+        legacyAlreadyImported = Boolean(userId && localStorage.getItem(legacyImportMarkerKey(userId)));
+      } catch { /* local import marker is only a duplicate-warning aid */ }
+      const nextImportSource = !remoteSnapshot && snapshotHasMerchantData(cachedSnapshot)
+        ? 'shop_cache'
+        : !remoteSnapshot && !cachedSnapshot && !legacyAlreadyImported && snapshotHasMerchantData(legacySnapshot)
+          ? 'legacy'
+          : null;
+      setImportSource(nextImportSource);
+      const importPreview = nextImportSource === 'shop_cache' ? cachedSnapshot : nextImportSource === 'legacy' ? legacySnapshot : null;
+      setImportPreviewCounts(importPreview ? snapshotCounts(importPreview) : { products: 0, sales: 0, credits: 0, expenses: 0 });
+      setLegacyImportPending(Boolean(nextImportSource));
+      setAuthModalConfig(null);
+      setIsVendorLocked(false);
+      setScreenMode('app');
+      setShopDataReady(true);
+    } catch (error) {
+      setAccountLoadError(getAuthErrorMessage(error));
+      setShopDataReady(Boolean(activeShop));
+      showToast('Impossible de charger cette boutique. Vérifiez la connexion puis réessayez.');
+    } finally {
+      if (activationSequence === shopActivationSequenceRef.current) {
+        shopActivationRef.current = null;
+      }
+    }
+  };
+
+  const importLocalDataToAccount = async () => {
+    if (!activeShop || !importSource || isImportingLocal) return;
+    const sourceKey = importSource === 'legacy' && authUserRef.current
+      ? accountLegacyBackupKey(authUserRef.current.id)
+      : importSource === 'legacy' ? STORAGE_KEY : activeStorageKey;
+    const source = readLocalSnapshot(sourceKey);
+    if (!source || !snapshotHasMerchantData(source)) {
+      setLegacyImportPending(false);
+      setImportSource(null);
+      setImportPreviewCounts({ products: 0, sales: 0, credits: 0, expenses: 0 });
+      showToast('Aucune donnée de boutique à importer n’a été trouvée.');
+      return;
+    }
+    const counts = snapshotCounts(source);
+    const countText = `les paramètres de boutique, ${counts.products} article(s), ${counts.sales} vente(s), ${counts.credits} crédit(s) et ${counts.expenses} dépense(s)`;
+    if (!window.confirm(`Importer ${countText} dans « ${activeShop.name} » ? La sauvegarde locale d’origine restera conservée. L’import ne peut être effectué que vers une boutique cloud vide.`)) return;
+
+    setIsImportingLocal(true);
+    try {
+      const imported = await importLocalSnapshotToShop(activeShop.id, source);
+      const settingsForShop = sanitizeLegacySettings({
+        ...imported.settings,
+        shopName: activeShop.name,
+        city: activeShop.city || imported.settings.city,
+        whatsappNumber: activeShop.whatsapp_number || imported.settings.whatsappNumber,
+        currency: activeShop.currency,
+        activePlan: billingAccount?.plan_id || imported.settings.activePlan,
+        planPaid: billingAccount?.status === 'active',
+        trialStartedAt: billingAccount?.trial_started_at || imported.settings.trialStartedAt,
+      });
+      setSettings(settingsForShop);
+      setProducts(imported.products);
+      setSales(imported.sales);
+      setCredits(imported.credits);
+      setExpenses(imported.expenses);
+      if (importSource === 'legacy' && authUserRef.current) {
+        try { localStorage.setItem(legacyImportMarkerKey(authUserRef.current.id), activeShop.id); } catch { /* backup remains intact */ }
+      }
+      setLegacyImportPending(false);
+      setImportSource(null);
+      setImportPreviewCounts({ products: 0, sales: 0, credits: 0, expenses: 0 });
+      showToast('Import terminé. La sauvegarde locale d’origine n’a pas été supprimée.');
+    } catch (error) {
+      setAccountLoadError(getAuthErrorMessage(error));
+      showToast('L’import a échoué; la sauvegarde locale est restée intacte.');
+    } finally {
+      setIsImportingLocal(false);
+    }
+  };
+
+  const handleSelectAccountShop = async (shopId: string) => {
+    const shop = accountShops.find((candidate) => candidate.id === shopId);
+    if (!shop || !billingAccount) return;
+    await activateAccountShop(shop, accountShops, billingAccount);
+    setActiveTab('dashboard');
+  };
+
+  const handleSignOut = async () => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      showToast('La déconnexion a échoué. Réessayez.');
+      return;
+    }
+    showToast('Compte déconnecté. Vos sauvegardes locales sont conservées.');
   };
 
   const fmt = (val: number) =>
@@ -784,7 +1151,7 @@ export function App() {
 
   const handleResetDemo = () => {
     if (!window.confirm('Effacer les données de cette boutique sur cet appareil ? Cette action est définitive.')) return;
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(activeStorageKey);
     localStorage.removeItem('shopflow_ai_conversation_v1');
     for (let index = localStorage.length - 1; index >= 0; index -= 1) {
       const key = localStorage.key(index);
@@ -970,6 +1337,49 @@ export function App() {
           </button>
         </div>
       </div>
+
+      {authUser && activeShop && (
+        <section className="mx-auto flex max-w-7xl flex-col gap-2 border-b border-slate-200 bg-white px-3 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+            <span className="truncate text-xs font-bold text-slate-700">{authUser.email || 'Compte ShopFlow'}</span>
+            <label className="sr-only" htmlFor="active-shop-picker">Boutique active</label>
+            <select
+              id="active-shop-picker"
+              value={activeShop.id}
+              onChange={(event) => { void handleSelectAccountShop(event.target.value); }}
+              className="max-w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-800"
+            >
+              {accountShops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}
+            </select>
+            {!shopDataReady && <span className="text-[11px] text-slate-500">Chargement de la boutique…</span>}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {billingAccount?.plan_id === 'business' && (
+              <button type="button" onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'business' })} className="inline-flex items-center gap-1.5 rounded-xl bg-[#0A4DFF] px-3 py-2 text-xs font-extrabold text-white">
+                <Store className="h-3.5 w-3.5" /> Ajouter une boutique
+              </button>
+            )}
+            <button type="button" onClick={() => { void handleSignOut(); }} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-extrabold text-slate-700">
+              <LogOut className="h-3.5 w-3.5" /> Déconnexion
+            </button>
+          </div>
+          {accountLoadError && <p role="alert" className="w-full rounded-lg bg-red-50 p-2 text-[11px] font-semibold text-red-800">{accountLoadError}</p>}
+          <p className="w-full text-[10px] leading-relaxed text-slate-500">Les imports validés sont enregistrés dans votre compte. Les modifications suivantes restent locales sur cet appareil jusqu’à l’activation de la synchronisation continue.</p>
+        </section>
+      )}
+
+      {authUser && activeShop && legacyImportPending && (
+        <section className="mx-auto flex max-w-7xl flex-col gap-2 border-b border-emerald-200 bg-emerald-50 px-3 py-3 text-xs sm:px-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-extrabold text-emerald-950">Sauvegarde locale détectée</p>
+            <p className="mt-0.5 text-emerald-900">Les paramètres de la boutique et {importPreviewCounts.products} article(s), {importPreviewCounts.sales} vente(s), {importPreviewCounts.credits} crédit(s), {importPreviewCounts.expenses} dépense(s) seront importés. La sauvegarde source restera sur cet appareil.</p>
+          </div>
+          <button type="button" disabled={isImportingLocal || !shopDataReady} onClick={() => { void importLocalDataToAccount(); }} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 font-extrabold text-white disabled:opacity-50">
+            {isImportingLocal ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <PackagePlus className="h-4 w-4" />}
+            {isImportingLocal ? 'Import en cours…' : `Importer dans ${activeShop.name}`}
+          </button>
+        </section>
+      )}
 
       {/* Main Shell */}
       <div
@@ -1455,14 +1865,19 @@ export function App() {
           initialMode={authModalConfig.mode}
           preselectedPlan={authModalConfig.plan}
           defaultCurrency={settings.currency}
-          onCompleteSignup={handleCompleteSignup}
-          onLoginExisting={(loginId) => {
-            setAuthModalConfig(null);
-            setIsVendorLocked(false);
-            setScreenMode('app');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            showToast(`Bon retour ! Connecté à votre espace (${loginId}).`);
+          authConfigured={isSupabaseConfigured}
+          oauthProvidersEnabled={{
+            google: isOAuthProviderEnabled('google') && Boolean(authRedirectUrl),
+            github: isOAuthProviderEnabled('github') && Boolean(authRedirectUrl),
+            facebook: isOAuthProviderEnabled('facebook') && Boolean(authRedirectUrl),
           }}
+          isAuthenticated={Boolean(authUser)}
+          onCompleteSignup={handleCompleteSignup}
+          onLoginExisting={handleLoginExisting}
+          onOAuthSignIn={handleOAuthSignIn}
+          onResetPassword={handlePasswordReset}
+          onUpdatePassword={handlePasswordUpdate}
+          onSignOut={handleSignOut}
           onTriggerNativeInstall={async () => {
             if (deferredInstallPromptRef.current) {
               await deferredInstallPromptRef.current.prompt();
@@ -1472,7 +1887,10 @@ export function App() {
             }
             return false;
           }}
-          onClose={() => setAuthModalConfig(null)}
+          onClose={() => {
+            if (authUser && !activeShop) return;
+            setAuthModalConfig(null);
+          }}
         />
       )}
 

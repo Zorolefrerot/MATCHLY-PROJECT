@@ -16,3 +16,9 @@ Le catalogue public utilise un identifiant UUID stable (`?catalog=<uuid>`). Les 
 Les photos de produits importées depuis le téléphone sont compressées puis téléversées dans le bucket public `shopflow-catalog-images`; le catalogue contient leur URL publique. N’y placez pas de photos privées ou sensibles. L’application conserve localement un UUID et un jeton aléatoire d’écriture propre à la boutique. Seule son empreinte SHA-256 est stockée dans Supabase; le jeton n’est jamais envoyé aux visiteurs. Si les données locales de l’application sont effacées, l’accès d’écriture à ce lien ne peut pas être récupéré : créez un nouveau lien.
 
 Pour un APK/PWA construit avec une API hébergée sur un autre domaine, configurez `VITE_CATALOG_API_URL` à l’URL HTTPS de cette API lors du build. Par défaut, le navigateur utilise son origine actuelle et les versions natives utilisent `https://shopflow.cd`.
+
+## Comptes et boutiques
+
+Le schéma multi-boutique initial est dans `supabase/20261026_shop_accounts.sql`; le bucket privé par boutique et l’import transactionnel non-écrasant sont définis dans `supabase/20261026_shop_import_assets.sql`. Ces migrations sont déjà appliquées au projet ShopFlow. RLS couvre profils, abonnements, boutiques, membres, enregistrements et photos. `shopflow_create_shop` contrôle le forfait côté serveur : Starter/Pro restent mono-boutique, Business autorise plusieurs boutiques, sans plafond numérique inventé. Les tables du catalogue public restent distinctes.
+
+Les écrans d’authentification, de sélection de boutique et d’import sont raccordés au SDK Supabase; ils restent désactivés dans tout build sans configuration publique. La synchronisation continue après import n’est pas encore activée. Consulter `docs/supabase-auth-setup.md` pour les prérequis du domaine, SMTP, Google OAuth et les tests à effectuer. Les clés privées restent uniquement côté serveur; le navigateur reçoit seulement une clé publishable.

@@ -62,6 +62,9 @@ export interface Product {
     | 'Huiles & Lait';
   unit: string;
   image: string;
+  /** Private Supabase Storage asset reference used by authenticated shop sync. */
+  cloudImagePath?: string;
+  cloudImageHash?: string;
   stock: number;
   minStockAlert: number;
   purchasePriceFC: number;
@@ -73,6 +76,9 @@ export interface SaleRecord {
   productId: string;
   productName: string;
   productImage: string;
+  /** Private Supabase Storage asset reference used by authenticated shop sync. */
+  cloudImagePath?: string;
+  cloudImageHash?: string;
   quantity: number;
   unitPurchasePriceFC: number;
   unitSellingPriceFC: number;

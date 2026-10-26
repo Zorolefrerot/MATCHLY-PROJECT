@@ -16,6 +16,7 @@
     "@capacitor/android": "^8.5.3",
     "@capacitor/core": "^8.5.3",
     "@capacitor/ios": "^8.5.3",
+    "@supabase/supabase-js": "^2.118.0",
     "@types/katex": "^0.16.8",
     "@zxing/library": "^0.21.3",
     "framer-motion": "^14.6.0",

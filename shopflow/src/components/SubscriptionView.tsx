@@ -60,7 +60,7 @@ const PLANS: PlanOption[] = [
     monthlyUSD: 25,
     subtitle: 'Pour les propriétaires de plusieurs boutiques ou dépôts.',
     features: [
-      'Jusqu’à 5 boutiques ou dépôts synchronisés',
+      'Gestion de plusieurs boutiques ou dépôts',
       'Comptes vendeurs et gérants séparés',
       'Assistant IA pour le suivi des stocks multi-boutiques',
       'Export comptable PDF et Excel',
