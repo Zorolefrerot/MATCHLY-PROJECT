@@ -155,6 +155,7 @@ export interface ShopSettings {
   ownerPin: string;
   activePlan: SubscriptionPlanId;
   planPaid: boolean;
+  trialStartedAt: string;
 }
 
 export interface CartItem {

@@ -138,6 +138,7 @@ export const INITIAL_SETTINGS: ShopSettings = {
   ownerPin: '1234',
   activePlan: 'pro_ai',
   planPaid: false,
+  trialStartedAt: '',
 };
 
 export const INITIAL_PRODUCTS: Product[] = [

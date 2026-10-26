@@ -67,10 +67,10 @@ interface LandingPageViewProps {
 
 const MARQUEE_ITEMS = [
   'M-Pesa Vodacom',
-  'Orange Money',
-  'Airtel Money',
-  'Afrimoney',
-  'Visa & Mastercard',
+  'Tarifs mensuels en USD',
+  'Essai de 7 jours après création',
+  'Paiement réel à connecter',
+  'Activation de test uniquement',
   'Mode Hors-Ligne 100%',
   'Reçus WhatsApp HD',
   'Cadenas Patron PIN',
@@ -92,8 +92,8 @@ const FAQ_LIST = [
     a: 'Oui. Activez le Mode Vendeur en 1 clic : votre employé encaisse les clients et envoie les reçus WhatsApp, mais vos bénéfices nets, vos prix d’achat fournisseurs et vos réglages sont protégés par votre code PIN à 4 chiffres.',
   },
   {
-    q: 'Comment régler mon abonnement après les 7 jours gratuits ?',
-    a: 'Directement dans l’application par Mobile Money (M-Pesa, Orange Money, Airtel Money, Afrimoney) ou par carte bancaire Visa / Mastercard, avec activation instantanée.',
+    q: 'Que se passe-t-il après les 7 jours d’essai ?',
+    a: 'L’essai commence à la création de la boutique. Cette version peut montrer une sélection de formule en simulation locale, mais aucun paiement réel ni validation sécurisée d’abonnement n’est connecté. Ne saisissez pas de carte, de PIN ou de secret Mobile Money.',
   },
 ];
 
@@ -171,7 +171,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       id: 'pricing',
       label: 'Tarifs & Moyens de Paiement',
       shortLabel: 'Tarifs',
-      subtitle: 'Formules 5 $ / 12 $ / 25 $ • Mobile Money & Carte',
+      subtitle: 'Tarifs mensuels confirmés • paiement réel non connecté',
       icon: CreditCard,
     },
     {
@@ -810,7 +810,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     Des tarifs clairs, à activer dans l’application
                   </h1>
                   <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-                    Installez d’abord ShopFlow. Vous créerez votre boutique et choisirez votre formule depuis l’application. Paiement par M-Pesa, Orange Money, Airtel Money, Afrimoney ou carte Visa / Mastercard.
+                    Installez d’abord ShopFlow. Vous créerez votre boutique et choisirez votre formule depuis l’application. L’essai gratuit de 7 jours commence à la création de la boutique. Le paiement réel n’est pas encore connecté.
                   </p>
 
                   <div className="mt-7 inline-flex rounded-full border border-white/15 bg-white/10 p-1 text-xs font-bold">
@@ -846,40 +846,44 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     {
                       id: 'starter' as SubscriptionPlanId,
                       name: 'Starter Boutique',
-                      desc: 'Idéal pour démarrer sans cahier papier.',
+                      desc: 'Pour démarrer avec les outils essentiels.',
                       usd: 5,
                       highlight: false,
                       perks: [
-                        'Caisse rapide 1 clic & suivi du stock',
-                        'Calcul automatique du vrai bénéfice net',
-                        'Reçus clients propres sur WhatsApp',
-                        'Mode Hors-Ligne inclus',
+                        'Jusqu’à 50 marchandises avec photos',
+                        'Vente rapide « +1 Vendu » et panier client',
+                        'Calcul automatique du chiffre d’affaires et du revenu net',
+                        'Mode hors ligne',
+                        'Résumé journalier partageable sur WhatsApp',
                       ],
                     },
                     {
                       id: 'pro_ai' as SubscriptionPlanId,
-                      name: 'ShopFlow Pro + IA',
-                      desc: 'Le pack complet le plus choisi.',
+                      name: 'Pro IA & Croissance',
+                      desc: 'Gestion élargie et assistant IA.',
                       usd: 12,
                       highlight: true,
                       perks: [
-                        'Articles, ventes & reçus HD illimités',
-                        'Assistant ShopFlow AI avec secours local',
-                        'Scanner photo & catalogue WhatsApp',
-                        'Mode Vendeur (PIN) & Cahier de crédits',
+                        'Marchandises et ventes sans plafond annoncé',
+                        'Assistant IA Coach et caisse vocale, selon disponibilité et limites du service',
+                        'Scanner de code-barres avec la caméra',
+                        'Mini-boutique en ligne avec commandes WhatsApp',
+                        'Carnet de crédits clients et outils de relance',
+                        'Support prioritaire WhatsApp, 7 j/7',
                       ],
                     },
                     {
                       id: 'business' as SubscriptionPlanId,
-                      name: 'ShopFlow Business',
-                      desc: 'Pour les boutiques qui souhaitent structurer leur suivi quotidien.',
+                      name: 'Business Multi-Boutiques',
+                      desc: 'Pour les propriétaires de plusieurs boutiques ou dépôts.',
                       usd: 25,
                       highlight: false,
                       perks: [
-                        'Suivi du catalogue, des ventes et des dépenses',
-                        'Export local des données de la boutique',
-                        'Suivi complet par vendeur / caissier',
-                        'Paramètres de sécurité propriétaire / vendeur',
+                        'Jusqu’à 5 boutiques ou dépôts synchronisés',
+                        'Comptes vendeurs et gérants séparés',
+                        'Assistant IA pour le suivi des stocks multi-boutiques',
+                        'Export comptable PDF et Excel',
+                        'Accompagnement dédié à Kinshasa et Lubumbashi',
                       ],
                     },
                   ].map((plan) => (

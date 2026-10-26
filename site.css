@@ -97,3 +97,26 @@
 .film-home-player { width:100%; max-width:380px; justify-self:end; overflow:hidden; border:1px solid #45617a; border-radius:21px; background:#06131f; box-shadow:0 26px 75px #0007; }
 .film-home-player iframe { display:block; width:100%; aspect-ratio:9/16; border:0; background:#071827; }
 @media(max-width:700px) { .film-home-section { padding:70px 0; } .film-home-inner { grid-template-columns:1fr; gap:26px; } .film-home-copy h2 { font-size:38px; } .film-home-copy p { font-size:10px; } .film-home-player { width:min(100%,340px); justify-self:center; } }
+
+/* Public plan comparison uses only the owner-confirmed monthly prices and benefits. */
+.pricing-section { padding:94px 0 102px; background:#f5f8fb; }
+.pricing-heading { max-width:690px; margin:0 auto 34px; text-align:center; }
+.pricing-heading h2 { margin:16px 0 10px; color:#102944; font-family:Manrope,"DM Sans",sans-serif; font-size:clamp(36px,5vw,55px); font-weight:850; line-height:1.03; letter-spacing:-.06em; }
+.pricing-heading h2 span { color:#1477d4; }
+.pricing-heading p { margin:0; color:#64778a; font-size:13px; line-height:1.7; }
+.pricing-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:stretch; gap:17px; }
+.plan-card { position:relative; display:flex; min-height:100%; flex-direction:column; justify-content:space-between; padding:24px; border:1px solid #dce5ec; border-radius:20px; background:#fff; box-shadow:0 12px 35px #1029440a; }
+.plan-card-featured { border:2px solid #1779d1; box-shadow:0 18px 46px #1477d41a; }
+.plan-badge { position:absolute; top:-13px; right:19px; padding:6px 11px; border-radius:999px; color:#fff; background:#1477d4; font-size:8px; font-weight:900; letter-spacing:.1em; }
+.plan-kicker { color:#4d93c9; font-size:9px; font-weight:900; letter-spacing:.14em; }
+.plan-card h3 { margin:11px 0 5px; color:#102944; font-family:Manrope,"DM Sans",sans-serif; font-size:19px; font-weight:850; letter-spacing:-.04em; }
+.plan-subtitle { min-height:38px; margin:0; color:#75879a; font-size:10px; line-height:1.6; }
+.plan-price { display:flex; align-items:baseline; gap:6px; margin:20px 0 19px; padding-bottom:17px; border-bottom:1px solid #e9eef2; }
+.plan-price strong { color:#102944; font-size:39px; font-weight:900; letter-spacing:-.07em; }
+.plan-price span { color:#8797a7; font-size:11px; font-weight:700; }
+.plan-card ul { display:grid; gap:11px; margin:0; padding:0; list-style:none; }
+.plan-card li { position:relative; padding-left:20px; color:#41576a; font-size:10px; line-height:1.55; }
+.plan-card li:before { content:"✓"; position:absolute; top:0; left:0; display:grid; width:14px; height:14px; place-items:center; border-radius:50%; color:#187754; background:#e3f6ed; font-size:9px; font-weight:900; }
+.plan-cta { display:flex; justify-content:center; gap:7px; width:100%; margin-top:24px; }
+.pricing-note { max-width:900px; margin:21px auto 0; padding:14px 16px; border:1px solid #e8d7ae; border-radius:13px; color:#655635; background:#fff9ea; font-size:10px; line-height:1.7; }
+@media(max-width:920px) { .pricing-grid { grid-template-columns:1fr; max-width:540px; margin:0 auto; gap:19px; } .plan-card { min-height:auto; } .plan-subtitle { min-height:0; } .pricing-section { padding:70px 0; } }

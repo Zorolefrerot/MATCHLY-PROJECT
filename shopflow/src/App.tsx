@@ -70,6 +70,8 @@ import { parseSaleDate } from './utils/saleDate';
 
 const STORAGE_KEY = 'shopflow_rdc_mockup_v4';
 const FIRST_RUN_TOUR_KEY = 'shopflow_first_run_tour_done_v1';
+const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const LEGACY_SAMPLE_IDS = new Set([
   'prod-riz-25', 'prod-huile-5l', 'prod-lait-900', 'prod-semoule-10',
@@ -119,6 +121,10 @@ const sanitizeLegacySettings = (saved: Partial<ShopSettings>): ShopSettings => {
       Object.assign(merged, { [settingKey]: INITIAL_SETTINGS[settingKey] });
     }
   }
+  // Legacy local shops have no creation date; grant one 7-day transition period.
+  if (merged.shopName !== INITIAL_SETTINGS.shopName && !merged.trialStartedAt) {
+    merged.trialStartedAt = new Date().toISOString();
+  }
   return merged;
 };
 
@@ -150,6 +156,18 @@ export function App() {
     useState<PreviewViewport>('hybrid');
 
   const [settings, setSettings] = useState<ShopSettings>(INITIAL_SETTINGS);
+  const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
+  const [trialNow, setTrialNow] = useState(() => Date.now());
+  const trialStartedAtMs = Date.parse(settings.trialStartedAt || '');
+  const trialEndsAtMs = Number.isFinite(trialStartedAtMs) && trialStartedAtMs > 0
+    ? trialStartedAtMs + TRIAL_DURATION_MS
+    : null;
+  const isTrialExpired = Boolean(
+    trialEndsAtMs !== null && !settings.planPaid && trialNow >= trialEndsAtMs
+  );
+  const trialDaysRemaining = trialEndsAtMs === null
+    ? 7
+    : Math.max(0, Math.ceil((trialEndsAtMs - trialNow) / DAY_MS));
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [credits, setCredits] = useState<CreditEntry[]>([]);
@@ -211,6 +229,7 @@ export function App() {
     } catch {
       // Ignore storage errors
     }
+    setHasLoadedSettings(true);
   }, []);
 
   useEffect(() => {
@@ -240,6 +259,7 @@ export function App() {
   };
 
   useEffect(() => {
+    if (!hasLoadedSettings) return;
     try {
       localStorage.setItem(
         STORAGE_KEY,
@@ -248,7 +268,24 @@ export function App() {
     } catch {
       // Ignore quota errors
     }
-  }, [settings, products, sales, credits, expenses]);
+  }, [hasLoadedSettings, settings, products, sales, credits, expenses]);
+
+  useEffect(() => {
+    if (trialEndsAtMs === null || settings.planPaid || Date.now() >= trialEndsAtMs) return;
+    const remainingMs = trialEndsAtMs - Date.now();
+    const untilNextDay = DAY_MS - (Date.now() % DAY_MS);
+    const timer = window.setTimeout(
+      () => setTrialNow(Date.now()),
+      Math.min(remainingMs, untilNextDay) + 25
+    );
+    return () => window.clearTimeout(timer);
+  }, [trialEndsAtMs, settings.planPaid, trialNow]);
+
+  useEffect(() => {
+    if (screenMode === 'app' && isTrialExpired && activeTab !== 'subscription') {
+      setActiveTab('subscription');
+    }
+  }, [screenMode, isTrialExpired, activeTab]);
 
   useEffect(() => {
     const onBeforeInstall = (e: Event) => {
@@ -288,6 +325,12 @@ export function App() {
   ]);
 
   const handleCompleteSignup = (payload: SignupPayload) => {
+    if (isTrialExpired) {
+      setAuthModalConfig(null);
+      setActiveTab('subscription');
+      showToast('Votre essai est terminé. Choisissez une formule pour continuer.');
+      return;
+    }
     setSettings((prev) => ({
       ...prev,
       shopName: payload.shopName,
@@ -298,6 +341,7 @@ export function App() {
       ownerPin: payload.ownerPin || '1234',
       activePlan: payload.selectedPlan,
       planPaid: false,
+      trialStartedAt: new Date().toISOString(),
     }));
     setProducts([]);
     setSales([]);
@@ -314,6 +358,11 @@ export function App() {
   };
 
   const handleRequestTab = (targetTab: NavTab) => {
+    if (isTrialExpired && targetTab !== 'subscription') {
+      setActiveTab('subscription');
+      showToast('Votre essai de 7 jours est terminé. Choisissez une formule pour continuer.');
+      return;
+    }
     const vendorAllowedTabs: NavTab[] = ['pos', 'storefront'];
     if (isVendorLocked && !vendorAllowedTabs.includes(targetTab)) {
       setPendingProtectedTab(targetTab);
@@ -630,7 +679,7 @@ export function App() {
       activePlan: planId,
       planPaid: true,
     }));
-    showToast(`Abonnement activé (${methodLabel}) !`);
+    showToast(`Choix de formule enregistré en simulation (${methodLabel}) — aucun paiement réel.`);
   };
 
   const handleExportBackup = () => {
@@ -927,7 +976,13 @@ export function App() {
                     Shop<span className="text-[#0A4DFF]">Flow</span>
                   </span>
                   <p className="truncate text-[10px] font-bold text-emerald-700">
-                    {settings.planPaid ? t.proActive : t.freeTrial}
+                    {settings.planPaid
+                      ? t.proActive
+                      : isTrialExpired
+                        ? 'Essai terminé'
+                        : trialEndsAtMs === null
+                          ? 'Essai au démarrage de la boutique'
+                          : `Essai de 7 jours · ${trialDaysRemaining} j restants`}
                   </p>
                 </div>
               </div>
@@ -1031,7 +1086,7 @@ export function App() {
 
               <button
                 type="button"
-                onClick={() => setActiveTab('expenses')}
+                onClick={() => handleRequestTab('expenses')}
                 className="flex w-full items-center gap-2.5 border-t border-slate-200/80 pt-2.5 text-left"
               >
                 {settings.shopLogo ? (
@@ -1141,7 +1196,11 @@ export function App() {
               </button>
               {isInstalledApp && (
                 <button
-                  onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })}
+                  onClick={() =>
+                    isTrialExpired
+                      ? handleRequestTab('subscription')
+                      : setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })
+                  }
                   className="shrink-0 rounded-full bg-emerald-600 px-3 py-1 font-bold text-white"
                 >
                   ＋ Créer ma boutique
@@ -1194,6 +1253,12 @@ export function App() {
               isPhoneFrame ? 'pb-24' : 'pb-24 lg:pb-8'
             }`}
           >
+            {trialEndsAtMs !== null && !settings.planPaid && !isTrialExpired && (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-950" role="status">
+                <span>Essai gratuit : {trialDaysRemaining} jour{trialDaysRemaining === 1 ? '' : 's'} restant{trialDaysRemaining === 1 ? '' : 's'} · débute à la création de la boutique.</span>
+                <button type="button" onClick={() => handleRequestTab('subscription')} className="font-extrabold text-blue-800 underline">Voir les formules</button>
+              </div>
+            )}
             {activeTab === 'dashboard' && (
               <DashboardView
                 settings={settings}
@@ -1201,7 +1266,7 @@ export function App() {
                 sales={localizedSales}
                 expenses={expenses}
                 credits={credits}
-                onNavigate={setActiveTab}
+                onNavigate={(targetTab) => handleRequestTab(targetTab)}
                 onQuickSellProduct={(p) => handleDirectSellQuantity(p, 1)}
                 onRestockProduct={(prod) => {
                   setRestockTarget(prod);
