@@ -164,7 +164,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Pro Features Quick Access Strip (AI, Online WhatsApp Store, Subscription) */}
-      <div className="grid grid-cols-1 gap-3 @sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 @md:grid-cols-3">
         <button
           type="button"
           onClick={() => onNavigate('ai')}
@@ -179,7 +179,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {t.askAiBtn}
               </p>
               <p className="text-[11px] text-slate-600">
-                IA réflexive type Chariow (stratégie, calculs, ventes)
+                Assistant IA ShopFlow · réponses en ligne selon connexion et disponibilité.
               </p>
             </div>
           </div>
@@ -221,7 +221,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {t.subscriptionTitle}
               </p>
               <p className="text-[11px] text-slate-600">
-                Visa / Mastercard & Mobile Money
+                Essai de 7 jours à la création · paiement réel non connecté
               </p>
             </div>
           </div>

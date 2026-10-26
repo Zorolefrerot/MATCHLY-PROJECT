@@ -108,12 +108,6 @@ export const PHRASE_DICTIONARY: Record<
     sw: 'Uliza ShopFlow AI',
     zh: '咨询 ShopFlow AI',
   },
-  'IA réflexive type Chariow (stratégie, calculs, ventes)': {
-    en: 'Smart business copilot (strategy, LaTeX math, live actions)',
-    ln: 'Mayele ya mombongo (calculs, batoli, koteka noki)',
-    sw: 'Mshauri mahiri wa biashara (mikakati, mahesabu na mauzo)',
-    zh: '智能商业顾问（经营策略、公式推演、自动开单）',
-  },
   'Boutique en Ligne WhatsApp': {
     en: 'WhatsApp Online Storefront',
     ln: 'Boutique na Internet WhatsApp',
@@ -126,17 +120,23 @@ export const PHRASE_DICTIONARY: Record<
     sw: 'Kiungo cha katalogi cha kushiriki na wateja',
     zh: '一键分享给客户的商品目录链接',
   },
-  'Abonnement & Carte Bancaire': {
-    en: 'Subscription & Card Payment',
-    ln: 'Abonnement & Karte ya Banki',
-    sw: 'Usajili & Malipo ya Kadi',
-    zh: '会员订阅与银行卡支付',
+  'Assistant IA ShopFlow · réponses en ligne selon connexion et disponibilité.': {
+    en: 'ShopFlow AI assistant · online answers depend on connection and availability.',
+    ln: 'Assistant IA ShopFlow · biyano ya Internet etali connexion mpe disponibilité.',
+    sw: 'Msaidizi wa AI wa ShopFlow · majibu ya mtandaoni hutegemea muunganisho na upatikanaji.',
+    zh: 'ShopFlow AI 助手 · 在线回答取决于网络连接和服务可用性。',
   },
-  'Visa / Mastercard & Mobile Money': {
-    en: 'Visa / Mastercard & Mobile Money',
-    ln: 'Visa / Mastercard mpe Mobile Money',
-    sw: 'Visa / Mastercard na Mobile Money',
-    zh: '支持 Visa / 万事达卡与移动支付',
+  'Essai de 7 jours à la création · paiement réel non connecté': {
+    en: '7-day trial starts when the shop is created · real payments are not connected.',
+    ln: 'Meká ya mikolo 7 ebandi ntango ya kosala boutique · kofuta ya solo ekangami naino te.',
+    sw: 'Jaribio la siku 7 huanza duka linapoundwa · malipo halisi hayajaunganishwa.',
+    zh: '7 天试用期从创建店铺开始 · 尚未接入真实付款。',
+  },
+  'Abonnement & Formules': {
+    en: 'Subscription & Plans',
+    ln: 'Abonnement & Ba Formule',
+    sw: 'Usajili na Vifurushi',
+    zh: '订阅与方案',
   },
   'Chiffre d’Affaires (CA)': {
     en: 'Gross Revenue (Sales)',

@@ -66,16 +66,15 @@ interface LandingPageViewProps {
 }
 
 const MARQUEE_ITEMS = [
-  'M-Pesa Vodacom',
   'Tarifs mensuels en USD',
-  'Essai de 7 jours après création',
-  'Paiement réel à connecter',
-  'Activation de test uniquement',
-  'Mode Hors-Ligne 100%',
-  'Reçus WhatsApp HD',
-  'Cadenas Patron PIN',
-  'ShopFlow AI Vocal',
-  'Kinshasa • Lubumbashi • Goma • International',
+  'Essai de 7 jours dès la création de la boutique',
+  'Paiement réel non connecté dans cette version',
+  'Gestion locale disponible hors connexion',
+  'Assistant IA en ligne selon connexion et disponibilité',
+  'Reçus partageables sur WhatsApp',
+  'Mode Vendeur avec code PIN',
+  'PWA installable sur iPhone depuis Safari',
+  'APK natif uniquement via un lien de test vérifié',
 ];
 
 const FAQ_LIST = [
@@ -89,7 +88,7 @@ const FAQ_LIST = [
   },
   {
     q: 'Mon vendeur peut-il utiliser la caisse sans voir mon bénéfice net ?',
-    a: 'Oui. Activez le Mode Vendeur en 1 clic : votre employé encaisse les clients et envoie les reçus WhatsApp, mais vos bénéfices nets, vos prix d’achat fournisseurs et vos réglages sont protégés par votre code PIN à 4 chiffres.',
+    a: 'Oui. Activez le Mode Vendeur : votre employé peut encaisser les clients et préparer des reçus à partager sur WhatsApp, tandis que les bénéfices nets, prix d’achat et réglages sont réservés au patron et protégés par son code PIN.',
   },
   {
     q: 'Que se passe-t-il après les 7 jours d’essai ?',
@@ -161,17 +160,17 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     },
     {
       id: 'videos',
-      label: 'Vidéos par Partie de l’App',
-      shortLabel: 'Vidéos',
-      subtitle: 'Démonstrations animées avec voix pour chaque module',
-      badge: '7 vidéos',
+      label: 'Tutoriels animés',
+      shortLabel: 'Tutoriels',
+      subtitle: 'Gestes simulés et explications écrites; aucune transaction réelle',
+      badge: '7 démonstrations',
       icon: Film,
     },
     {
       id: 'pricing',
-      label: 'Tarifs & Moyens de Paiement',
+      label: 'Tarifs & Formules',
       shortLabel: 'Tarifs',
-      subtitle: 'Tarifs mensuels confirmés • paiement réel non connecté',
+      subtitle: 'Formules mensuelles confirmées • paiement réel non connecté',
       icon: CreditCard,
     },
     {
@@ -505,9 +504,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                         transition={{ duration: 0.65, delay: 0.16 }}
                         className="max-w-lg text-base leading-relaxed text-slate-300 sm:text-lg"
                       >
-                        Ventes éclair en 1 clic, stock en direct, reçus
-                        professionnels sur WhatsApp et protection anti-coulage —
-                        sur téléphone et ordinateur, même sans connexion.
+                        Enregistrez les ventes, suivez le stock et préparez des
+                        reçus à partager sur WhatsApp. La gestion locale reste
+                        accessible hors connexion; les fonctions IA en ligne
+                        nécessitent Internet.
                       </motion.p>
 
                       {/* Primary Buttons */}
@@ -563,7 +563,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                               </div>
                               <div>
                                 <p className="font-bold text-white">
-                                  Reçu WhatsApp HD
+                                  Reçu à partager sur WhatsApp
                                 </p>
                                 <p className="text-[11px] text-emerald-300">
                                   Exemple présenté en capture
@@ -1068,7 +1068,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 ShopFlow Pro
               </p>
               <p className="text-[11px] text-slate-400">
-                Kinshasa, RDC & International
+                Kinshasa, RDC
               </p>
             </div>
           </div>

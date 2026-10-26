@@ -75,7 +75,7 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
     whatsappSummaryBtn: 'Bilan WhatsApp',
     askAiBtn: 'Demander à ShopFlow IA',
     onlineStoreTitle: 'Boutique en Ligne WhatsApp',
-    subscriptionTitle: 'Abonnement & Carte Bancaire',
+    subscriptionTitle: 'Abonnement & Formules',
     offlineReady: 'Hors-ligne actif',
     proActive: '★ Abonnement Pro Actif',
     freeTrial: 'Essai Gratuit Pro',

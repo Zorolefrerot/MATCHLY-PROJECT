@@ -49,6 +49,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
 }) => {
   const [mode, setMode] = useState<AuthModalMode>(initialMode);
+  const isAppleMobile = typeof navigator !== 'undefined' && (
+    /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
 
   // Signup fields
   const [shopName, setShopName] = useState('');
@@ -387,19 +391,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[
-                { platform: 'Android', packageName: 'Fichier .APK', status: 'Bientôt disponible' },
-                { platform: 'iPhone / iPad', packageName: 'App Store', status: 'Bientôt disponible' },
-                { platform: 'Windows', packageName: 'Installateur .EXE', status: 'Bientôt disponible' },
+                { platform: 'Android', packageName: 'APK de test signé (debug)', status: 'Télécharger l’APK', href: '/downloads/ShopFlow-Android.apk' },
+                { platform: 'iPhone / iPad', packageName: 'PWA installable depuis Safari', status: 'Disponible · pas sur l’App Store' },
+                { platform: 'Ordinateur', packageName: 'Application web installable', status: 'Navigateur compatible' },
               ].map((item) => (
                 <div key={item.platform} className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="font-extrabold text-slate-900">{item.platform}</p>
                   <p className="mt-1 text-[11px] text-slate-500">{item.packageName}</p>
-                  <p className="mt-3 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-800">
-                    {item.status}
-                  </p>
+                  {item.href ? (
+                    <a
+                      href={item.href}
+                      download
+                      className="mt-3 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-blue-800 underline"
+                    >
+                      {item.status}
+                    </a>
+                  ) : (
+                    <p className="mt-3 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-800">
+                      {item.status}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
+            {!isAppleMobile && (
             <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
               <div className="flex items-start gap-3">
                 <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-[#0A4DFF]" />
@@ -410,8 +425,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <p className="leading-relaxed text-slate-600">
                     Cliquez sur le bouton ci-dessous ou ouvrez le menu{' '}
                     <strong>⋮</strong> en haut à droite de Chrome puis choisissez{' '}
-                    <strong>« Installer l’application »</strong> : l’icône officielle{' '}
-                    <strong>ShopFlow</strong> s’ajoute immédiatement sur votre écran d’accueil !
+                    <strong>« Installer l’application »</strong> ou{' '}
+                    <strong>« Ajouter à l’écran d’accueil »</strong>. L’option dépend du navigateur utilisé.
                   </p>
                   <button
                     type="button"
@@ -419,7 +434,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       const ok = await onTriggerNativeInstall?.();
                       setInstallFeedback(
                         ok
-                          ? 'Installation lancée sur votre appareil !'
+                          ? 'Installation lancée sur votre appareil.'
                           : 'Astuce : appuyez sur le menu ⋮ de votre navigateur puis sur « Ajouter à l’écran d’accueil / Installer l’application ».'
                       );
                     }}
@@ -431,6 +446,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
             </div>
+            )}
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-start gap-3">
@@ -440,18 +456,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     🍎 Sur iPhone & iPad (Safari)
                   </p>
                   <p className="leading-relaxed text-slate-600">
-                    1. Appuyez sur le bouton <strong>Partager</strong> en bas de Safari.
+                    1. Ouvrez cette adresse dans <strong>Safari</strong>, puis touchez <strong>Partager</strong>.
                     <br />
-                    2. Touchez <strong>« Sur l’écran d’accueil »</strong> puis{' '}
-                    <strong>« Ajouter »</strong> : ShopFlow s’ouvre en plein écran comme une application.
+                    2. Choisissez <strong>« Sur l’écran d’accueil »</strong>, puis{' '}
+                    <strong>« Ajouter »</strong>. ShopFlow apparaîtra comme une PWA sur l’écran d’accueil; ce n’est pas une IPA/App Store.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 leading-relaxed text-amber-950">
-              <p className="font-extrabold">À propos des versions APK, App Store et Windows (.exe)</p>
-              <p className="mt-1">Les fichiers d’installation natifs ne sont pas encore publiés dans cette version. L’installation proposée ici est la version web installable. Les liens officiels seront affichés ici dès que les paquets seront disponibles.</p>
+              <p className="font-extrabold">À propos des installations ShopFlow</p>
+              <p className="mt-1">Sur iPhone/iPad, ShopFlow s’installe comme une PWA depuis Safari : ce n’est ni une IPA ni une app App Store, et cela ne demande ni Mac ni abonnement Apple Developer. L’APK Android proposé ci-dessus est une version de test signée en debug, pas une version Play Store; téléchargez-le uniquement depuis ce lien officiel.</p>
             </div>
 
             {installFeedback && (

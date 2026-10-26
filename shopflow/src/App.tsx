@@ -987,7 +987,7 @@ export function App() {
                 </div>
               </div>
 
-              {isInstalledApp && (
+              {isInstalledApp && trialEndsAtMs === null && (
                 <button
                   type="button"
                   onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })}
@@ -1184,7 +1184,7 @@ export function App() {
               </div>
             </div>
 
-            <div className="flex gap-1.5 overflow-x-auto border-t border-slate-100 px-3 py-1.5 text-[11px]">
+            <div className="flex flex-wrap gap-1.5 border-t border-slate-100 px-3 py-2 text-[11px]">
               <button
                 onClick={() => {
                   setScreenMode('landing');
@@ -1194,13 +1194,9 @@ export function App() {
               >
                 🌐 Site Vitrine
               </button>
-              {isInstalledApp && (
+              {isInstalledApp && trialEndsAtMs === null && (
                 <button
-                  onClick={() =>
-                    isTrialExpired
-                      ? handleRequestTab('subscription')
-                      : setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })
-                  }
+                  onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })}
                   className="shrink-0 rounded-full bg-emerald-600 px-3 py-1 font-bold text-white"
                 >
                   ＋ Créer ma boutique

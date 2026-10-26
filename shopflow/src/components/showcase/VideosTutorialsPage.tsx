@@ -83,9 +83,9 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     id: 'vid-receipt',
     moduleNumber: 'Partie 2 / 7',
     durationSec: 16,
-    title: 'Générer & envoyer un Reçu Professionnel sur WhatsApp',
+    title: 'Générer un reçu et le partager sur WhatsApp',
     summary:
-      'Voyez comment ShopFlow crée un reçu haut de gamme portant votre logo et l’envoie en HD sur le WhatsApp du client.',
+      'Voyez comment préparer un reçu avec les informations de la boutique puis ouvrir le partage WhatsApp. Vérifiez le contenu et confirmez vous-même son envoi.',
     icon: ReceiptText,
     accentBg: 'from-emerald-600 to-teal-700',
     frames: [
@@ -107,7 +107,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
       },
       {
         subtitle:
-          '4. Un clic sur « Partager sur WhatsApp » et votre client reçoit son reçu en 1 seconde !',
+          '4. WhatsApp s’ouvre avec le reçu à partager; vérifiez le destinataire et confirmez l’envoi.',
         cursorPos: { x: '50%', y: '76%' },
         clicking: true,
       },
@@ -119,7 +119,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     durationSec: 16,
     title: 'Scanner un article par Caméra ou simple Photo',
     summary:
-      'Découvrez comment le téléphone lit un code-barres ou reconnaît visuellement un produit photographié.',
+      'Parcourez les options de scan ou de photo, puis vérifiez les informations proposées avant de les enregistrer.',
     icon: ScanBarcode,
     accentBg: 'from-sky-600 to-cyan-700',
     frames: [
@@ -153,7 +153,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     durationSec: 16,
     title: 'Gérer le Stock, les Alertes Rupture & le Réapprovisionnement',
     summary:
-      'Ne manquez plus jamais une vente faute de marchandise grâce aux alertes automatiques de stock bas.',
+      'Consultez les quantités enregistrées et les seuils d’alerte configurés pour préparer un réapprovisionnement.',
     icon: Package,
     accentBg: 'from-amber-600 to-orange-700',
     frames: [
@@ -185,21 +185,21 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     id: 'vid-ai',
     moduleNumber: 'Partie 5 / 7',
     durationSec: 16,
-    title: 'Parler à ShopFlow AI & écouter sa réponse vocale',
+    title: 'Consulter l’Assistant IA ShopFlow',
     summary:
-      'Votre conseiller financier personnel calcule vos marges, prépare vos pubs WhatsApp et vous répond à voix haute.',
+      'L’Assistant IA peut aider à résumer des données ou rédiger des idées lorsque la connexion et le service sont disponibles. Vérifiez ses réponses avant usage.',
     icon: Bot,
     accentBg: 'from-violet-600 to-purple-700',
     frames: [
       {
         subtitle:
-          '1. Posez votre question par écrit ou au micro : « Fais le bilan de ma journée ».',
+          '1. Écrivez une question, par exemple : « Résume les ventes de la journée ».',
         cursorPos: { x: '48%', y: '75%' },
         clicking: true,
       },
       {
         subtitle:
-          '2. ShopFlow AI analyse instantanément toutes vos ventes, stocks et dépenses réelles.',
+          '2. Si le service en ligne est disponible, l’assistant prépare une réponse à vérifier.',
         cursorPos: { x: '30%', y: '42%' },
       },
       {
@@ -209,7 +209,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
       },
       {
         subtitle:
-          '4. Cliquez sur « Écouter » : une voix humaine naturelle vous lit le résumé clairement !',
+          '4. Consultez le résumé écrit; une lecture audio de synthèse peut être disponible sur l’appareil.',
         cursorPos: { x: '28%', y: '70%' },
         clicking: true,
       },
@@ -255,7 +255,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     durationSec: 16,
     title: 'Verrouiller la boutique en Mode Vendeur (Code PIN Patron)',
     summary:
-      'Confiez la caisse à votre employé en toute sérénité : vos bénéfices et prix d’achat restent 100 % secrets.',
+      'Le Mode Vendeur masque certains écrans réservés au patron derrière un code PIN. Cette protection locale ne remplace pas la sécurité de l’appareil.',
     icon: Lock,
     accentBg: 'from-slate-800 to-slate-950',
     frames: [
@@ -278,7 +278,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
       },
       {
         subtitle:
-          '4. Le soir, vous tapez votre code secret à 4 chiffres pour retrouver tout votre espace Patron !',
+          '4. Le patron saisit le code PIN configuré pour retrouver les écrans protégés.',
         cursorPos: { x: '50%', y: '68%' },
         clicking: true,
       },
@@ -501,7 +501,7 @@ const AnimatedModuleVideoStage: React.FC<{
                   }`}
                 >
                   {stepIdx === 3
-                    ? '✓ Reçu HD envoyé sur WhatsApp !'
+                    ? '✓ Reçu prêt à partager sur WhatsApp'
                     : 'Envoyer le Reçu sur WhatsApp'}
                 </div>
               </motion.div>
@@ -563,7 +563,7 @@ const AnimatedModuleVideoStage: React.FC<{
             {video.id === 'vid-ai' && (
               <div className="space-y-2.5 text-xs">
                 <div className="ml-12 rounded-2xl bg-slate-100 px-3.5 py-2 font-semibold text-slate-800">
-                  Fais le bilan de ma journée et lis-le-moi à voix haute.
+                  Résume les ventes de ma journée.
                 </div>
                 {stepIdx >= 1 && (
                   <motion.div
@@ -582,8 +582,8 @@ const AnimatedModuleVideoStage: React.FC<{
                       <Volume2 className="h-3 w-3" />
                       <span>
                         {stepIdx === 3
-                          ? 'Lecture vocale Nova en cours...'
-                          : 'Écouter avec voix naturelle'}
+                          ? 'Lecture audio de synthèse…'
+                          : 'Écouter la synthèse audio'}
                       </span>
                     </div>
                   </motion.div>
