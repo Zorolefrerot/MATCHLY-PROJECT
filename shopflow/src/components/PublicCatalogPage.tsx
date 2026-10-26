@@ -138,11 +138,13 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
   const [reference] = useState(() => `SF-${Date.now().toString(36).slice(-6).toUpperCase()}`);
   const [error, setError] = useState('');
   const [imageFailed, setImageFailed] = useState<string[]>([]);
+  const [shopLogoFailed, setShopLogoFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setSnapshot(null);
+    setShopLogoFailed(false);
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token)) {
       setSnapshot(decodePublicCatalog(token));
       setLoading(false);
@@ -164,6 +166,7 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
   }
 
   const text = COPY[language];
+  const shopLogo = snapshot.shop.logo && !shopLogoFailed ? snapshot.shop.logo : null;
   const fmt = (amount: number) =>
     formatMoney(amount, snapshot.shop.currency, snapshot.shop.usdRateFC);
   const itemCount = basket.reduce((total, line) => total + line.quantity, 0);
@@ -252,8 +255,13 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            {snapshot.shop.logo ? (
-              <img src={snapshot.shop.logo} alt="" className="h-11 w-11 rounded-xl object-contain" />
+            {shopLogo ? (
+              <img
+                src={shopLogo}
+                alt=""
+                onError={() => setShopLogoFailed(true)}
+                className="h-11 w-11 shrink-0 rounded-xl border border-slate-100 bg-white p-1 object-contain shadow-sm"
+              />
             ) : (
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0A4DFF]">
                 <Store className="h-5 w-5" />
@@ -280,20 +288,21 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-6 sm:py-9">
-        <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-xs leading-relaxed text-blue-950">
-          <p className="font-extrabold">{text.snapshotNote}</p>
-          {publishedDate && <p className="mt-1">{text.snapshot} {publishedDate}.</p>}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-xs leading-relaxed text-blue-950">
+          <p className="font-semibold">{text.snapshotNote}</p>
+          {publishedDate && <p className="shrink-0 text-blue-800">{text.snapshot} {publishedDate}.</p>}
         </div>
 
         {step === 'browse' && (
           <>
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-[#0A4DFF]">{text.catalog}</p>
-                <h1 className="mt-1 text-2xl font-black sm:text-3xl">{snapshot.shop.name}</h1>
+                <h1 className="text-2xl font-black sm:text-3xl">{text.catalog}</h1>
+                {snapshot.shop.city && <p className="mt-1 text-sm text-slate-500">{snapshot.shop.city}</p>}
               </div>
-              <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm">
-                {itemCount} {text.basket.toLowerCase()}
+              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm">
+                <ShoppingBag className="h-3.5 w-3.5 text-[#0A4DFF]" />
+                {text.basket} · {itemCount}
               </span>
             </div>
 
@@ -303,8 +312,8 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
                   const selected = basket.find((line) => line.product.id === product.id)?.quantity || 0;
                   const hasImage = Boolean(product.image && !imageFailed.includes(product.id));
                   return (
-                    <article key={product.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                      <div className="relative flex h-48 items-center justify-center bg-slate-100">
+                    <article key={product.id} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+                      <div className="relative flex h-48 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50">
                         {hasImage ? (
                           <img
                             src={product.image}
@@ -316,7 +325,7 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
                         ) : (
                           <ImageOff className="h-9 w-9 text-slate-400" />
                         )}
-                        <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-sm">
+                        <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm ${product.stock > 0 ? 'bg-white/95 text-emerald-800' : 'bg-slate-900/85 text-white'}`}>
                           {product.stock > 0 ? `${product.stock} ${text.available}` : text.soldOut}
                         </span>
                       </div>
@@ -402,7 +411,16 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
               <div className="border-b border-dashed border-slate-300 pb-4 text-center">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{text.reference}</p>
                 <p className="mt-1 text-sm font-black">{reference}</p>
-                <h1 className="mt-3 text-xl font-black">{snapshot.shop.name}</h1>
+                <div className="mt-3 flex min-w-0 items-center justify-center gap-3">
+                  {shopLogo ? (
+                    <img src={shopLogo} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-slate-100 bg-white p-1 object-contain" />
+                  ) : (
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-[#0A4DFF]">
+                      <Store className="h-5 w-5" />
+                    </span>
+                  )}
+                  <h1 className="break-words text-xl font-black">{snapshot.shop.name}</h1>
+                </div>
                 {snapshot.shop.city && <p className="mt-1 text-xs text-slate-500">{snapshot.shop.city}</p>}
                 <p className="mt-3 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[11px] font-extrabold text-amber-800">{text.notPaid}</p>
               </div>
