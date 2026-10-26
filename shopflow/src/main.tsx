@@ -1,12 +1,28 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { createRoot } from 'react-dom/client';
-import './index.css';
 import App from './App.tsx';
+import { PublicCatalogPage } from './components/PublicCatalogPage';
+import './index.css';
+
+function ApplicationEntry() {
+  const [catalogToken, setCatalogToken] = useState(() =>
+    new URLSearchParams(window.location.search).get('catalog')
+  );
+
+  useEffect(() => {
+    const updateRoute = () =>
+      setCatalogToken(new URLSearchParams(window.location.search).get('catalog'));
+    window.addEventListener('popstate', updateRoute);
+    return () => window.removeEventListener('popstate', updateRoute);
+  }, []);
+
+  return catalogToken ? <PublicCatalogPage token={catalogToken} /> : <App />;
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ApplicationEntry />
   </StrictMode>
 );
 

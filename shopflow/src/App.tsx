@@ -9,7 +9,6 @@ import {
   ExternalLink,
   Globe,
   LayoutDashboard,
-  Loader2,
   Lock,
   Monitor,
   Package,
@@ -47,7 +46,8 @@ import {
   sfAsset,
 } from './data/initialData';
 import {
-  translateEntirePageDOM,
+  clearLegacyAITranslationCache,
+  translateDOMWithLocalDictionary,
   translateStringSync,
 } from './i18n/fullTranslator';
 import { LANGUAGE_OPTIONS, TRANSLATIONS } from './i18n/translations';
@@ -176,8 +176,6 @@ export function App() {
   const [showFirstRunTour, setShowFirstRunTour] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
 
-  const [isAiTranslating, setIsAiTranslating] = useState(false);
-
   // Real Patron vs Vendor/Cashier PIN Protection!
   const [isVendorLocked, setIsVendorLocked] = useState(false);
   const [showPinUnlockModal, setShowPinUnlockModal] = useState(false);
@@ -300,18 +298,15 @@ export function App() {
       window.removeEventListener('beforeinstallprompt', onBeforeInstall);
   }, []);
 
-  // Whole-App Automatic Dictionary + AI Full Translation Engine whenever language or view changes!
-  // Never runs external AI call while on 'ai' tab unless language is non-French so chat has 100% priority bandwidth.
+  useEffect(() => {
+    clearLegacyAITranslationCache();
+  }, []);
+
+  // Apply reviewed translations locally after each view/language update; no translation API is called.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      if (settings.language !== 'fr') setIsAiTranslating(true);
-      translateEntirePageDOM(
-        appRootRef.current,
-        settings.language,
-        () => setIsAiTranslating(false)
-      ).finally(() => setIsAiTranslating(false));
-    }, 180);
-
+      void translateDOMWithLocalDictionary(appRootRef.current, settings.language);
+    }, 100);
     return () => clearTimeout(timer);
   }, [
     settings.language,
@@ -896,12 +891,6 @@ export function App() {
             </div>
 
         <div className="flex items-center gap-2">
-          {isAiTranslating && (
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1 text-[11px] font-bold text-sky-200">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              IA Traduction...
-            </span>
-          )}
           <button
             onClick={() =>
               isVendorLocked
@@ -1148,9 +1137,6 @@ export function App() {
               </div>
 
               <div className="flex shrink-0 items-center gap-1">
-                {isAiTranslating && (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#0A4DFF]" />
-                )}
                 <select
                   aria-label="Langue"
                   value={settings.language}
@@ -1316,49 +1302,7 @@ export function App() {
             )}
 
             {activeTab === 'storefront' && (
-              <OnlineStoreView
-                settings={settings}
-                products={localizedProducts}
-                onSimulateOnlineOrderReceived={(
-                  items,
-                  customerName,
-                  quartier
-                ) => {
-                  handleCompleteCartSale(
-                    items,
-                    'mobile_money',
-                    customerName,
-                    '+243 97 000 0000',
-                    quartier,
-                    settings.defaultDeliveryFeeFC
-                  );
-
-                  const now = new Date();
-                  setVisualReceipt({
-                    invoiceNumber: `#2026-0${Math.floor(100 + Math.random() * 899)}`,
-                    dateTime: `${String(now.getDate()).padStart(2, '0')}/${String(
-                      now.getMonth() + 1
-                    ).padStart(2, '0')}/${now.getFullYear()}  ${nowTime()}`,
-                    customerName,
-                    customerPhone: '+243 97 000 0000',
-                    customerAddress: quartier,
-                    paymentMethodLabel: 'Mobile Money (Commande en ligne)',
-                    paymentReference: '9B2E-4K8M-7P1A',
-                    isPaid: true,
-                    items: items.map(({ product, quantity }, idx) => ({
-                      id: product.id,
-                      refCode: product.refCode || `SF-00${idx + 1}`,
-                      name: product.name,
-                      subtitle: product.unit,
-                      image: product.image,
-                      quantity,
-                      unitPriceFC: product.sellingPriceFC,
-                    })),
-                    deliveryFeeFC: settings.defaultDeliveryFeeFC,
-                  });
-                }}
-                onShareWhatsAppOrder={() => {}}
-              />
+              <OnlineStoreView settings={settings} products={products} />
             )}
 
             {activeTab === 'credits' && (
