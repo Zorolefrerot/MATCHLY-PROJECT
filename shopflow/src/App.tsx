@@ -219,7 +219,9 @@ export function App() {
   const [authModalConfig, setAuthModalConfig] = useState<{
     mode: AuthModalMode;
     plan?: SubscriptionPlanId;
-  } | null>(null);
+  } | null>(() => isInstalledApp && !supabase ? { mode: 'signup', plan: 'pro_ai' } : null);
+  const [authBootstrapComplete, setAuthBootstrapComplete] = useState(!isInstalledApp || !supabase);
+  const [startupDelayElapsed, setStartupDelayElapsed] = useState(!isInstalledApp);
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [accountShops, setAccountShops] = useState<ShopSummary[]>([]);
   const [activeShop, setActiveShop] = useState<ShopSummary | null>(null);
@@ -316,18 +318,26 @@ export function App() {
 
   useEffect(() => {
     if (!isInstalledApp) return;
-    const timer = window.setTimeout(() => {
-      setShowStartupSplash(false);
-      try {
-        if (localStorage.getItem(FIRST_RUN_TOUR_KEY) !== 'done') setShowFirstRunTour(true);
-      } catch {
-        setShowFirstRunTour(true);
-      }
-    }, 1100);
+    const timer = window.setTimeout(() => setStartupDelayElapsed(true), 800);
     return () => window.clearTimeout(timer);
   }, [isInstalledApp]);
 
-  const finishFirstRunTour = (configureShop: boolean) => {
+  useEffect(() => {
+    if (isInstalledApp && startupDelayElapsed && authBootstrapComplete) {
+      setShowStartupSplash(false);
+    }
+  }, [isInstalledApp, startupDelayElapsed, authBootstrapComplete]);
+
+  useEffect(() => {
+    if (!isInstalledApp || !authUser || !activeShop || !shopDataReady) return;
+    let alreadyCompleted = false;
+    try { alreadyCompleted = localStorage.getItem(FIRST_RUN_TOUR_KEY) === 'done'; } catch { /* optional */ }
+    if (alreadyCompleted) return;
+    const timer = window.setTimeout(() => setShowFirstRunTour(true), 350);
+    return () => window.clearTimeout(timer);
+  }, [isInstalledApp, authUser, activeShop, shopDataReady]);
+
+  const finishFirstRunTour = () => {
     try {
       localStorage.setItem(FIRST_RUN_TOUR_KEY, 'done');
     } catch {
@@ -335,9 +345,6 @@ export function App() {
     }
     setShowFirstRunTour(false);
     setOnboardingStep(0);
-    if (configureShop) {
-      setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' });
-    }
   };
 
   useEffect(() => {
@@ -450,6 +457,7 @@ export function App() {
     await activateAccountShop(newShop, shops, billing);
     setSettings((previous) => ({ ...previous, ownerPin: payload.ownerPin || previous.ownerPin }));
     setActiveTab('dashboard');
+    setAuthModalConfig(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast(`La boutique « ${newShop.name} » est prête.`);
   };
@@ -491,7 +499,14 @@ export function App() {
     const processAuthUser = async (user: User | null) => {
       if (cancelled) return;
       if (!user) {
-        if (!authUserRef.current) return;
+        if (!authUserRef.current) {
+          if (isInstalledApp) {
+            setScreenMode('app');
+            setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' });
+          }
+          setAuthBootstrapComplete(true);
+          return;
+        }
         shopActivationSequenceRef.current += 1;
         shopActivationRef.current = null;
         authUserRef.current = null;
@@ -511,8 +526,9 @@ export function App() {
         setSales(local?.sales || []);
         setCredits(local?.credits || []);
         setExpenses(local?.expenses || []);
-        setAuthModalConfig(null);
+        setAuthModalConfig(isInstalledApp ? { mode: 'signup', plan: 'pro_ai' } : null);
         setScreenMode(isInstalledApp ? 'app' : 'landing');
+        setAuthBootstrapComplete(true);
         return;
       }
       if (accountLoadedUserRef.current === user.id || authProcessingRef.current) return;
@@ -520,6 +536,7 @@ export function App() {
       try {
         authUserRef.current = user;
         setAuthUser(user);
+        setScreenMode('app');
         setAccountLoadError(null);
         let [shops, billing] = await Promise.all([listMyShops(), getMyBillingAccount()]);
         let createdFromPendingSetup = false;
@@ -556,6 +573,7 @@ export function App() {
           setSettings((previous) => ({ ...previous, ownerPin: pendingOwnerPin! }));
         }
         accountLoadedUserRef.current = user.id;
+        setAuthModalConfig(null);
         setActiveTab('dashboard');
         showToast(`Compte connecté : ${shops.length} boutique(s) disponible(s).`);
       } catch (error) {
@@ -563,6 +581,7 @@ export function App() {
         showToast(getAuthErrorMessage(error));
       } finally {
         authProcessingRef.current = false;
+        setAuthBootstrapComplete(true);
       }
     };
 
@@ -578,7 +597,11 @@ export function App() {
       if (error) throw error;
       void processAuthUser(data.session?.user || null);
     }).catch((error) => {
-      if (!cancelled) setAccountLoadError(getAuthErrorMessage(error));
+      if (!cancelled) {
+        setAccountLoadError(getAuthErrorMessage(error));
+        if (isInstalledApp) setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' });
+        setAuthBootstrapComplete(true);
+      }
     });
 
     return () => {
@@ -1554,7 +1577,7 @@ export function App() {
         >
           {/* Sticky Mobile Header */}
           <header
-            className={`sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-xs ${
+            className={`relative z-30 border-b border-slate-200 bg-white/95 backdrop-blur-xs ${
               isPhoneFrame ? 'sf-safe-top block' : 'sf-safe-top lg:hidden'
             }`}
           >
@@ -1871,6 +1894,7 @@ export function App() {
             github: isOAuthProviderEnabled('github') && Boolean(authRedirectUrl),
             facebook: isOAuthProviderEnabled('facebook') && Boolean(authRedirectUrl),
           }}
+          requireAuthentication={isInstalledApp}
           isAuthenticated={Boolean(authUser)}
           onCompleteSignup={handleCompleteSignup}
           onLoginExisting={handleLoginExisting}
@@ -1888,7 +1912,7 @@ export function App() {
             return false;
           }}
           onClose={() => {
-            if (authUser && !activeShop) return;
+            if (isInstalledApp && (!authUser || !activeShop)) return;
             setAuthModalConfig(null);
           }}
         />

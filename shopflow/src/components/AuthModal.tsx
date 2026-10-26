@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ArrowRight,
   CheckCircle2,
@@ -40,6 +40,7 @@ interface AuthModalProps {
   defaultCurrency: CurrencyCode;
   authConfigured: boolean;
   oauthProvidersEnabled: Record<OAuthProvider, boolean>;
+  requireAuthentication?: boolean;
   isAuthenticated?: boolean;
   onCompleteSignup: (payload: SignupPayload) => Promise<boolean | void>;
   onLoginExisting: (email: string, password: string) => Promise<void>;
@@ -57,6 +58,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   defaultCurrency,
   authConfigured,
   oauthProvidersEnabled,
+  requireAuthentication = false,
   isAuthenticated = false,
   onCompleteSignup,
   onLoginExisting,
@@ -68,6 +70,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
 }) => {
   const [mode, setMode] = useState<AuthModalMode>(initialMode);
+  useEffect(() => setMode(initialMode), [initialMode]);
   const isAppleMobile = typeof navigator !== 'undefined' && (
     /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
@@ -169,8 +172,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4 backdrop-blur-xs">
-      <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-x-hidden overflow-y-auto bg-slate-950/70 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xs sm:items-center sm:p-4">
+      <div className="relative my-0 max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-3xl border border-slate-200 bg-white shadow-2xl sm:my-8 sm:max-h-[calc(100dvh-2rem)]">
         {/* Top Gradient Header */}
         <div className="flex items-center justify-between bg-[#081844] px-6 py-4 text-white">
           <div className="flex items-center gap-3">
@@ -182,7 +185,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div>
               <h3 className="text-sm font-black tracking-tight">
                 {mode === 'signup'
-                  ? isAuthenticated ? 'Configurer une boutique ShopFlow' : 'Créer votre boutique ShopFlow'
+                  ? isAuthenticated ? 'Configurer une boutique ShopFlow' : requireAuthentication ? 'Connexion à ShopFlow' : 'Créer votre boutique ShopFlow'
                   : mode === 'login'
                     ? 'Connexion à votre boutique'
                     : mode === 'reset_password'
@@ -194,23 +197,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   ? 'Installation sur Android • iPhone • Ordinateur'
                   : mode === 'reset_password'
                     ? 'Réinitialisation sécurisée de votre accès'
-                    : '7 jours d’essai à partir de la création de la boutique'}
+                    : requireAuthentication && !isAuthenticated
+                      ? 'Connectez-vous avant de configurer votre boutique'
+                      : '7 jours d’essai à partir de la création de la boutique'}
               </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl bg-white/10 p-1.5 text-white transition hover:bg-white/20"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {(!requireAuthentication || isAuthenticated) && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fermer"
+              className="rounded-xl bg-white/10 p-1.5 text-white transition hover:bg-white/20"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Signup and login are deliberately not offered from the public install flow. */}
         {initialMode !== 'install' && mode !== 'install' && mode !== 'reset_password' && (
-        <div className={`grid ${isAuthenticated ? 'grid-cols-2' : 'grid-cols-3'} border-b border-slate-100 bg-slate-50 p-1.5 text-xs font-extrabold`}>
+        <div className={`grid ${isAuthenticated || requireAuthentication ? 'grid-cols-2' : 'grid-cols-3'} border-b border-slate-100 bg-slate-50 p-1.5 text-xs font-extrabold`}>
           <button
             type="button"
             onClick={() => setMode('signup')}
@@ -235,13 +243,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               Se Connecter
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => setMode('install')}
-            className="rounded-xl py-2 text-slate-500 transition hover:text-slate-800"
-          >
-            📲 Installer l’App
-          </button>
+          {!requireAuthentication && (
+            <button
+              type="button"
+              onClick={() => setMode('install')}
+              className="rounded-xl py-2 text-slate-500 transition hover:text-slate-800"
+            >
+              📲 Installer l’App
+            </button>
+          )}
         </div>
         )}
 
@@ -257,10 +267,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
+        {mode === 'signup' && requireAuthentication && !isAuthenticated && (
+          <section className="space-y-4 p-5 text-sm sm:p-6" aria-labelledby="auth-required-title">
+            <div className="space-y-2 text-center">
+              <h4 id="auth-required-title" className="text-base font-extrabold text-slate-900">Connectez-vous d’abord</h4>
+              <p className="text-xs leading-relaxed text-slate-600">Après la connexion, vous pourrez configurer votre boutique. ShopFlow ne reçoit jamais le mot de passe de Google, GitHub ou Facebook.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {socialProviders.map(({ id, label, Icon }) => {
+                const enabled = authConfigured && oauthProvidersEnabled[id];
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    disabled={!enabled || isSubmitting}
+                    onClick={() => void runAuthAction(() => onOAuthSignIn(id))}
+                    className="flex min-h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 font-extrabold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>Continuer avec {label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {!oauthProvidersEnabled.google && !oauthProvidersEnabled.github && !oauthProvidersEnabled.facebook && (
+              <p className="rounded-xl bg-amber-50 p-3 text-center text-xs font-semibold text-amber-900">Aucun fournisseur n’est activé dans Supabase pour le moment.</p>
+            )}
+          </section>
+        )}
+
         {/* =====================================================
-            MODE 1: SIGNUP NEW SHOP
+            MODE 1: CONFIGURE SHOP AFTER AUTHENTICATION
            ===================================================== */}
-        {mode === 'signup' && (
+        {mode === 'signup' && (!requireAuthentication || isAuthenticated) && (
           <form onSubmit={handleSignupSubmit} className="space-y-3.5 p-6 text-xs">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>

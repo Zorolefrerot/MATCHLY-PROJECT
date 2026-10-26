@@ -5,7 +5,7 @@ import { SHOPFLOW_APP_LOGO } from '../data/initialData';
 interface FirstRunOnboardingProps {
   step: number;
   onStepChange: (step: number) => void;
-  onFinish: (configureShop: boolean) => void;
+  onFinish: () => void;
 }
 
 const STEPS = [
@@ -41,11 +41,11 @@ export const FirstRunOnboarding: React.FC<FirstRunOnboardingProps> = ({
   const StepIcon = current.icon;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="first-run-title">
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-950/65 px-3 py-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="first-run-title">
+      <div className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-3xl bg-white p-4 shadow-2xl sm:p-8">
         <button
           type="button"
-          onClick={() => onFinish(false)}
+          onClick={() => onFinish()}
           aria-label="Fermer le tutoriel"
           className="absolute top-4 right-4 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
         >
@@ -78,7 +78,7 @@ export const FirstRunOnboarding: React.FC<FirstRunOnboardingProps> = ({
         <div className="mt-6 flex items-center justify-between gap-2">
           <button
             type="button"
-            onClick={() => (step > 0 ? onStepChange(step - 1) : onFinish(false))}
+            onClick={() => (step > 0 ? onStepChange(step - 1) : onFinish())}
             className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -93,22 +93,13 @@ export const FirstRunOnboarding: React.FC<FirstRunOnboardingProps> = ({
               Suivant <ArrowRight className="h-4 w-4" />
             </button>
           ) : (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => onFinish(false)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
-              >
-                <Check className="h-4 w-4" /> Commencer
-              </button>
-              <button
-                type="button"
-                onClick={() => onFinish(true)}
-                className="rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700"
-              >
-                Configurer ma boutique
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => onFinish()}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700"
+            >
+              <Check className="h-4 w-4" /> Ouvrir ma boutique
+            </button>
           )}
         </div>
       </div>

@@ -326,7 +326,20 @@
   width: 100%;
 }
 #shopflow-theme-root {
+  overflow-x: hidden;
   overflow-x: clip;
+}
+.sf-app-main :is(.grid, .flex) > * {
+  min-width: 0;
+}
+.sf-app-main :is(img, video, canvas, iframe) {
+  max-width: 100%;
+}
+.sf-app-main table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .sf-safe-top {
   padding-top: env(safe-area-inset-top, 0px);
@@ -364,6 +377,7 @@ body {
   max-width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
+  overflow-x: hidden;
   overflow-x: clip;
 }
 .sf-app-main,
