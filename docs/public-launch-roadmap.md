@@ -52,11 +52,18 @@ Tester isolation des boutiques et rôles, inscription/confirmation/récupératio
 
 Après validation, configurer des projets/env séparés pour test et production, secrets de production, domaine HTTPS et supervision. Android nécessite un package de production distinct, une clé de signature de production sauvegardée en sécurité, versionnement et APK/AAB de release. iPhone reste la PWA Safari tant qu’une IPA signée n’est pas volontairement préparée. Le site public doit pointer uniquement vers les services de production validés.
 
-## Décisions nécessaires avant les intégrations d’authentification et de paiement
+## Décisions validées par le propriétaire
 
-- Identifiant de compte : e-mail + mot de passe, téléphone, ou les deux ?
-- Une adresse e-mail doit-elle être vérifiée avant l’accès aux données ?
-- Le propriétaire peut-il gérer plusieurs boutiques et inviter des vendeurs ?
-- Quels moyens de paiement et quel prestataire marchand sont déjà disponibles pour l’entreprise en RDC ?
-- Quelles données locales doit-on migrer lors de la première inscription ?
-- Le lancement initial vise-t-il un pilote APK/PWA, ou une publication Android de production dès le départ ?
+- Authentification : e-mail + mot de passe avec confirmation, et connexion Google.
+- Un compte propriétaire peut gérer plusieurs boutiques, mais le nombre dépend du forfait. Les plans affichés dans `SubscriptionView.tsx` restent mensuels : Starter 5 USD, Pro 12 USD, Business 25 USD; seule la formule Business autorise jusqu’à 5 boutiques. Ne pas changer les avantages sans validation.
+- Les données locales existantes doivent être importées lors de la première connexion, sans écraser la sauvegarde locale tant que la migration n’a pas été confirmée.
+- Le propriétaire ne possède pas encore de compte marchand; une passerelle doit couvrir Orange Money, Airtel Money, M-Pesa et Visa/Mastercard en RDC.
+
+## Préparation restante
+
+- **CinetPay est le premier candidat recommandé** : sa [table officielle des moyens de paiement](https://docs.cinetpay.com/api/1.0-fr/checkout/tableau) documente Orange Money, M-Pesa et Airtel en RDC, ainsi que Visa/Mastercard en USD. Les moyens, devises et frais doivent être confirmés par écrit par le service marchand avant toute annonce tarifaire; la [page tarifaire](https://cinetpay.com/pricing) indique que les frais varient selon le volume.
+- La documentation décrit une API de paiement avec identifiant unique, et demande de vérifier l’état réel de chaque transaction via notification et vérification serveur ([initialisation](https://docs.cinetpay.com/api/1.0-fr/checkout/initialisation), [notification](https://docs.cinetpay.com/api/1.0-fr/checkout/notification)). Elle ne confirme pas encore une facturation automatique récurrente pour ShopFlow; le [renouvellement manuel](https://docs.cinetpay.com/api/1.0-fr/BO/service) dans le portail marchand existe. Confirmer ce point avant de décider si les forfaits seront renouvelés manuellement ou automatiquement.
+- L’ouverture d’un compte marchand CinetPay et l’obtention d’un `APIKEY` et d’un `SITEID` sont nécessaires avant l’intégration ([prérequis CinetPay](https://docs.cinetpay.com/api/1.0-fr/introduction/prerequis)). Les secrets iront dans les variables serveur Render, jamais dans l’application ni dans le chat.
+- Pour Google, créer une application OAuth dans Google Cloud et configurer son identifiant/secret dans le fournisseur Google de Supabase. Pour les e-mails de confirmation en production, configurer un domaine expéditeur et un SMTP adapté.
+- La configuration Supabase Auth actuelle pointe toujours sur `http://localhost:3000`; les URL de site/redirection de production doivent être ajoutées après stabilisation du domaine public.
+- L’APK de test Android 1.0.2 (`versionCode 3`, package `cd.shopflow.app.test`) a été reconstruit et publié le 26 octobre 2026. Il reste une préversion de test, pas un APK de production.
