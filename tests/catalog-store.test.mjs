@@ -20,16 +20,20 @@ const sample = {
 function setDatabaseEnv(t) {
   const previous = {
     url: process.env.SUPABASE_URL,
-    key: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    secret: process.env.SUPABASE_SECRET_KEY,
+    legacyKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     fetch: globalThis.fetch,
   };
   process.env.SUPABASE_URL = 'https://project.supabase.co';
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'server-only-test-key';
+  process.env.SUPABASE_SECRET_KEY = 'server-only-test-key';
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   t.after(() => {
     if (previous.url === undefined) delete process.env.SUPABASE_URL;
     else process.env.SUPABASE_URL = previous.url;
-    if (previous.key === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
-    else process.env.SUPABASE_SERVICE_ROLE_KEY = previous.key;
+    if (previous.secret === undefined) delete process.env.SUPABASE_SECRET_KEY;
+    else process.env.SUPABASE_SECRET_KEY = previous.secret;
+    if (previous.legacyKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    else process.env.SUPABASE_SERVICE_ROLE_KEY = previous.legacyKey;
     globalThis.fetch = previous.fetch;
   });
 }
@@ -45,11 +49,14 @@ test('public catalog sanitation excludes internal purchase and stock-alert field
 test('catalog operations fail closed when Supabase server secrets are absent', async (t) => {
   const previousUrl = process.env.SUPABASE_URL;
   const previousKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const previousSecret = process.env.SUPABASE_SECRET_KEY;
   delete process.env.SUPABASE_URL;
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  delete process.env.SUPABASE_SECRET_KEY;
   t.after(() => {
     if (previousUrl !== undefined) process.env.SUPABASE_URL = previousUrl;
     if (previousKey !== undefined) process.env.SUPABASE_SERVICE_ROLE_KEY = previousKey;
+    if (previousSecret !== undefined) process.env.SUPABASE_SECRET_KEY = previousSecret;
   });
   await assert.rejects(readPublicCatalog(uuid), (error) => error instanceof CatalogStoreError && error.status === 503);
 });

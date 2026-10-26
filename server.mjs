@@ -155,7 +155,7 @@ async function handleApi(request, response, pathname) {
     sendJson(response, 200, {
       ok: true,
       aiConfigured: Boolean(process.env.GEMINI_API_KEY),
-      catalogConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+      catalogConfigured: Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)),
     });
     return;
   }

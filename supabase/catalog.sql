@@ -8,7 +8,7 @@ create table if not exists public.shopflow_catalogs (
   updated_at timestamptz not null default now()
 );
 
--- Catalog rows are read/written only by ShopFlow's server using the service-role key.
+-- Catalog rows are read/written only by ShopFlow's server using a Supabase secret key.
 -- No anon/authenticated policy is created; never put the service-role key in the browser.
 alter table public.shopflow_catalogs enable row level security;
 revoke all on table public.shopflow_catalogs from anon, authenticated;

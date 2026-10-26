@@ -74,7 +74,7 @@ test('catalog HTTP routes create, update and read a stable public URL without ex
       ...process.env,
       PORT: String(appPort),
       SUPABASE_URL: `http://127.0.0.1:${databasePort}`,
-      SUPABASE_SERVICE_ROLE_KEY: serviceSecret,
+      SUPABASE_SECRET_KEY: serviceSecret,
     },
     stdio: 'ignore',
   });
