@@ -156,6 +156,9 @@ export interface ShopSettings {
   activePlan: SubscriptionPlanId;
   planPaid: boolean;
   trialStartedAt: string;
+  /** Private local credentials for syncing this shop's public catalog. Never publish the token. */
+  publicCatalogId?: string;
+  publicCatalogToken?: string;
 }
 
 export interface CartItem {

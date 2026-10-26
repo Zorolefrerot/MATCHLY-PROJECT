@@ -4,13 +4,16 @@ import { createServer } from 'node:http';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { callGeminiProxy } from './lib/gemini-proxy.mjs';
+import { createPublicCatalog, readPublicCatalog, updatePublicCatalog, CatalogStoreError } from './lib/catalog-store.mjs';
 
 const ROOT_DIR = fileURLToPath(new URL('.', import.meta.url));
 const DIST_DIR = resolve(ROOT_DIR, 'dist');
 const PORT = Number(process.env.PORT) || 3000;
 const MAX_BODY_BYTES = 3_000_000;
 const AI_REQUESTS_PER_MINUTE = 30;
+const CATALOG_REQUESTS_PER_MINUTE = 120;
 const rateBuckets = new Map();
+const catalogRateBuckets = new Map();
 const nativeOrigins = new Set(['capacitor://localhost', 'http://localhost', 'https://localhost']);
 const mimeTypes = {
   '.avif': 'image/avif',
@@ -54,8 +57,8 @@ function setApiCors(request, response) {
 
   response.setHeader('Access-Control-Allow-Origin', origin);
   response.setHeader('Vary', 'Origin');
-  response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return true;
 }
 
@@ -108,20 +111,38 @@ async function readJsonBody(request) {
   }
 }
 
+function isCatalogRateLimited(ip) {
+  const now = Date.now();
+  const bucket = catalogRateBuckets.get(ip);
+  if (!bucket || now - bucket.startedAt >= 60_000) {
+    catalogRateBuckets.set(ip, { startedAt: now, count: 1 });
+    return false;
+  }
+  bucket.count += 1;
+  if (bucket.count > CATALOG_REQUESTS_PER_MINUTE) return true;
+  if (catalogRateBuckets.size > 2_000) {
+    for (const [key, value] of catalogRateBuckets) {
+      if (now - value.startedAt >= 60_000) catalogRateBuckets.delete(key);
+    }
+  }
+  return false;
+}
+
+function sendCatalogError(response, error) {
+  const status = error instanceof CatalogStoreError ? error.status : Number(error?.status) || 400;
+  const code = error instanceof CatalogStoreError ? error.code : 'catalog_request_failed';
+  const message = error instanceof CatalogStoreError
+    ? error.message
+    : status === 413
+      ? 'La requête du catalogue est trop volumineuse.'
+      : 'La requête du catalogue est invalide.';
+  sendJson(response, status, { error: { code, message } });
+}
+
 async function handleApi(request, response, pathname) {
   setSecurityHeaders(response);
   if (!setApiCors(request, response)) {
     sendJson(response, 403, { error: { message: 'Origine non autorisée.' } });
-    return;
-  }
-
-  if (pathname === '/api/health' && request.method === 'GET') {
-    sendJson(response, 200, { ok: true, aiConfigured: Boolean(process.env.GEMINI_API_KEY) });
-    return;
-  }
-
-  if (pathname !== '/api/ai') {
-    sendJson(response, 404, { error: { message: 'Route introuvable.' } });
     return;
   }
   if (request.method === 'OPTIONS') {
@@ -129,12 +150,75 @@ async function handleApi(request, response, pathname) {
     response.end();
     return;
   }
+
+  if (pathname === '/api/health' && request.method === 'GET') {
+    sendJson(response, 200, {
+      ok: true,
+      aiConfigured: Boolean(process.env.GEMINI_API_KEY),
+      catalogConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+    });
+    return;
+  }
+
+  const clientIp = getClientIp(request);
+  if (pathname === '/api/catalogs' && request.method === 'POST') {
+    if (isCatalogRateLimited(clientIp)) {
+      sendJson(response, 429, { error: { code: 'rate_limited', message: 'Trop de demandes. Réessayez dans une minute.' } });
+      return;
+    }
+    try {
+      const payload = await readJsonBody(request);
+      const token = String(request.headers.authorization || '').replace(/^Bearer\s+/i, '');
+      const result = await createPublicCatalog({ id: payload?.id, token, payload: payload?.snapshot });
+      sendJson(response, 201, result);
+    } catch (error) {
+      sendCatalogError(response, error);
+    }
+    return;
+  }
+
+  const catalogMatch = pathname.match(/^\/api\/catalogs\/([0-9a-f-]+)$/i);
+  if (catalogMatch) {
+    const catalogId = catalogMatch[1];
+    if (isCatalogRateLimited(clientIp)) {
+      sendJson(response, 429, { error: { code: 'rate_limited', message: 'Trop de demandes. Réessayez dans une minute.' } });
+      return;
+    }
+    if (request.method === 'GET') {
+      try {
+        const result = await readPublicCatalog(catalogId);
+        sendJson(response, 200, result);
+      } catch (error) {
+        sendCatalogError(response, error);
+      }
+      return;
+    }
+    if (request.method === 'PUT') {
+      try {
+        const payload = await readJsonBody(request);
+        const token = String(request.headers.authorization || '').replace(/^Bearer\s+/i, '');
+        const result = await updatePublicCatalog({ id: catalogId, token, payload: payload?.snapshot });
+        sendJson(response, 200, result);
+      } catch (error) {
+        sendCatalogError(response, error);
+      }
+      return;
+    }
+    response.setHeader('Allow', 'GET, PUT, OPTIONS');
+    sendJson(response, 405, { error: { code: 'method_not_allowed', message: 'Méthode non autorisée.' } });
+    return;
+  }
+
+  if (pathname !== '/api/ai') {
+    sendJson(response, 404, { error: { message: 'Route introuvable.' } });
+    return;
+  }
   if (request.method !== 'POST') {
     response.setHeader('Allow', 'POST, OPTIONS');
     sendJson(response, 405, { error: { message: 'Méthode non autorisée.' } });
     return;
   }
-  if (isRateLimited(getClientIp(request))) {
+  if (isRateLimited(clientIp)) {
     sendJson(response, 429, { error: { message: 'Trop de demandes. Réessayez dans une minute.' } });
     return;
   }

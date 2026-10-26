@@ -161,11 +161,102 @@ export function decodePublicCatalog(token: string): PublicCatalogSnapshot | null
   }
 }
 
-export function makePublicCatalogUrl(token: string): string {
+export function makePublicCatalogUrl(catalogId: string): string {
   const appBase = getPublicCatalogAppBase();
   const url = new URL(appBase);
-  url.searchParams.set(PUBLIC_CATALOG_QUERY, token);
+  url.searchParams.set(PUBLIC_CATALOG_QUERY, catalogId);
   return url.toString();
+}
+
+export interface PublicCatalogCredentials {
+  id: string;
+  token: string;
+}
+
+export async function createLivePublicCatalog(
+  snapshot: PublicCatalogSnapshot
+): Promise<PublicCatalogCredentials> {
+  const credentials = createCatalogCredentials();
+  await catalogApiRequest('/api/catalogs', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${credentials.token}` },
+    body: JSON.stringify({ id: credentials.id, snapshot }),
+  });
+  return credentials;
+}
+
+export async function updateLivePublicCatalog(
+  id: string,
+  token: string,
+  snapshot: PublicCatalogSnapshot
+): Promise<void> {
+  await catalogApiRequest(`/api/catalogs/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ snapshot }),
+  });
+}
+
+export async function readLivePublicCatalog(id: string): Promise<PublicCatalogSnapshot> {
+  const response = await catalogApiRequest(`/api/catalogs/${encodeURIComponent(id)}`);
+  const result = (await response.json()) as { payload?: PublicCatalogSnapshot };
+  if (!result?.payload || result.payload.version !== 1 || !Array.isArray(result.payload.products)) {
+    throw new Error('invalid_catalog_response');
+  }
+  return result.payload;
+}
+
+function createCatalogCredentials(): PublicCatalogCredentials {
+  if (!globalThis.crypto?.getRandomValues) throw new Error('secure_random_unavailable');
+  const bytes = new Uint8Array(32);
+  globalThis.crypto.getRandomValues(bytes);
+  const token = bytesToBase64Url(bytes);
+  const idBytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(idBytes);
+  idBytes[6] = (idBytes[6] & 0x0f) | 0x40;
+  idBytes[8] = (idBytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(idBytes, (value) => value.toString(16).padStart(2, '0')).join('');
+  const id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  return { id, token };
+}
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let binary = '';
+  bytes.forEach((value) => { binary += String.fromCharCode(value); });
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+async function catalogApiRequest(path: string, init: RequestInit = {}): Promise<Response> {
+  const configured = import.meta.env.VITE_CATALOG_API_URL as string | undefined;
+  const apiBase = configured?.trim().replace(/\/+$/, '') || getCatalogApiBase();
+  let response: Response;
+  try {
+    response = await fetch(`${apiBase}${path}`, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...init.headers },
+    });
+  } catch {
+    throw new Error('catalog_api_unavailable');
+  }
+  if (!response.ok) {
+    let message = 'catalog_api_error';
+    try {
+      const body = await response.json();
+      if (typeof body?.error?.message === 'string') message = body.error.message;
+    } catch {
+      // Keep a generic client-safe error when the API response is not JSON.
+    }
+    throw new Error(message);
+  }
+  return response;
+}
+
+function getCatalogApiBase(): string {
+  if (typeof window !== 'undefined' && /^https?:$/.test(window.location.protocol)) {
+    return window.location.origin;
+  }
+  // Native builds use the configured production site; override at build time if hosting elsewhere.
+  return 'https://shopflow.cd';
 }
 
 export function getPublicCatalogAppBase(): string {
@@ -173,8 +264,7 @@ export function getPublicCatalogAppBase(): string {
   if (typeof window === 'undefined') return fallback;
   const currentOrigin = window.location.origin;
   if (currentOrigin.startsWith('capacitor:') || currentOrigin === 'null') return fallback;
-  const path = window.location.pathname.startsWith('/app/') ? '/app/' : '/';
-  return new URL(path, currentOrigin).toString();
+  return new URL('/app/', currentOrigin).toString();
 }
 
 function clampMoney(value: unknown): number {

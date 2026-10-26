@@ -66,6 +66,7 @@ import {
   VisualReceiptPayload,
 } from './types';
 import { formatMoney } from './utils/currency';
+import { getPublicCatalogAppBase, makePublicCatalogSnapshot, updateLivePublicCatalog } from './utils/publicCatalog';
 import { parseSaleDate } from './utils/saleDate';
 
 const STORAGE_KEY = 'shopflow_rdc_mockup_v4';
@@ -169,6 +170,8 @@ export function App() {
     ? 7
     : Math.max(0, Math.ceil((trialEndsAtMs - trialNow) / DAY_MS));
   const [products, setProducts] = useState<Product[]>([]);
+  const [catalogSyncStatus, setCatalogSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [catalogNetworkEpoch, setCatalogNetworkEpoch] = useState(0);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [credits, setCredits] = useState<CreditEntry[]>([]);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
@@ -267,6 +270,32 @@ export function App() {
       // Ignore quota errors
     }
   }, [hasLoadedSettings, settings, products, sales, credits, expenses]);
+
+  useEffect(() => {
+    const retryCatalogSync = () => setCatalogNetworkEpoch((current) => current + 1);
+    window.addEventListener('online', retryCatalogSync);
+    return () => window.removeEventListener('online', retryCatalogSync);
+  }, []);
+
+  useEffect(() => {
+    const { publicCatalogId, publicCatalogToken } = settings;
+    if (!hasLoadedSettings || !publicCatalogId || !publicCatalogToken) return;
+    let cancelled = false;
+    setCatalogSyncStatus('syncing');
+    const timer = window.setTimeout(async () => {
+      try {
+        const snapshot = makePublicCatalogSnapshot(settings, products, getPublicCatalogAppBase());
+        await updateLivePublicCatalog(publicCatalogId, publicCatalogToken, snapshot);
+        if (!cancelled) setCatalogSyncStatus('synced');
+      } catch {
+        if (!cancelled) setCatalogSyncStatus('error');
+      }
+    }, 650);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [hasLoadedSettings, settings, products, catalogNetworkEpoch]);
 
   useEffect(() => {
     if (trialEndsAtMs === null || settings.planPaid || Date.now() >= trialEndsAtMs) return;
@@ -1302,7 +1331,12 @@ export function App() {
             )}
 
             {activeTab === 'storefront' && (
-              <OnlineStoreView settings={settings} products={products} />
+              <OnlineStoreView
+                settings={settings}
+                products={products}
+                onSettingsChange={setSettings}
+                syncStatus={catalogSyncStatus}
+              />
             )}
 
             {activeTab === 'credits' && (

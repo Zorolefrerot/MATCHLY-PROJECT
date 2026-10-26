@@ -1,71 +1,95 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertCircle, Check, Copy, ExternalLink, Globe, Package, Share2, Sparkles } from 'lucide-react';
 import { AppLanguage, Product, ShopSettings } from '../types';
 import { formatMoney } from '../utils/currency';
 import {
-  encodePublicCatalog,
+  createLivePublicCatalog,
   getPublicCatalogAppBase,
   makePublicCatalogSnapshot,
   makePublicCatalogUrl,
+  updateLivePublicCatalog,
 } from '../utils/publicCatalog';
 
 interface OnlineStoreViewProps {
   settings: ShopSettings;
   products: Product[];
+  onSettingsChange: React.Dispatch<React.SetStateAction<ShopSettings>>;
+  syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
 }
 
 const STORE_COPY: Record<AppLanguage, Record<string, string>> = {
   fr: {
-    shareTitle: 'Catalogue de', shareMessage: 'Les prix et la disponibilité seront confirmés par la boutique.', badge: 'CATALOGUE PUBLIC À PARTAGER', title: 'Publiez le catalogue de', description: 'Générez un lien hébergé sous /app/, puis envoyez-le à vos clients. Ils choisissent leurs articles, vérifient le récapitulatif et transmettent leur demande à votre WhatsApp.', generate: 'Générer le lien public', url: 'Lien public du catalogue', copied: 'Lien copié', copy: 'Copier le lien', share: 'Partager…', test: 'Tester le lien', empty: 'Ajoutez d’abord des articles au catalogue.', copyFail: 'La copie automatique est bloquée. Sélectionnez et copiez le lien affiché.', shareFail: 'Le partage a échoué. Copiez le lien et envoyez-le manuellement.', published: 'Lien public créé. Il contient une copie du catalogue à cet instant.', copiedNotice: 'Lien copié. Vous pouvez le coller dans WhatsApp ou le partager ailleurs.', preview: 'Aperçu du catalogue', stock: 'Stock relevé :', items: 'article(s)', addProducts: '{t.addProducts}', more: 'autres articles inclus dans le lien.', how: '{t.how}', step1: '{t.step1}', step2: '{t.step2}', step3: 'Il envoie la demande à votre numéro WhatsApp; son téléphone propose une application si plusieurs sont installées.', know: '{t.know}', terms1: '{t.terms1}', terms2: '{t.terms2}', terms3: '{t.terms3}', stockZero: 'Tous les articles sont actuellement à stock zéro; le lien les affichera comme indisponibles.', limitItems: 'La limite est de 300 articles par lien.', linkTooLong: 'Le lien est trop long. Réduisez le nombre d’articles ou de photos hébergées.',
+    shareTitle: 'Catalogue de', shareMessage: 'Les prix et la disponibilité seront confirmés par la boutique.', badge: 'CATALOGUE PUBLIC À PARTAGER', title: 'Publiez le catalogue de', description: 'Créez un lien stable hébergé sous /app/ et envoyez-le à vos clients. Les changements de prix et de stock sont synchronisés automatiquement. Ils choisissent leurs articles, vérifient le récapitulatif et transmettent leur demande à votre WhatsApp.', generate: 'Créer / actualiser le lien stable', url: 'Lien public du catalogue', copied: 'Lien copié', copy: 'Copier le lien', share: 'Partager…', test: 'Tester le lien', empty: 'Ajoutez d’abord des articles au catalogue.', copyFail: 'La copie automatique est bloquée. Sélectionnez et copiez le lien affiché.', shareFail: 'Le partage a échoué. Copiez le lien et envoyez-le manuellement.', published: 'Lien stable prêt. Les articles, prix et stocks seront synchronisés automatiquement.', copiedNotice: 'Lien copié. Vous pouvez le coller dans WhatsApp ou le partager ailleurs.', preview: 'Aperçu du catalogue', stock: 'Stock relevé :', items: 'article(s)', addProducts: '{t.addProducts}', more: 'autres articles inclus dans le lien.', how: '{t.how}', step1: '{t.step1}', step2: '{t.step2}', step3: 'Il envoie la demande à votre numéro WhatsApp; son téléphone propose une application si plusieurs sont installées.', know: '{t.know}', terms1: '{t.terms1}', terms2: '{t.terms2}', terms3: '{t.terms3}', stockZero: 'Tous les articles sont actuellement à stock zéro; le lien les affichera comme indisponibles.', limitItems: 'La limite est de 300 articles par catalogue.', linkTooLong: 'Le lien est trop long. Réduisez le nombre d’articles ou de photos hébergées.',
   },
   en: {
-    shareTitle: 'Catalog from', shareMessage: 'Prices and availability will be confirmed by the shop.', badge: 'PUBLIC CATALOG TO SHARE', title: 'Publish the catalog for', description: 'Create a link hosted under /app/ and send it to customers. They choose items, review the summary and send their request to your WhatsApp.', generate: 'Create public link', url: 'Public catalog link', copied: 'Link copied', copy: 'Copy link', share: 'Share…', test: 'Test link', empty: 'Add products to your catalog first.', copyFail: 'Automatic copying is blocked. Select and copy the link shown.', shareFail: 'Sharing failed. Copy the link and send it manually.', published: 'Public link created. It contains a copy of the catalog as of now.', copiedNotice: 'Link copied. Paste it into WhatsApp or share it elsewhere.', preview: 'Catalog preview', stock: 'Stock at publish:', items: 'item(s)', addProducts: 'The catalog is empty. Add products under “Products & Stock” before creating a link.', more: 'more items included in the link.', how: 'How it works', step1: 'Publish a catalog snapshot and share its link.', step2: 'Customers choose items, enter their details and review the summary.', step3: 'They send the request to your WhatsApp number; their phone offers an app choice if several are installed.', know: 'Please note', terms1: 'The link is a compressed public copy, with no database or live sync. Create a new link after changing prices or stock.', terms2: 'A WhatsApp request does not record a sale or confirm payment.', terms3: 'Purchase costs, PIN and private settings are excluded. Photos stored only on this device are not included.', stockZero: 'All products currently have zero stock; the link will show them as unavailable.', limitItems: 'The limit is 300 products per link.', linkTooLong: 'The link is too long. Reduce the number of products or hosted photos.',
+    shareTitle: 'Catalog from', shareMessage: 'Prices and availability will be confirmed by the shop.', badge: 'PUBLIC CATALOG TO SHARE', title: 'Publish the catalog for', description: 'Create a stable link hosted under /app/ and send it to customers. Price and stock changes sync automatically. They choose items, review the summary and send their request to your WhatsApp.', generate: 'Create / refresh stable link', url: 'Public catalog link', copied: 'Link copied', copy: 'Copy link', share: 'Share…', test: 'Test link', empty: 'Add products to your catalog first.', copyFail: 'Automatic copying is blocked. Select and copy the link shown.', shareFail: 'Sharing failed. Copy the link and send it manually.', published: 'Stable link ready. Products, prices and stock sync automatically.', copiedNotice: 'Link copied. Paste it into WhatsApp or share it elsewhere.', preview: 'Catalog preview', stock: 'Stock at publish:', items: 'item(s)', addProducts: 'The catalog is empty. Add products under “Products & Stock” before creating a link.', more: 'more items included in the link.', how: 'How it works', step1: 'Publish a catalog snapshot and share its link.', step2: 'Customers choose items, enter their details and review the summary.', step3: 'They send the request to your WhatsApp number; their phone offers an app choice if several are installed.', know: 'Please note', terms1: 'The link is stable; price and stock changes sync automatically while the app is online.', terms2: 'A WhatsApp request does not record a sale or confirm payment.', terms3: 'Purchase costs, PIN and private settings are excluded. Photos stored only on this device are not included.', stockZero: 'All products currently have zero stock; the link will show them as unavailable.', limitItems: 'The limit is 300 products per catalog.', linkTooLong: 'The link is too long. Reduce the number of products or hosted photos.',
   },
   ln: {
-    shareTitle: 'Catalogue ya', shareMessage: 'Boutique ekondimisa mituya mpe biloko oyo ezali.', badge: 'CATALOGUE YA KOTINDELA BATO', title: 'Bimisá catalogue ya', description: 'Sala lien oyo ezali na /app/ mpe tinda yango epai ya bakiliya. Bakopona biloko, bakotalela résumé mpe bakotinda demande na WhatsApp na yo.', generate: 'Sala lien ya bato nyonso', url: 'Lien ya catalogue', copied: 'Lien ekopiami', copy: 'Kopiá lien', share: 'Tinda…', test: 'Meka lien', empty: 'Bakisa biloko na catalogue liboso.', copyFail: 'Navigateur endimi kopi te. Poná lien mpe kopi yango.', shareFail: 'Kotinda elongi te. Kopiá lien mpe tinda yango yo moko.', published: 'Lien esalemi. Ezali na copie ya catalogue ya sikoyo.', copiedNotice: 'Lien ekopiami. Okoki kotia yango na WhatsApp to kotinda yango esika mosusu.', preview: 'Talá catalogue', stock: 'Stock ntango ebimisami:', items: 'eloko', addProducts: 'Catalogue ezali mpamba. Bakisa biloko na « Marchandises & Stock » liboso ya kosala lien.', more: 'biloko mosusu ezali na lien.', how: 'Ndenge esalaka', step1: 'Bimisá copie ya catalogue mpe tinda lien na yango.', step2: 'Mokili akopona biloko, akotia makambo na ye mpe akotalela résumé.', step3: 'Akotinda demande na WhatsApp na yo; telefone ekolakisa ba-app oyo ezali mpo na kopona.', know: 'Yeba', terms1: 'Lien ezali copie ya bato nyonso, ezali na base de données te mpe e-syncaka te na tango wana. Sala lien ya sika soki prix to stock ebongwani.', terms2: 'Demande ya WhatsApp ekomaka vente te mpe endimisi kofuta te.', terms3: 'Prix ya kosomba, PIN mpe ba réglages ya sekele ezali te. Bafoto oyo ezali kaka na telefone oyo ekomonana te.', stockZero: 'Biloko nyonso ezali na stock zéro; lien ekolakisa yango lokola esili.', limitItems: 'Limite ezali biloko 300 na lien moko.', linkTooLong: 'Lien eleki molai. Kitisa motango ya biloko to bafoto oyo ebimisami na Internet.',
+    shareTitle: 'Catalogue ya', shareMessage: 'Boutique ekondimisa mituya mpe biloko oyo ezali.', badge: 'CATALOGUE YA KOTINDELA BATO', title: 'Bimisá catalogue ya', description: 'Sala lien ya seko na /app/ mpe tinda yango epai ya bakiliya. Mituya mpe stock ebongwanaka yango moko. Bakopona biloko, bakotalela résumé mpe bakotinda demande na WhatsApp na yo.', generate: 'Sala / bongisa lien ya seko', url: 'Lien ya catalogue', copied: 'Lien ekopiami', copy: 'Kopiá lien', share: 'Tinda…', test: 'Meka lien', empty: 'Bakisa biloko na catalogue liboso.', copyFail: 'Navigateur endimi kopi te. Poná lien mpe kopi yango.', shareFail: 'Kotinda elongi te. Kopiá lien mpe tinda yango yo moko.', published: 'Lien ya seko esalemi. Biloko, mituya mpe stock ekobongwanaka yango moko.', copiedNotice: 'Lien ekopiami. Okoki kotia yango na WhatsApp to kotinda yango esika mosusu.', preview: 'Talá catalogue', stock: 'Stock ntango ebimisami:', items: 'eloko', addProducts: 'Catalogue ezali mpamba. Bakisa biloko na « Marchandises & Stock » liboso ya kosala lien.', more: 'biloko mosusu ezali na lien.', how: 'Ndenge esalaka', step1: 'Bimisá copie ya catalogue mpe tinda lien na yango.', step2: 'Mokili akopona biloko, akotia makambo na ye mpe akotalela résumé.', step3: 'Akotinda demande na WhatsApp na yo; telefone ekolakisa ba-app oyo ezali mpo na kopona.', know: 'Yeba', terms1: 'Lien ezali ya seko; mituya mpe stock ebongwanaka yango moko soki application ezali na internet.', terms2: 'Demande ya WhatsApp ekomaka vente te mpe endimisi kofuta te.', terms3: 'Prix ya kosomba, PIN mpe ba réglages ya sekele ezali te. Bafoto oyo ezali kaka na telefone oyo ekomonana te.', stockZero: 'Biloko nyonso ezali na stock zéro; lien ekolakisa yango lokola esili.', limitItems: 'Limite ezali biloko 300 na lien moko.', linkTooLong: 'Lien eleki molai. Kitisa motango ya biloko to bafoto oyo ebimisami na Internet.',
   },
   sw: {
-    shareTitle: 'Katalogi ya', shareMessage: 'Duka litathibitisha bei na bidhaa zinazopatikana.', badge: 'KATALOGI YA UMMA YA KUSHIRIKI', title: 'Chapisha katalogi ya', description: 'Tengeneza kiungo cha /app/ na uwatumie wateja. Watachagua bidhaa, kukagua muhtasari na kutuma ombi kwa WhatsApp yako.', generate: 'Tengeneza kiungo cha umma', url: 'Kiungo cha katalogi', copied: 'Kiungo kimenakiliwa', copy: 'Nakili kiungo', share: 'Shiriki…', test: 'Jaribu kiungo', empty: 'Ongeza bidhaa kwenye katalogi kwanza.', copyFail: 'Kunakili kiotomatiki kumezuiwa. Chagua na unakili kiungo kilichoonyeshwa.', shareFail: 'Kushiriki kumeshindwa. Nakili kiungo na utume mwenyewe.', published: 'Kiungo cha umma kimetengenezwa. Kina nakala ya katalogi ya sasa.', copiedNotice: 'Kiungo kimenakiliwa. Bandika kwenye WhatsApp au kishiriki kwingine.', preview: 'Muonekano wa katalogi', stock: 'Stoo ilipochapishwa:', items: 'bidhaa', addProducts: 'Katalogi haina bidhaa. Ongeza bidhaa kwenye “Products & Stock” kabla ya kutengeneza kiungo.', more: 'bidhaa nyingine zimejumuishwa kwenye kiungo.', how: 'Jinsi inavyofanya kazi', step1: 'Chapisha nakala ya katalogi na ushiriki kiungo chake.', step2: 'Mteja anachagua bidhaa, anaweka maelezo yake na kukagua muhtasari.', step3: 'Anatuma ombi kwa nambari yako ya WhatsApp; simu itaonyesha programu za kuchagua ikiwa zipo kadhaa.', know: 'Tafadhali kumbuka', terms1: 'Kiungo ni nakala ya umma iliyobanwa, bila hifadhidata au usawazishaji wa moja kwa moja. Tengeneza kiungo kipya baada ya kubadilisha bei au stoo.', terms2: 'Ombi la WhatsApp halirekodi mauzo wala kuthibitisha malipo.', terms3: 'Gharama za ununuzi, PIN na mipangilio ya faragha hazijumuishwi. Picha zilizo kwenye kifaa hiki pekee hazitaonekana.', stockZero: 'Bidhaa zote zina stoo sifuri sasa; kiungo kitazionyesha kuwa hazipatikani.', limitItems: 'Kikomo ni bidhaa 300 kwa kila kiungo.', linkTooLong: 'Kiungo ni kirefu mno. Punguza bidhaa au picha zilizohifadhiwa mtandaoni.',
+    shareTitle: 'Katalogi ya', shareMessage: 'Duka litathibitisha bei na bidhaa zinazopatikana.', badge: 'KATALOGI YA UMMA YA KUSHIRIKI', title: 'Chapisha katalogi ya', description: 'Tengeneza kiungo cha kudumu cha /app/ na uwatumie wateja. Bei na stoo husasishwa kiotomatiki. Watachagua bidhaa, kukagua muhtasari na kutuma ombi kwa WhatsApp yako.', generate: 'Tengeneza / sasisha kiungo cha kudumu', url: 'Kiungo cha katalogi', copied: 'Kiungo kimenakiliwa', copy: 'Nakili kiungo', share: 'Shiriki…', test: 'Jaribu kiungo', empty: 'Ongeza bidhaa kwenye katalogi kwanza.', copyFail: 'Kunakili kiotomatiki kumezuiwa. Chagua na unakili kiungo kilichoonyeshwa.', shareFail: 'Kushiriki kumeshindwa. Nakili kiungo na utume mwenyewe.', published: 'Kiungo cha kudumu kiko tayari. Bidhaa, bei na stoo husasishwa kiotomatiki.', copiedNotice: 'Kiungo kimenakiliwa. Bandika kwenye WhatsApp au kishiriki kwingine.', preview: 'Muonekano wa katalogi', stock: 'Stoo ilipochapishwa:', items: 'bidhaa', addProducts: 'Katalogi haina bidhaa. Ongeza bidhaa kwenye “Products & Stock” kabla ya kutengeneza kiungo.', more: 'bidhaa nyingine zimejumuishwa kwenye kiungo.', how: 'Jinsi inavyofanya kazi', step1: 'Chapisha nakala ya katalogi na ushiriki kiungo chake.', step2: 'Mteja anachagua bidhaa, anaweka maelezo yake na kukagua muhtasari.', step3: 'Anatuma ombi kwa nambari yako ya WhatsApp; simu itaonyesha programu za kuchagua ikiwa zipo kadhaa.', know: 'Tafadhali kumbuka', terms1: 'Kiungo ni cha kudumu; bei na stoo husasishwa kiotomatiki programu ikiwa mtandaoni.', terms2: 'Ombi la WhatsApp halirekodi mauzo wala kuthibitisha malipo.', terms3: 'Gharama za ununuzi, PIN na mipangilio ya faragha hazijumuishwi. Picha zilizo kwenye kifaa hiki pekee hazitaonekana.', stockZero: 'Bidhaa zote zina stoo sifuri sasa; kiungo kitazionyesha kuwa hazipatikani.', limitItems: 'Kikomo ni bidhaa 300 kwa kila kiungo.', linkTooLong: 'Kiungo ni kirefu mno. Punguza bidhaa au picha zilizohifadhiwa mtandaoni.',
   },
   zh: {
-    shareTitle: '来自店铺的目录：', shareMessage: '价格和库存由商家确认。', badge: '可分享的公开商品目录', title: '发布店铺目录：', description: '生成托管在 /app/ 下的链接并发送给顾客。顾客选择商品、核对摘要，然后将请求发送到您的 WhatsApp。', generate: '生成公开链接', url: '公开目录链接', copied: '已复制链接', copy: '复制链接', share: '分享…', test: '测试链接', empty: '请先在目录中添加商品。', copyFail: '浏览器阻止了自动复制，请手动选择并复制链接。', shareFail: '分享失败，请复制链接后手动发送。', published: '公开链接已生成，包含当前目录快照。', copiedNotice: '链接已复制，可粘贴到 WhatsApp 或分享至其他平台。', preview: '目录预览', stock: '发布时库存：', items: '件商品', addProducts: '目录为空。请先在“商品与库存”中添加商品。', more: '件商品也包含在链接中。', how: '使用流程', step1: '发布目录快照并分享链接。', step2: '顾客选择商品、填写信息并核对摘要。', step3: '顾客向您的 WhatsApp 号码发送请求；若安装了多个应用，手机会提供选择。', know: '请注意', terms1: '这是压缩后的公开快照，不使用数据库，也不会实时同步。价格或库存变化后请重新生成链接。', terms2: 'WhatsApp 请求不会自动记录销售，也不代表已付款。', terms3: '不包含进货成本、PIN 或私人设置。仅存储在此设备上的照片不会显示。', stockZero: '所有商品当前库存为零；链接会显示为缺货。', limitItems: '每个链接最多包含 300 件商品。', linkTooLong: '链接太长，请减少商品数量或托管图片。',
+    shareTitle: '来自店铺的目录：', shareMessage: '价格和库存由商家确认。', badge: '可分享的公开商品目录', title: '发布店铺目录：', description: '生成 /app/ 下的固定链接并发送给顾客；价格和库存会自动同步。顾客选择商品、核对摘要，然后将请求发送到您的 WhatsApp。', generate: '创建 / 更新固定链接', url: '公开目录链接', copied: '已复制链接', copy: '复制链接', share: '分享…', test: '测试链接', empty: '请先在目录中添加商品。', copyFail: '浏览器阻止了自动复制，请手动选择并复制链接。', shareFail: '分享失败，请复制链接后手动发送。', published: '固定链接已就绪，商品、价格和库存将自动同步。', copiedNotice: '链接已复制，可粘贴到 WhatsApp 或分享至其他平台。', preview: '目录预览', stock: '发布时库存：', items: '件商品', addProducts: '目录为空。请先在“商品与库存”中添加商品。', more: '件商品也包含在链接中。', how: '使用流程', step1: '发布目录快照并分享链接。', step2: '顾客选择商品、填写信息并核对摘要。', step3: '顾客向您的 WhatsApp 号码发送请求；若安装了多个应用，手机会提供选择。', know: '请注意', terms1: '这是固定链接；应用联网时，价格和库存会自动同步。', terms2: 'WhatsApp 请求不会自动记录销售，也不代表已付款。', terms3: '不包含进货成本、PIN 或私人设置。仅存储在此设备上的照片不会显示。', stockZero: '所有商品当前库存为零；链接会显示为缺货。', limitItems: '每个链接最多包含 300 件商品。', linkTooLong: '链接太长，请减少商品数量或托管图片。',
   },
 };
 
-export const OnlineStoreView: React.FC<OnlineStoreViewProps> = ({ settings, products }) => {
+export const OnlineStoreView: React.FC<OnlineStoreViewProps> = ({ settings, products, onSettingsChange, syncStatus }) => {
   const [publicUrl, setPublicUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [publishing, setPublishing] = useState(false);
+
+  useEffect(() => {
+    if (settings.publicCatalogId) setPublicUrl(makePublicCatalogUrl(settings.publicCatalogId));
+  }, [settings.publicCatalogId]);
 
   const t = STORE_COPY[settings.language];
   const currency = (amount: number) =>
     formatMoney(amount, settings.currency, settings.usdRateFC);
 
-  const generateLink = () => {
+  const generateLink = async (): Promise<string> => {
     setError('');
     setNotice('');
     setCopied(false);
+    if (publishing) return '';
+    setPublishing(true);
     try {
       if (products.length === 0) {
         setError(t.empty);
         return '';
       }
-      const base = getPublicCatalogAppBase();
-      const snapshot = makePublicCatalogSnapshot(settings, products, base);
-      const token = encodePublicCatalog(snapshot);
-      const url = makePublicCatalogUrl(token);
+      const snapshot = makePublicCatalogSnapshot(settings, products, getPublicCatalogAppBase());
+      let catalogId = settings.publicCatalogId;
+      const ownerToken = settings.publicCatalogToken;
+      if (catalogId && ownerToken) {
+        await updateLivePublicCatalog(catalogId, ownerToken, snapshot);
+      } else {
+        const credentials = await createLivePublicCatalog(snapshot);
+        catalogId = credentials.id;
+        onSettingsChange((previous) => ({
+          ...previous,
+          publicCatalogId: credentials.id,
+          publicCatalogToken: credentials.token,
+        }));
+      }
+      const url = makePublicCatalogUrl(catalogId);
       setPublicUrl(url);
       setNotice(t.published);
       return url;
     } catch (caught) {
-      setError(caught instanceof Error ? (caught.message === 'catalog_limit' ? t.limitItems : caught.message === 'catalog_url_too_long' ? t.linkTooLong : t.shareFail) : t.shareFail);
+      const message = caught instanceof Error ? caught.message : '';
+      setError(message === 'catalog_limit' ? t.limitItems : message === 'catalog_payload_too_large' || message === 'catalog_url_too_long' ? t.linkTooLong : message || t.shareFail);
       return '';
+    } finally {
+      setPublishing(false);
     }
   };
 
   const copyLink = async () => {
-    const url = publicUrl || generateLink();
+    const url = publicUrl || await generateLink();
     if (!url) return;
     try {
       await navigator.clipboard.writeText(url);
@@ -78,7 +102,7 @@ export const OnlineStoreView: React.FC<OnlineStoreViewProps> = ({ settings, prod
   };
 
   const shareLink = async () => {
-    const url = publicUrl || generateLink();
+    const url = publicUrl || await generateLink();
     if (!url) return;
     if (navigator.share) {
       try {
@@ -117,11 +141,12 @@ export const OnlineStoreView: React.FC<OnlineStoreViewProps> = ({ settings, prod
           </div>
           <button
             type="button"
-            onClick={generateLink}
+            onClick={() => void generateLink()}
+            disabled={publishing}
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-extrabold text-emerald-950 transition hover:bg-emerald-50"
           >
             <Globe className="h-4 w-4" />
-            {t.generate}
+            {publishing ? (settings.language === 'fr' ? 'Publication…' : 'Publishing…') : t.generate}
           </button>
         </div>
 
@@ -150,6 +175,11 @@ export const OnlineStoreView: React.FC<OnlineStoreViewProps> = ({ settings, prod
               </a>
             </div>
           </div>
+        )}
+        {settings.publicCatalogId && (
+          <p role="status" className="mt-3 text-xs font-semibold text-emerald-100">
+            {syncStatus === 'syncing' ? (settings.language === 'fr' ? 'Synchronisation du catalogue…' : 'Syncing catalog…') : syncStatus === 'synced' ? (settings.language === 'fr' ? 'Catalogue à jour.' : 'Catalog is up to date.') : syncStatus === 'error' ? (settings.language === 'fr' ? 'Synchronisation en attente. Vérifiez votre connexion et la configuration du serveur.' : 'Sync pending. Check your connection and server configuration.') : ''}
+          </p>
         )}
         {error && <p role="alert" className="mt-4 flex items-start gap-2 rounded-xl bg-red-100 p-3 text-xs font-bold text-red-900"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{error}</p>}
         {notice && !error && <p role="status" className="mt-4 text-xs font-semibold text-emerald-100">{notice}</p>}

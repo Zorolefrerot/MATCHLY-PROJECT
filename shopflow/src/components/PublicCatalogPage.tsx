@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Check, ImageOff, ShoppingBag, Store } from 'lucide-react';
 import { AppLanguage } from '../types';
 import { formatMoney } from '../utils/currency';
-import { decodePublicCatalog, PublicCatalogProduct } from '../utils/publicCatalog';
+import { decodePublicCatalog, PublicCatalogProduct, PublicCatalogSnapshot, readLivePublicCatalog } from '../utils/publicCatalog';
 
 interface PublicCatalogPageProps {
   token: string;
@@ -24,7 +24,7 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     subtotal: 'Sous-total', delivery: 'Livraison estimée', total: 'Total estimé',
     send: 'Ouvrir WhatsApp pour envoyer', edit: 'Modifier ma sélection',
     notPaid: 'Demande non payée — disponibilité, frais et total à confirmer par la boutique.',
-    snapshot: 'Catalogue publié le', snapshotNote: 'Les prix et stocks sont une photo au moment de la publication. La boutique les confirmera avant toute vente.',
+    snapshot: 'Mis à jour le', snapshotNote: 'Ce catalogue se met à jour automatiquement. Vérifiez le récapitulatif avec la boutique avant tout paiement.',
     deliveryNote: 'Frais de livraison indicatifs; la boutique les confirmera.',
     chooser: 'Si plusieurs applications WhatsApp sont installées, choisissez celle proposée par votre téléphone. Vérifiez le message dans WhatsApp puis touchez Envoyer.',
     privacy: 'Vos coordonnées restent dans cette page jusqu’à l’ouverture de WhatsApp. ShopFlow ne les enregistre pas sur un serveur.',
@@ -44,7 +44,7 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     subtotal: 'Subtotal', delivery: 'Estimated delivery', total: 'Estimated total',
     send: 'Open WhatsApp to send', edit: 'Edit my selection',
     notPaid: 'Unpaid request — the shop must confirm availability, fees and total.',
-    snapshot: 'Catalog published on', snapshotNote: 'Prices and stock reflect the time of publication. The shop will confirm them before any sale.',
+    snapshot: 'Updated on', snapshotNote: 'This catalog updates automatically. Confirm the summary with the shop before paying.',
     deliveryNote: 'Delivery fee is an estimate and must be confirmed by the shop.',
     chooser: 'If you have multiple WhatsApp apps, choose the one shown by your phone. Review the message in WhatsApp and tap Send.',
     privacy: 'Your details stay on this page until WhatsApp opens. ShopFlow does not store them on a server.',
@@ -64,7 +64,7 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     subtotal: 'Mokuse ya motuya', delivery: 'Frais ya livraison (estimation)', total: 'Motuya mobimba (estimation)',
     send: 'Fungola WhatsApp mpo na kotinda', edit: 'Bongola biloko oyo naponi',
     notPaid: 'Demande efutami naino te — boutique ekondimisa stock, frais mpe motuya.',
-    snapshot: 'Catalogue ebimisamaki na', snapshotNote: 'Mituya mpe stock ezali ndenge ezalaki ntango catalogue ebimisamaki. Boutique ekondimisa yango liboso ya koteka.',
+    snapshot: 'Ebongisamaki na', snapshotNote: 'Catalogue oyo emibongisaka yango moko. Talá résumé na boutique liboso ya kofuta.',
     deliveryNote: 'Frais ya livraison ezali estimation; boutique ekondimisa yango.',
     chooser: 'Soki ozali na ba-app WhatsApp mibale, poná oyo telefone na yo ekolakisa. Talá message na WhatsApp mpe finá Tinda.',
     privacy: 'Makambo na yo etikalaka na lokasa oyo kino WhatsApp efungwami. ShopFlow ebombaka yango na serveur te.',
@@ -84,7 +84,7 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     subtotal: 'Jumla ndogo', delivery: 'Makadirio ya usafirishaji', total: 'Makadirio ya jumla',
     send: 'Fungua WhatsApp ili kutuma', edit: 'Badilisha chaguo langu',
     notPaid: 'Ombi halijalipwa — duka litathibitisha bidhaa, ada na jumla.',
-    snapshot: 'Katalogi ilichapishwa tarehe', snapshotNote: 'Bei na stoo ni za wakati katalogi ilipotolewa. Duka litathibitisha kabla ya mauzo.',
+    snapshot: 'Ilisasishwa tarehe', snapshotNote: 'Katalogi hii husasishwa kiotomatiki. Thibitisha muhtasari na duka kabla ya kulipa.',
     deliveryNote: 'Ada ya usafirishaji ni makadirio; duka litathibitisha.',
     chooser: 'Ikiwa una WhatsApp zaidi ya moja, chagua programu inayoonyeshwa na simu yako. Kagua ujumbe kwenye WhatsApp kisha uguse Tuma.',
     privacy: 'Maelezo yako hubaki kwenye ukurasa huu hadi WhatsApp ifunguke. ShopFlow haihifadhi kwenye seva.',
@@ -104,7 +104,7 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     subtotal: '小计', delivery: '预计配送费', total: '预计总计',
     send: '打开 WhatsApp 发送', edit: '修改我的选择',
     notPaid: '订单尚未付款 — 商家需确认库存、费用和总额。',
-    snapshot: '目录发布于', snapshotNote: '价格和库存为发布时快照。商家会在销售前确认。',
+    snapshot: '更新时间', snapshotNote: '此目录会自动更新。付款前请与商家确认摘要。',
     deliveryNote: '配送费为估算值，需由商家确认。',
     chooser: '如果安装了多个 WhatsApp 应用，请在手机提示时选择。请在 WhatsApp 中核对消息并点击发送。',
     privacy: '在打开 WhatsApp 前，您的信息仅保留在本页面。ShopFlow 不会将其保存在服务器上。',
@@ -127,7 +127,8 @@ function detectLanguage(): AppLanguage {
 }
 
 export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) => {
-  const snapshot = useMemo(() => decodePublicCatalog(token), [token]);
+  const [snapshot, setSnapshot] = useState<PublicCatalogSnapshot | null>(null);
+  const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState<AppLanguage>(detectLanguage);
   const [step, setStep] = useState<CatalogStep>('browse');
   const [basket, setBasket] = useState<BasketLine[]>([]);
@@ -137,6 +138,26 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
   const [reference] = useState(() => `SF-${Date.now().toString(36).slice(-6).toUpperCase()}`);
   const [error, setError] = useState('');
   const [imageFailed, setImageFailed] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setSnapshot(null);
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token)) {
+      setSnapshot(decodePublicCatalog(token));
+      setLoading(false);
+      return () => { cancelled = true; };
+    }
+    readLivePublicCatalog(token)
+      .then((catalog) => { if (!cancelled) setSnapshot(catalog); })
+      .catch(() => { if (!cancelled) setSnapshot(null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [token]);
+
+  if (loading) {
+    return <MessagePage message={language === 'fr' ? 'Chargement du catalogue…' : 'Loading catalog…'} />;
+  }
 
   if (!snapshot) {
     return <MessagePage message={COPY[language].unavailable} />;

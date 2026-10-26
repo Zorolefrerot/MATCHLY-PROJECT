@@ -1,0 +1,18 @@
+# Catalogue ShopFlow en direct (Supabase)
+
+Le catalogue public utilise un identifiant UUID stable (`?catalog=<uuid>`). Les visiteurs lisent le catalogue courant à l’ouverture; l’application met à jour la même ligne après chaque changement de paramètres publics, prix ou stock. Les demandes des visiteurs restent des brouillons WhatsApp et ne créent aucune vente.
+
+## Mise en service
+
+1. Créez un projet Supabase et ouvrez **SQL Editor**.
+2. Exécutez `supabase/catalog.sql` une fois. La table `public.shopflow_catalogs` utilise RLS sans accès `anon`/`authenticated`; seules les fonctions serveur utilisent la clé service-role.
+3. Dans les variables d’environnement **serveur** du service Render ou du projet Vercel, définissez :
+   - `SUPABASE_URL` : URL HTTPS du projet Supabase.
+   - `SUPABASE_SERVICE_ROLE_KEY` : clé `service_role`/secret du projet Supabase.
+4. Ne définissez jamais ces secrets sous une variable `VITE_*`, ne les ajoutez pas au dépôt et ne les collez pas dans l’application. Redéployez le service après configuration.
+5. Vérifiez `GET /api/health` : la réponse doit contenir `"catalogConfigured":true`. Cette réponse révèle seulement un booléen, jamais les secrets.
+6. Dans ShopFlow, ouvrez **Catalogue en ligne** et créez le lien stable. Vérifiez une première fois le lien public, puis modifiez le prix ou le stock : le même URL doit afficher la nouvelle valeur après rechargement.
+
+L’application conserve localement un UUID et un jeton aléatoire d’écriture propre à la boutique. Seule son empreinte SHA-256 est stockée dans Supabase; le jeton n’est jamais envoyé aux visiteurs. Si les données locales de l’application sont effacées, l’accès d’écriture à ce lien ne peut pas être récupéré : créez un nouveau lien.
+
+Pour un APK/PWA construit avec une API hébergée sur un autre domaine, configurez `VITE_CATALOG_API_URL` à l’URL HTTPS de cette API lors du build. Par défaut, le navigateur utilise son origine actuelle et les versions natives utilisent `https://shopflow.cd`.
