@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { callGeminiProxy } from './lib/gemini-proxy.mjs';
-import { createPublicCatalog, readPublicCatalog, updatePublicCatalog, uploadPublicCatalogImage, CatalogStoreError } from './lib/catalog-store.mjs';
+import { createPublicCatalog, readPublicCatalog, updatePublicCatalog, uploadPublicCatalogImage, checkPublicCatalogStorage, CatalogStoreError } from './lib/catalog-store.mjs';
 
 const ROOT_DIR = fileURLToPath(new URL('.', import.meta.url));
 const DIST_DIR = resolve(ROOT_DIR, 'dist');
@@ -164,10 +164,16 @@ async function handleApi(request, response, pathname) {
   }
 
   if (pathname === '/api/health' && request.method === 'GET') {
+    const catalogConfigured = Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY));
+    const catalogStorage = catalogConfigured
+      ? await checkPublicCatalogStorage()
+      : { databaseReady: false, imageBucketReady: false };
     sendJson(response, 200, {
       ok: true,
       aiConfigured: Boolean(process.env.GEMINI_API_KEY),
-      catalogConfigured: Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)),
+      catalogConfigured,
+      catalogDatabaseReady: catalogStorage.databaseReady,
+      catalogImagesReady: catalogStorage.imageBucketReady,
     });
     return;
   }

@@ -104,6 +104,8 @@ test('catalog HTTP routes create, update and read a stable public URL without ex
   await waitUntilReady(`${api}/api/health`, child);
   const health = await (await fetch(`${api}/api/health`)).json();
   assert.equal(health.catalogConfigured, true);
+  assert.equal(health.catalogDatabaseReady, true);
+  assert.equal(health.catalogImagesReady, true);
   assert.equal(JSON.stringify(health).includes(serviceSecret), false);
 
   const create = await fetch(`${api}/api/catalogs`, {
