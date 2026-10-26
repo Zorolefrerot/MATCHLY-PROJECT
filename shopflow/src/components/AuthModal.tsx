@@ -2,9 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ArrowRight,
   CheckCircle2,
-  Chrome,
-  Facebook,
-  Github,
   Download,
   LoaderCircle,
   Lock,
@@ -52,7 +49,35 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({
+const SocialProviderIcon: React.FC<{ provider: OAuthProvider }> = ({ provider }) => {
+  if (provider === 'google') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 48 48" className="h-5 w-5 shrink-0">
+        <path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.9-.4-4.3H24v8.2h11c-.5 2.7-2.1 5-4.3 6.5l6.9 5.4c4-3.7 6-9.2 6-15.8Z" />
+        <path fill="#34A853" d="M24 44c5.6 0 10.3-1.8 13.7-4.9l-6.9-5.4c-1.9 1.3-4.2 2-6.8 2-5.2 0-9.6-3.5-11.2-8.2l-7.1 5.5C9.1 39.9 16 44 24 44Z" />
+        <path fill="#FBBC05" d="M12.8 27.5c-.4-1.1-.7-2.3-.7-3.5s.2-2.4.7-3.5l-7.1-5.5C4.6 17.4 4 20.4 4 24s.6 6.6 1.7 9l7.1-5.5Z" />
+        <path fill="#EA4335" d="M24 12.8c3.1 0 5.8 1.1 7.9 3.1l5.9-5.9C34.2 6.7 29.6 4 24 4 16 4 9.1 8.1 5.7 15l7.1 5.5c1.6-4.2 6-7.7 11.2-7.7Z" />
+      </svg>
+    );
+  }
+
+  if (provider === 'github') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 shrink-0 fill-[#181717]">
+        <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.85 10.91.58.11.79-.25.79-.56v-2.17c-3.19.69-3.86-1.35-3.86-1.35-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.02 1.75 2.68 1.24 3.33.95.1-.74.4-1.24.73-1.52-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.95 10.95 0 0 1 5.73 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.69 5.4-5.25 5.69.41.36.78 1.06.78 2.14v3.18c0 .31.21.67.8.56A11.52 11.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 shrink-0">
+      <circle cx="12" cy="12" r="12" fill="#0866FF" />
+      <path fill="#FFFFFF" d="M13.55 24v-8.73h2.93l.44-3.41h-3.37V9.68c0-.99.28-1.66 1.69-1.66h1.8V4.97c-.31-.04-1.38-.13-2.63-.13-2.6 0-4.38 1.59-4.38 4.51v2.51H7.09v3.41h2.94V24h3.52Z" />
+    </svg>
+  );
+};
+
+export const AuthModal: React.FC<AuthModalProps> = ({ 
   initialMode,
   preselectedPlan = 'pro_ai',
   defaultCurrency,
@@ -152,10 +177,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     void runAuthAction(() => onOAuthSignIn(provider, signupPayload()));
   };
 
-  const socialProviders: { id: OAuthProvider; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-    { id: 'google', label: 'Google', Icon: Chrome },
-    { id: 'github', label: 'GitHub', Icon: Github },
-    { id: 'facebook', label: 'Facebook', Icon: Facebook },
+  const socialProviders: { id: OAuthProvider; label: string }[] = [
+    { id: 'google', label: 'Google' },
+    { id: 'github', label: 'GitHub' },
+    { id: 'facebook', label: 'Facebook' },
   ];
 
   const handlePasswordUpdate = (event: React.FormEvent) => {
@@ -274,7 +299,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <p className="text-xs leading-relaxed text-slate-600">Après la connexion, vous pourrez configurer votre boutique. ShopFlow ne reçoit jamais le mot de passe de Google, GitHub ou Facebook.</p>
             </div>
             <div className="grid grid-cols-1 gap-2">
-              {socialProviders.map(({ id, label, Icon }) => {
+              {socialProviders.map(({ id, label }) => {
                 const enabled = authConfigured && oauthProvidersEnabled[id];
                 return (
                   <button
@@ -282,9 +307,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type="button"
                     disabled={!enabled || isSubmitting}
                     onClick={() => void runAuthAction(() => onOAuthSignIn(id))}
-                    className="flex min-h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 font-extrabold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex min-h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-extrabold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A4DFF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-sm"
                   >
-                    <Icon className="h-5 w-5" />
+                    <SocialProviderIcon provider={id} />
                     <span>Continuer avec {label}</span>
                   </button>
                 );
@@ -439,8 +464,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {!isAuthenticated && (
               <>
                 <div className="flex items-center gap-3 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-400"><span className="h-px flex-1 bg-slate-200" />ou<span className="h-px flex-1 bg-slate-200" /></div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  {socialProviders.map(({ id, label, Icon }) => {
+                <div className="grid grid-cols-1 gap-2.5">
+                  {socialProviders.map(({ id, label }) => {
                     const enabled = authConfigured && oauthProvidersEnabled[id];
                     return (
                       <button
@@ -450,10 +475,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         onClick={() => handleSocialSignup(id)}
                         aria-label={`Continuer avec ${label}`}
                         title={enabled ? undefined : `${label} sera disponible après configuration du fournisseur OAuth.`}
-                        className="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 font-extrabold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex min-h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-extrabold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A4DFF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-sm"
                       >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        <span className="text-xs">Continuer avec {label}</span>
+                        <SocialProviderIcon provider={id} />
+                        <span>Continuer avec {label}</span>
                       </button>
                     );
                   })}
@@ -519,8 +544,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               Mot de passe oublié ?
             </button>
             <div className="flex items-center gap-3 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-400"><span className="h-px flex-1 bg-slate-200" />ou<span className="h-px flex-1 bg-slate-200" /></div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {socialProviders.map(({ id, label, Icon }) => {
+            <div className="grid grid-cols-1 gap-2.5">
+              {socialProviders.map(({ id, label }) => {
                 const enabled = authConfigured && oauthProvidersEnabled[id];
                 return (
                   <button
@@ -530,10 +555,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => void runAuthAction(() => onOAuthSignIn(id))}
                     aria-label={`Continuer avec ${label}`}
                     title={enabled ? undefined : `${label} sera disponible après configuration du fournisseur OAuth.`}
-                    className="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 font-extrabold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex min-h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-extrabold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A4DFF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-sm"
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="text-xs">Continuer avec {label}</span>
+                    <SocialProviderIcon provider={id} />
+                    <span>Continuer avec {label}</span>
                   </button>
                 );
               })}
