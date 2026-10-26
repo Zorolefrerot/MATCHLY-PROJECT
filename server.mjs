@@ -167,13 +167,24 @@ async function handleApi(request, response, pathname) {
     const catalogConfigured = Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY));
     const catalogStorage = catalogConfigured
       ? await checkPublicCatalogStorage()
-      : { databaseReady: false, imageBucketReady: false };
+      : {
+          databaseReady: false,
+          databaseStatus: 0,
+          databaseErrorCode: 'not_configured',
+          imageBucketReady: false,
+          imageBucketStatus: 0,
+          imageBucketErrorCode: 'not_configured',
+        };
     sendJson(response, 200, {
       ok: true,
       aiConfigured: Boolean(process.env.GEMINI_API_KEY),
       catalogConfigured,
       catalogDatabaseReady: catalogStorage.databaseReady,
+      catalogDatabaseStatus: catalogStorage.databaseStatus,
+      catalogDatabaseErrorCode: catalogStorage.databaseErrorCode,
       catalogImagesReady: catalogStorage.imageBucketReady,
+      catalogImagesStatus: catalogStorage.imageBucketStatus,
+      catalogImagesErrorCode: catalogStorage.imageBucketErrorCode,
     });
     return;
   }
