@@ -1,0 +1,8 @@
+/node_modules/
+/dist/
+/.vercel/
+/shopflow/android/app/shopflow-test-debug.keystore
+/shopflow/.env
+/shopflow/.env.*
+!/shopflow/.env.example
+*.tsbuildinfo

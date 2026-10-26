@@ -1,0 +1,122 @@
+name: ShopFlow Android APK
+
+on:
+  push:
+    branches:
+      - arena/0b9f89cc-matchly-project
+    paths:
+      - 'shopflow/**'
+      - '.github/workflows/shopflow-android-apk.yml'
+  workflow_dispatch:
+    inputs:
+      publish_test_release:
+        description: Publish or refresh the public Android test APK release asset
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build-debug-apk:
+    name: Build installable debug APK
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: shopflow/package-lock.json
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0'
+
+      - name: Restore stable test signing key
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="shopflow-android-test-v0.1.0"
+          key="$RUNNER_TEMP/ShopFlow-Test-Debug.keystore"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null | grep -Fqx 'ShopFlow-Test-Debug.keystore'; then
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern ShopFlow-Test-Debug.keystore --dir "$RUNNER_TEMP"
+          else
+            keytool -genkeypair -noprompt \
+              -keystore "$key" \
+              -storetype JKS \
+              -storepass shopflow-test-only \
+              -keypass shopflow-test-only \
+              -alias shopflow-test \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=ShopFlow Test, O=ShopFlow, C=CD"
+          fi
+          cp "$key" shopflow/android/app/shopflow-test-debug.keystore
+
+      - name: Install web dependencies
+        working-directory: shopflow
+        run: npm ci
+
+      - name: Build ShopFlow web application
+        working-directory: shopflow
+        env:
+          VITE_SHOPFLOW_API_BASE_URL: ${{ vars.SHOPFLOW_API_BASE_URL }}
+        run: npm run build
+
+      - name: Sync Capacitor Android project
+        working-directory: shopflow
+        run: npx cap sync android
+
+      - name: Assemble APK
+        working-directory: shopflow/android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Verify APK package and signature
+        run: |
+          apk=shopflow/android/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > "$RUNNER_TEMP/shopflow-badging.txt"
+          grep -q "package: name='cd.shopflow.app.test'" "$RUNNER_TEMP/shopflow-badging.txt"
+
+      - name: Publish APK as downloadable workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShopFlow-Android-debug-APK
+          path: shopflow/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish stable Android test download
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_test_release) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-shopflow-test-apk]')) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apk="$RUNNER_TEMP/ShopFlow-Android.apk"
+          cp shopflow/android/app/build/outputs/apk/debug/app-debug.apk "$apk"
+          tag="shopflow-android-test-v0.1.0"
+          keystore="$RUNNER_TEMP/ShopFlow-Test-Debug.keystore"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" "$apk" "$keystore" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$tag" "$apk" "$keystore" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "ShopFlow Android — test 0.1.0" \
+              --notes "Version Android de test ShopFlow (package cd.shopflow.app.test). La signature stable sert uniquement à pouvoir installer les mises à jour de test; elle ne doit jamais être réutilisée pour une version de production. Android peut demander l’autorisation d’installer des applications provenant de cette source." \
+              --prerelease \
+              --target "$GITHUB_SHA"
+          fi

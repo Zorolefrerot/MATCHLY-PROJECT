@@ -1,0 +1,142 @@
+name: ShopFlow iOS Ad Hoc IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-adhoc-ipa:
+    name: Build iPhone-installable Ad Hoc IPA
+    runs-on: macos-15
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+      IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+      IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+      IOS_BUNDLE_ID: cd.shopflow.app
+    steps:
+      - name: Verify signing secrets are configured
+        run: |
+          missing=0
+          for name in APPLE_TEAM_ID IOS_CERTIFICATE_P12_BASE64 IOS_CERTIFICATE_PASSWORD IOS_PROVISIONING_PROFILE_BASE64; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Configure the Apple signing secrets in repository Settings > Secrets and variables > Actions, then rerun this workflow."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: shopflow/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: shopflow
+        run: npm ci
+
+      - name: Build ShopFlow web application
+        working-directory: shopflow
+        env:
+          VITE_SHOPFLOW_API_BASE_URL: ${{ vars.SHOPFLOW_API_BASE_URL }}
+        run: npm run build
+
+      - name: Sync Capacitor iOS project
+        working-directory: shopflow
+        run: npx cap sync ios
+
+      - name: Import Apple distribution certificate and provisioning profile
+        id: signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEYCHAIN_PATH="$RUNNER_TEMP/shopflow-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
+          echo "$KEYCHAIN_PASSWORD" > "$RUNNER_TEMP/shopflow-keychain-password"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          echo "$IOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/apple-distribution.p12"
+          security import "$RUNNER_TEMP/apple-distribution.p12" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$IOS_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" "$HOME/Library/Keychains/login.keychain-db"
+
+          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/shopflow.mobileprovision"
+          security cms -D -i "$RUNNER_TEMP/shopflow.mobileprovision" > "$RUNNER_TEMP/shopflow-profile.plist"
+          PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print UUID' "$RUNNER_TEMP/shopflow-profile.plist")"
+          PROFILE_APP_ID="$(/usr/libexec/PlistBuddy -c 'Print Entitlements:application-identifier' "$RUNNER_TEMP/shopflow-profile.plist")"
+          if [[ "$PROFILE_APP_ID" != *".$IOS_BUNDLE_ID" && "$PROFILE_APP_ID" != *".*" ]]; then
+            echo "The provisioning profile does not match bundle ID $IOS_BUNDLE_ID"
+            exit 1
+          fi
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/shopflow.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          echo "profile_uuid=$PROFILE_UUID" >> "$GITHUB_OUTPUT"
+
+      - name: Archive signed iPhone application
+        run: |
+          xcodebuild \
+            -project shopflow/ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/ShopFlow.xcarchive" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_IDENTITY='Apple Distribution' \
+            PROVISIONING_PROFILE="${{ steps.signing.outputs.profile_uuid }}" \
+            PROVISIONING_PROFILE_SPECIFIER="${{ steps.signing.outputs.profile_uuid }}" \
+            archive
+
+      - name: Export Ad Hoc IPA
+        env:
+          PROFILE_UUID: ${{ steps.signing.outputs.profile_uuid }}
+        run: |
+          python3 - <<'PY'
+          import os, plistlib
+          config = {
+              "method": "ad-hoc",
+              "teamID": os.environ["APPLE_TEAM_ID"],
+              "signingStyle": "manual",
+              "provisioningProfiles": {
+                  os.environ["IOS_BUNDLE_ID"]: os.environ["PROFILE_UUID"]
+              },
+              "stripSwiftSymbols": True,
+          }
+          with open(os.path.join(os.environ["RUNNER_TEMP"], "ExportOptions.plist"), "wb") as f:
+              plistlib.dump(config, f)
+          PY
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$RUNNER_TEMP/ShopFlow.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/ShopFlow-IPA"
+
+      - name: Publish signed iPhone IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShopFlow-iPhone-AdHoc-IPA
+          path: ${{ runner.temp }}/ShopFlow-IPA/*.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Remove signing material from runner
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/shopflow-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/apple-distribution.p12" "$RUNNER_TEMP/shopflow.mobileprovision" "$RUNNER_TEMP/shopflow-profile.plist" "$RUNNER_TEMP/shopflow-keychain-password"

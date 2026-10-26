@@ -1,0 +1,457 @@
+import { AppLanguage } from '../types';
+
+/**
+ * Reviewed, on-device phrase translations for application UI.
+ * User-entered product and shop data is intentionally never sent to a translator.
+ * Add translations here when new interface copy is introduced.
+ */
+export const PHRASE_DICTIONARY: Record<
+  string,
+  Record<Exclude<AppLanguage, 'fr'>, string>
+> = {
+  // Navigation & Core Titles
+  'Gérez • Calculez • Faites grandir': {
+    en: 'Manage • Calculate • Grow',
+    ln: 'Batelá • Tángá • Kólisá mombongo',
+    sw: 'Simamia • Hesabu • Kuza Biashara',
+    zh: '轻松管理 • 自动核算 • 生意兴隆',
+  },
+  'Tableau de bord': {
+    en: 'Dashboard',
+    ln: 'Bilan ya Lelo',
+    sw: 'Dashibodi Kuu',
+    zh: '营业总览',
+  },
+  'Vendre & Caisse': {
+    en: 'Point of Sale',
+    ln: 'Teka & Caisse',
+    sw: 'Mauzo & Kaunta',
+    zh: '收银与开单',
+  },
+  'Marchandises & Stock': {
+    en: 'Products & Stock',
+    ln: 'Biloko na Stock',
+    sw: 'Bidhaa na Stoo',
+    zh: '商品与库存',
+  },
+  'ShopFlow IA': {
+    en: 'ShopFlow AI',
+    ln: 'ShopFlow Mayele (IA)',
+    sw: 'ShopFlow Akili (IA)',
+    zh: 'ShopFlow 智能助手',
+  },
+  'Boutique en Ligne': {
+    en: 'Online Store',
+    ln: 'Boutique na Internet',
+    sw: 'Duka Mtandaoni',
+    zh: '线上微店',
+  },
+  'Crédits « Bons »': {
+    en: 'Customer Credits',
+    ln: 'Ba Crédits (Bons)',
+    sw: 'Mikopo ya Wateja',
+    zh: '客户赊账本',
+  },
+  'Abonnement Pro': {
+    en: 'Pro Subscription',
+    ln: 'Abonnement Pro',
+    sw: 'Kifurushi cha Pro',
+    zh: '专业版订阅',
+  },
+  'Dépenses & Paramètres': {
+    en: 'Expenses & Settings',
+    ln: 'Depenses & Paramètres',
+    sw: 'Matumizi & Mipangilio',
+    zh: '店铺支出与设置',
+  },
+  Accueil: { en: 'Home', ln: 'Ebandeli', sw: 'Mwanzo', zh: '首页' },
+  Vendre: { en: 'Sell', ln: 'Teka', sw: 'Uza', zh: '收银' },
+  Stock: { en: 'Stock', ln: 'Stock', sw: 'Stoo', zh: '库存' },
+  Paramètres: { en: 'Settings', ln: 'Paramètres', sw: 'Mipangilio', zh: '设置' },
+  Bonjour: { en: 'Hello', ln: 'Mbote', sw: 'Habari', zh: '您好' },
+  'Suivez vos ventes, stocks, reçus WhatsApp et bénéfices nets en temps réel.': {
+    en: 'Track your daily sales, stock levels, WhatsApp receipts, and net profit in real time.',
+    ln: 'Landá moteki ya lelo, stock ya biloko, ba reçus WhatsApp mpe litomba na yo ya solo.',
+    sw: 'Fuatilia mauzo ya leo, stoo ya bidhaa, risiti za WhatsApp na faida halisi kwa wakati halisi.',
+    zh: '实时追踪您的每日销售、商品库存、WhatsApp 电子收据与真实纯利润。',
+  },
+  'Modèle Reçu WhatsApp': {
+    en: 'WhatsApp Receipt Preview',
+    ln: 'Talá Reçu WhatsApp',
+    sw: 'Mfano wa Risiti WhatsApp',
+    zh: '预览 WhatsApp 收据',
+  },
+  'Voir le Reçu WhatsApp': {
+    en: 'View WhatsApp Receipt',
+    ln: 'Talá Reçu WhatsApp',
+    sw: 'Ona Risiti ya WhatsApp',
+    zh: '查看 WhatsApp 收据',
+  },
+  Scanner: { en: 'Scanner', ln: 'Scanner Photo', sw: 'Skana Picha', zh: '拍照扫码' },
+  'Bilan WhatsApp': {
+    en: 'WhatsApp Report',
+    ln: 'Bilan na WhatsApp',
+    sw: 'Ripoti ya WhatsApp',
+    zh: 'WhatsApp 日报',
+  },
+  'Vente rapide': {
+    en: 'Quick Sale',
+    ln: 'Teka noki',
+    sw: 'Mauzo ya Haraka',
+    zh: '快速收银',
+  },
+  'Demander à ShopFlow IA': {
+    en: 'Ask ShopFlow AI',
+    ln: 'Tuná ShopFlow IA',
+    sw: 'Uliza ShopFlow AI',
+    zh: '咨询 ShopFlow AI',
+  },
+  'Boutique en Ligne WhatsApp': {
+    en: 'WhatsApp Online Storefront',
+    ln: 'Boutique na Internet WhatsApp',
+    sw: 'Duka la Mtandaoni WhatsApp',
+    zh: 'WhatsApp 线上商城',
+  },
+  'Lien catalogue à partager aux clients': {
+    en: 'Shareable product catalog link for customers',
+    ln: 'Lien ya catalogue ya kotindela ba clients',
+    sw: 'Kiungo cha katalogi cha kushiriki na wateja',
+    zh: '一键分享给客户的商品目录链接',
+  },
+  'Assistant IA ShopFlow · réponses en ligne selon connexion et disponibilité.': {
+    en: 'ShopFlow AI assistant · online answers depend on connection and availability.',
+    ln: 'Assistant IA ShopFlow · biyano ya Internet etali connexion mpe disponibilité.',
+    sw: 'Msaidizi wa AI wa ShopFlow · majibu ya mtandaoni hutegemea muunganisho na upatikanaji.',
+    zh: 'ShopFlow AI 助手 · 在线回答取决于网络连接和服务可用性。',
+  },
+  'Essai de 7 jours à la création · paiement réel non connecté': {
+    en: '7-day trial starts when the shop is created · real payments are not connected.',
+    ln: 'Meká ya mikolo 7 ebandi ntango ya kosala boutique · kofuta ya solo ekangami naino te.',
+    sw: 'Jaribio la siku 7 huanza duka linapoundwa · malipo halisi hayajaunganishwa.',
+    zh: '7 天试用期从创建店铺开始 · 尚未接入真实付款。',
+  },
+  'Abonnement & Formules': {
+    en: 'Subscription & Plans',
+    ln: 'Abonnement & Ba Formule',
+    sw: 'Usajili na Vifurushi',
+    zh: '订阅与方案',
+  },
+  'Chiffre d’Affaires (CA)': {
+    en: 'Gross Revenue (Sales)',
+    ln: 'Mbongo Ekoti Lelo (CA)',
+    sw: 'Mapato Jumla (CA)',
+    zh: '今日营业额 (CA)',
+  },
+  'Coût d’Achat Ventes': {
+    en: 'Cost of Goods Sold',
+    ln: 'Mbongo ya Kosomba Stock',
+    sw: 'Gharama ya Bidhaa Zilizouzwa',
+    zh: '售出商品进货成本',
+  },
+  'Capital à garder pour racheter le stock vendu': {
+    en: 'Capital to set aside to restock sold items',
+    ln: 'Mbongo ya kobomba mpo na kosomba lisusu biloko',
+    sw: 'Mtaji wa kuhifadhi ili kununua tena bidhaa zilizouzwa',
+    zh: '需预留用于补货的本金',
+  },
+  'Dépenses Boutique': {
+    en: 'Shop Expenses',
+    ln: 'Depenses ya Boutique',
+    sw: 'Matumizi ya Duka',
+    zh: '店铺日常支出',
+  },
+  'Revenu / Bénéfice Net': {
+    en: 'True Net Profit',
+    ln: 'Litomba ya Solo (Bénéfice)',
+    sw: 'Faida Halisi Mfukoni',
+    zh: '今日真实纯利润',
+  },
+  'Gain net réel dans votre poche (après achat & dépenses)': {
+    en: 'Real net earnings in your pocket (after cost & expenses)',
+    ln: 'Litomba ya solo etikali na libenga na yo',
+    sw: 'Faida halisi inayobaki mfukoni baada ya gharama zote',
+    zh: '扣除进货成本与日常支出后的净赚金额',
+  },
+  'Mis à jour à chaque vente': {
+    en: 'Updated automatically on every sale',
+    ln: 'Ebongwanaka mbala moko na moteki nyonso',
+    sw: 'Inasasishwa moja kwa moja kila unapouza',
+    zh: '每笔销售自动实时更新',
+  },
+  'Évolution de la semaine (CA vs Revenu Net)': {
+    en: 'Weekly Performance (Revenue vs Net Profit)',
+    ln: 'Bilan ya Poso Mobimba (CA na Litomba)',
+    sw: 'Mwenendo wa Wiki (Mapato dhidi ya Faida)',
+    zh: '本周经营趋势（营业额 vs 纯利润）',
+  },
+  'Touchez un jour pour voir le détail exact': {
+    en: 'Tap any day to inspect exact figures',
+    ln: 'Finá mokolo moko mpo na komona motango ya solo',
+    sw: 'Gusa siku yoyote kuona takwimu kamili',
+    zh: '点击任意日期查看详细数据',
+  },
+  'Voir le stock': {
+    en: 'View Stock',
+    ln: 'Talá Stock',
+    sw: 'Angalia Stoo',
+    zh: '查看库存',
+  },
+  '+1 Vendu': {
+    en: '+1 Sold',
+    ln: '+1 Etekami',
+    sw: '+1 Imeuzwa',
+    zh: '+1 售出',
+  },
+  '+ Stock': {
+    en: '+ Restock',
+    ln: '+ Bakisá Stock',
+    sw: '+ Ongeza Stoo',
+    zh: '+ 补货',
+  },
+  'Tout voir →': {
+    en: 'See all →',
+    ln: 'Talá nyonso →',
+    sw: 'Ona zote →',
+    zh: '查看全部 →',
+  },
+  'Caisse & Vente Rapide': {
+    en: 'POS & Quick Sale',
+    ln: 'Caisse & Koteka Noki',
+    sw: 'Kaunta & Uza Haraka',
+    zh: '快速收银台',
+  },
+  'Rechercher une marchandise...': {
+    en: 'Search products in stock...',
+    ln: 'Luká eloko na stock...',
+    sw: 'Tafuta bidhaa stoo...',
+    zh: '搜索库存商品...',
+  },
+  Tous: { en: 'All', ln: 'Nyonso', sw: 'Zote', zh: '全部' },
+  Alimentation: { en: 'Groceries', ln: 'Bilei', sw: 'Chakula', zh: '粮油食品' },
+  'Huiles & Lait': {
+    en: 'Oils & Dairy',
+    ln: 'Mafuta & Miliki',
+    sw: 'Mafuta & Maziwa',
+    zh: '食用油与奶粉',
+  },
+  Hygiène: { en: 'Hygiene', ln: 'Bopeto', sw: 'Usafi', zh: '日用洗护' },
+  Boissons: { en: 'Drinks', ln: 'Masanga ya sukali', sw: 'Vinywaji', zh: '饮品果汁' },
+  'Mode & Accessoires': {
+    en: 'Fashion & Gear',
+    ln: 'Bilamba & Accessoires',
+    sw: 'Mitindo & Vifaa',
+    zh: '服饰与周边',
+  },
+  Bijoux: { en: 'Jewelry', ln: 'Bijoux', sw: 'Vito', zh: '珠宝首饰' },
+  Accessoires: { en: 'Accessories', ln: 'Accessoires', sw: 'Vifaa', zh: '配饰' },
+  Vêtements: { en: 'Clothing', ln: 'Bilamba', sw: 'Mavazi', zh: '服装' },
+  Chaussures: { en: 'Shoes', ln: 'Sapato', sw: 'Viatu', zh: '鞋类' },
+  'E-books': { en: 'E-books', ln: 'Mikanda ya numérique', sw: 'Vitabu vya kidijitali', zh: '电子书' },
+  'Valider + Générer Reçu Image WhatsApp': {
+    en: 'Checkout + Generate WhatsApp Image Receipt',
+    ln: 'Ndimá + Bimisá Reçu Image WhatsApp',
+    sw: 'Thibitisha + Tengeneza Picha ya Risiti WhatsApp',
+    zh: '确认收款并生成 WhatsApp 高清图片收据',
+  },
+  'Encaisser rapidement sans reçu': {
+    en: 'Quick Checkout without Receipt',
+    ln: ' Zwá mbongo noki sans reçu',
+    sw: 'Pokea Malipo Haraka bila Risiti',
+    zh: '快速收款（不生成小票）',
+  },
+  'Ajouter une marchandise': {
+    en: 'Add New Product',
+    ln: 'Bakisá Eloko ya Sika',
+    sw: 'Ongeza Bidhaa Mpya',
+    zh: '新增商品',
+  },
+  'Tableau complet': {
+    en: 'Full Table',
+    ln: 'Tableau Mobimba',
+    sw: 'Jedwali Kamili',
+    zh: '详细表格视图',
+  },
+  'Cartes photos': {
+    en: 'Photo Cards',
+    ln: 'Ba Cartes ya Ba Photos',
+    sw: 'Kadi za Picha',
+    zh: '图片卡片视图',
+  },
+  // Sample products, translated across the app languages.
+  'Collier doré délicat': {
+    en: 'Delicate gold-tone necklace',
+    ln: 'Collier ya wolo ya pete',
+    sw: 'Mkufu mwembamba wa rangi ya dhahabu',
+    zh: '精致金色项链',
+  },
+  'Bracelet perlé': {
+    en: 'Beaded bracelet',
+    ln: 'Bracelet ya ba perles',
+    sw: 'Bangili ya shanga',
+    zh: '串珠手链',
+  },
+  'Sac à main structuré': {
+    en: 'Structured handbag',
+    ln: 'Saki ya loboko ya makasi',
+    sw: 'Mkoba wenye muundo thabiti',
+    zh: '挺括手提包',
+  },
+  'Lunettes de soleil': {
+    en: 'Sunglasses',
+    ln: 'Lunettes ya moi',
+    sw: 'Miwani ya jua',
+    zh: '太阳镜',
+  },
+  'Blouse en coton': {
+    en: 'Cotton blouse',
+    ln: 'Blouse ya coton',
+    sw: 'Blauzi ya pamba',
+    zh: '棉质上衣',
+  },
+  'Mocassins classiques': {
+    en: 'Classic loafers',
+    ln: 'Sapato ya lolenge classique',
+    sw: 'Viatu vya mtindo wa kawaida',
+    zh: '经典乐福鞋',
+  },
+  'E-book pratique pour entrepreneurs': {
+    en: 'Practical e-book for entrepreneurs',
+    ln: 'E-book pona ba entrepreneurs',
+    sw: 'Kitabu pepe cha wajasiriamali',
+    zh: '创业实用电子书',
+  },
+  'Panier de fruits et légumes': {
+    en: 'Fruit and vegetable basket',
+    ln: 'Panier ya mbuma na ndunda',
+    sw: 'Kikapu cha matunda na mboga',
+    zh: '果蔬篮',
+  },
+  'Huile Végétale Dorée 5 L': {
+    en: 'Golden Vegetable Cooking Oil 5 L',
+    ln: 'Bidon ya Mafuta ya Kolamba 5 L',
+    sw: 'Mafuta Bora ya Kupikia Lita 5',
+    zh: '5升金装食用植物油（桶装）',
+  },
+  'Lait Entier en Poudre 900 g': {
+    en: 'Full Cream Milk Powder Tin 900 g',
+    ln: 'Boîte ya Miliki ya Poudre 900 g',
+    sw: 'Kopo la Maziwa ya Unga 900 g',
+    zh: '900克全脂奶粉（罐装）',
+  },
+  'Farine de Maïs Semoule 10 kg': {
+    en: 'White Maize Semolina Flour 10 kg',
+    ln: 'Saki ya Fufu / Semoule ya Masangu 10 kg',
+    sw: 'Mfuko wa Unga wa Sembe 10 kg',
+    zh: '10公斤精细白玉米粉（袋装）',
+  },
+  'Sucre Blanc Cristallisé 5 kg': {
+    en: 'Refined White Granulated Sugar 5 kg',
+    ln: 'Paquet ya Sukali ya Pembe 5 kg',
+    sw: 'Sukari Nyeupe safi 5 kg',
+    zh: '5公斤精制白砂糖（袋装）',
+  },
+  'Alvéole de 30 Œufs Frais': {
+    en: 'Farm Fresh Eggs Tray (30 pcs)',
+    ln: 'Alvéole ya Makei ya Sika 30',
+    sw: 'Trela ya Mayai Mapya 30',
+    zh: '30枚农家新鲜鸡蛋（托装）',
+  },
+  'Savon de Ménage Multi-Usage (x6)': {
+    en: 'Multi-Purpose Household Soap Pack (x6)',
+    ln: 'Sabuni ya Kosukola Bilamba (x6)',
+    sw: 'Sabuni ya Vipande ya Kufulia (x6)',
+    zh: '多用途家用洗衣皂（6块装）',
+  },
+  'Pack Jus Mangue & Orange (x6)': {
+    en: 'Tropical Mango & Orange Juice Pack (x6)',
+    ln: 'Pack ya Jus ya Manga na Malala (x6)',
+    sw: 'Kifurushi cha Juisi ya Embe & Chungwa (x6)',
+    zh: '热带芒果香橙果汁饮料（6瓶装）',
+  },
+};
+
+const LEGACY_AI_TRANSLATION_CACHE_KEY = 'shopflow_ai_i18n_cache_v4';
+
+/** Remove translations previously generated by the retired client-side AI fallback. */
+export function clearLegacyAITranslationCache(): void {
+  try {
+    localStorage.removeItem(LEGACY_AI_TRANSLATION_CACHE_KEY);
+  } catch {
+    // Storage can be unavailable in private browsing; translation still works locally.
+  }
+}
+
+/** Returns a reviewed local phrase translation; user-entered data is left unchanged. */
+export function translateStringSync(text: string, lang: AppLanguage): string {
+  if (!text || lang === 'fr') return text;
+  return PHRASE_DICTIONARY[text.trim()]?.[lang] || text;
+}
+
+/**
+ * Applies the reviewed phrase dictionary to visible text and placeholders.
+ * This path is fully local: it never sends UI or user-entered text over the network.
+ * Uncatalogued phrases remain in their source language until a reviewed translation is added.
+ */
+export async function translateDOMWithLocalDictionary(
+  rootEl: HTMLElement | null,
+  lang: AppLanguage,
+  onComplete?: () => void
+): Promise<void> {
+  if (!rootEl) return;
+
+  const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT);
+  let current = walker.nextNode();
+  while (current) {
+    const parentTag = current.parentElement?.tagName.toLowerCase();
+    const insideKatex = current.parentElement?.closest('.katex');
+    if (
+      parentTag !== 'script' &&
+      parentTag !== 'style' &&
+      !insideKatex &&
+      current.nodeValue &&
+      current.nodeValue.trim().length > 1
+    ) {
+      const node = current as Text & { __sfOrig?: string; __sfLastWritten?: string };
+      const value = node.nodeValue || '';
+      if (
+        node.__sfOrig === undefined ||
+        (node.__sfLastWritten !== undefined && value !== node.__sfLastWritten)
+      ) {
+        node.__sfOrig = value;
+        node.__sfLastWritten = undefined;
+      }
+      const original = node.__sfOrig;
+      const trimmed = original.trim();
+      if (lang === 'fr') {
+        node.nodeValue = original;
+        node.__sfLastWritten = original;
+      } else if (trimmed && !/^[\d\s.,:$€%+×−\-–/#@•✓★()]+$/.test(trimmed)) {
+        const translated = PHRASE_DICTIONARY[trimmed]?.[lang];
+        if (translated) {
+          node.nodeValue = original.replace(trimmed, translated);
+          node.__sfLastWritten = node.nodeValue;
+        } else {
+          node.nodeValue = original;
+          node.__sfLastWritten = original;
+        }
+      }
+    }
+    current = walker.nextNode();
+  }
+
+  rootEl.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+    'input[placeholder], textarea[placeholder]'
+  ).forEach((input) => {
+    const field = input as HTMLInputElement & { __sfOrigPh?: string; __sfLastPh?: string };
+    if (field.__sfOrigPh === undefined || (field.__sfLastPh && input.placeholder !== field.__sfLastPh)) {
+      field.__sfOrigPh = input.placeholder;
+      field.__sfLastPh = undefined;
+    }
+    const original = field.__sfOrigPh;
+    const translated = lang === 'fr' ? original : PHRASE_DICTIONARY[original.trim()]?.[lang];
+    input.placeholder = translated || original;
+    field.__sfLastPh = input.placeholder;
+  });
+
+  onComplete?.();
+}

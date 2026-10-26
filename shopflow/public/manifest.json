@@ -1,0 +1,18 @@
+{
+  "name": "ShopFlow Pro — Gestion Boutique, Stock, Reçus WhatsApp & IA",
+  "short_name": "ShopFlow",
+  "description": "Application tout-en-un de gestion des ventes, du stock, des reçus WhatsApp professionnels et de calcul automatique du bénéfice net avec IA.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#081844",
+  "theme_color": "#0A4DFF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./shopflow-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

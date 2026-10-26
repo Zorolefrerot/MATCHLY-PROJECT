@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: shopflow-site
+    runtime: node
+    branch: arena/0b9f89cc-matchly-project
+    plan: free
+    buildCommand: npm --prefix shopflow ci && npm run build:hosted
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: VITE_SUPABASE_URL
+        value: https://sgiyuxpzqyyquvvznomn.supabase.co
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_SUPABASE_AUTH_REDIRECT_URL
+        value: https://shopflow-drc.onrender.com/app/
+      - key: VITE_SHOPFLOW_GOOGLE_OAUTH_ENABLED
+        value: "false"
+      - key: VITE_SHOPFLOW_GITHUB_OAUTH_ENABLED
+        value: "false"
+      - key: VITE_SHOPFLOW_FACEBOOK_OAUTH_ENABLED
+        value: "false"
