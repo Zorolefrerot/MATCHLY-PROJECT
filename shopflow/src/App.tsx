@@ -102,6 +102,7 @@ import {
   importLocalSnapshotToShop,
   loadShopSnapshot,
   refreshCachedSnapshotImages,
+  saveShopSnapshot,
   snapshotCounts,
   type ShopDataSnapshot,
 } from './services/shopData';
@@ -233,11 +234,16 @@ export function App() {
   const [importPreviewCounts, setImportPreviewCounts] = useState({ products: 0, sales: 0, credits: 0, expenses: 0 });
   const [isImportingLocal, setIsImportingLocal] = useState(false);
   const [accountLoadError, setAccountLoadError] = useState<string | null>(null);
+  const [shopSyncStatus, setShopSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [lastShopSyncAt, setLastShopSyncAt] = useState<Date | null>(null);
+  const [shopSyncRetry, setShopSyncRetry] = useState(0);
   const authUserRef = useRef<User | null>(null);
   const authProcessingRef = useRef(false);
   const accountLoadedUserRef = useRef<string | null>(null);
   const shopActivationRef = useRef<string | null>(null);
   const shopActivationSequenceRef = useRef(0);
+  const shopSyncQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const shopSyncSequenceRef = useRef(0);
   const deferredInstallPromptRef = useRef<{
     prompt: () => Promise<void>;
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -358,6 +364,85 @@ export function App() {
       // Ignore quota errors
     }
   }, [hasLoadedSettings, activeStorageKey, shopDataReady, settings, products, sales, credits, expenses]);
+
+  useEffect(() => {
+    if (
+      !hasLoadedSettings || !authUser || !activeShop || !shopDataReady ||
+      legacyImportPending || isImportingLocal
+    ) return;
+
+    const shopId = activeShop.id;
+    const sequence = ++shopSyncSequenceRef.current;
+    let cancelled = false;
+    const snapshot: ShopDataSnapshot = { settings, products, sales, credits, expenses };
+    const timer = window.setTimeout(() => {
+      setShopSyncStatus('syncing');
+      const syncTask = shopSyncQueueRef.current.then(() => saveShopSnapshot(shopId, snapshot));
+      shopSyncQueueRef.current = syncTask.then(() => undefined, () => undefined);
+      void syncTask.then((normalized) => {
+        if (cancelled || sequence !== shopSyncSequenceRef.current) return;
+        setShopSyncStatus('synced');
+        setLastShopSyncAt(new Date());
+        const normalizedProducts = new Map(normalized.products.map((product) => [product.id, product]));
+        const normalizedSales = new Map(normalized.sales.map((sale) => [sale.id, sale]));
+        setProducts((current) => {
+          let changed = false;
+          const next = current.map((product) => {
+            const saved = normalizedProducts.get(product.id);
+            if (!saved || (product.cloudImagePath === saved.cloudImagePath && product.cloudImageHash === saved.cloudImageHash)) return product;
+            changed = true;
+            return { ...product, cloudImagePath: saved.cloudImagePath, cloudImageHash: saved.cloudImageHash };
+          });
+          return changed ? next : current;
+        });
+        setSales((current) => {
+          let changed = false;
+          const next = current.map((sale) => {
+            const saved = normalizedSales.get(sale.id);
+            if (!saved || (sale.cloudImagePath === saved.cloudImagePath && sale.cloudImageHash === saved.cloudImageHash)) return sale;
+            changed = true;
+            return { ...sale, cloudImagePath: saved.cloudImagePath, cloudImageHash: saved.cloudImageHash };
+          });
+          return changed ? next : current;
+        });
+      }).catch(() => {
+        if (!cancelled && sequence === shopSyncSequenceRef.current) setShopSyncStatus('error');
+      });
+    }, 900);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    hasLoadedSettings,
+    authUser,
+    activeShop?.id,
+    shopDataReady,
+    legacyImportPending,
+    isImportingLocal,
+    settings,
+    products,
+    sales,
+    credits,
+    expenses,
+    shopSyncRetry,
+  ]);
+
+  useEffect(() => {
+    const retryShopSync = () => {
+      if (navigator.onLine) setShopSyncRetry((current) => current + 1);
+    };
+    const retryWhenVisible = () => {
+      if (document.visibilityState === 'visible') retryShopSync();
+    };
+    window.addEventListener('online', retryShopSync);
+    document.addEventListener('visibilitychange', retryWhenVisible);
+    return () => {
+      window.removeEventListener('online', retryShopSync);
+      document.removeEventListener('visibilitychange', retryWhenVisible);
+    };
+  }, []);
 
   useEffect(() => {
     const retryCatalogSync = () => setCatalogNetworkEpoch((current) => current + 1);
@@ -686,6 +771,8 @@ export function App() {
     const activationSequence = ++shopActivationSequenceRef.current;
     shopActivationRef.current = shop.id;
     setShopDataReady(false);
+    setShopSyncStatus('idle');
+    setLastShopSyncAt(null);
     setAccountLoadError(null);
     try {
       const storageKey = shopStorageKey(shop.id);
@@ -1828,7 +1915,25 @@ export function App() {
                       {!shopDataReady && <span className="text-xs text-slate-500">Chargement de la boutique…</span>}
                     </div>
                     {accountLoadError && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-2 text-xs font-semibold text-red-800">{accountLoadError}</p>}
-                    <p className="mt-3 text-[11px] leading-relaxed text-slate-500">Les imports validés sont enregistrés dans votre compte. Les modifications suivantes restent locales sur cet appareil jusqu’à l’activation de la synchronisation continue.</p>
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5" role="status" aria-live="polite">
+                      <p className={`text-xs font-bold ${shopSyncStatus === 'error' ? 'text-amber-800' : shopSyncStatus === 'synced' ? 'text-emerald-800' : 'text-slate-700'}`}>
+                        {legacyImportPending
+                          ? 'Importez d’abord la sauvegarde locale détectée pour démarrer la synchronisation.'
+                          : shopSyncStatus === 'syncing'
+                            ? 'Synchronisation du compte en cours…'
+                            : shopSyncStatus === 'synced'
+                              ? `Synchronisé${lastShopSyncAt ? ` à ${lastShopSyncAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : ''}`
+                              : shopSyncStatus === 'error'
+                                ? 'Synchronisation en attente : vos données restent conservées sur cet appareil.'
+                                : 'Synchronisation automatique prête.'}
+                      </p>
+                      {shopSyncStatus === 'error' && (
+                        <button type="button" onClick={() => setShopSyncRetry((current) => current + 1)} className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-extrabold text-amber-900 hover:bg-amber-50">
+                          Réessayer
+                        </button>
+                      )}
+                    </div>
+                    <p className="mt-2 text-[11px] leading-relaxed text-slate-500">Une copie locale reste conservée sur cet appareil. La synchronisation cloud ne supprime pas vos sauvegardes locales; en cas de réseau indisponible, les modifications seront retentées.</p>
                   </section>
                 )}
                 <ExpensesSettingsView

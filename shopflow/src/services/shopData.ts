@@ -207,6 +207,57 @@ export async function importLocalSnapshotToShop(
   };
 }
 
+/** Persist the current authenticated shop snapshot atomically without touching local storage. */
+export async function saveShopSnapshot(
+  shopId: string,
+  snapshot: ShopDataSnapshot,
+): Promise<ShopDataSnapshot> {
+  validateLocalSnapshot(snapshot);
+  const normalizedProducts = await Promise.all(
+    snapshot.products.map((product) => normalizeProduct(shopId, product)),
+  );
+  const productsById = new Map(normalizedProducts.map((product) => [product.id, product]));
+  const normalizedSales = await Promise.all(
+    snapshot.sales.map((sale) => normalizeSale(shopId, sale, productsById.get(sale.productId))),
+  );
+  const records: CloudRecordInput[] = [
+    { record_type: 'settings', record_id: 'current', payload: settingsForCloud(snapshot.settings) },
+    ...normalizedProducts.map((product) => ({
+      record_type: 'product' as const,
+      record_id: product.id,
+      payload: recordPayload(product as unknown as Record<string, unknown>, 'image'),
+    })),
+    ...normalizedSales.map((sale) => ({
+      record_type: 'sale' as const,
+      record_id: sale.id,
+      payload: recordPayload(sale as unknown as Record<string, unknown>, 'productImage'),
+    })),
+    ...snapshot.credits.map((credit) => ({
+      record_type: 'credit' as const,
+      record_id: credit.id,
+      payload: { ...credit } as unknown as Record<string, unknown>,
+    })),
+    ...snapshot.expenses.map((expense) => ({
+      record_type: 'expense' as const,
+      record_id: expense.id,
+      payload: { ...expense } as unknown as Record<string, unknown>,
+    })),
+  ];
+
+  const { data, error } = await requireSupabase().rpc('shopflow_sync_shop_records', {
+    p_shop_id: shopId,
+    p_records: records,
+  });
+  if (error) throw error;
+  if (typeof data !== 'number') throw new Error('SYNC_VERIFY_FAILED');
+
+  return {
+    ...snapshot,
+    products: normalizedProducts,
+    sales: normalizedSales,
+  };
+}
+
 async function signedImageUrl(path: string): Promise<string> {
   const { data, error } = await requireSupabase().storage
     .from(PRIVATE_ASSET_BUCKET)
