@@ -1361,36 +1361,6 @@ export function App() {
         </div>
       </div>
 
-      {authUser && activeShop && (
-        <section className="mx-auto flex max-w-7xl flex-col gap-2 border-b border-slate-200 bg-white px-3 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-            <span className="truncate text-xs font-bold text-slate-700">{authUser.email || 'Compte ShopFlow'}</span>
-            <label className="sr-only" htmlFor="active-shop-picker">Boutique active</label>
-            <select
-              id="active-shop-picker"
-              value={activeShop.id}
-              onChange={(event) => { void handleSelectAccountShop(event.target.value); }}
-              className="max-w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-800"
-            >
-              {accountShops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}
-            </select>
-            {!shopDataReady && <span className="text-[11px] text-slate-500">Chargement de la boutique…</span>}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {billingAccount?.plan_id === 'business' && (
-              <button type="button" onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'business' })} className="inline-flex items-center gap-1.5 rounded-xl bg-[#0A4DFF] px-3 py-2 text-xs font-extrabold text-white">
-                <Store className="h-3.5 w-3.5" /> Ajouter une boutique
-              </button>
-            )}
-            <button type="button" onClick={() => { void handleSignOut(); }} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-extrabold text-slate-700">
-              <LogOut className="h-3.5 w-3.5" /> Déconnexion
-            </button>
-          </div>
-          {accountLoadError && <p role="alert" className="w-full rounded-lg bg-red-50 p-2 text-[11px] font-semibold text-red-800">{accountLoadError}</p>}
-          <p className="w-full text-[10px] leading-relaxed text-slate-500">Les imports validés sont enregistrés dans votre compte. Les modifications suivantes restent locales sur cet appareil jusqu’à l’activation de la synchronisation continue.</p>
-        </section>
-      )}
-
       {authUser && activeShop && legacyImportPending && (
         <section className="mx-auto flex max-w-7xl flex-col gap-2 border-b border-emerald-200 bg-emerald-50 px-3 py-3 text-xs sm:px-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -1816,8 +1786,47 @@ export function App() {
             )}
 
             {activeTab === 'expenses' && (
-              <ExpensesSettingsView
-                settings={settings}
+              <>
+                {authUser && activeShop && (
+                  <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                    <div className="mb-4">
+                      <h2 className="text-base font-extrabold text-slate-900">Compte et boutique</h2>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-500">Gérez ici votre compte connecté et la boutique ouverte dans ShopFlow.</p>
+                    </div>
+                    <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-end">
+                      <div className="min-w-0">
+                        <p className="mb-1.5 text-xs font-bold text-slate-600">E-mail du compte</p>
+                        <p className="break-all rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800">{authUser.email || 'Compte ShopFlow'}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <label className="mb-1.5 block text-xs font-bold text-slate-600" htmlFor="active-shop-picker">Boutique active</label>
+                        <select
+                          id="active-shop-picker"
+                          value={activeShop.id}
+                          onChange={(event) => { void handleSelectAccountShop(event.target.value); }}
+                          className="w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-extrabold text-slate-800"
+                        >
+                          {accountShops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      {billingAccount?.plan_id === 'business' && (
+                        <button type="button" onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'business' })} className="inline-flex items-center gap-1.5 rounded-xl bg-[#0A4DFF] px-3 py-2.5 text-xs font-extrabold text-white">
+                          <Store className="h-3.5 w-3.5" /> Ajouter une boutique
+                        </button>
+                      )}
+                      <button type="button" onClick={() => { void handleSignOut(); }} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-extrabold text-slate-700">
+                        <LogOut className="h-3.5 w-3.5" /> Déconnexion
+                      </button>
+                      {!shopDataReady && <span className="text-xs text-slate-500">Chargement de la boutique…</span>}
+                    </div>
+                    {accountLoadError && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-2 text-xs font-semibold text-red-800">{accountLoadError}</p>}
+                    <p className="mt-3 text-[11px] leading-relaxed text-slate-500">Les imports validés sont enregistrés dans votre compte. Les modifications suivantes restent locales sur cet appareil jusqu’à l’activation de la synchronisation continue.</p>
+                  </section>
+                )}
+                <ExpensesSettingsView
+                  settings={settings}
                 expenses={expenses}
                 onAddExpense={(exp) => {
                   setExpenses((prev) => [exp, ...prev]);
@@ -1832,7 +1841,8 @@ export function App() {
                 onImportBackup={handleImportBackup}
                 onResetDemo={handleResetDemo}
                 onActivateVendorLock={handleActivateVendorMode}
-              />
+                />
+              </>
             )}
           </main>
 
