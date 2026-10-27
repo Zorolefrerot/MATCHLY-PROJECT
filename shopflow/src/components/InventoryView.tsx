@@ -8,6 +8,7 @@ import {
   PackagePlus,
   Plus,
   Search,
+  Trash2,
   Upload,
   X,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ interface InventoryViewProps {
   products: Product[];
   sales: SaleRecord[];
   onSaveProduct: (product: Product, isNew: boolean) => void;
+  onDeleteProduct: (product: Product) => void;
   onRestockProduct: (product: Product) => void;
   onQuickSellProduct: (product: Product) => void;
 }
@@ -34,6 +36,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   products,
   sales,
   onSaveProduct,
+  onDeleteProduct,
   onRestockProduct,
   onQuickSellProduct,
 }) => {
@@ -143,6 +146,13 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
 
     onSaveProduct(saved, !editingProduct);
     setIsModalOpen(false);
+  };
+
+  const handleDeleteProduct = (product: Product) => {
+    const confirmed = window.confirm(
+      `Supprimer « ${product.name} » du stock et du catalogue ? Les ventes déjà enregistrées resteront dans l’historique.`
+    );
+    if (confirmed) onDeleteProduct(product);
   };
 
   const totalInventoryCostFC = products.reduce(
@@ -379,6 +389,14 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                           >
                             <Edit3 className="h-4 w-4" />
                           </button>
+                          <button
+                            onClick={() => handleDeleteProduct(prod)}
+                            className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            title="Supprimer du stock"
+                            aria-label={`Supprimer ${prod.name} du stock`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -460,7 +478,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 border-t border-slate-100 p-3">
+                <div className="grid grid-cols-3 gap-2 border-t border-slate-100 p-3">
                   <button
                     onClick={() => onRestockProduct(prod)}
                     className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
@@ -474,6 +492,14 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     className="rounded-xl bg-emerald-600 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:bg-slate-300"
                   >
                     +1 Vendu
+                  </button>
+                  <button
+                    onClick={() => handleDeleteProduct(prod)}
+                    className="flex items-center justify-center rounded-xl border border-red-200 py-2 text-red-600 hover:bg-red-50"
+                    title="Supprimer du stock"
+                    aria-label={`Supprimer ${prod.name} du stock`}
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>

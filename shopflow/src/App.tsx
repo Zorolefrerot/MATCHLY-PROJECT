@@ -1039,6 +1039,11 @@ export function App() {
     }
   };
 
+  const handleDeleteProduct = (product: Product) => {
+    setProducts((prev) => prev.filter((item) => item.id !== product.id));
+    showToast(`« ${product.name} » supprimé du stock et du catalogue.`);
+  };
+
   const handleConfirmRestock = (e: React.FormEvent) => {
     e.preventDefault();
     if (!restockTarget) return;
@@ -1711,6 +1716,7 @@ export function App() {
                 products={localizedProducts}
                 sales={localizedSales}
                 onSaveProduct={handleSaveProduct}
+                onDeleteProduct={handleDeleteProduct}
                 onRestockProduct={(prod) => {
                   setRestockTarget(prod);
                   setRestockQtyInput('10');
