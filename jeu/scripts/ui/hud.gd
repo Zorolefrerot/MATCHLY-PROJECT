@@ -109,9 +109,9 @@ func _button(text: String, font_size: int = 26) -> Button:
 	normal.content_margin_bottom = 10
 	normal.content_margin_left = 18
 	normal.content_margin_right = 18
-	var hover := normal.duplicate()
+	var hover := normal.duplicate() as StyleBoxFlat
 	hover.bg_color = Color(0.16, 0.22, 0.36, 0.98)
-	var pressed := normal.duplicate()
+	var pressed := normal.duplicate() as StyleBoxFlat
 	pressed.bg_color = Color(0.08, 0.11, 0.19, 1.0)
 	button.add_theme_stylebox_override("normal", normal)
 	button.add_theme_stylebox_override("hover", hover)

@@ -97,7 +97,7 @@ func _build_buildings() -> void:
 	]
 	for config in configs:
 		var building := Building.new()
-		var data := config.duplicate()
+		var data: Dictionary = config.duplicate()
 		if data.get("kind", "app") == "boutique":
 			data["name"] = Game.t("app_boutique")
 		elif data.get("kind", "app") == "battery":
