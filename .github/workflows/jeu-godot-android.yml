@@ -1,0 +1,147 @@
+name: Mémo Vive Android APK
+
+on:
+  push:
+    branches:
+      - arena/1a02fecf-matchly-project
+    paths:
+      - 'jeu/**'
+      - '.github/workflows/jeu-godot-android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-debug-apk:
+    name: Check Godot project and build debug APK
+    runs-on: ubuntu-24.04
+    env:
+      GODOT_VERSION: 4.7.2-stable
+      KEYSTORE_FILE: MemoVive-Test-Debug.keystore
+      KEYSTORE_ALIAS: memovive-test
+      KEYSTORE_PASS: memovive-test-only
+      RELEASE_TAG: memovive-android-test-v0.1.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot editor
+        run: |
+          set -euo pipefail
+          curl -sSfL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv "Godot_${GODOT_VERSION}_linux.x86_64" godot
+          chmod +x godot
+          ./godot --version
+
+      - name: Import project resources
+        run: |
+          set -euo pipefail
+          ./godot --headless --import --path jeu 2>&1 | tee import.log
+          if grep -q "SCRIPT ERROR" import.log; then
+            echo "::error::Script errors during import"
+            exit 1
+          fi
+
+      - name: Check every GDScript
+        run: |
+          set -euo pipefail
+          status=0
+          while IFS= read -r script; do
+            echo "Checking res://$script"
+            if ! ./godot --headless --path jeu --check-only --script "res://$script"; then
+              echo "::error file=jeu/$script::Script check failed"
+              status=1
+            fi
+          done < <(cd jeu && find . -name '*.gd' | sed 's|^\./||')
+          exit $status
+
+      - name: Headless boot test
+        run: |
+          set -euo pipefail
+          timeout 90 ./godot --headless --path jeu --quit > boot.log 2>&1 || true
+          cat boot.log
+          if grep -q "SCRIPT ERROR" boot.log; then
+            echo "::error::Script errors during boot"
+            exit 1
+          fi
+
+      - name: Install export templates
+        run: |
+          set -euo pipefail
+          curl -sSfL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_${GODOT_VERSION}_export_templates.tpz"
+          templates_dir="$HOME/.local/share/godot/export_templates/${GODOT_VERSION//-/.}"
+          mkdir -p "$templates_dir"
+          unzip -q templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates/* "$templates_dir/"
+          ls "$templates_dir"
+
+      - name: Restore stable test signing key
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          key="$RUNNER_TEMP/$KEYSTORE_FILE"
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null | grep -Fqx "$KEYSTORE_FILE"; then
+            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$KEYSTORE_FILE" --dir "$RUNNER_TEMP"
+          else
+            keytool -genkeypair -noprompt \
+              -keystore "$key" \
+              -storetype JKS \
+              -storepass "$KEYSTORE_PASS" \
+              -keypass "$KEYSTORE_PASS" \
+              -alias "$KEYSTORE_ALIAS" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Memo Vive Test, O=Memo Vive, C=CD"
+          fi
+          mkdir -p jeu/keystore
+          cp "$key" jeu/keystore/memovive-test-debug.keystore
+
+      - name: Export Android APK
+        run: |
+          set -euo pipefail
+          mkdir -p jeu/build
+          ./godot --headless --export-release "Android" "$GITHUB_WORKSPACE/jeu/build/MemoVive-Android.apk" --path jeu 2>&1 | tee export.log
+          test -s jeu/build/MemoVive-Android.apk
+
+      - name: Set up Android SDK for signing tools
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'build-tools;34.0.0'
+
+      - name: Zipalign, sign and verify APK
+        run: |
+          set -euo pipefail
+          build_tools="$ANDROID_HOME/build-tools/34.0.0"
+          "$build_tools/zipalign" -f 4 jeu/build/MemoVive-Android.apk "$RUNNER_TEMP/MemoVive-aligned.apk"
+          "$build_tools/apksigner" sign \
+            --ks "$RUNNER_TEMP/$KEYSTORE_FILE" \
+            --ks-key-alias "$KEYSTORE_ALIAS" \
+            --ks-pass "pass:$KEYSTORE_PASS" \
+            --key-pass "pass:$KEYSTORE_PASS" \
+            "$RUNNER_TEMP/MemoVive-aligned.apk"
+          "$build_tools/apksigner" verify --print-certs "$RUNNER_TEMP/MemoVive-aligned.apk"
+          cp "$RUNNER_TEMP/MemoVive-aligned.apk" jeu/build/MemoVive-Android.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MemoVive-Android-debug-APK
+          path: jeu/build/MemoVive-Android.apk
+          if-no-files-found: error
+
+      - name: Publish APK and signing key to test release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "Mémo Vive — APK de test Android" \
+              --notes "APK de test Android (débogage) généré automatiquement. Paquet : cd.memovive.game. Installer en autorisant les sources inconnues."
+          fi
+          gh release upload "$RELEASE_TAG" jeu/build/MemoVive-Android.apk --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/$KEYSTORE_FILE" --clobber --repo "$GITHUB_REPOSITORY"

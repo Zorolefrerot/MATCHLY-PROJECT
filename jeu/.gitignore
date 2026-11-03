@@ -1,0 +1,4 @@
+# Godot 4 : dossiers générés
+.godot/
+build/
+*.translation
