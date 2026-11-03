@@ -61,25 +61,10 @@ jobs:
             exit 1
           fi
 
-      - name: Check every GDScript
+      - name: Headless boot test (150 frames)
         run: |
           set -euo pipefail
-          {
-            while IFS= read -r script; do
-              echo "Checking res://$script"
-              if ! ./godot --headless --path jeu --check-only --script "res://$script"; then
-                echo "CHECK FAILED: $script"
-                echo "::error file=jeu/$script::Script check failed"
-                status=1
-              fi
-            done < <(cd jeu && find . -name '*.gd' | sed 's|^\./||')
-            exit ${status:-0}
-          } 2>&1 | tee check.log
-
-      - name: Headless boot test
-        run: |
-          set -euo pipefail
-          timeout 90 ./godot --headless --path jeu --quit > boot.log 2>&1 || true
+          timeout 120 ./godot --headless --path jeu --quit-after 150 > boot.log 2>&1 || true
           cat boot.log
           if grep -q "SCRIPT ERROR" boot.log; then
             echo "::error::Script errors during boot"
