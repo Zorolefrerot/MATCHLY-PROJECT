@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   build-debug-apk:
@@ -22,6 +23,7 @@ jobs:
       KEYSTORE_ALIAS: memovive-test
       KEYSTORE_PASS: memovive-test-only
       RELEASE_TAG: memovive-android-test-v0.1.0
+      ISSUE_TITLE: CI — Journal des échecs Mémo Vive
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,16 +31,31 @@ jobs:
       - name: Install Godot editor
         run: |
           set -euo pipefail
-          curl -sSfL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_${GODOT_VERSION}_linux.x86_64.zip"
-          unzip -q godot.zip
-          mv "Godot_${GODOT_VERSION}_linux.x86_64" godot
-          chmod +x godot
-          ./godot --version
+          {
+            echo "== ENV =="
+            echo "GODOT_VERSION=$GODOT_VERSION"
+            echo "== URL headers =="
+            curl -sIL "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_${GODOT_VERSION}_linux.x86_64.zip" | head -20
+            echo "== Download =="
+            curl -v -sSfL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_${GODOT_VERSION}_linux.x86_64.zip"
+            ls -la godot.zip
+            file godot.zip
+            echo "== Unzip =="
+            unzip -o godot.zip
+            mv -v "Godot_${GODOT_VERSION}_linux.x86_64" godot
+            chmod +x godot
+            echo "== Libs =="
+            ldd godot || true
+            echo "== Version =="
+            ./godot --version
+          } 2>&1 | tee godot-install.log
 
       - name: Import project resources
         run: |
           set -euo pipefail
-          ./godot --headless --import --path jeu 2>&1 | tee import.log
+          {
+            ./godot --headless --import --path jeu
+          } 2>&1 | tee import.log
           if grep -q "SCRIPT ERROR" import.log; then
             echo "::error::Script errors during import"
             exit 1
@@ -47,15 +64,17 @@ jobs:
       - name: Check every GDScript
         run: |
           set -euo pipefail
-          status=0
-          while IFS= read -r script; do
-            echo "Checking res://$script"
-            if ! ./godot --headless --path jeu --check-only --script "res://$script"; then
-              echo "::error file=jeu/$script::Script check failed"
-              status=1
-            fi
-          done < <(cd jeu && find . -name '*.gd' | sed 's|^\./||')
-          exit $status
+          {
+            while IFS= read -r script; do
+              echo "Checking res://$script"
+              if ! ./godot --headless --path jeu --check-only --script "res://$script"; then
+                echo "CHECK FAILED: $script"
+                echo "::error file=jeu/$script::Script check failed"
+                status=1
+              fi
+            done < <(cd jeu && find . -name '*.gd' | sed 's|^\./||')
+            exit ${status:-0}
+          } 2>&1 | tee check.log
 
       - name: Headless boot test
         run: |
@@ -70,41 +89,49 @@ jobs:
       - name: Install export templates
         run: |
           set -euo pipefail
-          curl -sSfL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_${GODOT_VERSION}_export_templates.tpz"
-          templates_dir="$HOME/.local/share/godot/export_templates/${GODOT_VERSION//-/.}"
-          mkdir -p "$templates_dir"
-          unzip -q templates.tpz -d /tmp/templates
-          mv /tmp/templates/templates/* "$templates_dir/"
-          ls "$templates_dir"
+          {
+            curl -sSfL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_${GODOT_VERSION}_export_templates.tpz"
+            ls -la templates.tpz
+            templates_dir="$HOME/.local/share/godot/export_templates/${GODOT_VERSION//-/.}"
+            mkdir -p "$templates_dir"
+            unzip -o templates.tpz -d /tmp/templates
+            mv -v /tmp/templates/templates/* "$templates_dir/"
+            ls "$templates_dir" | head
+          } 2>&1 | tee templates.log
 
       - name: Restore stable test signing key
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          key="$RUNNER_TEMP/$KEYSTORE_FILE"
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null | grep -Fqx "$KEYSTORE_FILE"; then
-            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$KEYSTORE_FILE" --dir "$RUNNER_TEMP"
-          else
-            keytool -genkeypair -noprompt \
-              -keystore "$key" \
-              -storetype JKS \
-              -storepass "$KEYSTORE_PASS" \
-              -keypass "$KEYSTORE_PASS" \
-              -alias "$KEYSTORE_ALIAS" \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Memo Vive Test, O=Memo Vive, C=CD"
-          fi
-          mkdir -p jeu/keystore
-          cp "$key" jeu/keystore/memovive-test-debug.keystore
+          {
+            key="$RUNNER_TEMP/$KEYSTORE_FILE"
+            if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null | grep -Fqx "$KEYSTORE_FILE"; then
+              gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$KEYSTORE_FILE" --dir "$RUNNER_TEMP"
+            else
+              keytool -genkeypair -noprompt \
+                -keystore "$key" \
+                -storetype JKS \
+                -storepass "$KEYSTORE_PASS" \
+                -keypass "$KEYSTORE_PASS" \
+                -alias "$KEYSTORE_ALIAS" \
+                -keyalg RSA \
+                -keysize 2048 \
+                -validity 10000 \
+                -dname "CN=Memo Vive Test, O=Memo Vive, C=CD"
+            fi
+            mkdir -p jeu/keystore
+            cp "$key" jeu/keystore/memovive-test-debug.keystore
+          } 2>&1 | tee keystore.log
 
       - name: Export Android APK
         run: |
           set -euo pipefail
-          mkdir -p jeu/build
-          ./godot --headless --export-release "Android" "$GITHUB_WORKSPACE/jeu/build/MemoVive-Android.apk" --path jeu 2>&1 | tee export.log
+          {
+            mkdir -p jeu/build
+            ./godot --headless --export-release "Android" "$GITHUB_WORKSPACE/jeu/build/MemoVive-Android.apk" --path jeu
+            ls -la jeu/build/
+          } 2>&1 | tee export.log
           test -s jeu/build/MemoVive-Android.apk
 
       - name: Set up Android SDK for signing tools
@@ -115,16 +142,18 @@ jobs:
       - name: Zipalign, sign and verify APK
         run: |
           set -euo pipefail
-          build_tools="$ANDROID_HOME/build-tools/34.0.0"
-          "$build_tools/zipalign" -f 4 jeu/build/MemoVive-Android.apk "$RUNNER_TEMP/MemoVive-aligned.apk"
-          "$build_tools/apksigner" sign \
-            --ks "$RUNNER_TEMP/$KEYSTORE_FILE" \
-            --ks-key-alias "$KEYSTORE_ALIAS" \
-            --ks-pass "pass:$KEYSTORE_PASS" \
-            --key-pass "pass:$KEYSTORE_PASS" \
-            "$RUNNER_TEMP/MemoVive-aligned.apk"
-          "$build_tools/apksigner" verify --print-certs "$RUNNER_TEMP/MemoVive-aligned.apk"
-          cp "$RUNNER_TEMP/MemoVive-aligned.apk" jeu/build/MemoVive-Android.apk
+          {
+            build_tools="$ANDROID_HOME/build-tools/34.0.0"
+            "$build_tools/zipalign" -f 4 jeu/build/MemoVive-Android.apk "$RUNNER_TEMP/MemoVive-aligned.apk"
+            "$build_tools/apksigner" sign \
+              --ks "$RUNNER_TEMP/$KEYSTORE_FILE" \
+              --ks-key-alias "$KEYSTORE_ALIAS" \
+              --ks-pass "pass:$KEYSTORE_PASS" \
+              --key-pass "pass:$KEYSTORE_PASS" \
+              "$RUNNER_TEMP/MemoVive-aligned.apk"
+            "$build_tools/apksigner" verify --print-certs "$RUNNER_TEMP/MemoVive-aligned.apk"
+            cp "$RUNNER_TEMP/MemoVive-aligned.apk" jeu/build/MemoVive-Android.apk
+          } 2>&1 | tee sign.log
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -145,3 +174,31 @@ jobs:
           fi
           gh release upload "$RELEASE_TAG" jeu/build/MemoVive-Android.apk --clobber --repo "$GITHUB_REPOSITORY"
           gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/$KEYSTORE_FILE" --clobber --repo "$GITHUB_REPOSITORY"
+
+      - name: Report failure logs
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          {
+            echo "## Échec du run $GITHUB_RUN_ID (tentative $GITHUB_RUN_ATTEMPT)"
+            echo
+            echo "Commit : $GITHUB_SHA"
+            echo
+            for log in godot-install.log import.log check.log boot.log templates.log keystore.log export.log sign.log; do
+              if [ -f "$log" ]; then
+                echo "### $log (100 dernières lignes)"
+                echo '```'
+                tail -n 100 "$log"
+                echo '```'
+                echo
+              fi
+            done
+          } > issue-body.md
+          issue_number=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 50 --json number,title --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" | head -1)
+          if [ -n "$issue_number" ]; then
+            gh issue comment "$issue_number" --repo "$GITHUB_REPOSITORY" --body-file issue-body.md
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$ISSUE_TITLE" --body-file issue-body.md
+          fi
