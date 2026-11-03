@@ -35,14 +35,14 @@ jobs:
             echo "== ENV =="
             echo "GODOT_VERSION=$GODOT_VERSION"
             echo "== URL headers =="
-            curl -sIL "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_${GODOT_VERSION}_linux.x86_64.zip" | head -20
+            curl -sIL "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip" | head -20
             echo "== Download =="
-            curl -v -sSfL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_${GODOT_VERSION}_linux.x86_64.zip"
+            curl -sSfL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
             ls -la godot.zip
             file godot.zip
             echo "== Unzip =="
             unzip -o godot.zip
-            mv -v "Godot_${GODOT_VERSION}_linux.x86_64" godot
+            mv -v "Godot_v${GODOT_VERSION}_linux.x86_64" godot
             chmod +x godot
             echo "== Libs =="
             ldd godot || true
@@ -90,7 +90,7 @@ jobs:
         run: |
           set -euo pipefail
           {
-            curl -sSfL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_${GODOT_VERSION}_export_templates.tpz"
+            curl -sSfL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
             ls -la templates.tpz
             templates_dir="$HOME/.local/share/godot/export_templates/${GODOT_VERSION//-/.}"
             mkdir -p "$templates_dir"
