@@ -23,7 +23,7 @@ L'atelier s'ouvre depuis sa porte, dans la rue est. PATCH et MÉMO ont des dialo
 
 ### Première mission : Un monde en panne
 
-Se déplacer → rejoindre la place centrale → parler à NOVA → examiner le terminal au nord → récupérer les trois fragments dans les allées → réparer le terminal → revenir à NOVA. Récompense : **50 énergie + badge de maintenance**. La mission suivante est annoncée et débloquée narrativement, **pas encore jouable**.
+Se déplacer → rejoindre la place centrale → parler à NOVA → examiner le terminal au nord → récupérer les trois fragments dans les allées → réparer le terminal → revenir à NOVA. Récompense : **50 énergie + badge de maintenance**. La mission suivante est annoncée et son identifiant est débloqué dans la sauvegarde, **pas encore jouable**.
 
 ### Sauvegarde
 

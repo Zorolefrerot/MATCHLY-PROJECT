@@ -18,6 +18,7 @@ const OBJECTIVES := [
 var stage: int = Stage.WAKE
 var fragments: Array[String] = []
 var completed: Array[String] = []
+var unlocked: Array[String] = ["un_monde_en_panne"]
 var inventory: Dictionary = {}
 var energy: int = 0
 
@@ -54,13 +55,14 @@ func finish() -> bool:
 		return false
 	if "un_monde_en_panne" not in completed:
 		completed.append("un_monde_en_panne")
+		unlocked.append("le_signal_de_patch")
 		energy += 50
 		inventory["maintenance_badge"] = 1
 	return advance(Stage.RETURN)
 
 func serialize() -> Dictionary:
 	return {"stage": stage, "fragments": fragments.duplicate(),
-		"completed": completed.duplicate(), "inventory": inventory.duplicate(), "energy": energy}
+		"completed": completed.duplicate(), "unlocked": unlocked.duplicate(), "inventory": inventory.duplicate(), "energy": energy}
 
 func restore(data: Dictionary) -> bool:
 	var saved_stage: Variant = data.get("stage", -1)
@@ -86,12 +88,14 @@ func restore(data: Dictionary) -> bool:
 	stage = int(saved_stage)
 	fragments = clean
 	completed.clear()
+	unlocked = ["un_monde_en_panne"]
 	inventory.clear()
 	energy = 0
 	if stage == Stage.COLLECT or stage == Stage.REPAIR:
 		inventory["data_fragment"] = clean.size()
 	if stage == Stage.COMPLETE:
 		completed.append("un_monde_en_panne")
+		unlocked.append("le_signal_de_patch")
 		inventory["maintenance_badge"] = 1
 		energy = 50
 	changed.emit()

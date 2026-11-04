@@ -48,7 +48,7 @@ digital-world/
 │   └── default_bus_layout.tres
 ├── assets/audio/                # Une boucle originale et sept effets WAV
 ├── tools/generate_audio.py
-├── tests/run_tests.gd
+├── tests/                       # Scènes de tests métier, intégration et rendu natif
 └── docs/
 ```
 
@@ -61,6 +61,7 @@ Les scènes sont légères : la géométrie est construite au chargement. L'édi
 - Le scanner ne connaît pas les missions : il sélectionne une cible visible dans son rayon et émet `activated`.
 - L'orchestrateur choisit le dialogue/effet, puis avance la mission **à la fin** du dialogue.
 - `DialogueSystem` lit des données externes. Le HUD ne reçoit que nom et texte.
+- La liste `unlocked` conserve le déblocage de `le_signal_de_patch`, sans charger un chapitre non livré.
 - Les fragments ont des identifiants stables ; le compteur et l'inventaire sont reconstruits et validés lors du chargement.
 - Les points de reprise sont explicites et sûrs : réveil, place, terminal. On ne restaure jamais une position au milieu d'un mur.
 - `main.gd` traite la pause toujours ; personnages, monde et HUD sont pausable. Le menu et l'audio continuent pendant une pause.
