@@ -87,7 +87,8 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging digital-world/exports/DigitalWorld-debug.apk | tee /tmp/badging.log
           grep -q "package: name='cd.digitalworld.beyondscreen'" /tmp/badging.log
           ! grep -q 'android.permission.INTERNET' /tmp/badging.log
-          sha256sum digital-world/exports/DigitalWorld-debug.apk > digital-world/exports/SHA256SUMS.txt
+          (cd digital-world/exports && sha256sum DigitalWorld-debug.apk > SHA256SUMS.txt)
+          echo "::notice title=APK verified::Package cd.digitalworld.beyondscreen; $(stat -c%s digital-world/exports/DigitalWorld-debug.apk) bytes; SHA256 $(cut -d' ' -f1 digital-world/exports/SHA256SUMS.txt)"
       - uses: actions/upload-artifact@v4
         with:
           name: DigitalWorld-Android-debug

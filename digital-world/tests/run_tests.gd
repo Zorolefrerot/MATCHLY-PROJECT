@@ -195,6 +195,11 @@ func _test_game() -> void:
 	check(game.player.health == 75, "NULL damage reduces health")
 	game._respawn()
 	check(game.player.health == 100, "Respawn restores health without losing quest")
+	game.player.damage_cooldown = 0
+	game.player.damage(100)
+	check(game.player.dead and game.player.visual.current == "Death", "Lethal damage triggers death animation")
+	await frames(90)
+	check(not game.player.dead and game.player.health == 100, "Death automatically respawns at checkpoint")
 	var joystick: VirtualJoystick = game.hud.joystick
 	var press := InputEventScreenTouch.new()
 	press.index = 3
