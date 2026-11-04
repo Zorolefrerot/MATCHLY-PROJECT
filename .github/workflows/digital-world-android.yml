@@ -104,6 +104,9 @@ jobs:
               if not path.exists():
                   continue
               text = path.read_text()
+              if name == "export" and "ERROR:" in text:
+                  tail = text[-10000:].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+                  print("::notice title=Full export diagnostics::" + tail)
               lines = text.splitlines()
               for i, line in enumerate(lines):
                   if any(marker in line for marker in ("SCRIPT ERROR", "ERROR:", "FAIL:", "DIGITAL WORLD TESTS:", "Leaked instance:", "Resource still in use:", "GRAPHICAL SMOKE PASS")):
