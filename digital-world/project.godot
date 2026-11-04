@@ -1,0 +1,36 @@
+; DIGITAL WORLD — BEYOND THE SCREEN | Godot 4.4.1+
+config_version=5
+
+[application]
+config/name="DIGITAL WORLD — BEYOND THE SCREEN"
+config/version="0.1.0"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.4", "GL Compatibility")
+config/description="Une aventure originale au cœur d'un smartphone."
+
+[autoload]
+GameState="*res://scripts/systems/game_state.gd"
+Audio="*res://scripts/systems/audio.gd"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/handheld/orientation=0
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+textures/default_filters/anisotropic_filtering_level=0
+lights_and_shadows/directional_shadow/size=1024
+environment/defaults/default_clear_color=Color(0.035, 0.06, 0.12, 1)
+
+[physics]
+common/physics_ticks_per_second=60
+3d/default_gravity=22.0
+
+[audio]
+default_bus_layout="res://resources/default_bus_layout.tres"

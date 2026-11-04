@@ -1,0 +1,86 @@
+name: Digital World — Godot tests and Android APK
+
+on:
+  push:
+    branches: [arena/df0758e5-matchly-project]
+    paths: ['digital-world/**', '.github/workflows/digital-world-android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: digital-world-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GODOT_VERSION: 4.4.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - name: Install official Godot and Android export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install /tmp/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -o /tmp/templates.zip
+          target="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$target"
+          unzip -j /tmp/templates.zip templates/android_debug.apk templates/android_release.apk -d "$target"
+      - name: Import project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path digital-world --editor --import 2>&1 | tee /tmp/import.log
+      - name: Run unit and integration tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path digital-world --script res://tests/run_tests.gd 2>&1 | tee /tmp/tests.log
+          ! grep -E 'SCRIPT ERROR|Parse Error|ERROR:' /tmp/import.log /tmp/tests.log
+      - name: Configure local Android export tools
+        run: |
+          mkdir -p "$HOME/.config/godot" "$HOME/.android" digital-world/exports
+          test -f "$HOME/.android/debug.keystore" || keytool -genkeypair -noprompt -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname "CN=Digital World Debug,O=Digital World,C=CD" -keyalg RSA -keysize 2048 -validity 10000
+          cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<SETTINGS
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          SETTINGS
+      - name: Export signed debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path digital-world --export-debug Android exports/DigitalWorld-debug.apk 2>&1 | tee /tmp/export.log
+          test -s digital-world/exports/DigitalWorld-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose digital-world/exports/DigitalWorld-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging digital-world/exports/DigitalWorld-debug.apk | tee /tmp/badging.log
+          grep -q "package: name='cd.digitalworld.beyondscreen'" /tmp/badging.log
+          ! grep -q 'android.permission.INTERNET' /tmp/badging.log
+          sha256sum digital-world/exports/DigitalWorld-debug.apk > digital-world/exports/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DigitalWorld-Android-debug
+          path: digital-world/exports/*
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: DigitalWorld-test-logs
+          path: /tmp/*.log
+          retention-days: 14

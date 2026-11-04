@@ -1,0 +1,32 @@
+{
+  "nova_intro": [
+    ["NOVA", "BYTE ? Tu m'entends ? Oh… tes yeux s'allument. Le programme d'urgence a fonctionné !"],
+    ["BYTE", "Pourquoi tout est si silencieux ? Où sont les autres ?"],
+    ["NOVA", "Bienvenue à System City, au cœur de ce smartphone. Plusieurs quartiers ne répondent plus. Quelque chose efface leurs données."],
+    ["BYTE", "Et tu veux que je répare tout ça ? Je viens à peine de me réveiller."],
+    ["NOVA", "Une chose à la fois. Commence par examiner le terminal orange, au nord de la place. Je garde la balise ici. Tu peux le faire."]
+  ],
+  "terminal_broken": [
+    ["TERMINAL", "ERREUR 0xNULL — Trois blocs de mémoire manquants. Liaison avec le quartier atelier interrompue."],
+    ["NOVA", "Trois fragments sont dispersés dans les allées. Approche-toi de leurs éclats dorés et récupère-les. Ensuite, reviens ici."],
+    ["BYTE", "NULL… Ce n'est pas un simple code d'erreur, n'est-ce pas ?"],
+    ["NOVA", "Je… ne sais pas encore. Fais attention aux failles violettes."]
+  ],
+  "terminal_fixed": [
+    ["TERMINAL", "Intégrité restaurée. Énergie redistribuée. Atelier PATCH : en ligne."],
+    ["NOVA", "Tu as réussi ! Reviens à ma balise sur la place. J'ai quelque chose pour toi."]
+  ],
+  "nova_complete": [
+    ["NOVA", "Écoute… les circuits bourdonnent à nouveau. Tu as rendu un peu de vie à cette ville."],
+    ["BYTE", "Alors pourquoi le portail reste-t-il fermé ?"],
+    ["NOVA", "Quelqu'un a verrouillé l'accès de l'intérieur. PATCH pourra peut-être nous aider. Voici 50 unités d'énergie et ton badge de maintenance."],
+    ["NOVA", "Prochaine mission débloquée : Le signal de PATCH. Elle sera disponible dans la prochaine étape de l'aventure."]
+  ],
+  "patch": [
+    ["PATCH", "Un réveil d'urgence sur deux jambes ! Moi, c'est PATCH. J'entretiens ce qui peut encore l'être."],
+    ["PATCH", "Le portail ? Scellé. Et ces traces violettes… je n'ai jamais vu un programme laisser des cicatrices. Répare d'abord notre terminal, on en reparlera."]
+  ],
+  "citizen": [["MÉMO", "J'avais un message à livrer… Son destinataire a disparu. Si tu le retrouves, dis-lui que je l'attends toujours."]],
+  "portal": [["PORTAIL", "Accès aux royaumes applicatifs verrouillé. Autorisation de transit requise. Aucun nouveau monde n'est disponible dans ce prototype."]],
+  "door": [["PATCH", "La porte de l'atelier est déverrouillée. Mon établi est au fond. N'appuie surtout pas sur les boutons violets."]]
+}

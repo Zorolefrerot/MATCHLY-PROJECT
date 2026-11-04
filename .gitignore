@@ -6,3 +6,11 @@
 /shopflow/.env.*
 !/shopflow/.env.example
 *.tsbuildinfo
+
+# DIGITAL WORLD — generated caches, exports and local signing material
+/digital-world/.godot/
+/digital-world/exports/
+/digital-world/build/
+/digital-world/export_credentials.cfg
+/digital-world/android/
+*.keystore
