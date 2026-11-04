@@ -25,8 +25,10 @@ static func write_json(path: String, data: Dictionary) -> bool:
 static func read_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		return {}
-	var value: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	return value if value is Dictionary else {}
+	var parser := JSON.new()
+	if parser.parse(FileAccess.get_file_as_string(path)) != OK:
+		return {}
+	return parser.data if parser.data is Dictionary else {}
 
 static func valid(data: Dictionary) -> bool:
 	if data.get("version") != VERSION or data.get("world") != "system_city":

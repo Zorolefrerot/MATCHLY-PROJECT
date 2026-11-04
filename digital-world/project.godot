@@ -34,4 +34,4 @@ common/physics_ticks_per_second=60
 3d/default_gravity=22.0
 
 [audio]
-default_bus_layout="res://resources/default_bus_layout.tres"
+buses/default_bus_layout="res://resources/default_bus_layout.tres"

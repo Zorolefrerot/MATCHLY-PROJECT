@@ -29,6 +29,8 @@ func _run() -> void:
 		for suffix in ["", ".bak", ".tmp"]:
 			if FileAccess.file_exists(path + suffix):
 				DirAccess.remove_absolute(ProjectSettings.globalize_path(path + suffix))
+	DigitalArt.materials.clear()
+	DigitalArt.meshes.clear()
 	print("DIGITAL WORLD TESTS: %d assertions, %d failures" % [assertions, failures])
 	get_tree().quit(1 if failures else 0)
 
@@ -111,6 +113,7 @@ func close_dialogue(game: Node) -> void:
 
 func _test_game() -> void:
 	var scene := load("res://scenes/main.tscn") as PackedScene
+	check(AudioServer.get_bus_index("Music") >= 0 and AudioServer.get_bus_index("SFX") >= 0, "Music and SFX buses load")
 	check(scene != null, "Main scene loads")
 	var game: Node3D = scene.instantiate()
 	get_tree().root.add_child(game)
