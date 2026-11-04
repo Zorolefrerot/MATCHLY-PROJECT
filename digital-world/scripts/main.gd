@@ -233,6 +233,8 @@ func _quit() -> void:
 		return
 	closing = true
 	GameState.save_game()
+	Audio.stop_all()
+	await get_tree().create_timer(0.15, true).timeout
 	get_tree().quit()
 
 func _notification(what: int) -> void:

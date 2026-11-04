@@ -33,3 +33,13 @@ func effect(id: String) -> void:
 	cursor = (cursor + 1) % effects.size()
 	player.stream = load(path)
 	player.play()
+
+func stop_all() -> void:
+	# Release active WAV playbacks before shutdown, including the Dummy audio driver.
+	if is_instance_valid(music):
+		music.stop()
+		music.stream = null
+	for player in effects:
+		if is_instance_valid(player):
+			player.stop()
+			player.stream = null

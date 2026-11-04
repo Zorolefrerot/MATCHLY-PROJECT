@@ -29,6 +29,8 @@ func _run() -> void:
 		for suffix in ["", ".bak", ".tmp"]:
 			if FileAccess.file_exists(path + suffix):
 				DirAccess.remove_absolute(ProjectSettings.globalize_path(path + suffix))
+	Audio.stop_all()
+	await get_tree().create_timer(0.15, true).timeout
 	DigitalArt.materials.clear()
 	DigitalArt.meshes.clear()
 	print("DIGITAL WORLD TESTS: %d assertions, %d failures" % [assertions, failures])

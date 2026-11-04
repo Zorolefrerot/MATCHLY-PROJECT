@@ -51,6 +51,21 @@ jobs:
           set -euo pipefail
           timeout 180s godot --verbose --headless --path digital-world res://tests/test_runner.tscn 2>&1 | tee /tmp/tests.log
           ! grep -E 'SCRIPT ERROR|Parse Error|ERROR:' /tmp/import.log /tmp/tests.log
+      - name: Native Compatibility graphical smoke test
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          DW_SCREENSHOTS: /tmp/digital-world-screenshots
+        run: |
+          set -euo pipefail
+          command -v xvfb-run || (sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri)
+          timeout 90s xvfb-run -a godot --path digital-world --rendering-method gl_compatibility --audio-driver Dummy res://tests/visual_smoke.tscn 2>&1 | tee /tmp/graphical.log
+          ! grep -E 'SCRIPT ERROR|Parse Error|ERROR:' /tmp/graphical.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DigitalWorld-native-screenshots
+          path: /tmp/digital-world-screenshots/*.png
+          retention-days: 14
       - name: Configure local Android export tools
         run: |
           mkdir -p "$HOME/.config/godot" "$HOME/.android" digital-world/exports
@@ -83,14 +98,14 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          for name in ("import", "tests", "export"):
+          for name in ("import", "tests", "graphical", "export"):
               path = Path("/tmp/" + name + ".log")
               if not path.exists():
                   continue
               text = path.read_text()
               lines = text.splitlines()
               for i, line in enumerate(lines):
-                  if any(marker in line for marker in ("SCRIPT ERROR", "ERROR:", "FAIL:", "DIGITAL WORLD TESTS:", "Leaked instance:", "Resource still in use:")):
+                  if any(marker in line for marker in ("SCRIPT ERROR", "ERROR:", "FAIL:", "DIGITAL WORLD TESTS:", "Leaked instance:", "Resource still in use:", "GRAPHICAL SMOKE PASS")):
                       detail = "\n".join(lines[max(0, i - 1):i + 3])
                       escaped = detail.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
                       print("::notice title=" + name + "::" + escaped)
