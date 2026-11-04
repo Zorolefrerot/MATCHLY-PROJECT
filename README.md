@@ -32,3 +32,7 @@ Les données sont conservées localement sur chaque appareil et ne sont pas sync
 ## APK Android
 
 Le workflow **ShopFlow Android APK** compile un APK de test, vérifie sa signature et maintient une préversion GitHub. Le package de test Android est `cd.shopflow.app.test`, afin de ne pas remplacer une autre installation ShopFlow. La clé de débogage stable est réservée aux mises à jour de test et ne doit pas signer une version de production.
+
+## DIGITAL WORLD — BEYOND THE SCREEN
+
+Un projet de jeu 3D **Godot 4 / Android / GDScript** indépendant se trouve dans [`digital-world/`](digital-world/README.md). Ouvrir `digital-world/project.godot` dans Godot 4.4.1 Standard. Le workflow **Digital World — Godot tests and Android APK** teste le prototype et exporte un APK de débogage. ShopFlow et ses workflows restent séparés.

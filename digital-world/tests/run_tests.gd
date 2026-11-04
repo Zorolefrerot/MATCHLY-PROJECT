@@ -5,6 +5,9 @@ var assertions := 0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().create_timer(75, true).timeout.connect(func():
+		push_error("Test watchdog: interrupted by an earlier runtime error")
+		get_tree().quit(2))
 	SaveStore.game_path = "user://test_adventure.json"
 	SaveStore.settings_path = "user://test_settings.json"
 	call_deferred("_run")
