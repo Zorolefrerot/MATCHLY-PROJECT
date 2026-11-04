@@ -96,9 +96,9 @@ func _process(delta: float) -> void:
 	phase += delta
 	if kind == "nova":
 		visual.position.y = 1.7 + sin(phase * 2.2) * 0.14
-		visual.rotation.y = sin(phase * 0.7) * 0.35
+		visual.rotation.y = PI + sin(phase * 0.7) * 0.35
 	elif kind == "fragment":
 		visual.position.y = sin(phase * 2) * 0.12
 		visual.rotation.y += delta
 	elif kind in ["patch", "citizen"]:
-		visual.rotation.y = sin(phase * 0.5) * 0.15
+		visual.rotation.y = PI + sin(phase * 0.5) * 0.15

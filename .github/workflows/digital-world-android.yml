@@ -78,6 +78,22 @@ jobs:
           name: DigitalWorld-Android-debug
           path: digital-world/exports/*
           retention-days: 14
+      - name: Surface diagnostics through check annotations
+        if: always()
+        shell: python
+        run: |
+          from pathlib import Path
+          for name in ("import", "tests", "export"):
+              path = Path("/tmp/" + name + ".log")
+              if not path.exists():
+                  continue
+              text = path.read_text()
+              lines = text.splitlines()
+              for i, line in enumerate(lines):
+                  if any(marker in line for marker in ("SCRIPT ERROR", "ERROR:", "FAIL:", "DIGITAL WORLD TESTS:")):
+                      detail = "\n".join(lines[max(0, i - 1):i + 3])
+                      escaped = detail.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+                      print("::notice title=" + name + "::" + escaped)
       - uses: actions/upload-artifact@v4
         if: always()
         with:
