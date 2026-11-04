@@ -75,6 +75,8 @@ func _test_saves() -> void:
 	file.store_string("{ corrupted")
 	file.close()
 	check(not SaveStore.load_game().is_empty(), "Corrupt primary recovers from backup")
+	check(SaveStore.write_json(SaveStore.game_path, state), "Save after recovery succeeds")
+	check(SaveStore.valid(SaveStore.read_json(SaveStore.game_path + ".bak")), "Corrupt primary never replaces valid backup")
 	state["checkpoint"] = [999, 0, 0]
 	check(not SaveStore.valid(state), "Unsafe checkpoint rejected")
 	state["checkpoint"] = [0, 0.2, 14]
@@ -177,6 +179,10 @@ func _test_game() -> void:
 	check(get_tree().paused and game.menu.pause_panel.visible, "Pause menu pauses simulation")
 	game._resume()
 	check(not get_tree().paused and not game.menu.visible, "Resume works")
+	game._notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	check(get_tree().paused, "Android back opens pause without quitting")
+	game._notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	check(not get_tree().paused, "Android back resumes from pause")
 	game._main_menu()
 	check(game.menu.visible and game.menu.continue_button.disabled == false, "Continue enabled after saving")
 	game._continue()

@@ -19,7 +19,10 @@ static func write_json(path: String, data: Dictionary) -> bool:
 		return false
 	var absolute := ProjectSettings.globalize_path(path)
 	if FileAccess.file_exists(path):
-		DirAccess.copy_absolute(absolute, absolute + ".bak")
+		var previous := read_json(path)
+		var can_backup := not previous.is_empty() and (path != game_path or valid(previous))
+		if can_backup and DirAccess.copy_absolute(absolute, absolute + ".bak") != OK:
+			return false
 	return DirAccess.rename_absolute(absolute + ".tmp", absolute) == OK
 
 static func read_json(path: String) -> Dictionary:
