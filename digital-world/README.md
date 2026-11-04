@@ -39,7 +39,11 @@ godot --headless --editor --import
 godot --headless res://tests/test_runner.tscn
 ```
 
-Les tests emploient `user://test_adventure.json` et `user://test_settings.json`, pas le slot du joueur. Ils testent la logique métier, les fichiers, les dialogues, l'instanciation de la scène, les déplacements physiques, le saut, les obstacles, le bras caméra, la porte et le parcours de mission. Le parcours scénaristique appelle certains handlers directement : ce n'est **pas** un playtest humain ou un test sur téléphone. Voir `docs/VALIDATION.md` pour les résultats effectivement obtenus.
+Les tests emploient `user://test_adventure.json` et `user://test_settings.json`, pas le slot du joueur. Ils testent la logique métier, les fichiers, les dialogues, l'instanciation de la scène, les déplacements physiques, le saut, les obstacles, le bras caméra, la porte, la mort/réapparition et le parcours de mission. Le workflow effectue également un test graphique natif Compatibility et produit deux captures. Le parcours scénaristique appelle certains handlers directement : ce n'est **pas** un playtest humain ou un test sur téléphone. Voir `docs/VALIDATION.md` pour les résultats effectivement obtenus.
+
+## APK de cette étape
+
+**Compilation vérifiée :** [télécharger l’artefact Android 0.1.0](https://github.com/Zorolefrerot/MATCHLY-PROJECT/actions/runs/41750985719/artifacts/13285479590). Décompresser le ZIP pour obtenir `DigitalWorld-debug.apk` (54,7 Mo). [Rapport et résultats : 85 assertions réussies](docs/VALIDATION.md). Installation sur téléphone réel encore à vérifier.
 
 ## Compiler un APK
 
