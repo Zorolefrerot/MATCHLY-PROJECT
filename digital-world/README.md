@@ -36,7 +36,7 @@ Fichiers Godot `user://adventure.json`, `.bak` et `settings.json`, dans le stock
 ```sh
 cd digital-world
 godot --headless --editor --import
-godot --headless --script res://tests/run_tests.gd
+godot --headless res://tests/test_runner.tscn
 ```
 
 Les tests emploient `user://test_adventure.json` et `user://test_settings.json`, pas le slot du joueur. Ils testent la logique métier, les fichiers, les dialogues, l'instanciation de la scène, les déplacements physiques, le saut, les obstacles, le bras caméra, la porte et le parcours de mission. Le parcours scénaristique appelle certains handlers directement : ce n'est **pas** un playtest humain ou un test sur téléphone. Voir `docs/VALIDATION.md` pour les résultats effectivement obtenus.

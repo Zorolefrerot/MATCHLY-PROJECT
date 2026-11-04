@@ -35,8 +35,8 @@ func _process(delta: float) -> void:
 		arm.spring_length = 6.5
 	elif not GameState.active:
 		menu_time += delta * 0.06
-		global_position = Vector3(0, 9, 0)
-		rotation = Vector3(-0.36, menu_time, 0)
+		global_position = Vector3(0, 2.5, 0)
+		rotation = Vector3(-0.5, menu_time, 0)
 		arm.spring_length = 24
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -1,9 +1,10 @@
-extends SceneTree
+extends Node
 ## Run after headless editor import. Dedicated save paths never touch the player's slot.
 var failures := 0
 var assertions := 0
 
-func _initialize() -> void:
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	SaveStore.game_path = "user://test_adventure.json"
 	SaveStore.settings_path = "user://test_settings.json"
 	call_deferred("_run")
@@ -26,7 +27,7 @@ func _run() -> void:
 			if FileAccess.file_exists(path + suffix):
 				DirAccess.remove_absolute(ProjectSettings.globalize_path(path + suffix))
 	print("DIGITAL WORLD TESTS: %d assertions, %d failures" % [assertions, failures])
-	quit(1 if failures else 0)
+	get_tree().quit(1 if failures else 0)
 
 func _test_mission() -> void:
 	var mission := MissionProgress.new()
@@ -90,7 +91,7 @@ func _test_dialogues() -> void:
 
 func frames(count: int) -> void:
 	for i in count:
-		await physics_frame
+		await get_tree().physics_frame
 
 func walk(action: String, count: int) -> void:
 	Input.action_press(action)
@@ -109,7 +110,7 @@ func _test_game() -> void:
 	var scene := load("res://scenes/main.tscn") as PackedScene
 	check(scene != null, "Main scene loads")
 	var game: Node3D = scene.instantiate()
-	root.add_child(game)
+	get_tree().root.add_child(game)
 	await frames(5)
 	check(game.menu.visible and not game.hud.visible, "Main menu displayed above animated 3D city")
 	check(game.world.props.size() == 9, "All city interactables instantiated")
@@ -167,9 +168,9 @@ func _test_game() -> void:
 	await close_dialogue(game)
 	check(GameState.mission.stage == MissionProgress.Stage.COMPLETE and GameState.mission.energy == 50, "End-to-end mission reaches reward")
 	game._pause()
-	check(paused and game.menu.pause_panel.visible, "Pause menu pauses simulation")
+	check(get_tree().paused and game.menu.pause_panel.visible, "Pause menu pauses simulation")
 	game._resume()
-	check(not paused and not game.menu.visible, "Resume works")
+	check(not get_tree().paused and not game.menu.visible, "Resume works")
 	game._main_menu()
 	check(game.menu.visible and game.menu.continue_button.disabled == false, "Continue enabled after saving")
 	game._continue()
@@ -203,4 +204,4 @@ func _test_game() -> void:
 	check(game.camera.yaw != yaw_before, "Camera orbit responds to drag delta")
 	game._main_menu()
 	game.queue_free()
-	await process_frame
+	await get_tree().process_frame
