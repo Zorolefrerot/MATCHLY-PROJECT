@@ -46,8 +46,11 @@ createRoot(document.getElementById('root')!).render(
 // Install a service worker only for the browser/PWA build, never inside the native Capacitor shells.
 if (import.meta.env.PROD && !Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {
-      // The application remains usable online if the browser blocks service-worker registration.
-    });
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .then((registration) => registration.update())
+      .catch(() => {
+        // The application remains usable online if the browser blocks service-worker registration.
+      });
   });
 }

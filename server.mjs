@@ -164,6 +164,7 @@ async function handleApi(request, response, pathname) {
   }
 
   if (pathname === '/api/health' && request.method === 'GET') {
+    response.setHeader('Cache-Control', 'no-store');
     const catalogConfigured = Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY));
     const catalogStorage = catalogConfigured
       ? await checkPublicCatalogStorage()
@@ -177,6 +178,7 @@ async function handleApi(request, response, pathname) {
         };
     sendJson(response, 200, {
       ok: true,
+      releaseCommit: process.env.RENDER_GIT_COMMIT || process.env.VERCEL_GIT_COMMIT_SHA || null,
       aiConfigured: Boolean(process.env.GEMINI_API_KEY),
       catalogConfigured,
       catalogDatabaseReady: catalogStorage.databaseReady,
@@ -190,6 +192,7 @@ async function handleApi(request, response, pathname) {
   }
 
   const clientIp = getClientIp(request);
+
   if (pathname === '/api/catalogs' && request.method === 'POST') {
     if (isCatalogRateLimited(clientIp)) {
       sendJson(response, 429, { error: { code: 'rate_limited', message: 'Trop de demandes. Réessayez dans une minute.' } });
@@ -345,6 +348,14 @@ async function serveStatic(request, response, pathname) {
     if (request.method === 'HEAD') response.end();
     else createReadStream(filePath).pipe(response);
   } catch {
+    if (decodedPath === '/downloads/ShopFlow-Android.apk') {
+      response.writeHead(302, {
+        Location: 'https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-android-test-v0.1.0/ShopFlow-Android.apk',
+        'Cache-Control': 'no-store',
+      });
+      response.end();
+      return;
+    }
     response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     response.end('Not Found');
   }

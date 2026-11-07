@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shopflow-pwa-v3';
+const CACHE_NAME = 'shopflow-pwa-v4';
 const scopeUrl = self.registration.scope;
 const shellUrls = [
   scopeUrl,
@@ -30,7 +30,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then((response) => {
           if (response.ok) {
             const copy = response.clone();
