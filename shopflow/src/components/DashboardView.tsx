@@ -201,7 +201,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {t.onlineStoreTitle}
               </p>
               <p className="text-[11px] text-slate-500">
-                Lien catalogue à partager aux clients
+                Demandes clients via WhatsApp, sans paiement en ligne
               </p>
             </div>
           </div>
@@ -222,7 +222,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {t.subscriptionTitle}
               </p>
               <p className="text-[11px] text-slate-600">
-                Essai de 7 jours à la création · paiement réel non connecté
+                Formules mensuelles · aucun paiement obligatoire pendant les tests
               </p>
             </div>
           </div>
