@@ -127,12 +127,23 @@ jobs:
       - name: Package Windows installer
         run: npm --prefix desktop run build:windows
 
-      - name: Verify installer exists and is not empty
+      - name: Verify and launch-test Windows installer
         shell: pwsh
         run: |
           $installer = Get-Item "desktop/release/ShopFlow-Windows.exe"
           if ($installer.Length -lt 1MB) { throw "Installer is unexpectedly small: $($installer.Length) bytes" }
           Get-FileHash $installer.FullName -Algorithm SHA256 | Format-List
+          $installDir = Join-Path $env:RUNNER_TEMP "ShopFlow-smoke-install"
+          $setup = Start-Process -FilePath $installer.FullName -ArgumentList @('/S', "/D=$installDir") -PassThru -Wait
+          if ($setup.ExitCode -ne 0) { throw "Silent installer failed with exit code $($setup.ExitCode)" }
+          $appPath = Join-Path $installDir "ShopFlow.exe"
+          if (-not (Test-Path $appPath)) { throw "Installed application was not found at $appPath" }
+          Get-Process -Name ShopFlow -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 2
+          $app = Start-Process -FilePath $appPath -ArgumentList '--disable-gpu' -PassThru
+          Start-Sleep -Seconds 10
+          if ($app.HasExited) { throw "ShopFlow exited during the startup smoke test with code $($app.ExitCode)" }
+          Stop-Process -Id $app.Id -Force
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
