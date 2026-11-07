@@ -1,108 +1,74 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight, Check, Package, ReceiptText, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Package } from 'lucide-react';
+import { AppLanguage } from '../types';
 import { SHOPFLOW_APP_LOGO } from '../data/initialData';
 
 interface FirstRunOnboardingProps {
-  step: number;
-  onStepChange: (step: number) => void;
+  language: AppLanguage;
+  onStart: () => void;
   onFinish: () => void;
 }
 
-const STEPS = [
-  {
-    icon: Package,
-    title: 'Votre boutique, vos données',
-    description:
-      'Commencez avec un espace vide. Ajoutez vos propres articles et quantités dans Stock : aucune vente ni aucun produit fictif n’est préchargé.',
-    hint: 'Stock → Ajouter un article',
+const COPY = {
+  fr: {
+    welcome: 'Bienvenue dans ShopFlow',
+    title: 'Commencez par ajouter vos articles',
+    description: 'Ajoutez vos articles et leurs quantités, puis enregistrez votre première vente dans la caisse.',
+    first: '1. Ajouter des articles',
+    second: '2. Enregistrer une vente',
+    start: 'Ajouter mon premier article',
+    later: 'Voir mon accueil',
   },
-  {
-    icon: ReceiptText,
-    title: 'Encaissez et gardez une trace',
-    description:
-      'Dans Caisse, choisissez vos articles, indiquez le paiement et validez. ShopFlow met à jour le stock et conserve l’historique sur cet appareil.',
-    hint: 'Caisse → Nouvelle vente',
+  en: {
+    welcome: 'Welcome to ShopFlow',
+    title: 'Start by adding your items',
+    description: 'Add your items and quantities, then record your first sale at the register.',
+    first: '1. Add items',
+    second: '2. Record a sale',
+    start: 'Add my first item',
+    later: 'Go to home',
   },
-  {
-    icon: Sparkles,
-    title: 'Analysez avec ShopFlow AI',
-    description:
-      'Posez vos questions dans une conversation enregistrée localement. Les actions simples sur le stock et les ventes restent disponibles hors ligne ; les réponses générales peuvent dépendre d’un service IA en ligne.',
-    hint: 'Assistant IA → Une conversation persistante',
+  ln: {
+    welcome: 'Boyei na ShopFlow',
+    title: 'Bandá na kobakisa biloko na yo',
+    description: 'Bakisa biloko mpe motango na yango, sima koma moteki na yo ya liboso na caisse.',
+    first: '1. Bakisa biloko',
+    second: '2. Komá moteki',
+    start: 'Bakisa eloko na ngai ya liboso',
+    later: 'Fungola ebandeli',
   },
-];
+} as const;
 
 export const FirstRunOnboarding: React.FC<FirstRunOnboardingProps> = ({
-  step,
-  onStepChange,
+  language,
+  onStart,
   onFinish,
 }) => {
-  const current = STEPS[step];
-  const StepIcon = current.icon;
+  const copy = language === 'en' ? COPY.en : language === 'ln' ? COPY.ln : COPY.fr;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-950/65 px-3 py-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="first-run-title">
-      <div className="relative my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-3xl bg-white p-4 shadow-2xl sm:p-8">
-        <button
-          type="button"
-          onClick={() => onFinish()}
-          aria-label="Fermer le tutoriel"
-          className="absolute top-4 right-4 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-        >
-          <X className="h-4 w-4" />
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="first-run-title">
+      <section className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+        <div className="flex items-center gap-3">
+          <img src={SHOPFLOW_APP_LOGO} alt="ShopFlow" className="h-12 w-12 rounded-2xl object-contain ring-1 ring-slate-200" />
+          <p className="text-xs font-extrabold uppercase tracking-wide text-[#0A4DFF]">{copy.welcome}</p>
+        </div>
+        <div className="mt-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#0A4DFF]">
+          <Package className="h-6 w-6" />
+        </div>
+        <h1 id="first-run-title" className="mt-4 text-xl font-black tracking-tight text-slate-900">{copy.title}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">{copy.description}</p>
+        <ol className="mt-5 space-y-2 rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-700">
+          <li>{copy.first}</li>
+          <li>{copy.second}</li>
+        </ol>
+        <button type="button" onClick={onStart} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0A4DFF] px-4 py-3 text-sm font-extrabold text-white transition hover:bg-blue-700">
+          {copy.start}<ArrowRight className="h-4 w-4" />
         </button>
-
-        <div className="flex flex-col items-center text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-blue-50 p-3 ring-1 ring-blue-100">
-            <img src={SHOPFLOW_APP_LOGO} alt="Logo ShopFlow" className="h-full w-full object-contain" />
-          </div>
-          <p className="mt-4 text-[11px] font-extrabold tracking-[0.18em] text-[#0A4DFF] uppercase">
-            Bienvenue dans ShopFlow
-          </p>
-          <div className="mt-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-            <StepIcon className="h-6 w-6" />
-          </div>
-          <h2 id="first-run-title" className="mt-4 text-xl font-black tracking-tight text-slate-900">
-            {current.title}
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">{current.description}</p>
-          <p className="mt-4 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700">{current.hint}</p>
-        </div>
-
-        <div className="mt-7 flex items-center justify-center gap-2" aria-label={`Étape ${step + 1} sur ${STEPS.length}`}>
-          {STEPS.map((item, index) => (
-            <span key={item.title} className={`h-1.5 rounded-full transition-all ${index === step ? 'w-7 bg-[#0A4DFF]' : 'w-1.5 bg-slate-200'}`} />
-          ))}
-        </div>
-
-        <div className="mt-6 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => (step > 0 ? onStepChange(step - 1) : onFinish())}
-            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {step > 0 ? 'Précédent' : 'Passer'}
-          </button>
-          {step < STEPS.length - 1 ? (
-            <button
-              type="button"
-              onClick={() => onStepChange(step + 1)}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#0A4DFF] px-4 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-blue-700"
-            >
-              Suivant <ArrowRight className="h-4 w-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onFinish()}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700"
-            >
-              <Check className="h-4 w-4" /> Ouvrir ma boutique
-            </button>
-          )}
-        </div>
-      </div>
+        <button type="button" onClick={onFinish} className="mt-2 w-full rounded-xl px-4 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-700">
+          {copy.later}
+        </button>
+      </section>
     </div>
   );
 };

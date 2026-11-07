@@ -6,7 +6,6 @@ import {
   Plus,
   ReceiptText,
   RotateCcw,
-  ScanBarcode,
   Search,
   ShoppingCart,
   Zap,
@@ -37,8 +36,6 @@ interface PosSalesViewProps {
   ) => void;
   onUndoSale: (saleId: string) => void;
   onOpenVisualReceipt: (payload: VisualReceiptPayload) => void;
-  onOpenScanner: () => void;
-  externalCartAddProduct?: { product: Product; nonce: number } | null;
 }
 
 const CATEGORIES = [
@@ -63,8 +60,6 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
   onCompleteCartSale,
   onUndoSale,
   onOpenVisualReceipt,
-  onOpenScanner,
-  externalCartAddProduct,
 }) => {
   const [subTab, setSubTab] = useState<'catalog' | 'history'>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,13 +91,6 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
       return [...prev, { product, quantity: 1 }];
     });
   };
-
-  React.useEffect(() => {
-    if (externalCartAddProduct) {
-      addToCart(externalCartAddProduct.product);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalCartAddProduct?.nonce]);
 
   const filteredProducts = products.filter((p) => {
     const matchesCat =
@@ -323,14 +311,6 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                   />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={onOpenScanner}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#081844] px-3.5 py-2.5 text-xs font-extrabold text-white transition hover:bg-slate-800"
-                >
-                  <ScanBarcode className="h-4 w-4 text-sky-400" />
-                  <span>Scanner</span>
-                </button>
               </div>
 
               <div className="flex gap-2 overflow-x-auto pb-1">
@@ -458,7 +438,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                     Ajoutez des articles avec « Facture + »
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
-                    Génère automatiquement le **vrai Reçu Image Haute Définition** (modèle officiel avec photos, code-barres & logo boutique) à envoyer sur WhatsApp !
+                    Génère automatiquement le **vrai Reçu Image Haute Définition** (modèle avec le logo de votre boutique) à envoyer sur WhatsApp !
                   </p>
                 </div>
               ) : (

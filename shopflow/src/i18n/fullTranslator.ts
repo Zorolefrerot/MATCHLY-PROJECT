@@ -87,13 +87,6 @@ export const PHRASE_DICTIONARY: Record<
     sw: 'Ona Risiti ya WhatsApp',
     zh: '查看 WhatsApp 收据',
   },
-  Scanner: { en: 'Scanner', ln: 'Scanner Photo', sw: 'Skana Picha', zh: '拍照扫码' },
-  'Bilan WhatsApp': {
-    en: 'WhatsApp Report',
-    ln: 'Bilan na WhatsApp',
-    sw: 'Ripoti ya WhatsApp',
-    zh: 'WhatsApp 日报',
-  },
   'Vente rapide': {
     en: 'Quick Sale',
     ln: 'Teka noki',

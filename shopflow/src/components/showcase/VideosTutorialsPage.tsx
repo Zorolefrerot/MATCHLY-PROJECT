@@ -11,7 +11,6 @@ import {
   Play,
   ReceiptText,
   RotateCcw,
-  ScanBarcode,
   ShoppingBag,
   Volume2,
   VolumeX,
@@ -26,7 +25,6 @@ export interface ModuleVideoSpec {
   id:
     | 'vid-pos'
     | 'vid-receipt'
-    | 'vid-scanner'
     | 'vid-stock'
     | 'vid-ai'
     | 'vid-credits'
@@ -47,7 +45,7 @@ export interface ModuleVideoSpec {
 const MODULE_VIDEOS: ModuleVideoSpec[] = [
   {
     id: 'vid-pos',
-    moduleNumber: 'Partie 1 / 7',
+    moduleNumber: 'Partie 1 / 6',
     durationSec: 16,
     title: 'Encaisser une vente en 1 clic & voir son Bénéfice Net',
     summary:
@@ -81,7 +79,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
   },
   {
     id: 'vid-receipt',
-    moduleNumber: 'Partie 2 / 7',
+    moduleNumber: 'Partie 2 / 6',
     durationSec: 16,
     title: 'Générer un reçu et le partager sur WhatsApp',
     summary:
@@ -114,42 +112,8 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
     ],
   },
   {
-    id: 'vid-scanner',
-    moduleNumber: 'Partie 3 / 7',
-    durationSec: 16,
-    title: 'Scanner un article par Caméra ou simple Photo',
-    summary:
-      'Parcourez les options de scan ou de photo, puis vérifiez les informations proposées avant de les enregistrer.',
-    icon: ScanBarcode,
-    accentBg: 'from-sky-600 to-cyan-700',
-    frames: [
-      {
-        subtitle:
-          '1. Ouvrez le bouton « Scanner Photo / Code-barres » depuis la caisse.',
-        cursorPos: { x: '50%', y: '30%' },
-        clicking: true,
-      },
-      {
-        subtitle:
-          '2. Pointez l’emballage ou prenez une photo : le faisceau analyse l’article.',
-        cursorPos: { x: '50%', y: '48%' },
-      },
-      {
-        subtitle:
-          '3. Vérifiez le nom et le prix proposés avant de confirmer : la reconnaissance peut se tromper.',
-        cursorPos: { x: '65%', y: '68%' },
-      },
-      {
-        subtitle:
-          '4. L’article est automatiquement ajouté à la facture et déduit du stock !',
-        cursorPos: { x: '75%', y: '68%' },
-        clicking: true,
-      },
-    ],
-  },
-  {
     id: 'vid-stock',
-    moduleNumber: 'Partie 4 / 7',
+    moduleNumber: 'Partie 3 / 6',
     durationSec: 16,
     title: 'Gérer le Stock, les Alertes Rupture & le Réapprovisionnement',
     summary:
@@ -183,7 +147,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
   },
   {
     id: 'vid-ai',
-    moduleNumber: 'Partie 5 / 7',
+    moduleNumber: 'Partie 4 / 6',
     durationSec: 16,
     title: 'Consulter l’Assistant IA ShopFlow',
     summary:
@@ -217,7 +181,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
   },
   {
     id: 'vid-credits',
-    moduleNumber: 'Partie 6 / 7',
+    moduleNumber: 'Partie 5 / 6',
     durationSec: 16,
     title: 'Suivre le Cahier de Crédits Clients (« Bons ») & Relancer',
     summary:
@@ -251,7 +215,7 @@ const MODULE_VIDEOS: ModuleVideoSpec[] = [
   },
   {
     id: 'vid-pin',
-    moduleNumber: 'Partie 7 / 7',
+    moduleNumber: 'Partie 6 / 6',
     durationSec: 16,
     title: 'Verrouiller la boutique en Mode Vendeur (Code PIN Patron)',
     summary:
@@ -505,28 +469,6 @@ const AnimatedModuleVideoStage: React.FC<{
                     : 'Envoyer le Reçu sur WhatsApp'}
                 </div>
               </motion.div>
-            )}
-
-            {video.id === 'vid-scanner' && (
-              <div className="space-y-2.5 text-xs">
-                <div className="relative flex h-28 items-center justify-center overflow-hidden rounded-xl bg-slate-900">
-                  <img
-                    src={INITIAL_PRODUCTS[0].image}
-                    alt="Scan"
-                    className="h-full w-full object-cover opacity-50"
-                  />
-                  <motion.div
-                    animate={{ y: [-26, 26, -26] }}
-                    transition={{ repeat: Infinity, duration: 1.8 }}
-                    className="absolute inset-x-8 h-0.5 bg-red-500 shadow-[0_0_12px_#ef4444]"
-                  />
-                  {stepIdx >= 2 && (
-                    <span className="absolute rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-black text-slate-950 shadow-lg">
-                      ✓ Code reconnu : Collier doré délicat (45 000 FC)
-                    </span>
-                  )}
-                </div>
-              </div>
             )}
 
             {video.id === 'vid-stock' && (

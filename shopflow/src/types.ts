@@ -34,6 +34,7 @@ export type NavTab =
   | 'dashboard'
   | 'pos'
   | 'inventory'
+  | 'more'
   | 'ai'
   | 'storefront'
   | 'credits'
@@ -42,12 +43,9 @@ export type NavTab =
 
 export type SubscriptionPlanId = 'starter' | 'pro_ai' | 'business';
 
-export type PreviewViewport = 'hybrid' | 'mobile';
-
 export interface Product {
   id: string;
   refCode?: string;
-  barcode?: string;
   name: string;
   category:
     | 'Bijoux'

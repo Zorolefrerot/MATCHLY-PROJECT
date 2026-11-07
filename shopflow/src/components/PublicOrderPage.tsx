@@ -49,9 +49,7 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
 function detectLanguage(): AppLanguage {
   const browserLang = typeof navigator === 'undefined' ? 'fr' : navigator.language.toLowerCase();
   if (browserLang.startsWith('en')) return 'en';
-  if (browserLang.startsWith('sw')) return 'sw';
   if (browserLang.startsWith('ln')) return 'ln';
-  if (browserLang.startsWith('zh')) return 'zh';
   return 'fr';
 }
 
@@ -65,7 +63,7 @@ export const PublicOrderPage: React.FC<PublicOrderPageProps> = ({ token }) => {
   }
 
   const fmt = (amount: number) => formatMoney(amount, order.shop.currency, order.shop.usdRateFC);
-  const locale = language === 'zh' ? 'zh-CN' : language === 'en' ? 'en' : language === 'sw' ? 'sw' : 'fr-FR';
+  const locale = language === 'en' ? 'en' : 'fr-FR';
   const createdDate = new Date(order.createdAt);
   const createdText = Number.isNaN(createdDate.getTime()) ? '' : createdDate.toLocaleString(locale);
   const buyerPhone = order.customer.phone.replace(/\D/g, '');

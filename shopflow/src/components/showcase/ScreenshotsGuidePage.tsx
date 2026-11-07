@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  BarChart3,
   Bot,
   Lock,
   Maximize2,
@@ -27,13 +26,13 @@ const CAPTURES: CaptureGuideItem[] = [
     id: 'cap-dashboard',
     number: '01',
     category: 'ventes',
-    title: 'Tableau de Bord & Vrai Bénéfice Net',
+    title: 'Commencez par ajouter vos articles',
     subtitle:
-      'Dès l’ouverture de ShopFlow, visualisez l’argent réellement gagné aujourd’hui sans aucune calculatrice.',
+      'L’accueil montre le prochain geste utile, puis garde les chiffres détaillés repliés jusqu’à ce que vous en ayez besoin.',
     steps: [
-      'Affiche séparément le Chiffre d’Affaires, le Coût d’achat des articles vendus et vos Dépenses du jour.',
-      'Calcule en direct votre Vrai Bénéfice Net exact en Francs (FC) ou en Dollars ($ USD).',
-      'Courbe automatique des 7 derniers jours pour suivre la progression de votre boutique.',
+      'Ouvrez le stock pour ajouter vos articles et leurs quantités.',
+      'Passez ensuite à la caisse pour enregistrer votre première vente.',
+      'Dépliez le suivi détaillé pour consulter les ventes, le stock et les alertes.',
     ],
   },
   {
@@ -76,21 +75,8 @@ const CAPTURES: CaptureGuideItem[] = [
     ],
   },
   {
-    id: 'cap-scanner',
-    number: '05',
-    category: 'stock',
-    title: 'Scanner Photo & Code-Barres Intelligent',
-    subtitle:
-      'Plus besoin d’acheter un lecteur laser coûteux : la caméra de votre téléphone fait tout.',
-    steps: [
-      'Lit instantanément les codes-barres et QR codes sur n’importe quel emballage.',
-      'Fonctionne aussi en prenant simplement une photo d’un article sans code-barres grâce à la reconnaissance visuelle.',
-      'Encaisse directement l’article ou l’ajoute au panier client.',
-    ],
-  },
-  {
     id: 'cap-ai',
-    number: '06',
+    number: '05',
     category: 'gestion',
     title: 'ShopFlow AI : Conseiller Financier & Voix Naturelle',
     subtitle:
@@ -103,7 +89,7 @@ const CAPTURES: CaptureGuideItem[] = [
   },
   {
     id: 'cap-credits',
-    number: '07',
+    number: '06',
     category: 'gestion',
     title: 'Cahier de Crédits (« Bons ») & Relance 1 Clic',
     subtitle:
@@ -116,7 +102,7 @@ const CAPTURES: CaptureGuideItem[] = [
   },
   {
     id: 'cap-security',
-    number: '08',
+    number: '07',
     category: 'gestion',
     title: 'Mode Vendeur (Code PIN) & Thème Boutique',
     subtitle:
@@ -124,13 +110,13 @@ const CAPTURES: CaptureGuideItem[] = [
     steps: [
       'Activez le cadenas « Mode Vendeur » en 1 clic avant de confier le téléphone à votre caissier.',
       'Seul votre Code PIN Patron à 4 chiffres permet de rouvrir le Tableau de bord et les Paramètres.',
-      'Personnalisez aussi les couleurs, le mode sombre AMOLED et la langue complète (FR, EN, Lingala, Swahili, Chinois).',
+      'Personnalisez aussi les couleurs, le mode sombre AMOLED et la langue complète (français, anglais, lingala).',
     ],
   },
 ];
 
 /**
- * High-precision visual phone screen renderer for each of the 8 real ShopFlow screens
+ * High-precision visual phone screen renderer for each of the 7 ShopFlow screens
  */
 export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
   captureId,
@@ -162,59 +148,22 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
         <div className="space-y-3 p-3.5 text-xs">
           {/* SCREEN 1: DASHBOARD */}
           {captureId === 'cap-dashboard' && (
-            <>
-              <div className="rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 p-3.5 text-white shadow-sm">
-                <div className="flex items-center justify-between text-[10px] font-bold text-emerald-100">
-                  <span>① VRAI BÉNÉFICE NET DU JOUR</span>
-                  <span className="rounded-full bg-white/20 px-2 py-0.5">
-                    +18%
-                  </span>
+            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-3.5">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#0A4DFF]">① Commencez ici</p>
+              <p className="mt-1 text-sm font-black text-slate-900">Deux étapes simples pour démarrer</p>
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-white p-2.5">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[10px] font-black text-blue-800">1</span>
+                  <span className="text-[11px] font-bold text-slate-800">Ajouter mes articles</span>
                 </div>
-                <p className="mt-1 text-2xl font-black tabular-nums">
-                  + 63 500 FC
-                </p>
-                <p className="mt-0.5 text-[10px] text-emerald-100">
-                  Coût d’achat & dépenses déjà déduits
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-                  <span className="text-[10px] font-bold text-slate-400">
-                    ② Chiffre d’Affaires
-                  </span>
-                  <p className="mt-0.5 text-sm font-black text-slate-900 tabular-nums">
-                    485 000 FC
-                  </p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-                  <span className="text-[10px] font-bold text-slate-400">
-                    Dépenses boutique
-                  </span>
-                  <p className="mt-0.5 text-sm font-black text-amber-700 tabular-nums">
-                    − 19 000 FC
-                  </p>
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-700">2</span>
+                  <span className="text-[11px] font-bold text-slate-600">Enregistrer une vente</span>
                 </div>
               </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white p-3">
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
-                  <span>③ Progression 7 jours</span>
-                  <BarChart3 className="h-3.5 w-3.5 text-[#0A4DFF]" />
-                </div>
-                <div className="mt-2.5 flex h-16 items-end gap-1.5">
-                  {[42, 56, 48, 70, 78, 92, 100].map((h, i) => (
-                    <div
-                      key={i}
-                      style={{ height: `${h}%` }}
-                      className={`flex-1 rounded-t-md ${
-                        i === 6 ? 'bg-emerald-500' : 'bg-[#0A4DFF]/80'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </>
+              <div className="mt-3 rounded-xl bg-[#0A4DFF] px-3 py-2 text-center text-[11px] font-extrabold text-white">Ouvrir le stock →</div>
+              <p className="mt-3 text-[10px] text-slate-500">② Les chiffres détaillés restent repliés sur l’accueil.</p>
+            </div>
           )}
 
           {/* SCREEN 2: POS */}
@@ -357,39 +306,7 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
             </>
           )}
 
-          {/* SCREEN 5: SCANNER */}
-          {captureId === 'cap-scanner' && (
-            <div className="space-y-2.5">
-              <div className="relative flex h-36 flex-col items-center justify-center overflow-hidden rounded-2xl bg-slate-900 text-white">
-                <img
-                  src={p1.image}
-                  alt="Scan"
-                  className="absolute inset-0 h-full w-full object-cover opacity-45"
-                />
-                <div className="relative z-10 h-20 w-44 rounded-xl border-2 border-emerald-400 bg-black/25 p-2 text-center">
-                  <div className="mt-6 h-0.5 w-full bg-red-500 shadow-[0_0_8px_#ef4444]" />
-                  <p className="mt-2 text-[9px] font-bold text-emerald-300">
-                    ① Code détecté : 6201045901001
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-2.5">
-                <div>
-                  <p className="text-[11px] font-black text-slate-900">
-                    ② Collier doré délicat
-                  </p>
-                  <p className="text-[10px] font-bold text-emerald-700">
-                    45 000 FC • En stock (12)
-                  </p>
-                </div>
-                <span className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white">
-                  ③ Vendu ✓
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* SCREEN 6: AI ASSISTANT */}
+          {/* SCREEN 5: AI ASSISTANT */}
           {captureId === 'cap-ai' && (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between rounded-xl bg-blue-50 px-3 py-1.5 text-[10px] font-bold text-[#0A4DFF]">
@@ -419,7 +336,7 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
             </div>
           )}
 
-          {/* SCREEN 7: CREDITS */}
+          {/* SCREEN 6: CREDITS */}
           {captureId === 'cap-credits' && (
             <div className="space-y-2.5">
               <div className="rounded-xl bg-rose-50 p-2.5 text-rose-950 ring-1 ring-rose-200">
@@ -447,7 +364,7 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
             </div>
           )}
 
-          {/* SCREEN 8: SECURITY & THEME */}
+          {/* SCREEN 7: SECURITY & THEME */}
           {captureId === 'cap-security' && (
             <div className="space-y-2.5">
               <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-center">
@@ -529,9 +446,9 @@ export const ScreenshotsGuidePage: React.FC<ScreenshotsGuidePageProps> = ({
           {/* Filter Pills */}
           <div className="mt-8 flex flex-wrap justify-center gap-2">
             {[
-              { id: 'all', label: 'Tous les écrans (8)' },
+              { id: 'all', label: 'Tous les écrans (7)' },
               { id: 'ventes', label: 'Caisse, Bénéfice & Reçus' },
-              { id: 'stock', label: 'Stock & Scanner Photo' },
+              { id: 'stock', label: 'Stock' },
               { id: 'gestion', label: 'IA, Crédits & Sécurité PIN' },
             ].map((tab) => (
               <button
@@ -590,7 +507,7 @@ export const ScreenshotsGuidePage: React.FC<ScreenshotsGuidePageProps> = ({
                 }`}
               >
                 <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3.5 py-1 text-xs font-extrabold text-[#0A4DFF]">
-                  <span>ÉCRAN {cap.number} / 08</span>
+                  <span>ÉCRAN {cap.number} / 07</span>
                 </div>
 
                 <h2 className="sf-display-heading text-2xl font-extrabold text-slate-950 sm:text-3xl">

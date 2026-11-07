@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -33,18 +33,15 @@ import {
 } from '../types';
 import { AuthModalMode } from './AuthModal';
 import {
-  AnimatedCounter,
   ParallaxPhoneStage,
   RevealOnScroll,
   ScrollProgressBar,
   StaggerGroup,
   StaggerItem,
 } from './showcase/MotionPrimitives';
-import {
-  PhoneScreenCapture,
-  ScreenshotsGuidePage,
-} from './showcase/ScreenshotsGuidePage';
-import { VideosTutorialsPage } from './showcase/VideosTutorialsPage';
+const PhoneScreenCapture = lazy(() => import('./showcase/ScreenshotsGuidePage').then((module) => ({ default: module.PhoneScreenCapture })));
+const ScreenshotsGuidePage = lazy(() => import('./showcase/ScreenshotsGuidePage').then((module) => ({ default: module.ScreenshotsGuidePage })));
+const VideosTutorialsPage = lazy(() => import('./showcase/VideosTutorialsPage').then((module) => ({ default: module.VideosTutorialsPage })));
 
 export type ShowcaseSubPage =
   | 'home'
@@ -57,6 +54,7 @@ interface LandingPageViewProps {
   language: AppLanguage;
   currency: CurrencyCode;
   usdRateFC: number;
+  billingTestMode: boolean;
   onChangeLanguage: (lang: AppLanguage) => void;
   onChangeCurrency: (curr: CurrencyCode) => void;
   onOpenAuthModal: (
@@ -67,8 +65,6 @@ interface LandingPageViewProps {
 
 const MARQUEE_ITEMS = [
   'Tarifs mensuels en USD',
-  'Essai de 7 jours dès la création de la boutique',
-  'Paiement réel non connecté dans cette version',
   'Gestion locale disponible hors connexion',
   'Assistant IA en ligne selon connexion et disponibilité',
   'Reçus partageables sur WhatsApp',
@@ -80,19 +76,19 @@ const MARQUEE_ITEMS = [
 const FAQ_LIST = [
   {
     q: 'Est-ce que ShopFlow fonctionne quand Internet coupe ?',
-    a: 'Les fonctions de gestion et les données déjà enregistrées sur l’appareil restent accessibles hors connexion. Les réponses IA en ligne nécessitent Internet. Les données ne sont pas synchronisées automatiquement dans le Cloud : exportez une sauvegarde avant de changer d’appareil.',
+    a: 'La gestion et les données déjà enregistrées restent accessibles hors connexion. Les données restent enregistrées sur cet appareil; exportez régulièrement une sauvegarde avant de changer d’appareil.',
   },
   {
     q: 'Que se passe-t-il si je perds, casse ou change mon téléphone ?',
-    a: 'Les données ShopFlow sont conservées sur l’appareil et ne se transfèrent pas automatiquement. Exportez régulièrement une sauvegarde depuis les paramètres et conservez-la avant de changer de téléphone.',
+    a: 'Les données restent enregistrées séparément sur chaque appareil et ne se synchronisent pas automatiquement. Exportez une sauvegarde et conservez-la avant de changer de téléphone.',
   },
   {
     q: 'Mon vendeur peut-il utiliser la caisse sans voir mon bénéfice net ?',
     a: 'Oui. Activez le Mode Vendeur : votre employé peut encaisser les clients et préparer des reçus à partager sur WhatsApp, tandis que les bénéfices nets, prix d’achat et réglages sont réservés au patron et protégés par son code PIN.',
   },
   {
-    q: 'Que se passe-t-il après les 7 jours d’essai ?',
-    a: 'L’essai commence à la création de la boutique. Cette version peut montrer une sélection de formule en simulation locale, mais aucun paiement réel ni validation sécurisée d’abonnement n’est connecté. Ne saisissez pas de carte, de PIN ou de secret Mobile Money.',
+    q: 'Dois-je payer pour continuer pendant les tests ?',
+    a: 'Non. Pendant la phase de test actuelle, l’accès à ShopFlow ne s’arrête pas au bout de 7 jours et aucun paiement n’est obligatoire. Les tarifs affichés sont des formules mensuelles pour référence. ShopFlow ne demande jamais de PIN Mobile Money ni de données de carte.'
   },
 ];
 
@@ -103,11 +99,21 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onChangeLanguage,
   onChangeCurrency,
   onOpenAuthModal,
+  billingTestMode,
 }) => {
   const [subPage, setSubPage] = useState<ShowcaseSubPage>('home');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [scrolledHeader, setScrolledHeader] = useState(false);
+  const marqueeItems = [
+    'Tarifs mensuels en USD',
+    billingTestMode ? 'Accès sans échéance pendant les tests' : 'Essai de 7 jours dès la création de la boutique',
+    billingTestMode ? 'Aucun paiement obligatoire pendant les tests' : 'Un paiement ne s’active qu’après confirmation serveur',
+    ...MARQUEE_ITEMS.slice(1),
+  ];
+  const faqItems = FAQ_LIST.map((item) => item.q === 'Dois-je payer pour continuer pendant les tests ?' && !billingTestMode
+    ? { ...item, q: 'Que se passe-t-il après les 7 jours d’essai ?', a: 'Après l’essai, l’accès dépendra de la formule choisie et du paiement confirmé par le prestataire. Ne saisissez jamais de PIN Mobile Money ou de données de carte dans ShopFlow.' }
+    : item);
 
   useEffect(() => {
     const onScroll = () => setScrolledHeader(window.scrollY > 24);
@@ -154,8 +160,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       id: 'screenshots',
       label: 'Fonctionnement en Captures',
       shortLabel: 'Captures',
-      subtitle: 'Les 8 écrans de l’application expliqués pas à pas',
-      badge: '8 écrans',
+      subtitle: 'Les 7 écrans essentiels expliqués pas à pas',
+      badge: '7 écrans',
       icon: Images,
     },
     {
@@ -170,7 +176,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       id: 'pricing',
       label: 'Tarifs & Formules',
       shortLabel: 'Tarifs',
-      subtitle: 'Formules mensuelles confirmées • paiement réel non connecté',
+      subtitle: billingTestMode ? 'Formules mensuelles • accès de test sans paiement obligatoire' : 'Formules mensuelles confirmées',
       icon: CreditCard,
     },
     {
@@ -539,13 +545,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       <p className="max-w-lg text-xs leading-6 text-slate-400 sm:text-sm">
                         Le site sert à découvrir ShopFlow. La création de votre boutique se fait uniquement dans l’application, après installation.
                       </p>
+                      {billingTestMode && (
+                        <p className="inline-flex rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-200" role="status">
+                          Phase de test · accès sans échéance ni paiement obligatoire
+                        </p>
+                      )}
                     </div>
 
                     {/* Right 3D Parallax Phone + Floating Animated Badges */}
                     <div className="relative lg:col-span-6">
                       <ParallaxPhoneStage>
                         <div className="relative mx-auto max-w-md">
-                          <PhoneScreenCapture captureId="cap-dashboard" />
+                          <Suspense fallback={<div className="aspect-[9/16] rounded-[2rem] bg-slate-800/50" aria-hidden="true" />}><PhoneScreenCapture captureId="cap-dashboard" /></Suspense>
 
                           {/* Floating Animated Badge Left */}
                           <motion.div
@@ -606,7 +617,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               {/* SMOOTH INFINITE ECOSYSTEM MARQUEE */}
               <div className="overflow-hidden border-y border-slate-200 bg-white py-4">
                 <div className="sf-marquee-track flex items-center gap-8 text-xs font-extrabold tracking-wide text-slate-600 uppercase">
-                  {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, idx) => (
+                  {[...marqueeItems, ...marqueeItems].map((item, idx) => (
                     <span key={idx} className="flex items-center gap-8">
                       <span>{item}</span>
                       <span className="h-1.5 w-1.5 rounded-full bg-[#0A4DFF]" />
@@ -615,52 +626,20 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 </div>
               </div>
 
-              {/* SCROLL-TRIGGERED ANIMATED COUNTERS */}
-              <section className="py-16 sm:py-20">
-                <div className="mx-auto max-w-6xl px-4 sm:px-6">
-                  <StaggerGroup className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    {[
-                      {
-                        val: 2400,
-                        prefix: '+',
-                        suffix: '',
-                        label: 'Commerces & boutiques équipés',
-                      },
-                      {
-                        val: 100,
-                        prefix: '',
-                        suffix: ' %',
-                        label: 'Fonctionne même sans Internet',
-                      },
-                      {
-                        val: 2,
-                        prefix: '< ',
-                        suffix: ' s',
-                        label: 'Pour encaisser & éditer un reçu',
-                      },
-                      {
-                        val: 5,
-                        prefix: '',
-                        suffix: ' langues',
-                        label: 'Français, Anglais, Lingala, Swahili, Chinois',
-                      },
-                    ].map((stat, idx) => (
-                      <StaggerItem key={idx}>
-                        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 text-center shadow-xs">
-                          <p className="sf-display-heading text-3xl font-extrabold text-[#0A4DFF] sm:text-4xl">
-                            <AnimatedCounter
-                              target={stat.val}
-                              prefix={stat.prefix}
-                              suffix={stat.suffix}
-                            />
-                          </p>
-                          <p className="mt-2 text-xs font-semibold text-slate-600">
-                            {stat.label}
-                          </p>
-                        </div>
-                      </StaggerItem>
-                    ))}
-                  </StaggerGroup>
+              {/* Four clear product highlights — no unverified usage statistics. */}
+              <section className="py-12 sm:py-16">
+                <div className="mx-auto grid max-w-6xl grid-cols-1 gap-3 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+                  {[
+                    ['Stock et ventes', 'Suivez les articles, les ventes et les dépenses.'],
+                    ['Mode hors connexion', 'Continuez avec les données déjà enregistrées sur l’appareil.'],
+                    ['Sauvegarde locale', 'Conservez une copie exportée pour retrouver vos données en cas de changement d’appareil.'],
+                    ['Accès pendant les tests', billingTestMode ? 'Continuez à utiliser ShopFlow sans échéance ni paiement obligatoire.' : 'Les formules mensuelles sont affichées dans l’application.'],
+                  ].map(([title, description]) => (
+                    <div key={title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
+                      <h3 className="text-sm font-extrabold text-slate-900">{title}</h3>
+                      <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{description}</p>
+                    </div>
+                  ))}
                 </div>
               </section>
 
@@ -737,12 +716,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                             <Images className="h-6 w-6" />
                           </div>
                           <h3 className="sf-display-heading mt-5 text-xl font-bold">
-                            📸 Guide par Captures d’écran (8 écrans)
+                            📸 Guide par captures d’écran (7 écrans)
                           </h3>
                           <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                            Parcourez toutes les captures annotées ① ② ③ :
-                            Tableau de bord, Caisse rapide, Reçu WhatsApp,
-                            Stock, Scanner photo, IA et Cadenas vendeur.
+                            Parcourez les captures annotées : accueil simplifié,
+                            caisse, reçu WhatsApp, stock, crédits et paramètres.
                           </p>
                           <span className="mt-5 inline-flex items-center gap-2 text-xs font-extrabold text-sky-400">
                             <span>Ouvrir la page des captures</span>
@@ -784,16 +762,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               PAGE 2: DEDICATED SCREENSHOTS WALKTHROUGH PAGE
              =============================================================== */}
           {subPage === 'screenshots' && (
-            <ScreenshotsGuidePage
-              onSwitchToVideosPage={() => navigateToSubPage('videos')}
-            />
+            <Suspense fallback={<div className="mx-auto min-h-[50vh] max-w-6xl px-4 py-12 text-sm text-slate-500" role="status">Chargement des captures…</div>}>
+              <ScreenshotsGuidePage onSwitchToVideosPage={() => navigateToSubPage('videos')} />
+            </Suspense>
           )}
 
           {/* ===============================================================
               PAGE 3: DEDICATED MODULE VIDEOS PAGE
              =============================================================== */}
           {subPage === 'videos' && (
-            <VideosTutorialsPage language={language} />
+            <Suspense fallback={<div className="mx-auto min-h-[50vh] max-w-6xl px-4 py-12 text-sm text-slate-500" role="status">Chargement des tutoriels…</div>}>
+              <VideosTutorialsPage language={language} />
+            </Suspense>
           )}
 
           {/* ===============================================================
@@ -810,7 +790,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     Des tarifs clairs, à activer dans l’application
                   </h1>
                   <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-                    Installez d’abord ShopFlow. Vous créerez votre boutique et choisirez votre formule depuis l’application. L’essai gratuit de 7 jours commence à la création de la boutique. Le paiement réel n’est pas encore connecté.
+                    {billingTestMode
+                      ? 'Installez ShopFlow et créez votre boutique dans l’application. Pendant les tests, l’accès n’expire pas et aucun paiement n’est obligatoire. Les formules mensuelles restent affichées à titre indicatif.'
+                      : 'Installez ShopFlow et créez votre boutique dans l’application. L’essai de 7 jours commence à sa création; toute formule payante nécessite une confirmation serveur du prestataire.'}
                   </p>
 
                   <div className="mt-7 inline-flex rounded-full border border-white/15 bg-white/10 p-1 text-xs font-bold">
@@ -850,11 +832,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       usd: 5,
                       highlight: false,
                       perks: [
-                        'Jusqu’à 50 marchandises avec photos',
+                        'Gestion des marchandises avec photos',
                         'Vente rapide « +1 Vendu » et panier client',
                         'Calcul automatique du chiffre d’affaires et du revenu net',
                         'Mode hors ligne',
-                        'Résumé journalier partageable sur WhatsApp',
                       ],
                     },
                     {
@@ -864,12 +845,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       usd: 12,
                       highlight: true,
                       perks: [
-                        'Marchandises et ventes sans plafond annoncé',
+                        'Gestion des marchandises, ventes et dépenses',
                         'Assistant IA Coach et caisse vocale, selon disponibilité et limites du service',
-                        'Scanner de code-barres avec la caméra',
-                        'Mini-boutique en ligne avec commandes WhatsApp',
+                        'Catalogue partageable avec demandes par WhatsApp, sans paiement intégré',
                         'Carnet de crédits clients et outils de relance',
-                        'Support prioritaire WhatsApp, 7 j/7',
                       ],
                     },
                     {
@@ -880,10 +859,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       highlight: false,
                       perks: [
                         'Gestion de plusieurs boutiques ou dépôts',
-                        'Comptes vendeurs et gérants séparés',
-                        'Assistant IA pour le suivi des stocks multi-boutiques',
-                        'Export comptable PDF et Excel',
-                        'Accompagnement dédié à Kinshasa et Lubumbashi',
+                        'Données et réglages séparés pour chaque boutique',
                       ],
                     },
                   ].map((plan) => (
@@ -900,11 +876,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                             <h3 className="sf-display-heading text-xl font-bold text-slate-950">
                               {plan.name}
                             </h3>
-                            {plan.highlight && (
-                              <span className="rounded-full bg-[#0A4DFF] px-3 py-1 text-[10px] font-black text-white">
-                                POPULAIRE
-                              </span>
-                            )}
                           </div>
                           <p className="mt-1 text-xs text-slate-500">
                             {plan.desc}
@@ -937,7 +908,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                               : 'bg-slate-950 hover:bg-slate-800'
                           }`}
                         >
-                          Installer puis choisir dans l’app
+                          {billingTestMode ? 'Installer et commencer les tests' : 'Installer puis choisir dans l’app'}
                         </button>
                       </div>
                     </StaggerItem>
@@ -955,7 +926,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <section className="bg-[#050B1C] py-16 text-center text-white sm:py-22">
                 <div className="mx-auto max-w-3xl px-4 sm:px-6">
                   <span className="inline-block rounded-full border border-emerald-400/30 bg-emerald-500/15 px-4 py-1 text-xs font-bold text-emerald-300">
-                    📲 Données locales & fonctionnement hors connexion
+                    📲 Accès hors connexion & sauvegarde
                   </span>
                   <h1 className="sf-display-heading mt-5 text-3xl leading-tight font-extrabold sm:text-5xl">
                     Installez ShopFlow. Créez votre boutique dans l’application.
@@ -992,7 +963,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     {
                       icon: ShieldCheck,
                       title: 'Sauvegarde locale',
-                      desc: 'Les données restent sur cet appareil. Exportez une sauvegarde avant tout changement de téléphone ou de navigateur.',
+                      desc: 'Les données restent enregistrées sur l’appareil utilisé. Exportez une sauvegarde séparée et conservez-la avant de changer de téléphone.',
                     },
                     {
                       icon: Smartphone,
@@ -1021,7 +992,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
                 {/* FAQ Accordion */}
                 <div className="mt-14 divide-y divide-slate-200 rounded-3xl border border-slate-200 bg-white px-6 shadow-xs">
-                  {FAQ_LIST.map((item, idx) => {
+                  {faqItems.map((item, idx) => {
                     const open = openFaq === idx;
                     return (
                       <div key={idx} className="py-5">
@@ -1086,7 +1057,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               onClick={() => navigateToSubPage('screenshots')}
               className="hover:text-sky-400"
             >
-              Captures (8)
+              Captures (7)
             </button>
             <button
               type="button"

@@ -11,8 +11,6 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
   { code: 'fr', label: 'Français', nativeLabel: 'Français', flag: '🇫🇷' },
   { code: 'en', label: 'Anglais', nativeLabel: 'English', flag: '🇬🇧' },
   { code: 'ln', label: 'Lingala', nativeLabel: 'Lingala (RDC)', flag: '🇨🇩' },
-  { code: 'sw', label: 'Swahili', nativeLabel: 'Kiswahili (RDC)', flag: '🇨🇩' },
-  { code: 'zh', label: 'Chinois', nativeLabel: '中文 (简体)', flag: '🇨🇳' },
 ];
 
 export interface UITranslations {
@@ -20,6 +18,7 @@ export interface UITranslations {
   navDashboard: string;
   navPos: string;
   navInventory: string;
+  navMore: string;
   navAi: string;
   navStorefront: string;
   navCredits: string;
@@ -29,6 +28,7 @@ export interface UITranslations {
   mobileSell: string;
   mobileAi: string;
   mobileStock: string;
+  mobileMore: string;
   mobileSettings: string;
   helloShop: string;
   dashboardSubtitle: string;
@@ -37,8 +37,6 @@ export interface UITranslations {
   kpiExpenses: string;
   kpiNetProfit: string;
   quickSaleBtn: string;
-  scannerBtn: string;
-  whatsappSummaryBtn: string;
   askAiBtn: string;
   onlineStoreTitle: string;
   subscriptionTitle: string;
@@ -50,9 +48,10 @@ export interface UITranslations {
 export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
   fr: {
     tagline: 'Gérez • Calculez • Faites grandir',
-    navDashboard: 'Tableau de bord',
+    navDashboard: 'Accueil',
     navPos: 'Vendre & Caisse',
-    navInventory: 'Marchandises & Stock',
+    navInventory: 'Articles',
+    navMore: 'Plus',
     navAi: 'ShopFlow IA',
     navStorefront: 'Boutique en Ligne',
     navCredits: 'Crédits « Bons »',
@@ -61,18 +60,17 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
     mobileHome: 'Accueil',
     mobileSell: 'Vendre',
     mobileAi: 'IA',
-    mobileStock: 'Stock',
+    mobileStock: 'Articles',
+    mobileMore: 'Plus',
     mobileSettings: 'Paramètres',
     helloShop: 'Bonjour',
     dashboardSubtitle:
-      'Suivez vos ventes, stocks, reçus WhatsApp et bénéfices nets en temps réel.',
+      'Ajoutez vos articles, puis enregistrez vos ventes. ShopFlow garde le reste à portée de main.',
     kpiCA: 'Chiffre d’Affaires (CA)',
     kpiCost: 'Coût d’Achat Ventes',
     kpiExpenses: 'Dépenses Boutique',
     kpiNetProfit: 'Revenu / Bénéfice Net',
     quickSaleBtn: 'Vente rapide',
-    scannerBtn: 'Scanner',
-    whatsappSummaryBtn: 'Bilan WhatsApp',
     askAiBtn: 'Demander à ShopFlow IA',
     onlineStoreTitle: 'Boutique en Ligne WhatsApp',
     subscriptionTitle: 'Abonnement & Formules',
@@ -82,9 +80,10 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
   },
   en: {
     tagline: 'Manage • Calculate • Grow',
-    navDashboard: 'Dashboard',
+    navDashboard: 'Home',
     navPos: 'Point of Sale',
-    navInventory: 'Products & Stock',
+    navInventory: 'Items',
+    navMore: 'More',
     navAi: 'ShopFlow AI',
     navStorefront: 'Online Store',
     navCredits: 'Customer Credits',
@@ -93,18 +92,17 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
     mobileHome: 'Home',
     mobileSell: 'Sell',
     mobileAi: 'AI',
-    mobileStock: 'Stock',
+    mobileStock: 'Items',
+    mobileMore: 'More',
     mobileSettings: 'Settings',
     helloShop: 'Welcome',
     dashboardSubtitle:
-      'Track your daily sales, stock levels, WhatsApp receipts, and true net profit.',
+      'Add your items, then record sales. ShopFlow keeps the rest within easy reach.',
     kpiCA: 'Gross Revenue (Sales)',
     kpiCost: 'Cost of Goods Sold',
     kpiExpenses: 'Daily Expenses',
     kpiNetProfit: 'True Net Profit',
     quickSaleBtn: 'Quick Sale',
-    scannerBtn: 'Scanner',
-    whatsappSummaryBtn: 'WhatsApp Report',
     askAiBtn: 'Ask ShopFlow AI',
     onlineStoreTitle: 'WhatsApp Online Store',
     subscriptionTitle: 'Subscription & Plans',
@@ -114,9 +112,10 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
   },
   ln: {
     tagline: 'Batelá • Tángá • Kólisá mombongo',
-    navDashboard: 'Bilan ya Lelo',
+    navDashboard: 'Ebandeli',
     navPos: 'Teka & Caisse',
-    navInventory: 'Biloko na Stock',
+    navInventory: 'Biloko',
+    navMore: 'Misala mosusu',
     navAi: 'ShopFlow Mayele (IA)',
     navStorefront: 'Boutique na Internet',
     navCredits: 'Ba Crédits (Bons)',
@@ -125,18 +124,17 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
     mobileHome: 'Ebandeli',
     mobileSell: 'Teka',
     mobileAi: 'IA',
-    mobileStock: 'Stock',
+    mobileStock: 'Biloko',
+    mobileMore: 'Mosusu',
     mobileSettings: 'Paramètres',
     helloShop: 'Mbote',
     dashboardSubtitle:
-      'Landá moteki ya lelo, stock ya biloko, reçu WhatsApp mpe litomba na yo ya solo.',
+      'Bakisa biloko na yo, sima koma boteki. ShopFlow ekobatela makambo mosusu pene na yo.',
     kpiCA: 'Mbongo Ekoti Lelo (CA)',
     kpiCost: 'Mbongo ya Kosomba Stock',
     kpiExpenses: 'Depenses ya Boutique',
     kpiNetProfit: 'Litomba ya Solo (Revenu)',
     quickSaleBtn: 'Teka noki',
-    scannerBtn: 'Scanner',
-    whatsappSummaryBtn: 'Bilan WhatsApp',
     askAiBtn: 'Tuná ShopFlow IA',
     onlineStoreTitle: 'Boutique WhatsApp na Ligne',
     subscriptionTitle: 'Abonnement mpe ba Formule',
@@ -146,9 +144,10 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
   },
   sw: {
     tagline: 'Simamia • Hesabu • Kuza Biashara',
-    navDashboard: 'Dashibodi ya Leo',
+    navDashboard: 'Mwanzo',
     navPos: 'Uza & Kaunta',
     navInventory: 'Bidhaa na Stoo',
+    navMore: 'Zaidi',
     navAi: 'ShopFlow Akili (IA)',
     navStorefront: 'Duka Mtandaoni',
     navCredits: 'Mikopo ya Wateja',
@@ -158,6 +157,7 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
     mobileSell: 'Uza',
     mobileAi: 'IA',
     mobileStock: 'Stoo',
+    mobileMore: 'Zaidi',
     mobileSettings: 'Mipangilio',
     helloShop: 'Habari',
     dashboardSubtitle:
@@ -167,8 +167,6 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
     kpiExpenses: 'Matumizi ya Duka',
     kpiNetProfit: 'Faida Halisi Mfukoni',
     quickSaleBtn: 'Uza Haraka',
-    scannerBtn: 'Skana',
-    whatsappSummaryBtn: 'Ripoti WhatsApp',
     askAiBtn: 'Uliza ShopFlow IA',
     onlineStoreTitle: 'Duka la WhatsApp Mtandaoni',
     subscriptionTitle: 'Usajili na vifurushi',
@@ -178,9 +176,10 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
   },
   zh: {
     tagline: '轻松管理 • 自动核算 • 生意兴隆',
-    navDashboard: '今日总览',
+    navDashboard: '首页',
     navPos: '快速收银台',
-    navInventory: '商品与库存',
+    navInventory: '商品',
+    navMore: '更多',
     navAi: 'ShopFlow 智能助手',
     navStorefront: 'WhatsApp 线上微店',
     navCredits: '客户赊账本',
@@ -189,7 +188,8 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
     mobileHome: '首页',
     mobileSell: '收银',
     mobileAi: 'AI助手',
-    mobileStock: '库存',
+    mobileStock: '商品',
+    mobileMore: '更多',
     mobileSettings: '设置',
     helloShop: '您好',
     dashboardSubtitle: '实时掌握今日营业额、库存预警、WhatsApp 电子小票与真实纯利润。',
@@ -198,8 +198,6 @@ export const TRANSLATIONS: Record<AppLanguage, UITranslations> = {
     kpiExpenses: '今日店铺日常支出',
     kpiNetProfit: '今日真实纯利润',
     quickSaleBtn: '快速开单',
-    scannerBtn: '扫码收银',
-    whatsappSummaryBtn: 'WhatsApp 日报',
     askAiBtn: '咨询 ShopFlow AI',
     onlineStoreTitle: 'WhatsApp 线上商城',
     subscriptionTitle: '订阅与方案',

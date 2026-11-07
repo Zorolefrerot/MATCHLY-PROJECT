@@ -155,9 +155,7 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
 function detectLanguage(): AppLanguage {
   const browserLang = typeof navigator === 'undefined' ? 'fr' : navigator.language.toLowerCase();
   if (browserLang.startsWith('en')) return 'en';
-  if (browserLang.startsWith('sw')) return 'sw';
   if (browserLang.startsWith('ln')) return 'ln';
-  if (browserLang.startsWith('zh')) return 'zh';
   return 'fr';
 }
 
@@ -330,7 +328,7 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
   };
 
   const publishedDate = snapshot.publishedAt
-    ? new Date(snapshot.publishedAt).toLocaleDateString(language === 'zh' ? 'zh-CN' : language === 'en' ? 'en' : language === 'sw' ? 'sw' : 'fr-FR')
+    ? new Date(snapshot.publishedAt).toLocaleDateString(language === 'en' ? 'en' : 'fr-FR')
     : '';
 
   return (
@@ -363,9 +361,7 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
           >
             <option value="fr">Français</option>
             <option value="en">English</option>
-            <option value="ln">Lingála</option>
-            <option value="sw">Kiswahili</option>
-            <option value="zh">中文</option>
+            <option value="ln">Lingala</option>
           </select>
         </div>
       </header>

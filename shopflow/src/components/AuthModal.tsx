@@ -69,12 +69,7 @@ const SocialProviderIcon: React.FC<{ provider: OAuthProvider }> = ({ provider })
     );
   }
 
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 shrink-0">
-      <circle cx="12" cy="12" r="12" fill="#0866FF" />
-      <path fill="#FFFFFF" d="M13.55 24v-8.73h2.93l.44-3.41h-3.37V9.68c0-.99.28-1.66 1.69-1.66h1.8V4.97c-.31-.04-1.38-.13-2.63-.13-2.6 0-4.38 1.59-4.38 4.51v2.51H7.09v3.41h2.94V24h3.52Z" />
-    </svg>
-  );
+  return null;
 };
 
 export const AuthModal: React.FC<AuthModalProps> = ({ 
@@ -156,7 +151,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ 
       return;
     }
     if (!isAuthenticated) {
-      setAuthError('Pour créer un compte, choisissez Google, GitHub ou Facebook.');
+      setAuthError('Pour créer un compte, choisissez Google ou GitHub.');
       return;
     }
     void runAuthAction(() => onCompleteSignup(signupPayload()));
@@ -180,7 +175,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ 
   const socialProviders: { id: OAuthProvider; label: string }[] = [
     { id: 'google', label: 'Google' },
     { id: 'github', label: 'GitHub' },
-    { id: 'facebook', label: 'Facebook' },
   ];
 
   const handlePasswordUpdate = (event: React.FormEvent) => {
@@ -296,7 +290,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ 
           <section className="space-y-4 p-5 text-sm sm:p-6" aria-labelledby="auth-required-title">
             <div className="space-y-2 text-center">
               <h4 id="auth-required-title" className="text-base font-extrabold text-slate-900">Connectez-vous d’abord</h4>
-              <p className="text-xs leading-relaxed text-slate-600">Après la connexion, vous pourrez configurer votre boutique. ShopFlow ne reçoit jamais le mot de passe de Google, GitHub ou Facebook.</p>
+              <p className="text-xs leading-relaxed text-slate-600">Après la connexion, vous pourrez configurer votre boutique. ShopFlow ne reçoit jamais le mot de passe de Google ou GitHub.</p>
             </div>
             <div className="grid grid-cols-1 gap-2">
               {socialProviders.map(({ id, label }) => {
@@ -442,7 +436,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ 
 
             {!isAuthenticated && (
               <p className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-[11px] font-semibold text-blue-900">
-                Créez votre compte avec Google, GitHub ou Facebook. ShopFlow ne vous demandera pas le mot de passe de ces services.
+                Créez votre compte avec Google ou GitHub. ShopFlow ne vous demandera pas le mot de passe de ces services.
               </p>
             )}
             <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-[11px] font-semibold text-emerald-800">
