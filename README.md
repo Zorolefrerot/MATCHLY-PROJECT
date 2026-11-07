@@ -18,7 +18,7 @@ Si tu crées le service manuellement au lieu d’utiliser le Blueprint :
 - **Build Command :** `npm --prefix shopflow ci && npm run build`
 - **Start Command :** `npm start`
 
-La compilation télécharge l’APK de test depuis la préversion GitHub et l’inclut dans `/downloads/ShopFlow-Android.apk`, pour que le bouton du site lance un téléchargement depuis le domaine Render.
+Les routes `/downloads/ShopFlow-Android.apk` et `/downloads/ShopFlow-Windows.exe` redirigent vers les fichiers vérifiés de la préversion GitHub; les binaires ne sont pas copiés dans le dépôt ni dans `dist/`.
 
 Les variables de service et de build sont définies dans `render.yaml`; les clés privées restent côté serveur. L’accès test ne demande ni échéance ni paiement; aucun prestataire de paiement n’est intégré pour le moment.
 
@@ -30,4 +30,8 @@ Avec le même compte connecté, les données de boutique synchronisées dans Sup
 
 ## APK Android
 
-Le workflow **ShopFlow Android APK** compile un APK de test, vérifie sa signature et maintient une préversion GitHub. Le package de test Android est `cd.shopflow.app.test`, afin de ne pas remplacer une autre installation ShopFlow. La clé de débogage stable est réservée aux mises à jour de test et ne doit pas signer une version de production.
+Le workflow **ShopFlow test installers** compile l’APK Android avec la clé de test stable, vérifie son package et sa signature, et produit l’installateur Windows x64. Les fichiers sont publiés ensemble dans une préversion GitHub; le site redirige vers cette release. Le package Android de test est `cd.shopflow.app.test`, afin de coexister avec une installation de production.
+
+## Application Windows
+
+L’application Windows est un installateur Electron x64 qui ouvre ShopFlow depuis le domaine officiel et conserve une session locale persistante. La première ouverture demande une connexion Internet; après chargement, la PWA peut utiliser ses capacités hors connexion. L’installateur n’est pas signé par certificat Windows et SmartScreen peut afficher un avertissement. Le fichier `.exe` n’est pas une application Microsoft Store.

@@ -590,9 +590,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ 
               <p className="font-extrabold">Votre boutique se crée après l’installation, dans l’application ShopFlow.</p>
               <p className="mt-1">Ce site vitrine ne collecte pas vos informations de boutique et ne lance pas sa création.</p>
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {[
                 { platform: 'Android', packageName: 'APK de test signé (debug)', status: 'Télécharger l’APK', href: '/downloads/ShopFlow-Android.apk' },
+                { platform: 'Windows', packageName: 'Installateur bêta x64 (.exe)', status: 'Télécharger pour Windows', href: '/downloads/ShopFlow-Windows.exe' },
                 { platform: 'iPhone / iPad', packageName: 'PWA installable depuis Safari', status: 'Disponible · pas sur l’App Store' },
                 { platform: 'Ordinateur', packageName: 'Application web installable', status: 'Navigateur compatible' },
               ].map((item) => (
@@ -668,7 +669,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ 
 
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 leading-relaxed text-amber-950">
               <p className="font-extrabold">À propos des installations ShopFlow</p>
-              <p className="mt-1">Sur iPhone/iPad, ShopFlow s’installe comme une PWA depuis Safari : ce n’est ni une IPA ni une app App Store, et cela ne demande ni Mac ni abonnement Apple Developer. L’APK Android proposé ci-dessus est une version de test signée en debug, pas une version Play Store; téléchargez-le uniquement depuis ce lien officiel.</p>
+              <p className="mt-1">Sur iPhone/iPad, ShopFlow s’installe comme une PWA depuis Safari : ce n’est ni une IPA ni une app App Store. L’APK Android est une version de test signée en debug, pas une version Play Store. L’installateur Windows est une version bêta x64 non signée; SmartScreen peut afficher un avertissement. Téléchargez les fichiers uniquement depuis ces liens officiels.</p>
             </div>
 
             {installFeedback && (

@@ -15,6 +15,10 @@ const CATALOG_REQUESTS_PER_MINUTE = 120;
 const rateBuckets = new Map();
 const catalogRateBuckets = new Map();
 const catalogImageRateBuckets = new Map();
+const downloadRedirects = new Map([
+  ['/downloads/ShopFlow-Android.apk', 'https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-test-v1.0.3/ShopFlow-Android.apk'],
+  ['/downloads/ShopFlow-Windows.exe', 'https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-test-v1.0.3/ShopFlow-Windows.exe'],
+]);
 const nativeOrigins = new Set(['capacitor://localhost', 'http://localhost', 'https://localhost']);
 const mimeTypes = {
   '.avif': 'image/avif',
@@ -306,6 +310,16 @@ async function serveStatic(request, response, pathname) {
     return;
   }
 
+  const downloadUrl = downloadRedirects.get(decodedPath);
+  if (downloadUrl) {
+    response.writeHead(302, {
+      Location: downloadUrl,
+      'Cache-Control': 'no-store',
+    });
+    response.end();
+    return;
+  }
+
   if (decodedPath === '/app') {
     response.writeHead(308, { Location: '/app/' });
     response.end();
@@ -341,21 +355,10 @@ async function serveStatic(request, response, pathname) {
     } else if (extension === '.html' || extension === '.webmanifest') {
       headers['Cache-Control'] = 'no-cache';
     }
-    if (extension === '.apk') {
-      headers['Content-Disposition'] = 'attachment; filename="ShopFlow-Android.apk"';
-    }
     response.writeHead(200, headers);
     if (request.method === 'HEAD') response.end();
     else createReadStream(filePath).pipe(response);
   } catch {
-    if (decodedPath === '/downloads/ShopFlow-Android.apk') {
-      response.writeHead(302, {
-        Location: 'https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-android-test-v0.1.0/ShopFlow-Android.apk',
-        'Cache-Control': 'no-store',
-      });
-      response.end();
-      return;
-    }
     response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     response.end('Not Found');
   }

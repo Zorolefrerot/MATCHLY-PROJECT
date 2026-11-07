@@ -1,16 +1,17 @@
-name: ShopFlow Android APK
+name: ShopFlow test installers
 
 on:
   push:
     branches:
-      - arena/0b9f89cc-matchly-project
+      - arena/cd1aec74-matchly-project
     paths:
       - 'shopflow/**'
+      - 'desktop/**'
       - '.github/workflows/shopflow-android-apk.yml'
   workflow_dispatch:
     inputs:
       publish_test_release:
-        description: Publish or refresh the public Android test APK release asset
+        description: Publish the verified Android APK and Windows installer to the public test release
         required: true
         default: false
         type: boolean
@@ -18,9 +19,13 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: shopflow-test-installers-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build-debug-apk:
-    name: Build installable debug APK
+  android:
+    name: Build and verify Android APK
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -48,12 +53,12 @@ jobs:
       - name: Restore stable test signing key
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
           set -euo pipefail
-          tag="shopflow-android-test-v0.1.0"
           key="$RUNNER_TEMP/ShopFlow-Test-Debug.keystore"
-          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null | grep -Fqx 'ShopFlow-Test-Debug.keystore'; then
-            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern ShopFlow-Test-Debug.keystore --dir "$RUNNER_TEMP"
+          if gh release view shopflow-android-test-v0.1.0 --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null | grep -Fqx 'ShopFlow-Test-Debug.keystore'; then
+            gh release download shopflow-android-test-v0.1.0 --repo "$GITHUB_REPOSITORY" --pattern ShopFlow-Test-Debug.keystore --dir "$RUNNER_TEMP"
           else
             keytool -genkeypair -noprompt \
               -keystore "$key" \
@@ -74,8 +79,6 @@ jobs:
 
       - name: Build ShopFlow web application
         working-directory: shopflow
-        env:
-          VITE_SHOPFLOW_API_BASE_URL: ${{ vars.SHOPFLOW_API_BASE_URL }}
         run: npm run build
 
       - name: Sync Capacitor Android project
@@ -86,37 +89,98 @@ jobs:
         working-directory: shopflow/android
         run: ./gradlew --no-daemon assembleDebug
 
-      - name: Verify APK package and signature
+      - name: Verify APK package, version, and signature
+        shell: bash
         run: |
+          set -euo pipefail
           apk=shopflow/android/app/build/outputs/apk/debug/app-debug.apk
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$apk"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > "$RUNNER_TEMP/shopflow-badging.txt"
           grep -q "package: name='cd.shopflow.app.test'" "$RUNNER_TEMP/shopflow-badging.txt"
+          grep -q "versionName='1.0.3-test'" "$RUNNER_TEMP/shopflow-badging.txt"
 
-      - name: Publish APK as downloadable workflow artifact
+      - name: Upload verified Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: ShopFlow-Android-debug-APK
+          name: ShopFlow-Android-APK
           path: shopflow/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish stable Android test download
-        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_test_release) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-shopflow-test-apk]')) }}
+  windows:
+    name: Build Windows installer
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install desktop packaging dependencies
+        run: npm ci --prefix desktop
+
+      - name: Package Windows installer
+        run: npm --prefix desktop run build:windows
+
+      - name: Verify installer exists and is not empty
+        shell: pwsh
+        run: |
+          $installer = Get-Item "desktop/release/ShopFlow-Windows.exe"
+          if ($installer.Length -lt 1MB) { throw "Installer is unexpectedly small: $($installer.Length) bytes" }
+          Get-FileHash $installer.FullName -Algorithm SHA256 | Format-List
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShopFlow-Windows-Installer
+          path: desktop/release/ShopFlow-Windows.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-test-release:
+    name: Publish verified installers
+    needs: [android, windows]
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_test_release) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-shopflow-test-release]')) }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ShopFlow-Android-APK
+          path: release-assets
+
+      - name: Download Windows installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ShopFlow-Windows-Installer
+          path: release-assets
+
+      - name: Publish versioned public test release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: shopflow-test-v1.0.3
+        shell: bash
         run: |
+          set -euo pipefail
           apk="$RUNNER_TEMP/ShopFlow-Android.apk"
-          cp shopflow/android/app/build/outputs/apk/debug/app-debug.apk "$apk"
-          tag="shopflow-android-test-v0.1.0"
-          keystore="$RUNNER_TEMP/ShopFlow-Test-Debug.keystore"
-          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$tag" "$apk" "$keystore" --repo "$GITHUB_REPOSITORY" --clobber
+          exe="$RUNNER_TEMP/ShopFlow-Windows.exe"
+          cp release-assets/app-debug.apk "$apk"
+          cp release-assets/ShopFlow-Windows.exe "$exe"
+          title="ShopFlow 1.0.3 — test Android et Windows"
+          notes="Builds de test ShopFlow 1.0.3. Android : APK debug signé, package cd.shopflow.app.test, installable à côté d'une version de production. Windows : installateur x64 non signé; Windows SmartScreen peut afficher un avertissement. Le premier lancement Windows nécessite Internet; l'application utilise une session persistante pour conserver ses données locales. Aucun fichier n'est une version de boutique d'applications."
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$apk" "$exe" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --title "$title" --notes "$notes" --prerelease
           else
-            gh release create "$tag" "$apk" "$keystore" \
+            gh release create "$RELEASE_TAG" "$apk" "$exe" \
               --repo "$GITHUB_REPOSITORY" \
-              --title "ShopFlow Android — test 0.1.0" \
-              --notes "Version Android de test ShopFlow (package cd.shopflow.app.test). La signature stable sert uniquement à pouvoir installer les mises à jour de test; elle ne doit jamais être réutilisée pour une version de production. Android peut demander l’autorisation d’installer des applications provenant de cette source." \
+              --title "$title" \
+              --notes "$notes" \
               --prerelease \
               --target "$GITHUB_SHA"
           fi
