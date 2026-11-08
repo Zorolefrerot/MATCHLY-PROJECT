@@ -30,20 +30,6 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     private: 'Moto nyonso oyo azali na lien oyo akoki kotala demande. Bomba yango na sekele.',
     contact: 'Yanola mokili na WhatsApp', back: 'Zonga na catalogue', invalid: 'Lien ya demande oyo ezali ya solo te to ezangi makambo.',
   },
-  sw: {
-    title: 'Ombi la agizo', reference: 'Rejea', received: 'Limetengenezwa', customer: 'Maelezo ya mteja', name: 'Jina', phone: 'WhatsApp', address: 'Anwani',
-    items: 'Bidhaa zilizoombwa', quantity: 'Idadi', subtotal: 'Jumla ndogo inayokadiriwa', delivery: 'Makadirio ya usafirishaji', total: 'Makadirio ya jumla',
-    pending: 'Ombi halijalipwa. Duka lazima lithibitishe bidhaa, ada za usafirishaji na kiasi cha mwisho.',
-    private: 'Mtu yeyote mwenye kiungo hiki anaweza kuona ombi. Kiweke siri.',
-    contact: 'Mjibu mteja kwenye WhatsApp', back: 'Rudi kwenye katalogi', invalid: 'Kiungo hiki cha agizo si sahihi au hakijakamilika.',
-  },
-  zh: {
-    title: '订单请求', reference: '编号', received: '创建时间', customer: '买家信息', name: '姓名', phone: 'WhatsApp', address: '地址',
-    items: '请求商品', quantity: '数量', subtotal: '预计小计', delivery: '预计配送费', total: '预计总计',
-    pending: '订单尚未付款。商家需确认库存、配送费和最终金额。',
-    private: '任何拥有此链接的人都可以查看请求，请妥善保管。',
-    contact: '通过 WhatsApp 回复买家', back: '返回商品目录', invalid: '此订单链接无效或不完整。',
-  },
 };
 
 function detectLanguage(): AppLanguage {

@@ -56,7 +56,7 @@ const guides = [
   {
     id:'subscription', icon:'◇', title:'Comment consulter les formules ?', short:'Tarifs mensuels et annuels informatifs.', kind:'subscription',
     summary:'Les prix affichés sont informatifs. Le choix d’une formule n’active aucun paiement réel.',
-    steps:['Ouvrez « Abonnement » dans l’application ou consultez les formules de la vitrine.','Mensuel : Starter 3 USD / 7 200 FC; Pro 12 USD / 28 800 FC; Business 25 USD / 60 000 FC.','Annuel : Starter 30 USD / 72 000 FC; Pro 120 USD / 288 000 FC; Business 250 USD / 600 000 FC — 10 mois facturés sur 12.','Taux public : 1 USD = 2 400 FC. Cette maquette n’accepte aucun paiement.'],
+    steps:['Ouvrez « Abonnement » dans l’application ou consultez les formules de la vitrine.','Mensuel : Starter 5 USD / 12 000 FC; Pro 12 USD / 28 800 FC; Business 25 USD / 60 000 FC.','Annuel : Starter 50 USD / 120 000 FC; Pro 120 USD / 288 000 FC; Business 250 USD / 600 000 FC — 10 mois facturés sur 12.','Taux public : 1 USD = 2 400 FC. Cette maquette n’accepte aucun paiement.'],
     note:'Les tarifs restent informatifs. Aucun prestataire ni paiement réel n’est activé par cette démonstration.',
   },
   {
@@ -184,7 +184,7 @@ function drawTutorialScreen(x,y,w,time) {
     rounded(x,y,w,450,22,'#ffffff','#e7edf2');
     drawText('Tarifs informatifs · taux 2 400 FC / USD',x+17,y+26,11,'#52687b',750);
     drawPillSmall('MENSUEL   /   ANNUEL · 2 MOIS OFFERTS',x+15,y+39,w-30,35,'#eaf4ff','#176fc4');
-    const rows=[['Starter','3 / 30 USD','7 200 / 72 000 FC'],['Pro','12 / 120 USD','28 800 / 288 000 FC'],['Business','25 / 250 USD','60 000 / 600 000 FC']];
+    const rows=[['Starter','5 / 50 USD','12 000 / 120 000 FC'],['Pro','12 / 120 USD','28 800 / 288 000 FC'],['Business','25 / 250 USD','60 000 / 600 000 FC']];
     rows.forEach((r,i)=>{const yy=y+88+i*75;rounded(x+14,yy,w-28,65,13,'#f8fafc','#e4eaf0');drawText(r[0],x+25,yy+24,14,'#223b51',850);drawText(r[1],x+w-22,yy+24,12,'#223b51',800,'right');drawText(r[2]+' · USD / FC annuel',x+25,yy+48,10,'#718395',550);});
     drawText('Aucun paiement n’est traité.',x+w/2,y+337,11,'#75889b',700,'center');
   } else {

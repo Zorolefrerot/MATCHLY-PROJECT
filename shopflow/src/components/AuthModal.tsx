@@ -32,6 +32,7 @@ export interface SignupPayload {
 }
 
 interface AuthModalProps {
+  billingTestMode: boolean;
   initialMode: AuthModalMode;
   preselectedPlan?: SubscriptionPlanId;
   defaultCurrency: CurrencyCode;
@@ -95,7 +96,8 @@ const DownloadPlatformIcon: React.FC<{ platform: string }> = ({ platform }) => {
   return null;
 };
 
-export const AuthModal: React.FC<AuthModalProps> = ({ 
+export const AuthModal: React.FC<AuthModalProps> = ({
+  billingTestMode, 
   initialMode,
   preselectedPlan = 'pro_ai',
   defaultCurrency,
@@ -241,6 +243,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ 
                     ? 'Réinitialisation sécurisée de votre accès'
                     : requireAuthentication && !isAuthenticated
                       ? 'Connectez-vous avant de configurer votre boutique'
+                      : billingTestMode
+                      ? 'Accès de test sans échéance • aucun paiement requis'
                       : '7 jours d’essai à partir de la création de la boutique'}
               </p>
             </div>
@@ -508,7 +512,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ 
 
             <p className="flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-500">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              <span>7 jours d’essai à partir de la création de la boutique • aucune donnée locale ne sera effacée</span>
+              <span>{billingTestMode ? 'Accès de test sans échéance • aucun paiement requis • aucune donnée locale ne sera effacée' : '7 jours d’essai à partir de la création de la boutique • aucune donnée locale ne sera effacée'}</span>
             </p>
             {isAuthenticated && <button type="button" onClick={() => { void onSignOut(); }} className="w-full py-1 text-center font-bold text-slate-500 underline">Se déconnecter</button>}
           </form>

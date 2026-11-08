@@ -84,7 +84,7 @@ const FAQ_LIST = [
   },
   {
     q: 'Dois-je payer pour continuer pendant les tests ?',
-    a: 'Non. Pendant la phase de test actuelle, l’accès à ShopFlow ne s’arrête pas au bout de 7 jours et aucun paiement n’est obligatoire. Les tarifs affichés sont des formules mensuelles pour référence. ShopFlow ne demande jamais de PIN Mobile Money ni de données de carte.'
+    a: 'Non. Pendant la phase de test actuelle, l’accès à ShopFlow reste ouvert sans échéance et aucun paiement n’est obligatoire. Les tarifs affichés sont fournis à titre indicatif. ShopFlow ne demande jamais de PIN Mobile Money ni de données de carte.'
   },
 ];
 
@@ -640,7 +640,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       id: 'starter' as SubscriptionPlanId,
                       name: 'Starter Boutique',
                       desc: 'Pour démarrer avec les outils essentiels.',
-                      usd: 3,
+                      usd: 5,
                       highlight: false,
                       perks: [
                         'Gestion des marchandises avec photos',

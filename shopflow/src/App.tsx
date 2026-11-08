@@ -1589,6 +1589,7 @@ export function App() {
       {/* Auth / Signup / Login / Install App Modal */}
       {authModalConfig && (
         <AuthModal
+          billingTestMode={BILLING_TEST_MODE}
           initialMode={authModalConfig.mode}
           preselectedPlan={authModalConfig.plan}
           defaultCurrency={settings.currency}

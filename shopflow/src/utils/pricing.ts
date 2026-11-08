@@ -6,7 +6,7 @@ export const ANNUAL_BILLING_MONTHS = 10; // Deux mois offerts sur une année.
 export const ANNUAL_SAVING_MONTHS = 2;
 
 export const PLAN_MONTHLY_USD: Record<SubscriptionPlanId, number> = {
-  starter: 3,
+  starter: 5,
   pro_ai: 12,
   business: 25,
 };

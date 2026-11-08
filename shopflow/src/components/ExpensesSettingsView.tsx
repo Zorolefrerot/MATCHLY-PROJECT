@@ -717,7 +717,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
       )}
 
       {/* =========================================================
-          TAB 3: TRADUCTION INTÉGRALE 5 LANGUES + DEVISE
+          TAB 3: LANGUES DISPONIBLES + DEVISE
          ========================================================= */}
       {section === 'lang_currency' && (
         <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2">
@@ -726,10 +726,10 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               <Globe2 className="h-5 w-5 text-[#0A4DFF]" />
               <div>
                 <h2 className="text-base font-extrabold text-slate-900">
-                  Traduction Intégrale de toute l’Application (IA Active)
+                  Langue de l’application
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Traduit immédiatement tous les menus, boutons, produits, tableaux, reçus et l’IA.
+                  Choisissez français, anglais ou lingala. Les traductions de l’interface sont intégrées localement; les noms et textes que vous saisissez restent inchangés.
                 </p>
               </div>
             </div>
@@ -746,7 +746,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                         ...settings,
                         language: lang.code as AppLanguage,
                       });
-                      notifySaved(`Application traduite : ${lang.nativeLabel}`);
+                      notifySaved(lang.code === 'en' ? `Language set to ${lang.nativeLabel}` : lang.code === 'ln' ? `Lokota ebongwani: ${lang.nativeLabel}` : `Langue choisie : ${lang.nativeLabel}`);
                     }}
                     className={`flex items-center justify-between rounded-2xl border p-4 text-left transition ${
                       isSelected

@@ -68,64 +68,14 @@ export function cleanTextForSpeech(raw: string, lang: AppLanguage): string {
   if (!raw) return '';
 
   const words = {
-    divBy:
-      lang === 'en'
-        ? ' divided by '
-        : lang === 'zh'
-          ? ' 除以 '
-          : lang === 'sw'
-            ? ' gawanya kwa '
-            : ' divisé par ',
-    times:
-      lang === 'en'
-        ? ' times '
-        : lang === 'zh'
-          ? ' 乘以 '
-          : lang === 'sw'
-            ? ' mara '
-            : ' fois ',
-    plus:
-      lang === 'en'
-        ? ' plus '
-        : lang === 'zh'
-          ? ' 加 '
-          : lang === 'sw'
-            ? ' jumlisha '
-            : ' plus ',
-    minus:
-      lang === 'en'
-        ? ' minus '
-        : lang === 'zh'
-          ? ' 减 '
-          : lang === 'sw'
-            ? ' toa '
-            : ' moins ',
-    equals:
-      lang === 'en'
-        ? ' equals '
-        : lang === 'zh'
-          ? ' 等于 '
-          : lang === 'sw'
-            ? ' sawa na '
-            : ' égale ',
-    percent:
-      lang === 'en'
-        ? ' percent '
-        : lang === 'zh'
-          ? ' 百分之 '
-          : lang === 'sw'
-            ? ' asilimia '
-            : ' pourcent ',
-    dollars:
-      lang === 'zh' ? ' 美元 ' : ' dollars ',
-    andWord:
-      lang === 'en'
-        ? ' and '
-        : lang === 'zh'
-          ? ' 和 '
-          : lang === 'sw'
-            ? ' na '
-            : ' et ',
+    divBy: lang === 'en' ? ' divided by ' : lang === 'ln' ? ' kabola na ' : ' divisé par ',
+    times: lang === 'en' ? ' times ' : lang === 'ln' ? ' mbala ' : ' fois ',
+    plus: lang === 'en' ? ' plus ' : lang === 'ln' ? ' bakisa ' : ' plus ',
+    minus: lang === 'en' ? ' minus ' : lang === 'ln' ? ' longola ' : ' moins ',
+    equals: lang === 'en' ? ' equals ' : lang === 'ln' ? ' ekokani na ' : ' égale ',
+    percent: lang === 'en' ? ' percent ' : lang === 'ln' ? ' na nkama ' : ' pourcent ',
+    dollars: lang === 'ln' ? ' dolare ' : ' dollars ',
+    andWord: lang === 'en' ? ' and ' : lang === 'ln' ? ' mpe ' : ' et ',
   };
 
   let text = raw;
@@ -240,17 +190,8 @@ function speakWithNativeBrowserVoice(
   }
 
   const utter = new SpeechSynthesisUtterance(cleanText);
-  const targetLangPrefix =
-    lang === 'en' ? 'en' : lang === 'zh' ? 'zh' : lang === 'sw' ? 'sw' : 'fr';
-
-  utter.lang =
-    lang === 'en'
-      ? 'en-US'
-      : lang === 'zh'
-        ? 'zh-CN'
-        : lang === 'sw'
-          ? 'sw-KE'
-          : 'fr-FR';
+  const targetLangPrefix = lang === 'en' ? 'en' : lang === 'ln' ? 'ln' : 'fr';
+  utter.lang = lang === 'en' ? 'en-US' : lang === 'ln' ? 'ln-CD' : 'fr-FR';
   utter.pitch = profile.pitch;
   utter.rate = profile.rate;
 

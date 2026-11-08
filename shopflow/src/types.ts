@@ -1,6 +1,6 @@
 export type CurrencyCode = 'FC' | 'USD';
 
-export type AppLanguage = 'fr' | 'en' | 'ln' | 'sw' | 'zh';
+export type AppLanguage = 'fr' | 'en' | 'ln';
 
 export type VoiceModelId =
   | 'nova'
