@@ -8,16 +8,16 @@
       "source": "/app",
       "destination": "/app/",
       "permanent": true
-    },
+    }
+  ],
+  "rewrites": [
     {
       "source": "/downloads/ShopFlow-Android.apk",
-      "destination": "https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-test-v1.0.3/ShopFlow-Android.apk",
-      "permanent": false
+      "destination": "https://shopflow-drc.onrender.com/downloads/ShopFlow-Android.apk"
     },
     {
       "source": "/downloads/ShopFlow-Windows.exe",
-      "destination": "https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-test-v1.0.3/ShopFlow-Windows.exe",
-      "permanent": false
+      "destination": "https://shopflow-drc.onrender.com/downloads/ShopFlow-Windows.exe"
     }
   ],
   "headers": [

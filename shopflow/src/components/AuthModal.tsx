@@ -72,6 +72,29 @@ const SocialProviderIcon: React.FC<{ provider: OAuthProvider }> = ({ provider })
   return null;
 };
 
+const DownloadPlatformIcon: React.FC<{ platform: string }> = ({ platform }) => {
+  if (platform === 'Android') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0">
+        <g fill="#3DDC84">
+          <path d="M7.7 5.7 6.2 3.1M16.3 5.7l1.5-2.6" fill="none" stroke="#3DDC84" strokeLinecap="round" strokeWidth="1.5" />
+          <path d="M6 9a6 6 0 0 1 12 0v1H6V9Zm0 2h12v6a2 2 0 0 1-2 2h-1v2a1.5 1.5 0 0 1-3 0v-2h-1v2a1.5 1.5 0 0 1-3 0v-2H8a2 2 0 0 1-2-2v-6Zm-3-1a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-3 0v-5A1.5 1.5 0 0 1 3 10Zm18 0a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-3 0v-5A1.5 1.5 0 0 1 21 10Z" />
+          <circle cx="9" cy="8" r=".7" fill="#fff" />
+          <circle cx="15" cy="8" r=".7" fill="#fff" />
+        </g>
+      </svg>
+    );
+  }
+  if (platform === 'Windows') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0">
+        <path fill="#0078D4" d="M1 4.1 10 2.8v8.7H1V4.1Zm11-1.6L23 1v10.5H12V2.5ZM1 13h9v8.7L1 20.4V13Zm11 0h11v10l-11-1.5V13Z" />
+      </svg>
+    );
+  }
+  return null;
+};
+
 export const AuthModal: React.FC<AuthModalProps> = ({ 
   initialMode,
   preselectedPlan = 'pro_ai',
@@ -604,8 +627,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ 
                     <a
                       href={item.href}
                       download
-                      className="mt-3 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-blue-800 underline"
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-blue-800 underline"
                     >
+                      <DownloadPlatformIcon platform={item.platform} />
                       {item.status}
                     </a>
                   ) : (

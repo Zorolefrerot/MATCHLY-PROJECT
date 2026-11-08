@@ -15,10 +15,10 @@ Si tu crées le service manuellement au lieu d’utiliser le Blueprint :
 
 - **Type :** Web Service (Node)
 - **Root Directory :** laisser vide (racine du dépôt)
-- **Build Command :** `npm --prefix shopflow ci && npm run build`
+- **Build Command :** `npm --prefix shopflow ci && SHOPFLOW_REQUIRE_DOWNLOADS=1 npm run build`
 - **Start Command :** `npm start`
 
-Les routes `/downloads/ShopFlow-Android.apk` et `/downloads/ShopFlow-Windows.exe` redirigent vers les fichiers vérifiés de la préversion GitHub; les binaires ne sont pas copiés dans le dépôt ni dans `dist/`.
+Au build Render, l’APK et l’installateur `.exe` vérifiés sont téléchargés dans `dist/downloads/`. Le site les sert directement avec prise en charge de la reprise par plages HTTP; le navigateur reste sur le domaine du site et ne passe pas par GitHub. Le build échoue si l’un des deux fichiers manque. Sur Vercel, ces chemins sont relayés vers les mêmes téléchargements Render.
 
 Les variables de service et de build sont définies dans `render.yaml`; les clés privées restent côté serveur. L’accès test ne demande ni échéance ni paiement; aucun prestataire de paiement n’est intégré pour le moment.
 
@@ -30,7 +30,7 @@ Avec le même compte connecté, les données de boutique synchronisées dans Sup
 
 ## APK Android
 
-Le workflow **ShopFlow test installers** compile l’APK Android avec la clé de test stable, vérifie son package et sa signature, et produit l’installateur Windows x64. Les fichiers sont publiés ensemble dans une préversion GitHub; le site redirige vers cette release. Le package Android de test est `cd.shopflow.app.test`, afin de coexister avec une installation de production.
+Le workflow **ShopFlow test installers** compile l’APK Android avec la clé de test stable, vérifie son package et sa signature, et produit l’installateur Windows x64. Les binaires sont publiés dans une préversion GitHub; au déploiement, Render les copie dans son répertoire de service et les transmet directement aux navigateurs, sans rediriger les utilisateurs vers GitHub. Le package Android de test est `cd.shopflow.app.test`, afin de coexister avec une installation de production.
 
 ## Application Windows
 

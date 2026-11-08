@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "build": "npm --prefix shopflow run build && node scripts/assemble-vercel.mjs",
-    "build:hosted": "npm run build",
+    "build:hosted": "SHOPFLOW_SKIP_DOWNLOADS=1 npm run build",
     "start": "node server.mjs",
     "test:api": "node --test tests/*.test.mjs"
   }

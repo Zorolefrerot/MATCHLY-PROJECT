@@ -4,7 +4,7 @@ services:
     runtime: node
     branch: arena/cd1aec74-matchly-project
     plan: free
-    buildCommand: npm --prefix shopflow ci && npm run build
+    buildCommand: npm --prefix shopflow ci && SHOPFLOW_REQUIRE_DOWNLOADS=1 npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true

@@ -45,6 +45,7 @@ h1 span { color: var(--blue); }
 .button-primary { color: white; background: var(--blue); box-shadow: 0 10px 24px rgba(36,86,216,.19); }
 .button-secondary { color: #33425f; border-color: #dfe5ee; background: white; }
 .button-secondary:hover { border-color: #b7c5df; background: #fbfcff; }
+.platform-logo { width: 18px; height: 18px; flex: 0 0 auto; }
 .test-note { display: flex; max-width: 430px; gap: 11px; align-items: flex-start; margin-top: 24px; padding: 13px 15px; border: 1px solid #d9eee3; border-radius: 13px; background: #f5fbf7; color: #4f675d; font-size: 12px; line-height: 1.6; }
 .test-note > span { display: grid; width: 20px; height: 20px; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #14805c; background: #dff4e9; font-weight: 800; }
 .test-note p { margin: 0; }

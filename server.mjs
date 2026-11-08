@@ -15,9 +15,9 @@ const CATALOG_REQUESTS_PER_MINUTE = 120;
 const rateBuckets = new Map();
 const catalogRateBuckets = new Map();
 const catalogImageRateBuckets = new Map();
-const downloadRedirects = new Map([
-  ['/downloads/ShopFlow-Android.apk', 'https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-test-v1.0.3/ShopFlow-Android.apk'],
-  ['/downloads/ShopFlow-Windows.exe', 'https://github.com/Zorolefrerot/MATCHLY-PROJECT/releases/download/shopflow-test-v1.0.3/ShopFlow-Windows.exe'],
+const downloadAssets = new Map([
+  ['/downloads/ShopFlow-Android.apk', { filename: 'ShopFlow-Android.apk', contentType: 'application/vnd.android.package-archive' }],
+  ['/downloads/ShopFlow-Windows.exe', { filename: 'ShopFlow-Windows.exe', contentType: 'application/vnd.microsoft.portable-executable' }],
 ]);
 const nativeOrigins = new Set(['capacitor://localhost', 'http://localhost', 'https://localhost']);
 const mimeTypes = {
@@ -300,6 +300,96 @@ async function handleApi(request, response, pathname) {
   }
 }
 
+async function serveDownloadAsset(request, response, pathname) {
+  const asset = downloadAssets.get(pathname);
+  if (!asset) return false;
+
+  const filePath = resolve(DIST_DIR, 'downloads', asset.filename);
+  let fileInfo;
+  try {
+    fileInfo = await stat(filePath);
+  } catch {
+    response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+    response.end('Le téléchargement est temporairement indisponible. Réessayez plus tard.');
+    return true;
+  }
+  if (!fileInfo.isFile()) {
+    response.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+    response.end('Le téléchargement est temporairement indisponible. Réessayez plus tard.');
+    return true;
+  }
+  if (fileInfo.size === 0) {
+    response.writeHead(200, {
+      'Content-Type': asset.contentType,
+      'Content-Disposition': `attachment; filename=\"${asset.filename}\"`,
+      'Content-Length': 0,
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=3600',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    response.end();
+    return true;
+  }
+
+  const lastModified = fileInfo.mtime.toUTCString();
+  const etag = `"${fileInfo.size.toString(16)}-${Math.trunc(fileInfo.mtimeMs).toString(16)}"`;
+  let start = 0;
+  let end = fileInfo.size - 1;
+  let status = 200;
+  let range = request.headers.range;
+  const ifRange = request.headers['if-range'];
+  if (range && ifRange && ifRange !== etag && ifRange !== lastModified) range = undefined;
+
+  if (range) {
+    const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+    if (!match || fileInfo.size === 0) {
+      response.writeHead(416, { 'Content-Range': `bytes */${fileInfo.size}`, 'Cache-Control': 'no-store' });
+      response.end();
+      return true;
+    }
+    if (!match[1]) {
+      const suffixLength = Number(match[2]);
+      if (!Number.isSafeInteger(suffixLength) || suffixLength <= 0) {
+        response.writeHead(416, { 'Content-Range': `bytes */${fileInfo.size}`, 'Cache-Control': 'no-store' });
+        response.end();
+        return true;
+      }
+      start = Math.max(0, fileInfo.size - suffixLength);
+    } else {
+      start = Number(match[1]);
+      end = match[2] ? Number(match[2]) : fileInfo.size - 1;
+      if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start >= fileInfo.size || end < start) {
+        response.writeHead(416, { 'Content-Range': `bytes */${fileInfo.size}`, 'Cache-Control': 'no-store' });
+        response.end();
+        return true;
+      }
+      end = Math.min(end, fileInfo.size - 1);
+    }
+    status = 206;
+  }
+
+  const headers = {
+    'Content-Type': asset.contentType,
+    'Content-Disposition': `attachment; filename=\"${asset.filename}\"`,
+    'Content-Length': end - start + 1,
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': 'public, max-age=3600',
+    'ETag': etag,
+    'Last-Modified': lastModified,
+    'X-Content-Type-Options': 'nosniff',
+  };
+  if (status === 206) headers['Content-Range'] = `bytes ${start}-${end}/${fileInfo.size}`;
+  response.writeHead(status, headers);
+  if (request.method === 'HEAD') {
+    response.end();
+    return true;
+  }
+  const fileStream = createReadStream(filePath, { start, end });
+  fileStream.on('error', () => response.destroy());
+  fileStream.pipe(response);
+  return true;
+}
+
 async function serveStatic(request, response, pathname) {
   let decodedPath;
   try {
@@ -310,15 +400,7 @@ async function serveStatic(request, response, pathname) {
     return;
   }
 
-  const downloadUrl = downloadRedirects.get(decodedPath);
-  if (downloadUrl) {
-    response.writeHead(302, {
-      Location: downloadUrl,
-      'Cache-Control': 'no-store',
-    });
-    response.end();
-    return;
-  }
+  if (await serveDownloadAsset(request, response, decodedPath)) return;
 
   if (decodedPath === '/app') {
     response.writeHead(308, { Location: '/app/' });
