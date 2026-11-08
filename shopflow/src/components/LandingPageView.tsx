@@ -29,6 +29,7 @@ import {
   SubscriptionPlanId,
 } from '../types';
 import { AuthModalMode } from './AuthModal';
+import { ANNUAL_SAVING_MONTHS, formatPlanPrice, planPriceUSD } from '../utils/pricing';
 import {
   RevealOnScroll,
   ScrollProgressBar,
@@ -49,7 +50,6 @@ export type ShowcaseSubPage =
 interface LandingPageViewProps {
   language: AppLanguage;
   currency: CurrencyCode;
-  usdRateFC: number;
   billingTestMode: boolean;
   onChangeLanguage: (lang: AppLanguage) => void;
   onChangeCurrency: (curr: CurrencyCode) => void;
@@ -91,7 +91,6 @@ const FAQ_LIST = [
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
   language,
   currency,
-  usdRateFC,
   onChangeLanguage,
   onChangeCurrency,
   onOpenAuthModal,
@@ -101,6 +100,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [scrolledHeader, setScrolledHeader] = useState(false);
+  const [annualPricing, setAnnualPricing] = useState(false);
   const marqueeItems = [
     'Tarifs mensuels en USD',
     billingTestMode ? 'Accès sans échéance pendant les tests' : 'Essai de 7 jours dès la création de la boutique',
@@ -131,11 +131,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const fmtPlanPrice = (usd: number) => {
-    if (currency === 'USD') return `${usd} $`;
-    const fc = Math.round((usd * usdRateFC) / 500) * 500;
-    return `${fc.toLocaleString('fr-FR')} FC`;
-  };
+  const fmtPlanPrice = (usd: number) => formatPlanPrice(usd, currency);
 
   const navMenuOptions: {
     id: ShowcaseSubPage;
@@ -630,6 +626,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       Francs (FC)
                     </button>
                   </div>
+                  <div className="mt-3 inline-flex rounded-full border border-white/15 bg-white/10 p-1 text-xs font-bold">
+                    <button type="button" onClick={() => setAnnualPricing(false)} aria-pressed={!annualPricing} className={`rounded-full px-4 py-2 transition ${!annualPricing ? 'bg-white text-slate-950' : 'text-slate-300'}`}>Mensuel</button>
+                    <button type="button" onClick={() => setAnnualPricing(true)} aria-pressed={annualPricing} className={`rounded-full px-4 py-2 transition ${annualPricing ? 'bg-white text-slate-950' : 'text-slate-300'}`}>Annuel · 2 mois offerts</button>
+                  </div>
                 </div>
               </section>
 
@@ -640,7 +640,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       id: 'starter' as SubscriptionPlanId,
                       name: 'Starter Boutique',
                       desc: 'Pour démarrer avec les outils essentiels.',
-                      usd: 5,
+                      usd: 3,
                       highlight: false,
                       perks: [
                         'Gestion des marchandises avec photos',
@@ -693,12 +693,17 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                           </p>
                           <div className="mt-6 flex items-baseline gap-1.5">
                             <span className="sf-display-heading text-4xl font-extrabold text-slate-950 tabular-nums">
-                              {fmtPlanPrice(plan.usd)}
+                              {fmtPlanPrice(annualPricing ? planPriceUSD(plan.id, true) : plan.usd)}
                             </span>
                             <span className="text-xs font-semibold text-slate-500">
-                              / mois
+                              / {annualPricing ? 'an' : 'mois'}
                             </span>
                           </div>
+                          {annualPricing && (
+                            <p className="mt-1 text-xs font-semibold text-emerald-700">
+                              Équivaut à {fmtPlanPrice(planPriceUSD(plan.id, true) / 12)} / mois · {ANNUAL_SAVING_MONTHS} mois offerts
+                            </p>
+                          )}
 
                           <ul className="mt-6 space-y-3 border-t border-slate-100 pt-6 text-sm text-slate-700">
                             {plan.perks.map((p, i) => (

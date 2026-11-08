@@ -6,6 +6,7 @@ import {
   Bot,
   CheckCircle2,
   Crown,
+  Coins,
   ExternalLink,
   Globe,
   LayoutDashboard,
@@ -64,7 +65,7 @@ import {
   SubscriptionPlanId,
   VisualReceiptPayload,
 } from './types';
-import { formatMoney } from './utils/currency';
+import { formatMoney, fromDisplayAmount, toDisplayAmount } from './utils/currency';
 import { getPublicCatalogAppBase, makePublicCatalogSnapshot, updateLivePublicCatalog } from './utils/publicCatalog';
 import { parseSaleDate } from './utils/saleDate';
 import {
@@ -279,6 +280,11 @@ export function App() {
   // Quick Restock Modal
   const [restockTarget, setRestockTarget] = useState<Product | null>(null);
   const [restockQtyInput, setRestockQtyInput] = useState('10');
+
+  // Quick sale: make delivery charges an explicit seller choice.
+  const [quickSaleTarget, setQuickSaleTarget] = useState<Product | null>(null);
+  const [quickSaleWithDelivery, setQuickSaleWithDelivery] = useState(false);
+  const [quickSaleDeliveryInput, setQuickSaleDeliveryInput] = useState('');
 
 
   // Official Graphical WhatsApp Receipt Modal
@@ -828,6 +834,16 @@ export function App() {
 
   const fmt = (val: number) =>
     formatMoney(val, settings.currency, settings.usdRateFC);
+  const nextCurrency = settings.currency === 'FC' ? 'USD' : 'FC';
+  const currencyToggleLabel = settings.language === 'en'
+    ? `Switch currency to ${nextCurrency}`
+    : settings.language === 'ln'
+      ? `Bongola mbongo na ${nextCurrency}`
+      : `Changer la devise en ${nextCurrency}`;
+  const toggleCurrency = () => setSettings((previous) => ({
+    ...previous,
+    currency: previous.currency === 'FC' ? 'USD' : 'FC',
+  }));
 
   const nowTime = () => {
     const d = new Date();
@@ -841,7 +857,8 @@ export function App() {
     product: Product,
     qty: number = 1,
     method: PaymentMethod = 'cash',
-    label?: string
+    label?: string,
+    deliveryFeeFC: number = 0
   ) => {
     const rawProduct = products.find((p) => p.id === product.id) || product;
     if (rawProduct.stock < qty || qty <= 0) return;
@@ -867,6 +884,7 @@ export function App() {
       netProfitFC: unitProfit * qty,
       paymentMethod: method,
       customerName: label,
+      deliveryFeeFC,
       timestamp: new Date().toISOString(),
     };
 
@@ -874,6 +892,25 @@ export function App() {
     showToast(
       `+${qty} ${product.name} → +${fmt(unitProfit * qty)}`
     );
+  };
+
+  const openQuickSale = (product: Product) => {
+    setQuickSaleTarget(product);
+    setQuickSaleWithDelivery(false);
+    setQuickSaleDeliveryInput(
+      settings.defaultDeliveryFeeFC > 0
+        ? String(toDisplayAmount(settings.defaultDeliveryFeeFC, settings.currency, settings.usdRateFC))
+        : ''
+    );
+  };
+
+  const confirmQuickSale = () => {
+    if (!quickSaleTarget) return;
+    const deliveryFeeFC = quickSaleWithDelivery
+      ? fromDisplayAmount(Number(quickSaleDeliveryInput) || 0, settings.currency, settings.usdRateFC)
+      : 0;
+    handleDirectSellQuantity(quickSaleTarget, 1, 'cash', undefined, deliveryFeeFC);
+    setQuickSaleTarget(null);
   };
 
   const handleExecuteAiActions = (actions: AiStoreAction[]): string[] => {
@@ -973,13 +1010,15 @@ export function App() {
     setSales((prev) => [...newSales, ...prev]);
 
     if (paymentMethod === 'credit') {
-      const totalCreditFC = items.reduce(
+      const itemTotalFC = items.reduce(
         (s, i) => s + i.product.sellingPriceFC * i.quantity,
         0
       );
-      const summary = items
-        .map((i) => `${i.quantity}x ${i.product.name}`)
-        .join(', ');
+      const totalCreditFC = itemTotalFC + deliveryFeeFC;
+      const summary = [
+        ...items.map((i) => `${i.quantity}x ${i.product.name}`),
+        ...(deliveryFeeFC > 0 ? [`Livraison : ${fmt(deliveryFeeFC)}`] : []),
+      ].join(', ');
 
       setCredits((prev) => [
         {
@@ -1205,7 +1244,6 @@ export function App() {
           language={settings.language}
           currency={settings.currency}
           billingTestMode={BILLING_TEST_MODE}
-          usdRateFC={settings.usdRateFC}
           onChangeLanguage={(lang) =>
             setSettings((prev) => ({ ...prev, language: lang }))
           }
@@ -1249,6 +1287,9 @@ export function App() {
                   </span>
                   <p className="truncate text-[10px] font-semibold text-slate-500">{settings.shopName}</p>
                 </div>
+                <button type="button" onClick={toggleCurrency} title={currencyToggleLabel} aria-label={currencyToggleLabel} className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-extrabold text-slate-700 hover:border-blue-200 hover:bg-blue-50">
+                  <Coins className="h-3.5 w-3.5 text-[#0A4DFF]" />{settings.currency}
+                </button>
               </div>
 
               {isInstalledApp && !activeShop && (
@@ -1298,6 +1339,9 @@ export function App() {
                   <p className="max-w-[180px] truncate text-[10px] font-semibold text-slate-500">{settings.shopName}</p>
                 </div>
               </div>
+              <button type="button" onClick={toggleCurrency} title={currencyToggleLabel} aria-label={currencyToggleLabel} className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-extrabold text-slate-700 hover:border-blue-200 hover:bg-blue-50">
+                <Coins className="h-3.5 w-3.5 text-[#0A4DFF]" />{settings.currency}
+              </button>
               {isInstalledApp && !activeShop && (
                 <button type="button" onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })} className="shrink-0 rounded-xl bg-[#0A4DFF] px-3 py-2 text-xs font-extrabold text-white">Créer ma boutique</button>
               )}
@@ -1321,7 +1365,7 @@ export function App() {
                 expenses={expenses}
                 credits={credits}
                 onNavigate={(targetTab) => handleRequestTab(targetTab)}
-                onQuickSellProduct={(p) => handleDirectSellQuantity(p, 1)}
+                onQuickSellProduct={openQuickSale}
                 onRestockProduct={(prod) => {
                   setRestockTarget(prod);
                   setRestockQtyInput('10');
@@ -1334,7 +1378,7 @@ export function App() {
                 settings={settings}
                 products={localizedProducts}
                 sales={localizedSales}
-                onQuickSellProduct={(p) => handleDirectSellQuantity(p, 1)}
+                onQuickSellProduct={openQuickSale}
                 onCompleteCartSale={handleCompleteCartSale}
                 onUndoSale={handleUndoSale}
                 onOpenVisualReceipt={(payload) => setVisualReceipt(payload)}
@@ -1352,7 +1396,7 @@ export function App() {
                   setRestockTarget(prod);
                   setRestockQtyInput('10');
                 }}
-                onQuickSellProduct={(p) => handleDirectSellQuantity(p, 1)}
+                onQuickSellProduct={openQuickSale}
               />
             )}
 
@@ -1595,6 +1639,49 @@ export function App() {
           onClose={() => setVisualReceipt(null)}
         />
         </Suspense>
+      )}
+
+      {/* Quick Sale Delivery Choice */}
+      {quickSaleTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+          <section role="dialog" aria-modal="true" aria-labelledby="quick-sale-title" className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">Vente rapide</p>
+                <h2 id="quick-sale-title" className="mt-1 text-base font-extrabold text-slate-900">Confirmer la vente</h2>
+              </div>
+              <button type="button" onClick={() => setQuickSaleTarget(null)} aria-label="Fermer" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="mt-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+              <img src={quickSaleTarget.image} alt="" className="h-12 w-12 rounded-xl object-cover" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-900">{quickSaleTarget.name}</p>
+                <p className="text-xs text-slate-500">1 × {fmt(quickSaleTarget.sellingPriceFC)}</p>
+              </div>
+            </div>
+            <fieldset className="mt-4 space-y-2">
+              <legend className="mb-2 text-xs font-extrabold text-slate-800">Frais de livraison</legend>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" aria-pressed={!quickSaleWithDelivery} onClick={() => setQuickSaleWithDelivery(false)} className={`rounded-xl border px-3 py-2.5 text-xs font-bold ${!quickSaleWithDelivery ? 'border-[#0A4DFF] bg-blue-50 text-[#0A4DFF]' : 'border-slate-200 bg-white text-slate-600'}`}>Sans frais</button>
+                <button type="button" aria-pressed={quickSaleWithDelivery} onClick={() => setQuickSaleWithDelivery(true)} className={`rounded-xl border px-3 py-2.5 text-xs font-bold ${quickSaleWithDelivery ? 'border-[#0A4DFF] bg-blue-50 text-[#0A4DFF]' : 'border-slate-200 bg-white text-slate-600'}`}>Avec frais</button>
+              </div>
+              {quickSaleWithDelivery && (
+                <label className="block text-xs font-semibold text-slate-600">
+                  Montant de la livraison ({settings.currency})
+                  <input type="number" min="0" step={settings.currency === 'USD' ? '0.01' : '1'} value={quickSaleDeliveryInput} onChange={(event) => setQuickSaleDeliveryInput(event.target.value)} placeholder={String(toDisplayAmount(settings.defaultDeliveryFeeFC, settings.currency, settings.usdRateFC))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-900" />
+                </label>
+              )}
+            </fieldset>
+            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
+              <span className="font-semibold text-slate-600">Total à facturer</span>
+              <strong className="text-base font-black text-slate-900 tabular-nums">{fmt(quickSaleTarget.sellingPriceFC + (quickSaleWithDelivery ? fromDisplayAmount(Number(quickSaleDeliveryInput) || 0, settings.currency, settings.usdRateFC) : 0))}</strong>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setQuickSaleTarget(null)} className="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-700">Annuler</button>
+              <button type="button" onClick={confirmQuickSale} className="rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700">Confirmer la vente</button>
+            </div>
+          </section>
+        </div>
       )}
 
       {/* Quick Restock Modal */}

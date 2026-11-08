@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bot,
+  Coins,
   Lock,
   Maximize2,
   Package,
   Play,
-  Volume2,
   X,
 } from 'lucide-react';
 import { INITIAL_PRODUCTS, SHOPFLOW_APP_LOGO } from '../../data/initialData';
@@ -23,100 +23,93 @@ export interface CaptureGuideItem {
 
 const CAPTURES: CaptureGuideItem[] = [
   {
-    id: 'cap-dashboard',
-    number: '01',
-    category: 'ventes',
-    title: 'Commencez par ajouter vos articles',
-    subtitle:
-      'L’accueil montre le prochain geste utile, puis garde les chiffres détaillés repliés jusqu’à ce que vous en ayez besoin.',
+    id: 'cap-dashboard', number: '01', category: 'ventes',
+    title: 'L’accueil vous indique par où commencer',
+    subtitle: 'Au premier lancement, l’accueil guide le commerçant vers l’ajout des articles puis l’ouverture de la caisse. Les indicateurs détaillés restent dans le suivi.',
     steps: [
-      'Ouvrez le stock pour ajouter vos articles et leurs quantités.',
-      'Passez ensuite à la caisse pour enregistrer votre première vente.',
-      'Dépliez le suivi détaillé pour consulter les ventes, le stock et les alertes.',
+      'Ajoutez d’abord un article depuis « Ouvrir le stock » ou « Ajouter une marchandise ».',
+      'Une fois le catalogue prêt, ouvrez « Ouvrir la caisse » pour préparer une vente.',
+      'Le suivi détaillé de l’activité se consulte séparément; ce guide n’utilise pas de données réelles.',
     ],
   },
   {
-    id: 'cap-pos',
-    number: '02',
-    category: 'ventes',
-    title: 'Caisse Rapide 1-Clic & Panier Client',
-    subtitle:
-      'Servez vos clients en moins de 2 secondes au comptoir, même aux heures de grande affluence.',
+    id: 'cap-pos', number: '02', category: 'ventes',
+    title: 'Préparer une vente et choisir la livraison',
+    subtitle: 'La caisse permet d’ajouter des articles au ticket, de régler les quantités, puis de vérifier le paiement et les frais avant confirmation.',
     steps: [
-      'Appuyez sur « +1 Vendu » pour encaisser un article instantanément, ou ajoutez plusieurs articles au panier.',
-      'Choisissez le mode de règlement : Cash, Mobile Money (M-Pesa, Orange, Airtel) ou Crédit.',
-      'Vous vous êtes trompé ? Annulez une vente en 1 clic et le stock se remet à jour tout seul.',
+      'Dans « Caisse & Vente Rapide », cherchez un article et choisissez « Facture + » pour l’ajouter au ticket.',
+      'Ajustez les quantités avec les boutons − et + du ticket, puis choisissez le mode de paiement.',
+      'Choisissez « Sans frais » ou « Avec frais » de livraison et saisissez le montant si nécessaire.',
+      'Vérifiez le total puis choisissez « Valider + Générer Reçu Image WhatsApp » ou « Encaisser rapidement sans reçu ».',
     ],
   },
   {
-    id: 'cap-receipt',
-    number: '03',
-    category: 'ventes',
-    title: 'Reçu Graphique Professionnel sur WhatsApp',
-    subtitle:
-      'Offrez à chaque client un reçu propre et haut de gamme portant le logo et les couleurs de votre boutique.',
+    id: 'cap-receipt', number: '03', category: 'ventes',
+    title: 'Vérifier et partager un reçu',
+    subtitle: 'Après avoir choisi la génération du reçu, l’application présente un aperçu avec les articles, les coordonnées facultatives et le mode de paiement.',
     steps: [
-      'Génère automatiquement le numéro de reçu, la date, le nom du client et les miniatures photos des articles.',
-      'Affiche clairement le sous-total, la livraison éventuelle et le cachet officiel « ✓ PAYÉ ».',
-      'Téléchargeable en image HD (PNG) ou PDF pour l’envoyer directement sur le WhatsApp du client.',
+      'Relisez les articles, les quantités, le total et, s’il y en a, les frais de livraison.',
+      'Complétez ou corrigez les informations client dans « Infos client / livraison ».',
+      'Choisissez « Image PNG », « Imprimer » ou « Envoyer sur WhatsApp » selon le besoin.',
+      'La démo utilise un reçu fictif : aucun message n’est envoyé et aucune vente n’est créée par ce guide.',
     ],
   },
   {
-    id: 'cap-stock',
-    number: '04',
-    category: 'stock',
-    title: 'Inventaire, Prix d’Achat & Alertes Rupture',
-    subtitle:
-      'Sachez toujours exactement combien de pièces restent en rayon avant de tomber en rupture.',
+    id: 'cap-stock', number: '04', category: 'stock',
+    title: 'Retrouver et mettre à jour les articles',
+    subtitle: 'La page « Mes Marchandises & Stock » propose recherche, affichage en tableau ou cartes, quantités et actions sur chaque article.',
     steps: [
-      'Chaque vente diminue votre stock réel automatiquement à la seconde même.',
-      'Un badge orange « Stock bas » vous alerte dès qu’un produit descend sous le seuil minimum choisi.',
-      'Bouton « + Réapprovisionner » pour ajouter un nouvel arrivage en 3 secondes.',
+      'Filtrez les articles avec « Filtrer vos marchandises… » ou parcourez le tableau / les cartes.',
+      'Vérifiez la quantité, les prix d’achat et de vente; l’alerte de stock bas dépend du seuil défini pour l’article.',
+      'Utilisez « + Stock » pour saisir un arrivage ou ouvrez l’article pour le modifier.',
+      'Les exemples affichés dans cette capture sont fictifs et ne modifient pas votre stock.',
     ],
   },
   {
-    id: 'cap-ai',
-    number: '05',
-    category: 'gestion',
-    title: 'ShopFlow AI : Conseiller Financier & Voix Naturelle',
-    subtitle:
-      'Posez vos questions en langage simple, obtenez des tableaux clairs et écoutez les réponses à voix haute.',
+    id: 'cap-ai', number: '05', category: 'gestion',
+    title: 'Poser une question à l’assistant IA',
+    subtitle: 'L’assistant répond selon la connexion et la disponibilité du service. Ses réponses sont des suggestions à vérifier, pas une action automatique dans la boutique.',
     steps: [
-      'Connaît en temps réel vos ventes, vos marges et vos articles les plus rentables.',
-      'Simule vos promotions, calcule vos seuils de rentabilité et rédige vos textes publicitaires WhatsApp.',
-      '6 voix naturelles au choix (masculines & féminines) sans jamais prononcer de symboles bizarres.',
+      'Ouvrez ShopFlow AI depuis « Plus » et écrivez une question dans la conversation.',
+      'Attendez la réponse si la connexion et le service en ligne sont disponibles.',
+      'Vérifiez les informations avant de les utiliser; l’assistant peut se tromper.',
     ],
   },
   {
-    id: 'cap-credits',
-    number: '06',
-    category: 'gestion',
-    title: 'Cahier de Crédits (« Bons ») & Relance 1 Clic',
-    subtitle:
-      'Ne perdez plus jamais d’argent à cause des dettes clients oubliées sur des feuilles volantes.',
+    id: 'cap-credits', number: '06', category: 'gestion',
+    title: 'Consulter le carnet des crédits clients',
+    subtitle: 'Le carnet garde le montant dû et les avances enregistrées par le commerçant; le rappel WhatsApp est préparé à sa demande.',
     steps: [
-      'Enregistre le nom du client, son numéro WhatsApp, le détail pris et la date promise.',
-      'Note chaque avance partielle versée et calcule automatiquement le reste exact à payer.',
-      'Envoie un message de rappel poli et professionnel sur WhatsApp en un seul toucher.',
+      'Ouvrez « Carnet Bon / Crédit Clients » depuis « Plus ».',
+      'Consultez le solde restant et les avances déjà notées.',
+      'La commande de rappel prépare un message à vérifier et à envoyer vous-même.',
+      'Les données et actions illustrées ici sont fictives; aucune transaction n’est exécutée.',
     ],
   },
   {
-    id: 'cap-security',
-    number: '07',
-    category: 'gestion',
-    title: 'Mode Vendeur (Code PIN) & Thème Boutique',
-    subtitle:
-      'Laissez vos employés tenir la caisse sans jamais dévoiler vos bénéfices secrets ni vos prix fournisseurs.',
+    id: 'cap-security', number: '07', category: 'gestion',
+    title: 'Comprendre le Mode Vendeur',
+    subtitle: 'Le Mode Vendeur verrouille certains écrans derrière le code PIN propriétaire lorsque le téléphone est utilisé par un caissier.',
     steps: [
-      'Activez le cadenas « Mode Vendeur » en 1 clic avant de confier le téléphone à votre caissier.',
-      'Seul votre Code PIN Patron à 4 chiffres permet de rouvrir le Tableau de bord et les Paramètres.',
-      'Personnalisez aussi les couleurs, le mode sombre AMOLED et la langue complète (français, anglais, lingala).',
+      'Le propriétaire active le Mode Vendeur depuis les paramètres de l’application.',
+      'Le vendeur conserve l’accès aux écrans autorisés pour la vente.',
+      'Le code PIN propriétaire sert à quitter le mode protégé; gardez-le confidentiel.',
+    ],
+  },
+  {
+    id: 'cap-currency', number: '08', category: 'gestion',
+    title: 'Changer rapidement la devise affichée',
+    subtitle: 'Le petit bouton FC / USD dans l’en-tête bascule l’affichage des montants sans ouvrir les paramètres.',
+    steps: [
+      'Repérez le bouton de devise près du nom ShopFlow.',
+      'Touchez-le pour passer de FC à USD, ou de USD à FC.',
+      'La conversion utilise le taux enregistré pour la boutique; le taux initial est 2 400 FC pour 1 USD.',
     ],
   },
 ];
 
 /**
- * High-precision visual phone screen renderer for each of the 7 ShopFlow screens
+ * App-like illustrative screens. Labels and steps follow the current ShopFlow interface.
  */
 export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
   captureId,
@@ -136,12 +129,10 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
               alt="ShopFlow"
               className="h-6 w-6 rounded-md bg-white p-0.5 object-contain"
             />
-            <span className="text-xs font-extrabold tracking-tight">
-              ShopFlow Pro
-            </span>
+            <span className="text-xs font-extrabold tracking-tight">ShopFlow · Ma Boutique</span>
           </div>
-          <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold text-sky-200">
-            FC
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-1 text-[10px] font-bold text-sky-200">
+            <Coins className="h-3 w-3" /> FC
           </span>
         </div>
 
@@ -171,7 +162,7 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
             <>
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-slate-900">
-                  ① Caisse Rapide 1-Clic
+                  ① Caisse & Vente Rapide
                 </span>
                 <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold text-[#0A4DFF]">
                   Panier : 2 art.
@@ -198,16 +189,18 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
                       </p>
                     </div>
                   </div>
-                  <span className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black text-white">
-                    {idx === 0 ? '② +1 Vendu' : '+1 Vendu'}
-                  </span>
+                  <div className="flex shrink-0 flex-col gap-1">
+                    <span className="rounded-lg bg-emerald-600 px-2 py-1 text-center text-[9px] font-black text-white">+1 Vendu</span>
+                    <span className="rounded-lg border border-slate-200 px-2 py-1 text-center text-[9px] font-bold text-slate-700">Facture +</span>
+                  </div>
                 </div>
               ))}
 
-              <div className="rounded-xl bg-[#0A4DFF] p-3 text-center text-white shadow-xs">
-                <p className="text-[11px] font-black">
-                  ③ Encaisser 73 000 FC & Reçu WhatsApp →
-                </p>
+              <div className="space-y-2 rounded-xl bg-blue-50 p-2.5 text-[9px] font-semibold text-slate-700">
+                <p>Mode de paiement : Cash · Mobile Money · Carte · Crédit</p>
+                <p>Livraison : <strong>Sans frais</strong> / Avec frais</p>
+                <div className="flex items-center justify-between border-t border-blue-100 pt-2"><span>Total facturé (exemple)</span><strong>73 000 FC</strong></div>
+                <p className="rounded-lg bg-[#0A4DFF] px-2 py-1.5 text-center font-extrabold text-white">Valider + Générer Reçu Image WhatsApp</p>
               </div>
             </>
           )}
@@ -229,9 +222,7 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
                     </p>
                   </div>
                 </div>
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-800">
-                  ✓ PAYÉ
-                </span>
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-black text-blue-800">APERÇU</span>
               </div>
 
               <div className="my-2.5 space-y-1.5 text-[10px]">
@@ -246,23 +237,22 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
               </div>
 
               <div className="flex items-center justify-between rounded-xl bg-[#081844] px-3 py-2 text-white">
-                <span className="text-[10px] font-bold">② TOTAL PAYÉ</span>
+                <span className="text-[10px] font-bold">② TOTAL (EXEMPLE)</span>
                 <span className="text-xs font-black">73 000 FC</span>
               </div>
 
-              <div className="mt-2.5 rounded-lg bg-emerald-600 py-1.5 text-center text-[10px] font-black text-white">
-                ③ Partager l’image HD sur WhatsApp
-              </div>
+              <div className="mt-2.5 rounded-lg bg-emerald-600 py-1.5 text-center text-[10px] font-black text-white">Envoyer sur WhatsApp · Image PNG · Imprimer</div>
             </div>
           )}
 
           {/* SCREEN 4: INVENTORY */}
           {captureId === 'cap-stock' && (
             <>
-              <div className="flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2 text-[10px] font-bold text-amber-900 ring-1 ring-amber-200">
-                <span>① Alerte : 2 produits bientôt épuisés</span>
-                <Package className="h-3.5 w-3.5 text-amber-600" />
+              <div className="flex items-center justify-between rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-700">
+                <span>Mes Marchandises & Stock</span>
+                <Package className="h-3.5 w-3.5 text-emerald-700" />
               </div>
+              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[9px] text-slate-500">Filtrer vos marchandises… · Tableau complet · Cartes photos</div>
 
               {[p2, p3].map((prod) => (
                 <div
@@ -300,8 +290,9 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
                 </div>
               ))}
 
-              <div className="rounded-xl bg-slate-900 py-2 text-center text-[10px] font-bold text-white">
-                ③ + Réapprovisionner en 1 clic
+              <div className="grid grid-cols-2 gap-2 text-center text-[9px] font-extrabold">
+                <span className="rounded-xl border border-slate-200 bg-white py-2 text-slate-700">+ Stock</span>
+                <span className="rounded-xl bg-emerald-600 py-2 text-white">+1 Vendu</span>
               </div>
             </>
           )}
@@ -309,29 +300,12 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
           {/* SCREEN 5: AI ASSISTANT */}
           {captureId === 'cap-ai' && (
             <div className="space-y-2.5">
-              <div className="flex items-center justify-between rounded-xl bg-blue-50 px-3 py-1.5 text-[10px] font-bold text-[#0A4DFF]">
-                <span className="inline-flex items-center gap-1">
-                  <Bot className="h-3.5 w-3.5" /> ① ShopFlow AI Actif
-                </span>
-                <span className="inline-flex items-center gap-1 text-emerald-700">
-                  <Volume2 className="h-3 w-3" /> ② Voix : Nova
-                </span>
+              <div className="flex items-center gap-1.5 rounded-xl bg-blue-50 px-3 py-2 text-[10px] font-extrabold text-[#0A4DFF]">
+                <Bot className="h-3.5 w-3.5" /> ShopFlow AI
               </div>
-              <div className="ml-8 rounded-2xl bg-slate-200/80 px-3 py-2 text-[10px] font-semibold text-slate-900">
-                Quel est mon bénéfice net exact aujourd’hui ?
-              </div>
-              <div className="space-y-1.5 rounded-2xl border border-slate-200 bg-white p-3 text-[10px]">
-                <p className="font-extrabold text-slate-900">
-                  ③ Analyse en direct :
-                </p>
-                <p className="rounded-lg bg-slate-50 p-1.5 text-center font-mono text-[10px] font-bold text-[#0A4DFF]">
-                  Gain Net = 485 000 − 402 500 − 19 000 = +63 500 FC
-                </p>
-                <p className="text-slate-600">
-                  Votre article le plus rentable est{' '}
-                  <strong className="text-slate-900">Mocassins classiques</strong> (+20 000
-                  FC).
-                </p>
+              <div className="ml-6 rounded-2xl bg-slate-200/80 px-3 py-2 text-[10px] font-semibold text-slate-900">Comment ajouter un article ?</div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-3 text-[10px] leading-relaxed text-slate-700">
+                Ouvrez « Marchandises & Stock », puis choisissez « Ajouter une marchandise ». Les réponses IA en ligne dépendent de la connexion et sont à vérifier.
               </div>
             </div>
           )}
@@ -341,21 +315,21 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
             <div className="space-y-2.5">
               <div className="rounded-xl bg-rose-50 p-2.5 text-rose-950 ring-1 ring-rose-200">
                 <span className="text-[10px] font-bold">
-                  ① Total à recouvrer chez les clients
+                  ① Exemple fictif · total restant dehors
                 </span>
                 <p className="text-base font-black tabular-nums">199 000 FC</p>
               </div>
               <div className="rounded-xl border border-slate-200 bg-white p-3">
                 <div className="flex justify-between">
                   <p className="text-[11px] font-black text-slate-900">
-                    Maman Chantal
+                    Client démo
                   </p>
                   <span className="text-[10px] font-bold text-amber-700">
                     Reste : 95 000 FC
                   </span>
                 </div>
                 <p className="mt-0.5 text-[10px] text-slate-500">
-                  ② Avance déjà payée : 100 000 FC / 195 000 FC
+                  ② Avance enregistrée (exemple) : 100 000 FC / 195 000 FC
                 </p>
                 <div className="mt-2 rounded-lg bg-emerald-600 py-1.5 text-center text-[10px] font-black text-white">
                   ③ Envoyer Rappel Poli sur WhatsApp
@@ -369,40 +343,29 @@ export const PhoneScreenCapture: React.FC<{ captureId: string }> = ({
             <div className="space-y-2.5">
               <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-center">
                 <Lock className="mx-auto h-5 w-5 text-amber-600" />
-                <p className="mt-1 text-[11px] font-black text-slate-900">
-                  ① Mode Vendeur Actif (Caisse Seule)
-                </p>
-                <p className="text-[10px] text-slate-600">
-                  Code PIN Patron requis pour voir les bénéfices :
-                </p>
-                <div className="mt-2 inline-block rounded-xl bg-white px-4 py-1 font-mono text-sm font-black tracking-[0.4em] text-slate-900 ring-1 ring-slate-300">
-                  • • • •
-                </div>
+                <p className="mt-1 text-[11px] font-black text-slate-900">Mode Vendeur</p>
+                <p className="mt-1 text-[10px] leading-relaxed text-slate-600">Les écrans réservés au propriétaire demandent le code PIN configuré.</p>
+                <div className="mt-2 inline-block rounded-xl bg-white px-4 py-1 font-mono text-sm font-black tracking-[0.4em] text-slate-900 ring-1 ring-slate-300">••••</div>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2.5">
-                <span className="text-[10px] font-bold text-slate-700">
-                  ② Couleur & Thème Boutique
-                </span>
-                <div className="flex gap-1.5">
-                  {[
-                    'bg-[#0A4DFF]',
-                    'bg-emerald-600',
-                    'bg-rose-600',
-                    'bg-slate-900',
-                    'bg-amber-600',
-                  ].map((c, idx) => (
-                    <span
-                      key={idx}
-                      className={`h-4 w-4 rounded-full ${c} ring-2 ring-offset-1 ${
-                        idx === 0 ? 'ring-blue-400' : 'ring-transparent'
-                      }`}
-                    />
-                  ))}
-                </div>
+              <p className="rounded-xl border border-slate-200 bg-white p-2.5 text-[10px] text-slate-600">Le PIN est privé : cette maquette n’en affiche ni n’enregistre aucun.</p>
+            </div>
+          )}
+          {captureId === 'cap-currency' && (
+            <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3">
+              <div>
+                <p className="text-[10px] font-bold text-slate-500">Devise affichée</p>
+                <p className="mt-1 text-xl font-black text-slate-900">FC</p>
               </div>
+              <button type="button" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[11px] font-extrabold text-slate-800">
+                <Coins className="h-4 w-4 text-[#0A4DFF]" /> FC · toucher pour USD
+              </button>
+              <p className="text-[10px] leading-relaxed text-slate-500">Taux initial indicatif : 1 USD = 2 400 FC. Le vendeur peut le modifier dans les paramètres.</p>
             </div>
           )}
         </div>
+        <nav aria-label="Navigation simulée ShopFlow" className="grid grid-cols-4 border-t border-slate-200 bg-white px-2 py-2 text-center text-[8px] font-bold text-slate-500">
+          <span>Accueil</span><span className={captureId === 'cap-pos' ? 'text-[#0A4DFF]' : ''}>Vendre</span><span className={captureId === 'cap-stock' ? 'text-[#0A4DFF]' : ''}>Stock</span><span>Plus</span>
+        </nav>
       </div>
     </div>
   );
@@ -438,18 +401,17 @@ export const ScreenshotsGuidePage: React.FC<ScreenshotsGuidePageProps> = ({
             Comment fonctionne ShopFlow, écran par écran
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
-            Faites défiler pour découvrir chaque partie de l’application
-            expliquée avec des captures annotées <strong className="text-white">① ② ③</strong>.
-            Cliquez sur une capture pour l’agrandir : le site présente des visuels, sans intégrer l’application.
+            Faites défiler pour découvrir les principaux parcours de l’application, expliqués étape par étape.
+            Les écrans sont des illustrations schématiques — pas des captures directes de l’application — et les exemples sont fictifs; ce guide ne réalise aucune vente.
           </p>
 
           {/* Filter Pills */}
           <div className="mt-8 flex flex-wrap justify-center gap-2">
             {[
-              { id: 'all', label: 'Tous les écrans (7)' },
-              { id: 'ventes', label: 'Caisse, Bénéfice & Reçus' },
+              { id: 'all', label: 'Tous les écrans (8)' },
+              { id: 'ventes', label: 'Ventes & Reçus' },
               { id: 'stock', label: 'Stock' },
-              { id: 'gestion', label: 'IA, Crédits & Sécurité PIN' },
+              { id: 'gestion', label: 'Gestion, crédits, devise & sécurité' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -493,7 +455,7 @@ export const ScreenshotsGuidePage: React.FC<ScreenshotsGuidePageProps> = ({
                   <PhoneScreenCapture captureId={cap.id} />
                   <div className="mt-3 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 group-hover:text-[#0A4DFF]">
                     <Maximize2 className="h-3.5 w-3.5" />
-                    <span>Cliquer pour agrandir la capture</span>
+                    <span>Cliquer pour agrandir l’illustration</span>
                   </div>
                 </div>
               </RevealOnScroll>
@@ -507,7 +469,7 @@ export const ScreenshotsGuidePage: React.FC<ScreenshotsGuidePageProps> = ({
                 }`}
               >
                 <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3.5 py-1 text-xs font-extrabold text-[#0A4DFF]">
-                  <span>ÉCRAN {cap.number} / 07</span>
+                  <span>ÉCRAN {cap.number} / 08</span>
                 </div>
 
                 <h2 className="sf-display-heading text-2xl font-extrabold text-slate-950 sm:text-3xl">
@@ -581,7 +543,7 @@ export const ScreenshotsGuidePage: React.FC<ScreenshotsGuidePageProps> = ({
                 <PhoneScreenCapture captureId={zoomedItem.id} />
               </div>
               <p className="mt-5 text-center text-xs text-slate-400">
-                Capture de présentation — l’application n’est pas intégrée à ce site.
+                Illustration schématique — l’application n’est pas intégrée au site et aucun parcours de vente n’est exécuté.
               </p>
             </motion.div>
           </motion.div>

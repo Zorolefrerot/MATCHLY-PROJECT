@@ -116,6 +116,8 @@ h1 span { color: var(--blue); }
 .plan-card h3 { margin: 0 0 12px; font-size: 21px; }
 .plan-price { display: flex; align-items: baseline; gap: 8px; margin: 0 0 19px; padding-bottom: 18px; border-bottom: 1px solid #edf0f4; color: #7c899e; font-size: 11px; }
 .plan-price strong { color: var(--ink); font-family: Manrope,sans-serif; font-size: 35px; letter-spacing: -.06em; }
+.plan-annual { display: grid; gap: 4px; margin: -10px 0 18px; color: #596b61; font-size: 11px; line-height: 1.5; }
+.plan-annual strong { color: #16805a; font-size: 14px; }
 .plan-card ul { min-height: 125px; margin: 0; padding: 0; list-style: none; }
 .plan-card li { position: relative; margin: 0 0 12px; padding-left: 19px; color: #58667d; font-size: 12px; line-height: 1.55; }
 .plan-card li::before { position: absolute; top: 0; left: 0; color: #218565; content: '✓'; font-weight: 800; }

@@ -70,6 +70,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+  const [includeDeliveryFee, setIncludeDeliveryFee] = useState(false);
   const [deliveryInput, setDeliveryInput] = useState('');
   const [cashGivenInput, setCashGivenInput] = useState('');
 
@@ -126,21 +127,23 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
   );
   const cartTotalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
 
-  const deliveryFeeFC =
-    deliveryInput !== ''
+  const deliveryFeeFC = includeDeliveryFee
+    ? deliveryInput !== ''
       ? fromDisplayAmount(
           parseFloat(deliveryInput) || 0,
           settings.currency,
           settings.usdRateFC
         )
-      : settings.defaultDeliveryFeeFC;
+      : settings.defaultDeliveryFeeFC
+    : 0;
+  const cartTotalWithDelivery = cartTotalCA + deliveryFeeFC;
 
   const cashGivenFC = fromDisplayAmount(
     parseFloat(cashGivenInput) || 0,
     settings.currency,
     settings.usdRateFC
   );
-  const changeToReturnFC = Math.max(0, cashGivenFC - cartTotalCA);
+  const changeToReturnFC = Math.max(0, cashGivenFC - cartTotalWithDelivery);
 
   const handleCheckout = (openVisualReceiptAfter: boolean) => {
     if (cart.length === 0) return;
@@ -207,6 +210,8 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
     setCustomerName('');
     setCustomerPhone('');
     setCustomerAddress('');
+    setIncludeDeliveryFee(false);
+    setDeliveryInput('');
     setCashGivenInput('');
 
     if (openVisualReceiptAfter) {
@@ -241,7 +246,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
           unitPriceFC: s.unitSellingPriceFC,
         },
       ],
-      deliveryFeeFC: s.deliveryFeeFC ?? settings.defaultDeliveryFeeFC,
+      deliveryFeeFC: s.deliveryFeeFC ?? 0,
     });
   };
 
@@ -536,14 +541,25 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                         className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs"
                       />
                     </div>
-                    <input
-                      type="number"
-                      min="0"
-                      value={deliveryInput}
-                      onChange={(e) => setDeliveryInput(e.target.value)}
-                      placeholder={`Frais de livraison (défaut: ${fmt(settings.defaultDeliveryFeeFC)})`}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs tabular-nums"
-                    />
+                    <fieldset className="rounded-lg border border-slate-200 bg-white p-2.5">
+                      <legend className="px-1 text-[11px] font-extrabold text-slate-700">Frais de livraison pour cette vente</legend>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" aria-pressed={!includeDeliveryFee} onClick={() => setIncludeDeliveryFee(false)} className={`rounded-lg border px-2 py-2 text-[11px] font-bold ${!includeDeliveryFee ? 'border-[#0A4DFF] bg-blue-50 text-[#0A4DFF]' : 'border-slate-200 text-slate-600'}`}>Sans frais</button>
+                        <button type="button" aria-pressed={includeDeliveryFee} onClick={() => setIncludeDeliveryFee(true)} className={`rounded-lg border px-2 py-2 text-[11px] font-bold ${includeDeliveryFee ? 'border-[#0A4DFF] bg-blue-50 text-[#0A4DFF]' : 'border-slate-200 text-slate-600'}`}>Avec frais</button>
+                      </div>
+                      {includeDeliveryFee && (
+                        <input
+                          type="number"
+                          min="0"
+                          step={settings.currency === 'USD' ? '0.01' : '1'}
+                          value={deliveryInput}
+                          onChange={(e) => setDeliveryInput(e.target.value)}
+                          placeholder={settings.defaultDeliveryFeeFC > 0 ? `Par défaut : ${fmt(settings.defaultDeliveryFeeFC)}` : `Montant en ${settings.currency}`}
+                          aria-label={`Montant des frais de livraison en ${settings.currency}`}
+                          className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs tabular-nums"
+                        />
+                      )}
+                    </fieldset>
                   </div>
 
                   {paymentMethod === 'cash' && (
@@ -556,7 +572,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                         placeholder={`Billet remis (${settings.currency}) — calcul monnaie`}
                         className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold tabular-nums"
                       />
-                      {cashGivenFC > cartTotalCA && (
+                      {cashGivenFC > cartTotalWithDelivery && (
                         <p className="mt-1 font-bold text-emerald-700 tabular-nums">
                           Monnaie à rendre : {fmt(changeToReturnFC)}
                         </p>
@@ -569,7 +585,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                     <div className="flex justify-between">
                       <span className="text-slate-500">Total Facture</span>
                       <span className="text-base font-extrabold text-slate-900 tabular-nums">
-                        {fmt(cartTotalCA + deliveryFeeFC)}
+                        {fmt(cartTotalWithDelivery)}
                       </span>
                     </div>
                     <div className="flex justify-between">

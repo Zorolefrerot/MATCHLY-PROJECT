@@ -55,7 +55,7 @@ Après validation, configurer des projets/env séparés pour test et production,
 ## Décisions validées par le propriétaire
 
 - Authentification : inscription uniquement par Google, GitHub ou Facebook. La connexion e-mail reste réservée aux comptes existants; aucune inscription e-mail/mot de passe ne doit être proposée.
-- Un compte propriétaire peut gérer plusieurs boutiques selon son forfait. Les plans affichés dans `SubscriptionView.tsx` restent mensuels : Starter 5 USD, Pro 12 USD, Business 25 USD; seule la formule Business autorise plusieurs boutiques. Le plafond numérique de Business n’est pas confirmé : ne pas en inventer un.
+- Un compte propriétaire peut gérer plusieurs boutiques selon son forfait. Tarifs indicatifs actuels : Starter 3 USD / mois (30 USD / an), Pro 12 USD / mois (120 USD / an), Business 25 USD / mois (250 USD / an), avec deux mois offerts sur l’annuel et conversion publique à 2 400 FC/USD. Seule la formule Business autorise plusieurs boutiques. Le plafond numérique de Business n’est pas confirmé : ne pas en inventer un.
 - Les données locales existantes doivent être importées lors de la première connexion, sans écraser la sauvegarde locale tant que la migration n’a pas été confirmée.
 - Le propriétaire vérifie actuellement l’accès marchand Fondeka. Le parcours souhaité couvre Orange Money, Airtel Money et M-Pesa en RDC; aucune intégration ni mise en production ne doit être activée avant vérification des routes et conditions réelles.
 

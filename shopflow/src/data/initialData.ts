@@ -129,7 +129,7 @@ export const INITIAL_SETTINGS: ShopSettings = {
   receiptQuote: '',
   language: 'fr',
   currency: 'FC',
-  usdRateFC: 2850,
+  usdRateFC: 2400,
   voiceModel: 'nova',
   autoSpeakAi: false,
   theme: THEME_PRESETS[0].config,

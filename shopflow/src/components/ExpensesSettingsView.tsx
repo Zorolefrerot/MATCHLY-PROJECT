@@ -824,7 +824,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({
                       ...settings,
-                      usdRateFC: Math.max(100, Number(e.target.value) || 2850),
+                      usdRateFC: Math.max(100, Number(e.target.value) || 2400),
                     })
                   }
                   className="w-36 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-black text-slate-900 tabular-nums"
