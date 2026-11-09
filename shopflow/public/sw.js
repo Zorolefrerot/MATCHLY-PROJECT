@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shopflow-pwa-v7';
+const CACHE_NAME = 'shopflow-pwa-v8';
 const scopeUrl = self.registration.scope;
 const shellUrls = [
   scopeUrl,
