@@ -22,8 +22,6 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>NSCameraUsageDescription</key>
-	<string>ShopFlow utilise la caméra pour scanner les codes-barres des articles.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>ShopFlow utilise le microphone uniquement pour la saisie vocale de vos demandes.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
