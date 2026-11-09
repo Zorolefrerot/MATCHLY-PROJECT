@@ -30,7 +30,7 @@ void i18n
     returnNull: false,
     interpolation: { escapeValue: false },
     backend: {
-      loadPath: `${import.meta.env.BASE_URL}locales/{{lng}}/translation.json`,
+      loadPath: `${import.meta.env.BASE_URL}locales/{{lng}}/translation.json?v=2`,
       requestOptions: { cache: 'force-cache' },
     },
     react: { useSuspense: false },

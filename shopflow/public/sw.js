@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shopflow-pwa-v8';
+const CACHE_NAME = 'shopflow-pwa-v9';
 const scopeUrl = self.registration.scope;
 const shellUrls = [
   scopeUrl,
@@ -6,7 +6,7 @@ const shellUrls = [
   new URL('manifest.json', scopeUrl).href,
   new URL('shopflow-logo.png', scopeUrl).href,
   ...['fr', 'en', 'ln', 'sw', 'zh'].map((lang) =>
-    new URL(`locales/${lang}/translation.json`, scopeUrl).href
+    new URL(`locales/${lang}/translation.json?v=2`, scopeUrl).href
   ),
 ];
 
