@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Calculator,
   Edit3,
@@ -40,6 +41,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   onRestockProduct,
   onQuickSellProduct,
 }) => {
+  const { t: i18nText } = useTranslation();
   const [viewMode, setViewMode] = useState<'cards' | 'table'>(
     settings.theme?.defaultCatalogFormat === 'grid' ? 'cards' : 'table'
   );
@@ -615,6 +617,11 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     <option value="Hygiène">Hygiène</option>
                     <option value="Mode & Accessoires">Mode & Accessoires</option>
                     <option value="Huiles & Lait">Huiles & Lait</option>
+                    <option value="Parfum">{i18nText('product.category.perfume')}</option>
+                    <option value="Santé">{i18nText('product.category.health')}</option>
+                    <option value="Cosmétiques">{i18nText('product.category.cosmetics')}</option>
+                    <option value="Électronique">{i18nText('product.category.electronics')}</option>
+                    <option value="Autre">{i18nText('product.category.other')}</option>
                   </select>
                 </div>
               </div>

@@ -1778,12 +1778,17 @@ export function App() {
                 )}
                 <ExpensesSettingsView
                   settings={settings}
-                expenses={expenses}
-                onAddExpense={(exp) => {
-                  setExpenses((prev) => [exp, ...prev]);
-                  showToast(`Dépense ajoutée (${fmt(exp.amountFC)})`);
-                }}
-                onDeleteExpense={(id) => {
+                  expenses={expenses}
+                  products={products}
+                  onAddExpense={(exp) => {
+                    setExpenses((prev) => [exp, ...prev]);
+                    showToast(`Dépense ajoutée (${fmt(exp.amountFC)})`);
+                  }}
+                  onUpdateExpense={(exp) => {
+                    setExpenses((prev) => prev.map((item) => item.id === exp.id ? exp : item));
+                    showToast(i18nText('expenses.updatedToast'));
+                  }}
+                  onDeleteExpense={(id) => {
                   setExpenses((prev) => prev.filter((e) => e.id !== id));
                   showToast('Dépense retirée');
                 }}

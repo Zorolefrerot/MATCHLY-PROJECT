@@ -58,7 +58,12 @@ export interface Product {
     | 'Boissons'
     | 'Hygiène'
     | 'Mode & Accessoires'
-    | 'Huiles & Lait';
+    | 'Huiles & Lait'
+    | 'Parfum'
+    | 'Santé'
+    | 'Cosmétiques'
+    | 'Électronique'
+    | 'Autre';
   unit: string;
   image: string;
   /** Private Supabase Storage asset reference used by authenticated shop sync. */
@@ -109,6 +114,9 @@ export interface ExpenseEntry {
   category: 'Transport' | 'Emballage' | 'Énergie / Courant' | 'Autre';
   amountFC: number;
   timestamp: string;
+  /** Optional for legacy/general expenses; new expenses are linked to an inventory item. */
+  productId?: string;
+  productName?: string;
 }
 
 export interface ReceiptLineItem {
