@@ -1,10 +1,13 @@
-const CACHE_NAME = 'shopflow-pwa-v3';
+const CACHE_NAME = 'shopflow-pwa-v8';
 const scopeUrl = self.registration.scope;
 const shellUrls = [
   scopeUrl,
   new URL('index.html', scopeUrl).href,
   new URL('manifest.json', scopeUrl).href,
   new URL('shopflow-logo.png', scopeUrl).href,
+  ...['fr', 'en', 'ln', 'sw', 'zh'].map((lang) =>
+    new URL(`locales/${lang}/translation.json`, scopeUrl).href
+  ),
 ];
 
 self.addEventListener('install', (event) => {
@@ -30,7 +33,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then((response) => {
           if (response.ok) {
             const copy = response.clone();

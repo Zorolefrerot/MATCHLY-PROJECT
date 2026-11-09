@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, MessageCircle, PackageCheck, Store } from 'lucide-react';
 import { AppLanguage } from '../types';
 import { formatMoney } from '../utils/currency';
@@ -8,7 +9,7 @@ interface PublicOrderPageProps {
   token: string;
 }
 
-const COPY: Record<AppLanguage, Record<string, string>> = {
+const COPY: Partial<Record<AppLanguage, Record<string, string>>> = {
   fr: {
     title: 'Demande de commande', reference: 'Référence', received: 'Créée le', customer: 'Coordonnées de l’acheteur', name: 'Nom', phone: 'WhatsApp', address: 'Adresse',
     items: 'Articles demandés', quantity: 'Qté', subtotal: 'Sous-total estimé', delivery: 'Livraison estimée', total: 'Total estimé',
@@ -30,42 +31,36 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     private: 'Moto nyonso oyo azali na lien oyo akoki kotala demande. Bomba yango na sekele.',
     contact: 'Yanola mokili na WhatsApp', back: 'Zonga na catalogue', invalid: 'Lien ya demande oyo ezali ya solo te to ezangi makambo.',
   },
-  sw: {
-    title: 'Ombi la agizo', reference: 'Rejea', received: 'Limetengenezwa', customer: 'Maelezo ya mteja', name: 'Jina', phone: 'WhatsApp', address: 'Anwani',
-    items: 'Bidhaa zilizoombwa', quantity: 'Idadi', subtotal: 'Jumla ndogo inayokadiriwa', delivery: 'Makadirio ya usafirishaji', total: 'Makadirio ya jumla',
-    pending: 'Ombi halijalipwa. Duka lazima lithibitishe bidhaa, ada za usafirishaji na kiasi cha mwisho.',
-    private: 'Mtu yeyote mwenye kiungo hiki anaweza kuona ombi. Kiweke siri.',
-    contact: 'Mjibu mteja kwenye WhatsApp', back: 'Rudi kwenye katalogi', invalid: 'Kiungo hiki cha agizo si sahihi au hakijakamilika.',
-  },
-  zh: {
-    title: '订单请求', reference: '编号', received: '创建时间', customer: '买家信息', name: '姓名', phone: 'WhatsApp', address: '地址',
-    items: '请求商品', quantity: '数量', subtotal: '预计小计', delivery: '预计配送费', total: '预计总计',
-    pending: '订单尚未付款。商家需确认库存、配送费和最终金额。',
-    private: '任何拥有此链接的人都可以查看请求，请妥善保管。',
-    contact: '通过 WhatsApp 回复买家', back: '返回商品目录', invalid: '此订单链接无效或不完整。',
-  },
 };
 
 function detectLanguage(): AppLanguage {
+  try {
+    const stored = localStorage.getItem('shopflow_language_v1');
+    if (stored && ['fr', 'en', 'ln', 'sw', 'zh'].includes(stored)) return stored as AppLanguage;
+  } catch { /* Use the browser language as the fallback. */ }
   const browserLang = typeof navigator === 'undefined' ? 'fr' : navigator.language.toLowerCase();
   if (browserLang.startsWith('en')) return 'en';
-  if (browserLang.startsWith('sw')) return 'sw';
   if (browserLang.startsWith('ln')) return 'ln';
+  if (browserLang.startsWith('sw')) return 'sw';
   if (browserLang.startsWith('zh')) return 'zh';
   return 'fr';
 }
 
 export const PublicOrderPage: React.FC<PublicOrderPageProps> = ({ token }) => {
-  const language = detectLanguage();
+  const { i18n } = useTranslation();
+  const resolvedLocale = (i18n.resolvedLanguage || i18n.language || '').split('-')[0];
+  const language = ['fr', 'en', 'ln', 'sw', 'zh'].includes(resolvedLocale)
+    ? resolvedLocale as AppLanguage
+    : detectLanguage();
   const order = decodePublicCatalogOrder(token);
-  const text = COPY[language];
+  const text = COPY[language] || COPY.fr!;
 
   if (!order) {
     return <MessagePage message={text.invalid} />;
   }
 
   const fmt = (amount: number) => formatMoney(amount, order.shop.currency, order.shop.usdRateFC);
-  const locale = language === 'zh' ? 'zh-CN' : language === 'en' ? 'en' : language === 'sw' ? 'sw' : 'fr-FR';
+  const locale = ({ fr: 'fr-FR', en: 'en-US', ln: 'ln-CD', sw: 'sw-CD', zh: 'zh-CN' } as const)[language];
   const createdDate = new Date(order.createdAt);
   const createdText = Number.isNaN(createdDate.getTime()) ? '' : createdDate.toLocaleString(locale);
   const buyerPhone = order.customer.phone.replace(/\D/g, '');

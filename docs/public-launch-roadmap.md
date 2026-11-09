@@ -1,15 +1,15 @@
 # Feuille de route — rendre ShopFlow opérationnel publiquement
 
-Mise à jour : 26 octobre 2026. Ce document distingue les fonctions de démonstration des services réellement connectés.
+Mise à jour : 6 novembre 2026. Ce document distingue les fonctions de démonstration des services réellement connectés.
 
 ## État constaté
 
 - Le catalogue public et ses photos utilisent le projet Supabase existant. Le contrôle Render `/api/health` a récemment confirmé la base et le stockage d’images prêts.
 - Supabase Auth est utilisé par l’application. L’URL de site et les redirections sont réglées pour `https://shopflow-drc.onrender.com` et `/app/`. L’inscription publique proposée est sociale uniquement : Google, GitHub ou Facebook; ces fournisseurs attendent encore leurs identifiants OAuth. Le formulaire e-mail/mot de passe d’inscription a été retiré; la connexion e-mail reste pour les comptes existants.
 - Trois migrations Supabase créent le socle multi-boutique RLS, le bucket privé par boutique et l’import non-écrasant. Le catalogue public reste séparé. Voir `supabase/20261026_shop_accounts.sql`, `supabase/20261026_shop_import_assets.sql` et `docs/supabase-auth-setup.md`.
-- Les écrans d’inscription/connexion appellent Supabase et gèrent la session, les boutons OAuth, la création/sélection de boutiques et la récupération des comptes existants. Les boutons sociaux restent désactivés tant que la clé publishable Render et les fournisseurs OAuth correspondants ne sont pas configurés.
-- Un import local avec aperçu, confirmation, sauvegarde conservée et photos dans le bucket privé est en place. Les changements post-import restent locaux jusqu’à la synchronisation continue; les données existantes n’ont pas été importées automatiquement.
-- Le backend démarre l’essai de sept jours lors de la création de la première boutique. Le paiement et le statut d’abonnement actif ne sont pas encore raccordés à un prestataire.
+- Les écrans d’inscription/connexion appellent Supabase et gèrent la session, les boutons OAuth, la création/sélection de boutiques et la récupération des comptes existants. Google et GitHub sont confirmés opérationnels. Facebook reste désactivé pour le moment.
+- L’import local avec aperçu et sauvegarde conservée est en place. La synchronisation continue des instantanés Supabase est confirmée; la copie locale demeure pour l’accès hors ligne et l’export/restauration.
+- Le mode test sans échéance ni paiement obligatoire est présent dans l’interface. Il ne déclare aucun paiement et ne modifie pas les états de compte ou les données existantes. Aucune migration Supabase n’est exécutée pour ce déploiement.
 - Le catalogue reste une fonction distincte : publier un catalogue ne crée pas un compte utilisateur et les demandes transmises par lien ne créent pas de vente.
 - L’APK Android actuel est une préversion de test signée en debug et porte le package `cd.shopflow.app.test`. Une nouvelle version de test est préparée en `1.0.2` / `versionCode 3`; elle ne doit pas être annoncée comme une version de production.
 - La version iPhone accessible sans IPA est la PWA installée depuis Safari. Le build simulateur iOS n’est pas une IPA signée destinée au public.
@@ -28,13 +28,13 @@ Les migrations de départ couvrent profils, boutiques, membres/rôles, abonnemen
 
 L’inscription ShopFlow se fait par Google, GitHub ou Facebook; aucun formulaire de création e-mail/mot de passe n’est proposé. La connexion e-mail reste uniquement pour les anciens comptes. Configurer chaque fournisseur OAuth dans Supabase, ajouter la clé publishable dans Render, puis tester les retours OAuth et l’isolation avant publication.
 
-### 4. Import local — en place; synchronisation continue restante
+### 4. Import local et synchronisation — en place
 
-L’import offre un aperçu et une confirmation, conserve la sauvegarde d’origine, n’écrit que dans une boutique cloud vide, téléverse les photos privées puis vérifie les données relues. Il reste à concevoir la synchronisation continue, la reprise hors connexion, les conflits multi-appareils, ainsi que l’export/restauration cloud.
+L’import offre un aperçu et une confirmation, conserve la sauvegarde d’origine, n’écrit que dans une boutique cloud vide, téléverse les photos privées puis vérifie les données relues. La synchronisation automatique des instantanés est en place; la copie locale et les sauvegardes exportées restent distinctes. Une recette multi-appareils complète reste à faire.
 
-### 5. Essais et abonnements — essai côté serveur en place
+### 5. Accès de test et abonnements — paiement non obligatoire
 
-Les 7 jours commencent côté serveur lors de la création de la première boutique. Le statut payant n’est pas encore mis à jour par un prestataire réel; ne jamais faire confiance à `planPaid` local pour valider un paiement ou une entité payée.
+L’interface de test ne bloque pas l’accès après sept jours et ne propose aucun paiement. Les prix mensuels restent affichés à titre indicatif. Cet ajustement ne change pas les états d’abonnement, comptes ou données existants dans Supabase; aucune migration n’est exécutée pendant ce déploiement. Le prochain prestataire sera choisi séparément avant toute intégration.
 
 ### 6. Choisir puis intégrer les paiements réels
 
@@ -55,15 +55,12 @@ Après validation, configurer des projets/env séparés pour test et production,
 ## Décisions validées par le propriétaire
 
 - Authentification : inscription uniquement par Google, GitHub ou Facebook. La connexion e-mail reste réservée aux comptes existants; aucune inscription e-mail/mot de passe ne doit être proposée.
-- Un compte propriétaire peut gérer plusieurs boutiques selon son forfait. Les plans affichés dans `SubscriptionView.tsx` restent mensuels : Starter 5 USD, Pro 12 USD, Business 25 USD; seule la formule Business autorise plusieurs boutiques. Le plafond numérique de Business n’est pas confirmé : ne pas en inventer un.
+- Un compte propriétaire peut gérer plusieurs boutiques selon son forfait. Tarifs indicatifs actuels : Starter 5 USD / mois (50 USD / an), Pro 12 USD / mois (120 USD / an), Business 25 USD / mois (250 USD / an), avec deux mois offerts sur l’annuel et conversion publique à 2 400 FC/USD. Seule la formule Business autorise plusieurs boutiques. Le plafond numérique de Business n’est pas confirmé : ne pas en inventer un.
 - Les données locales existantes doivent être importées lors de la première connexion, sans écraser la sauvegarde locale tant que la migration n’a pas été confirmée.
-- Le propriétaire ne possède pas encore de compte marchand; une passerelle doit couvrir Orange Money, Airtel Money, M-Pesa et Visa/Mastercard en RDC.
+- Le propriétaire vérifie actuellement l’accès marchand Fondeka. Le parcours souhaité couvre Orange Money, Airtel Money et M-Pesa en RDC; aucune intégration ni mise en production ne doit être activée avant vérification des routes et conditions réelles.
 
 ## Préparation restante
 
-- **CinetPay est le premier candidat recommandé** : sa [table officielle des moyens de paiement](https://docs.cinetpay.com/api/1.0-fr/checkout/tableau) documente Orange Money, M-Pesa et Airtel en RDC, ainsi que Visa/Mastercard en USD. Les moyens, devises et frais doivent être confirmés par écrit par le service marchand avant toute annonce tarifaire; la [page tarifaire](https://cinetpay.com/pricing) indique que les frais varient selon le volume.
-- La documentation décrit une API de paiement avec identifiant unique, et demande de vérifier l’état réel de chaque transaction via notification et vérification serveur ([initialisation](https://docs.cinetpay.com/api/1.0-fr/checkout/initialisation), [notification](https://docs.cinetpay.com/api/1.0-fr/checkout/notification)). Elle ne confirme pas encore une facturation automatique récurrente pour ShopFlow; le [renouvellement manuel](https://docs.cinetpay.com/api/1.0-fr/BO/service) dans le portail marchand existe. Confirmer ce point avant de décider si les forfaits seront renouvelés manuellement ou automatiquement.
-- L’ouverture d’un compte marchand CinetPay et l’obtention d’un `APIKEY` et d’un `SITEID` sont nécessaires avant l’intégration ([prérequis CinetPay](https://docs.cinetpay.com/api/1.0-fr/introduction/prerequis)). Les secrets iront dans les variables serveur Render, jamais dans l’application ni dans le chat.
 - Pour Google, GitHub et Facebook, créer une application OAuth chez chaque fournisseur et configurer son identifiant/secret dans le fournisseur correspondant de Supabase. L’URI callback de chacun est `https://sgiyuxpzqyyquvvznomn.supabase.co/auth/v1/callback`. Un SMTP personnalisé n’est pas nécessaire pour l’inscription OAuth seule, mais reste utile pour la connexion/récupération des anciens comptes e-mail.
-- La configuration Supabase Auth actuelle pointe toujours sur `http://localhost:3000`; les URL de site/redirection de production doivent être ajoutées après stabilisation du domaine public.
+- La configuration Supabase Auth et les redirections de production utilisent le domaine confirmé `https://shopflow-drc.onrender.com/app/`.
 - L’APK de test Android 1.0.2 (`versionCode 3`, package `cd.shopflow.app.test`) a été reconstruit et publié le 26 octobre 2026. Il reste une préversion de test, pas un APK de production.

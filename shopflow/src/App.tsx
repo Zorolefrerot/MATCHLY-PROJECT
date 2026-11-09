@@ -1,47 +1,46 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { User } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import {
   BookOpenCheck,
   Bot,
   CheckCircle2,
-  Coins,
   Crown,
+  Coins,
   ExternalLink,
   Globe,
   LayoutDashboard,
   LoaderCircle,
   Lock,
   LogOut,
-  Monitor,
   Package,
   PackagePlus,
-  Palette,
   Settings,
   ShoppingBag,
-  Smartphone,
   Store,
   Unlock,
-  Wifi,
+  MoreHorizontal,
   X,
 } from 'lucide-react';
-import { AiAssistantView, AiStoreAction } from './components/AiAssistantView';
+import type { AiStoreAction } from './components/AiAssistantView';
+const AiAssistantView = lazy(() => import('./components/AiAssistantView').then((module) => ({ default: module.AiAssistantView })));
+const LandingPageView = lazy(() => import('./components/LandingPageView').then((module) => ({ default: module.LandingPageView })));
+const SubscriptionView = lazy(() => import('./components/SubscriptionView').then((module) => ({ default: module.SubscriptionView })));
+const CreditsView = lazy(() => import('./components/CreditsView').then((module) => ({ default: module.CreditsView })));
+const DashboardView = lazy(() => import('./components/DashboardView').then((module) => ({ default: module.DashboardView })));
+const ExpensesSettingsView = lazy(() => import('./components/ExpensesSettingsView').then((module) => ({ default: module.ExpensesSettingsView })));
+const InventoryView = lazy(() => import('./components/InventoryView').then((module) => ({ default: module.InventoryView })));
+const OnlineStoreView = lazy(() => import('./components/OnlineStoreView').then((module) => ({ default: module.OnlineStoreView })));
+const PosSalesView = lazy(() => import('./components/PosSalesView').then((module) => ({ default: module.PosSalesView })));
+const VisualReceiptModal = lazy(() => import('./components/VisualReceiptModal').then((module) => ({ default: module.VisualReceiptModal })));
+const BarcodeScannerModal = lazy(() => import('./components/BarcodeScannerModal').then((module) => ({ default: module.BarcodeScannerModal })));
 import { FirstRunOnboarding } from './components/FirstRunOnboarding';
 import {
   AuthModal,
   AuthModalMode,
   SignupPayload,
 } from './components/AuthModal';
-import { BarcodeScannerModal } from './components/BarcodeScannerModal';
-import { CreditsView } from './components/CreditsView';
-import { DashboardView } from './components/DashboardView';
-import { ExpensesSettingsView } from './components/ExpensesSettingsView';
-import { InventoryView } from './components/InventoryView';
-import { LandingPageView } from './components/LandingPageView';
-import { OnlineStoreView } from './components/OnlineStoreView';
-import { PosSalesView } from './components/PosSalesView';
-import { SubscriptionView } from './components/SubscriptionView';
-import { VisualReceiptModal } from './components/VisualReceiptModal';
 import { WhatsAppModal } from './components/WhatsAppModal';
 import {
   INITIAL_SETTINGS,
@@ -49,12 +48,9 @@ import {
   SHOPFLOW_APP_LOGO,
   sfAsset,
 } from './data/initialData';
-import {
-  clearLegacyAITranslationCache,
-  translateDOMWithLocalDictionary,
-  translateStringSync,
-} from './i18n/fullTranslator';
-import { LANGUAGE_OPTIONS, TRANSLATIONS } from './i18n/translations';
+import { translateStringSync } from './i18n/fullTranslator';
+import { LANGUAGE_OPTIONS } from './i18n/translations';
+import i18n, { LANGUAGE_STORAGE_KEY } from './i18n';
 import {
   AppLanguage,
   CartItem,
@@ -62,14 +58,13 @@ import {
   ExpenseEntry,
   NavTab,
   PaymentMethod,
-  PreviewViewport,
   Product,
   SaleRecord,
   ShopSettings,
   SubscriptionPlanId,
   VisualReceiptPayload,
 } from './types';
-import { formatMoney } from './utils/currency';
+import { formatMoney, fromDisplayAmount, toDisplayAmount } from './utils/currency';
 import { getPublicCatalogAppBase, makePublicCatalogSnapshot, updateLivePublicCatalog } from './utils/publicCatalog';
 import { parseSaleDate } from './utils/saleDate';
 import {
@@ -102,11 +97,13 @@ import {
   importLocalSnapshotToShop,
   loadShopSnapshot,
   refreshCachedSnapshotImages,
+  saveShopSnapshot,
   snapshotCounts,
   type ShopDataSnapshot,
 } from './services/shopData';
 
 const STORAGE_KEY = 'shopflow_rdc_mockup_v4';
+const BILLING_TEST_MODE = true;
 const FIRST_RUN_TOUR_KEY = 'shopflow_first_run_tour_done_v1';
 const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -138,6 +135,8 @@ const sanitizeLegacySettings = (saved: Partial<ShopSettings>): ShopSettings => {
     ...safeSaved,
     theme: { ...INITIAL_SETTINGS.theme, ...(saved.theme || {}) },
   };
+  // Normalize legacy or malformed locale values while preserving the five supported languages.
+  if (!['fr', 'en', 'ln', 'sw', 'zh'].includes(merged.language)) merged.language = 'fr';
   const oldExampleValues: Partial<ShopSettings> = {
     shopName: 'Alimentation Maman Grâce',
     ownerName: 'Grâce Kabongo',
@@ -188,6 +187,27 @@ const readLocalSnapshot = (key: string): ShopDataSnapshot | null => {
   }
 };
 
+const mergeShopSnapshots = (
+  cached: ShopDataSnapshot | null,
+  remote: ShopDataSnapshot | null,
+): ShopDataSnapshot | null => {
+  if (!cached) return remote;
+  if (!remote) return cached;
+  const mergeById = <T extends { id: string }>(remoteItems: T[], cachedItems: T[]): T[] => {
+    const merged = new Map(remoteItems.map((item) => [item.id, item]));
+    // Keep device-local additions/edits, while retaining records created on another device.
+    for (const item of cachedItems) merged.set(item.id, item);
+    return [...merged.values()];
+  };
+  return {
+    settings: { ...remote.settings, ...cached.settings },
+    products: mergeById(remote.products, cached.products),
+    sales: mergeById(remote.sales, cached.sales),
+    credits: mergeById(remote.credits, cached.credits),
+    expenses: mergeById(remote.expenses, cached.expenses),
+  };
+};
+
 const snapshotHasMerchantData = (snapshot: ShopDataSnapshot | null): boolean => {
   if (!snapshot) return false;
   const localOnlySettings = new Set(['ownerPin', 'activePlan', 'planPaid', 'trialStartedAt', 'publicCatalogToken']);
@@ -203,6 +223,7 @@ const snapshotHasMerchantData = (snapshot: ShopDataSnapshot | null): boolean => 
 
 export function App() {
   const appRootRef = useRef<HTMLDivElement | null>(null);
+  const { t: i18nText } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [isInstalledApp] = useState(() => {
@@ -233,6 +254,8 @@ export function App() {
   const [importPreviewCounts, setImportPreviewCounts] = useState({ products: 0, sales: 0, credits: 0, expenses: 0 });
   const [isImportingLocal, setIsImportingLocal] = useState(false);
   const [accountLoadError, setAccountLoadError] = useState<string | null>(null);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [cloudSyncRetryEpoch, setCloudSyncRetryEpoch] = useState(0);
   const authUserRef = useRef<User | null>(null);
   const authProcessingRef = useRef(false);
   const accountLoadedUserRef = useRef<string | null>(null);
@@ -243,18 +266,16 @@ export function App() {
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
   } | null>(null);
 
-  const [previewViewport, setPreviewViewport] =
-    useState<PreviewViewport>('hybrid');
 
   const [settings, setSettings] = useState<ShopSettings>(INITIAL_SETTINGS);
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [trialNow, setTrialNow] = useState(() => Date.now());
   const trialStartedAtMs = Date.parse(settings.trialStartedAt || '');
-  const trialEndsAtMs = Number.isFinite(trialStartedAtMs) && trialStartedAtMs > 0
+  const trialEndsAtMs = !BILLING_TEST_MODE && Number.isFinite(trialStartedAtMs) && trialStartedAtMs > 0
     ? trialStartedAtMs + TRIAL_DURATION_MS
     : null;
   const isTrialExpired = Boolean(
-    trialEndsAtMs !== null && !settings.planPaid && trialNow >= trialEndsAtMs
+    !BILLING_TEST_MODE && trialEndsAtMs !== null && !settings.planPaid && trialNow >= trialEndsAtMs
   );
   const trialDaysRemaining = trialEndsAtMs === null
     ? 7
@@ -263,11 +284,14 @@ export function App() {
   const [catalogSyncStatus, setCatalogSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
   const [catalogNetworkEpoch, setCatalogNetworkEpoch] = useState(0);
   const [sales, setSales] = useState<SaleRecord[]>([]);
+  const productImagesRef = useRef(products);
+  const saleImagesRef = useRef(sales);
+  productImagesRef.current = products;
+  saleImagesRef.current = sales;
   const [credits, setCredits] = useState<CreditEntry[]>([]);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [showStartupSplash, setShowStartupSplash] = useState(isInstalledApp);
   const [showFirstRunTour, setShowFirstRunTour] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
 
   // Real Patron vs Vendor/Cashier PIN Protection!
   const [isVendorLocked, setIsVendorLocked] = useState(false);
@@ -284,13 +308,14 @@ export function App() {
   // Quick Restock Modal
   const [restockTarget, setRestockTarget] = useState<Product | null>(null);
   const [restockQtyInput, setRestockQtyInput] = useState('10');
-
-  // Camera & Photo Barcode Scanner Modal
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [scannedCartTrigger, setScannedCartTrigger] = useState<{
-    product: Product;
-    nonce: number;
-  } | null>(null);
+  const [scannedCartTrigger, setScannedCartTrigger] = useState<{ product: Product; nonce: number } | null>(null);
+
+  // Quick sale: make delivery charges an explicit seller choice.
+  const [quickSaleTarget, setQuickSaleTarget] = useState<Product | null>(null);
+  const [quickSaleWithDelivery, setQuickSaleWithDelivery] = useState(false);
+  const [quickSaleDeliveryInput, setQuickSaleDeliveryInput] = useState('');
+
 
   // Official Graphical WhatsApp Receipt Modal
   const [visualReceipt, setVisualReceipt] =
@@ -305,12 +330,19 @@ export function App() {
 
   useEffect(() => {
     const snapshot = readLocalSnapshot(STORAGE_KEY);
+    let storedLanguage: AppLanguage | null = null;
+    try {
+      const candidate = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      if (candidate && ['fr', 'en', 'ln', 'sw', 'zh'].includes(candidate)) storedLanguage = candidate as AppLanguage;
+    } catch { /* Use the saved shop setting if browser storage is unavailable. */ }
     if (snapshot) {
-      setSettings(snapshot.settings);
+      setSettings({ ...snapshot.settings, language: storedLanguage || snapshot.settings.language, activePlan: 'starter', planPaid: false, trialStartedAt: '' });
       setProducts(snapshot.products);
       setSales(snapshot.sales);
       setCredits(snapshot.credits);
       setExpenses(snapshot.expenses);
+    } else if (storedLanguage) {
+      setSettings({ ...INITIAL_SETTINGS, language: storedLanguage });
     }
     setActiveStorageKey(STORAGE_KEY);
     setHasLoadedSettings(true);
@@ -344,7 +376,6 @@ export function App() {
       // The tutorial can still be dismissed if storage is unavailable.
     }
     setShowFirstRunTour(false);
-    setOnboardingStep(0);
   };
 
   useEffect(() => {
@@ -359,8 +390,96 @@ export function App() {
     }
   }, [hasLoadedSettings, activeStorageKey, shopDataReady, settings, products, sales, credits, expenses]);
 
+  // Supabase signed photo URLs expire; refresh them during long sessions and when a PWA returns to foreground.
   useEffect(() => {
-    const retryCatalogSync = () => setCatalogNetworkEpoch((current) => current + 1);
+    if (!authUser || !activeShop || !shopDataReady) return;
+    let cancelled = false;
+    let refreshing = false;
+    const refreshImages = async () => {
+      if (refreshing) return;
+      const currentProducts = productImagesRef.current;
+      const currentSales = saleImagesRef.current;
+      if (![...currentProducts, ...currentSales].some((item) => item.cloudImagePath)) return;
+      refreshing = true;
+      try {
+        const refreshed = await refreshCachedSnapshotImages({
+          settings: INITIAL_SETTINGS,
+          products: currentProducts,
+          sales: currentSales,
+          credits: [],
+          expenses: [],
+        });
+        if (cancelled) return;
+        const productUrls = new Map(refreshed.products.map((product) => [product.id, product.image]));
+        const saleUrls = new Map(refreshed.sales.map((sale) => [sale.id, sale.productImage]));
+        setProducts((current) => current.map((product) => {
+          const image = productUrls.get(product.id);
+          return image && image !== product.image ? { ...product, image } : product;
+        }));
+        setSales((current) => current.map((sale) => {
+          const productImage = saleUrls.get(sale.id);
+          return productImage && productImage !== sale.productImage ? { ...sale, productImage } : sale;
+        }));
+      } catch {
+        // Keep local copies visible if cloud signing is briefly unavailable.
+      } finally {
+        refreshing = false;
+      }
+    };
+    const interval = window.setInterval(() => { void refreshImages(); }, 45 * 60 * 1000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void refreshImages();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [authUser, activeShop?.id, shopDataReady]);
+
+  // Save each authenticated shop snapshot to Supabase after local edits; the device cache
+  // remains the fast/offline copy, while this push preserves sales across sessions/devices.
+  useEffect(() => {
+    if (!authUser || !activeShop || !shopDataReady || isImportingLocal || legacyImportPending) return;
+    let cancelled = false;
+    const shopId = activeShop.id;
+    const snapshot: ShopDataSnapshot = { settings, products, sales, credits, expenses };
+    const timer = window.setTimeout(async () => {
+      setCloudSyncStatus('syncing');
+      try {
+        const saved = await saveShopSnapshot(shopId, snapshot);
+        if (cancelled) return;
+        const savedProducts = new Map(saved.products.map((product) => [product.id, product]));
+        const savedSales = new Map(saved.sales.map((sale) => [sale.id, sale]));
+        setProducts((current) => current.map((product) => {
+          const persisted = savedProducts.get(product.id);
+          return persisted && (persisted.cloudImagePath !== product.cloudImagePath || persisted.cloudImageHash !== product.cloudImageHash)
+            ? { ...product, cloudImagePath: persisted.cloudImagePath, cloudImageHash: persisted.cloudImageHash }
+            : product;
+        }));
+        setSales((current) => current.map((sale) => {
+          const persisted = savedSales.get(sale.id);
+          return persisted && (persisted.cloudImagePath !== sale.cloudImagePath || persisted.cloudImageHash !== sale.cloudImageHash)
+            ? { ...sale, cloudImagePath: persisted.cloudImagePath, cloudImageHash: persisted.cloudImageHash }
+            : sale;
+        }));
+        setCloudSyncStatus('synced');
+      } catch {
+        if (!cancelled) setCloudSyncStatus('error');
+      }
+    }, 500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [authUser, activeShop?.id, shopDataReady, isImportingLocal, legacyImportPending, cloudSyncRetryEpoch, settings, products, sales, credits, expenses]);
+
+  useEffect(() => {
+    const retryCatalogSync = () => {
+      setCatalogNetworkEpoch((current) => current + 1);
+      setCloudSyncRetryEpoch((current) => current + 1);
+    };
     window.addEventListener('online', retryCatalogSync);
     return () => window.removeEventListener('online', retryCatalogSync);
   }, []);
@@ -386,7 +505,7 @@ export function App() {
   }, [hasLoadedSettings, settings, products, catalogNetworkEpoch]);
 
   useEffect(() => {
-    if (trialEndsAtMs === null || settings.planPaid || Date.now() >= trialEndsAtMs) return;
+    if (BILLING_TEST_MODE || trialEndsAtMs === null || settings.planPaid || Date.now() >= trialEndsAtMs) return;
     const remainingMs = trialEndsAtMs - Date.now();
     const untilNextDay = DAY_MS - (Date.now() % DAY_MS);
     const timer = window.setTimeout(
@@ -395,6 +514,7 @@ export function App() {
     );
     return () => window.clearTimeout(timer);
   }, [trialEndsAtMs, settings.planPaid, trialNow]);
+
 
   useEffect(() => {
     if (screenMode === 'app' && isTrialExpired && activeTab !== 'subscription') {
@@ -416,25 +536,12 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    clearLegacyAITranslationCache();
-  }, []);
-
-  // Apply reviewed translations locally after each view/language update; no translation API is called.
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void translateDOMWithLocalDictionary(appRootRef.current, settings.language);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [
-    settings.language,
-    screenMode,
-    activeTab,
-    isScannerOpen,
-    visualReceipt,
-    restockTarget,
-    showPinUnlockModal,
-    authModalConfig,
-  ]);
+    if (!hasLoadedSettings) return;
+    void i18n.changeLanguage(settings.language);
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, settings.language);
+    } catch { /* Settings remain saved with the shop data if local storage is unavailable. */ }
+  }, [hasLoadedSettings, settings.language]);
 
   const handleCompleteSignup = async (payload: SignupPayload): Promise<void> => {
     if (!authUserRef.current) throw new Error('SOCIAL_SIGNUP_REQUIRED');
@@ -521,7 +628,7 @@ export function App() {
         setImportSource(null);
         setImportPreviewCounts({ products: 0, sales: 0, credits: 0, expenses: 0 });
         const local = readLocalSnapshot(STORAGE_KEY);
-        setSettings(local?.settings || INITIAL_SETTINGS);
+        setSettings(local ? { ...local.settings, activePlan: 'starter', planPaid: false, trialStartedAt: '' } : INITIAL_SETTINGS);
         setProducts(local?.products || []);
         setSales(local?.sales || []);
         setCredits(local?.credits || []);
@@ -530,6 +637,13 @@ export function App() {
         setScreenMode(isInstalledApp ? 'app' : 'landing');
         setAuthBootstrapComplete(true);
         return;
+      }
+      const profileLanguage = user.user_metadata?.shopflow_language;
+      if (typeof profileLanguage === 'string' && ['fr', 'en', 'ln', 'sw', 'zh'].includes(profileLanguage)) {
+        const savedLanguage = profileLanguage as AppLanguage;
+        setSettings((previous) => ({ ...previous, language: savedLanguage }));
+        void i18n.changeLanguage(savedLanguage);
+        try { localStorage.setItem(LANGUAGE_STORAGE_KEY, savedLanguage); } catch { /* Auth metadata remains available. */ }
       }
       if (accountLoadedUserRef.current === user.id || authProcessingRef.current) return;
       authProcessingRef.current = true;
@@ -616,7 +730,7 @@ export function App() {
       showToast('Votre essai de 7 jours est terminé. Choisissez une formule pour continuer.');
       return;
     }
-    const vendorAllowedTabs: NavTab[] = ['pos', 'storefront'];
+    const vendorAllowedTabs: NavTab[] = ['pos', 'storefront', 'more'];
     if (isVendorLocked && !vendorAllowedTabs.includes(targetTab)) {
       setPendingProtectedTab(targetTab);
       setPinAttempt('');
@@ -653,7 +767,30 @@ export function App() {
     }
   };
 
-  const t = TRANSLATIONS[settings.language] || TRANSLATIONS.fr;
+  const persistLanguageChoice = (language: AppLanguage) => {
+    void i18n.changeLanguage(language);
+    try { localStorage.setItem(LANGUAGE_STORAGE_KEY, language); } catch { /* Use the shop/profile setting as backup. */ }
+    if (supabase && authUserRef.current) {
+      void supabase.auth.updateUser({ data: { shopflow_language: language } })
+        .then(({ data, error }) => {
+          if (!error && data.user) {
+            authUserRef.current = data.user;
+            setAuthUser(data.user);
+          }
+        })
+        .catch(() => { /* Language remains persisted locally and with the shop snapshot. */ });
+    }
+  };
+
+  const handleLanguageChange = (language: AppLanguage) => {
+    setSettings((previous) => ({ ...previous, language }));
+    persistLanguageChoice(language);
+  };
+
+  const handleUpdateSettings = (next: ShopSettings) => {
+    setSettings(next);
+    if (next.language !== settings.language) persistLanguageChoice(next.language);
+  };
 
   // Displayed localized products & sales seamlessly in every component!
   const localizedProducts = products.map((p) => ({
@@ -712,12 +849,22 @@ export function App() {
       } else {
         legacySnapshot = readLocalSnapshot(STORAGE_KEY);
       }
-      // Prefer the account-scoped device cache to preserve edits made after a one-time import.
-      // A new device has no cache and therefore loads the authenticated cloud snapshot.
-      const selectedSnapshot = cachedSnapshot
+      // Merge the device cache with the cloud snapshot so unsynced sales survive and records
+      // created on other devices are not replaced by an older local copy.
+      const refreshedCache = cachedSnapshot
         ? await refreshCachedSnapshotImages(cachedSnapshot)
-        : remoteSnapshot;
+        : null;
+      const selectedSnapshot = mergeShopSnapshots(refreshedCache, remoteSnapshot);
       if (activationSequence !== shopActivationSequenceRef.current) return;
+      const profileLanguageValue = authUserRef.current?.user_metadata?.shopflow_language;
+      const profileLanguage = typeof profileLanguageValue === 'string' && ['fr', 'en', 'ln', 'sw', 'zh'].includes(profileLanguageValue)
+        ? profileLanguageValue as AppLanguage
+        : null;
+      let deviceLanguage: AppLanguage | null = null;
+      try {
+        const candidate = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+        if (candidate && ['fr', 'en', 'ln', 'sw', 'zh'].includes(candidate)) deviceLanguage = candidate as AppLanguage;
+      } catch { /* Use the account's saved setting when local storage is unavailable. */ }
       const initialSettings = sanitizeLegacySettings({
         ...INITIAL_SETTINGS,
         ...(selectedSnapshot?.settings || {}),
@@ -725,6 +872,7 @@ export function App() {
         city: shop.city,
         whatsappNumber: shop.whatsapp_number,
         currency: shop.currency,
+        language: profileLanguage || deviceLanguage || selectedSnapshot?.settings.language || INITIAL_SETTINGS.language,
         activePlan: billing?.plan_id || 'starter',
         planPaid: billing?.status === 'active',
         trialStartedAt: billing?.trial_started_at || '',
@@ -840,6 +988,12 @@ export function App() {
 
   const fmt = (val: number) =>
     formatMoney(val, settings.currency, settings.usdRateFC);
+  const nextCurrency = settings.currency === 'FC' ? 'USD' : 'FC';
+  const currencyToggleLabel = i18nText('currency.change', { currency: nextCurrency });
+  const toggleCurrency = () => setSettings((previous) => ({
+    ...previous,
+    currency: previous.currency === 'FC' ? 'USD' : 'FC',
+  }));
 
   const nowTime = () => {
     const d = new Date();
@@ -853,7 +1007,8 @@ export function App() {
     product: Product,
     qty: number = 1,
     method: PaymentMethod = 'cash',
-    label?: string
+    label?: string,
+    deliveryFeeFC: number = 0
   ) => {
     const rawProduct = products.find((p) => p.id === product.id) || product;
     if (rawProduct.stock < qty || qty <= 0) return;
@@ -879,6 +1034,7 @@ export function App() {
       netProfitFC: unitProfit * qty,
       paymentMethod: method,
       customerName: label,
+      deliveryFeeFC,
       timestamp: new Date().toISOString(),
     };
 
@@ -886,6 +1042,25 @@ export function App() {
     showToast(
       `+${qty} ${product.name} → +${fmt(unitProfit * qty)}`
     );
+  };
+
+  const openQuickSale = (product: Product) => {
+    setQuickSaleTarget(product);
+    setQuickSaleWithDelivery(false);
+    setQuickSaleDeliveryInput(
+      settings.defaultDeliveryFeeFC > 0
+        ? String(toDisplayAmount(settings.defaultDeliveryFeeFC, settings.currency, settings.usdRateFC))
+        : ''
+    );
+  };
+
+  const confirmQuickSale = () => {
+    if (!quickSaleTarget) return;
+    const deliveryFeeFC = quickSaleWithDelivery
+      ? fromDisplayAmount(Number(quickSaleDeliveryInput) || 0, settings.currency, settings.usdRateFC)
+      : 0;
+    handleDirectSellQuantity(quickSaleTarget, 1, 'cash', undefined, deliveryFeeFC);
+    setQuickSaleTarget(null);
   };
 
   const handleExecuteAiActions = (actions: AiStoreAction[]): string[] => {
@@ -985,13 +1160,15 @@ export function App() {
     setSales((prev) => [...newSales, ...prev]);
 
     if (paymentMethod === 'credit') {
-      const totalCreditFC = items.reduce(
+      const itemTotalFC = items.reduce(
         (s, i) => s + i.product.sellingPriceFC * i.quantity,
         0
       );
-      const summary = items
-        .map((i) => `${i.quantity}x ${i.product.name}`)
-        .join(', ');
+      const totalCreditFC = itemTotalFC + deliveryFeeFC;
+      const summary = [
+        ...items.map((i) => `${i.quantity}x ${i.product.name}`),
+        ...(deliveryFeeFC > 0 ? [`Livraison : ${fmt(deliveryFeeFC)}`] : []),
+      ].join(', ');
 
       setCredits((prev) => [
         {
@@ -1039,6 +1216,11 @@ export function App() {
     }
   };
 
+  const handleDeleteProduct = (product: Product) => {
+    setProducts((prev) => prev.filter((item) => item.id !== product.id));
+    showToast(`« ${product.name} » supprimé du stock et du catalogue.`);
+  };
+
   const handleConfirmRestock = (e: React.FormEvent) => {
     e.preventDefault();
     if (!restockTarget) return;
@@ -1050,50 +1232,6 @@ export function App() {
     );
     showToast(`+${added} ajoutés à ${restockTarget.name}`);
     setRestockTarget(null);
-  };
-
-  const handleOpenDailyWhatsApp = () => {
-    const today = new Date();
-    const isToday = (timestamp: string) => {
-      const date = parseSaleDate(timestamp);
-      return Boolean(date && date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate());
-    };
-    const todaySales = sales.filter((sale) => isToday(sale.timestamp));
-    const todayExpenses = expenses.filter((expense) => isToday(expense.timestamp));
-    const totalCA = todaySales.reduce((a, s) => a + s.totalRevenueFC, 0);
-    const totalCost = todaySales.reduce((a, s) => a + s.totalCostFC, 0);
-    const totalExp = todayExpenses.reduce((a, e) => a + e.amountFC, 0);
-    const netRev = totalCA - totalCost - totalExp;
-    const totalQty = todaySales.reduce((a, s) => a + s.quantity, 0);
-
-    const msg =
-      `📊 *BILAN JOURNALIER — ${settings.shopName.toUpperCase()}*\n` +
-      `📍 ${settings.city}\n` +
-      `--------------------------\n` +
-      `🛍️ Articles vendus : *${totalQty} unités* (${todaySales.length} ventes)\n` +
-      `💰 Chiffre d’Affaires (CA) : *${fmt(totalCA)}*\n` +
-      `📦 Coût d’achat marchandise : *${fmt(totalCost)}*\n` +
-      `🧾 Dépenses boutique : *${fmt(totalExp)}*\n` +
-      `--------------------------\n` +
-      `✅ *REVENU NET RÉEL : ${netRev >= 0 ? '+' : ''}${fmt(netRev)}*`;
-
-    setWhatsAppModal({
-      title: 'Résumé WhatsApp de fin de journée',
-      recipient: `${settings.ownerName} (${settings.whatsappNumber})`,
-      message: msg,
-    });
-  };
-
-  const handleActivatePlan = (
-    planId: SubscriptionPlanId,
-    methodLabel: string
-  ) => {
-    setSettings((prev) => ({
-      ...prev,
-      activePlan: planId,
-      planPaid: true,
-    }));
-    showToast(`Choix de formule enregistré en simulation (${methodLabel}) — aucun paiement réel.`);
   };
 
   const handleExportBackup = () => {
@@ -1151,7 +1289,12 @@ export function App() {
       }
       if (!window.confirm('Remplacer les données actuelles par cette sauvegarde ? Cette action ne peut pas être annulée.')) return;
 
-      setSettings(sanitizeLegacySettings(backup.settings as ShopSettings));
+      setSettings({
+        ...sanitizeLegacySettings(backup.settings as ShopSettings),
+        activePlan: billingAccount?.plan_id || 'starter',
+        planPaid: billingAccount?.status === 'active',
+        trialStartedAt: billingAccount?.trial_started_at || '',
+      });
       setProducts(removeLegacySampleRecords<Product>(backup.products));
       setSales(removeLegacySampleRecords<SaleRecord>(backup.sales));
       setCredits(removeLegacySampleRecords<CreditEntry>(backup.credits));
@@ -1190,43 +1333,15 @@ export function App() {
     showToast('Les données locales ont été effacées. Votre boutique est vide.');
   };
 
-  const unpaidCreditsCount = credits.filter(
-    (c) => c.totalAmountFC > c.paidAmountFC
-  ).length;
-  const lowStockCount = products.filter(
-    (p) => p.stock <= p.minStockAlert
-  ).length;
-
   const sidebarItems: {
     id: NavTab;
     label: string;
     icon: React.FC<{ className?: string }>;
-    badge?: string | number;
-    highlight?: boolean;
   }[] = [
-    { id: 'dashboard', label: t.navDashboard, icon: LayoutDashboard },
-    { id: 'pos', label: t.navPos, icon: ShoppingBag, badge: sales.length },
-    {
-      id: 'inventory',
-      label: t.navInventory,
-      icon: Package,
-      badge: lowStockCount > 0 ? lowStockCount : undefined,
-    },
-    { id: 'ai', label: t.navAi, icon: Bot, badge: 'AI', highlight: true },
-    { id: 'storefront', label: t.navStorefront, icon: Globe, badge: 'PRO' },
-    {
-      id: 'credits',
-      label: t.navCredits,
-      icon: BookOpenCheck,
-      badge: unpaidCreditsCount > 0 ? unpaidCreditsCount : undefined,
-    },
-    {
-      id: 'subscription',
-      label: t.navSubscription,
-      icon: Crown,
-      badge: settings.planPaid ? '✓' : undefined,
-    },
-    { id: 'expenses', label: t.navSettings, icon: Settings },
+    { id: 'dashboard', label: i18nText('nav.dashboard'), icon: LayoutDashboard },
+    { id: 'pos', label: i18nText('nav.sell'), icon: ShoppingBag },
+    { id: 'inventory', label: i18nText('nav.inventory'), icon: Package },
+    { id: 'more', label: i18nText('nav.more'), icon: MoreHorizontal },
   ];
 
   const mobileBottomItems: {
@@ -1234,20 +1349,54 @@ export function App() {
     label: string;
     icon: React.FC<{ className?: string }>;
   }[] = [
-    { id: 'dashboard', label: t.mobileHome, icon: LayoutDashboard },
-    { id: 'pos', label: t.mobileSell, icon: ShoppingBag },
-    { id: 'ai', label: t.mobileAi, icon: Bot },
-    { id: 'inventory', label: t.mobileStock, icon: Package },
-    { id: 'expenses', label: t.mobileSettings, icon: Settings },
+    { id: 'dashboard', label: i18nText('nav.home'), icon: LayoutDashboard },
+    { id: 'pos', label: i18nText('nav.mobileSell'), icon: ShoppingBag },
+    { id: 'inventory', label: i18nText('nav.mobileStock'), icon: Package },
+    { id: 'more', label: i18nText('nav.mobileMore'), icon: MoreHorizontal },
   ];
 
-  const isPhoneFrame = previewViewport === 'mobile';
+  const moreCopy = {
+    title: i18nText('more.title'),
+    subtitle: i18nText('more.subtitle'),
+    ai: i18nText('more.ai'),
+    store: i18nText('more.store'),
+    credits: i18nText('more.credits'),
+    settings: i18nText('more.settings'),
+    plans: i18nText('more.plans'),
+    site: i18nText('more.site'),
+    vendor: i18nText('more.vendor'),
+    patron: i18nText('more.patron'),
+  };
+  const moreItems: { id: NavTab; title: string; description: string; icon: React.FC<{ className?: string }> }[] = [
+    { id: 'storefront', title: i18nText('nav.storefront'), description: moreCopy.store, icon: Globe },
+    { id: 'credits', title: i18nText('nav.credits'), description: moreCopy.credits, icon: BookOpenCheck },
+    { id: 'expenses', title: i18nText('nav.settings'), description: moreCopy.settings, icon: Settings },
+    { id: 'ai', title: i18nText('nav.ai'), description: moreCopy.ai, icon: Bot },
+    { id: 'subscription', title: i18nText('nav.subscription'), description: moreCopy.plans, icon: Crown },
+  ];
+
 
   const themeInlineStyle = {
     '--sf-primary': settings.theme.primaryColor,
     '--sf-primary-dark': settings.theme.primaryDarkColor,
     '--sf-accent': settings.theme.accentColor,
   } as React.CSSProperties;
+  const renderLanguageSelector = (className: string) => (
+    <label className={`inline-flex items-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-bold text-slate-700 ${className}`}>
+      <span className="sr-only">{i18nText('language.select')}</span>
+      <select
+        aria-label={i18nText('language.select')}
+        title={i18nText('language.select')}
+        value={settings.language}
+        onChange={(event) => handleLanguageChange(event.target.value as AppLanguage)}
+        className="max-w-full cursor-pointer bg-transparent py-2 outline-none"
+      >
+        {LANGUAGE_OPTIONS.map((language) => (
+          <option key={language.code} value={language.code}>{language.flag} {language.code.toUpperCase()}</option>
+        ))}
+      </select>
+    </label>
+  );
 
   return (
     <div
@@ -1258,22 +1407,15 @@ export function App() {
       data-corners={settings.theme.cornerStyle}
       data-density={settings.theme.density}
       data-font={settings.theme.fontStyle}
-      className={`min-h-screen transition-colors duration-200 ${
-        screenMode === 'landing'
-          ? 'bg-white'
-          : isPhoneFrame
-            ? 'bg-slate-900 px-3 py-6'
-            : 'bg-slate-50'
-      }`}
+      className={`min-h-screen transition-colors duration-200 ${screenMode === 'landing' ? 'bg-white' : 'bg-slate-50'}`}
     >
       {screenMode === 'landing' ? (
+        <Suspense fallback={<div className="mx-auto min-h-screen max-w-6xl px-5 py-16 text-sm text-slate-500" role="status">Chargement du site ShopFlow…</div>}>
         <LandingPageView
           language={settings.language}
           currency={settings.currency}
-          usdRateFC={settings.usdRateFC}
-          onChangeLanguage={(lang) =>
-            setSettings((prev) => ({ ...prev, language: lang }))
-          }
+          billingTestMode={BILLING_TEST_MODE}
+          onChangeLanguage={handleLanguageChange}
           onChangeCurrency={(curr) =>
             setSettings((prev) => ({ ...prev, currency: curr }))
           }
@@ -1281,116 +1423,9 @@ export function App() {
             setAuthModalConfig({ mode, plan: preselectedPlan })
           }
         />
+        </Suspense>
       ) : (
         <>
-          {/* Top Preview Switcher on Desktop */}
-          <div
-            className={`mx-auto mb-0 hidden items-center justify-between px-4 py-2 text-xs lg:flex ${
-              isPhoneFrame
-                ? 'mb-4 max-w-2xl rounded-2xl border border-slate-700 bg-slate-800 text-slate-200'
-                : 'border-b border-black/10 bg-[#081844] text-white'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setScreenMode('landing');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0A4DFF] px-3 py-1 text-[11px] font-extrabold text-white transition hover:bg-blue-500"
-              >
-                <ExternalLink className="h-3 w-3" />
-                <span>← Voir le Site Vitrine</span>
-              </button>
-              <span className="text-slate-200">
-                Application ShopFlow Pro en direct • Boutique active :{' '}
-                <strong className="text-white">{settings.shopName}</strong>
-              </span>
-            </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() =>
-              isVendorLocked
-                ? setShowPinUnlockModal(true)
-                : handleActivateVendorMode()
-            }
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-bold text-white transition ${
-              isVendorLocked
-                ? 'bg-amber-600 hover:bg-amber-500'
-                : 'bg-white/15 hover:bg-white/25'
-            }`}
-          >
-            {isVendorLocked ? (
-              <Unlock className="h-3.5 w-3.5" />
-            ) : (
-              <Lock className="h-3.5 w-3.5" />
-            )}
-            <span>{isVendorLocked ? 'Mode Patron' : 'Mode Vendeur'}</span>
-          </button>
-          <button
-            onClick={() => handleRequestTab('expenses')}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1 font-bold text-white transition hover:bg-white/25"
-          >
-            <Palette className="h-3.5 w-3.5" />
-            <span>Thème</span>
-          </button>
-          <button
-            onClick={() => setPreviewViewport('hybrid')}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-bold transition ${
-              !isPhoneFrame
-                ? 'bg-white text-slate-950'
-                : 'text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <Monitor className="h-3.5 w-3.5" />
-            <span>PC / Tablette</span>
-          </button>
-          <button
-            onClick={() => setPreviewViewport('mobile')}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-bold transition ${
-              isPhoneFrame
-                ? 'bg-white text-slate-950'
-                : 'text-sky-100 hover:bg-white/10'
-            }`}
-          >
-            <Smartphone className="h-3.5 w-3.5" />
-            <span>Smartphone</span>
-          </button>
-        </div>
-      </div>
-
-      {authUser && activeShop && (
-        <section className="mx-auto flex max-w-7xl flex-col gap-2 border-b border-slate-200 bg-white px-3 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-            <span className="truncate text-xs font-bold text-slate-700">{authUser.email || 'Compte ShopFlow'}</span>
-            <label className="sr-only" htmlFor="active-shop-picker">Boutique active</label>
-            <select
-              id="active-shop-picker"
-              value={activeShop.id}
-              onChange={(event) => { void handleSelectAccountShop(event.target.value); }}
-              className="max-w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-800"
-            >
-              {accountShops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}
-            </select>
-            {!shopDataReady && <span className="text-[11px] text-slate-500">Chargement de la boutique…</span>}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {billingAccount?.plan_id === 'business' && (
-              <button type="button" onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'business' })} className="inline-flex items-center gap-1.5 rounded-xl bg-[#0A4DFF] px-3 py-2 text-xs font-extrabold text-white">
-                <Store className="h-3.5 w-3.5" /> Ajouter une boutique
-              </button>
-            )}
-            <button type="button" onClick={() => { void handleSignOut(); }} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-extrabold text-slate-700">
-              <LogOut className="h-3.5 w-3.5" /> Déconnexion
-            </button>
-          </div>
-          {accountLoadError && <p role="alert" className="w-full rounded-lg bg-red-50 p-2 text-[11px] font-semibold text-red-800">{accountLoadError}</p>}
-          <p className="w-full text-[10px] leading-relaxed text-slate-500">Les imports validés sont enregistrés dans votre compte. Les modifications suivantes restent locales sur cet appareil jusqu’à l’activation de la synchronisation continue.</p>
-        </section>
-      )}
-
       {authUser && activeShop && legacyImportPending && (
         <section className="mx-auto flex max-w-7xl flex-col gap-2 border-b border-emerald-200 bg-emerald-50 px-3 py-3 text-xs sm:px-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -1405,16 +1440,9 @@ export function App() {
       )}
 
       {/* Main Shell */}
-      <div
-        className={
-          isPhoneFrame
-            ? 'relative mx-auto flex h-[820px] w-full max-w-[400px] flex-col overflow-hidden rounded-[40px] border-[10px] border-slate-950 bg-slate-50 shadow-2xl ring-2 ring-slate-700'
-            : 'flex min-h-[calc(100vh-40px)] w-full'
-        }
-      >
+      <div className="flex min-h-screen w-full">
         {/* Sidebar */}
-        {!isPhoneFrame && (
-          <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between overflow-y-auto border-r border-slate-200 bg-white p-5 lg:flex">
+        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between overflow-y-auto border-r border-slate-200 bg-white p-5 lg:flex">
             <div className="space-y-5">
               <div className="flex items-center gap-3 px-1">
                 <img
@@ -1426,19 +1454,17 @@ export function App() {
                   <span className="text-lg font-black tracking-tight text-slate-900">
                     Shop<span className="text-[#0A4DFF]">Flow</span>
                   </span>
-                  <p className="truncate text-[10px] font-bold text-emerald-700">
-                    {settings.planPaid
-                      ? t.proActive
-                      : isTrialExpired
-                        ? 'Essai terminé'
-                        : trialEndsAtMs === null
-                          ? 'Essai au démarrage de la boutique'
-                          : `Essai de 7 jours · ${trialDaysRemaining} j restants`}
-                  </p>
+                  <p className="truncate text-[10px] font-semibold text-slate-500">{settings.shopName}</p>
+                </div>
+                <div className="ml-auto flex shrink-0 items-center gap-1">
+                  {renderLanguageSelector('max-w-[72px]')}
+                  <button type="button" onClick={toggleCurrency} title={currencyToggleLabel} aria-label={currencyToggleLabel} className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-extrabold text-slate-700 hover:border-blue-200 hover:bg-blue-50">
+                    <Coins className="h-3.5 w-3.5 text-[#0A4DFF]" />{settings.currency}
+                  </button>
                 </div>
               </div>
 
-              {isInstalledApp && trialEndsAtMs === null && (
+              {isInstalledApp && !activeShop && (
                 <button
                   type="button"
                   onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })}
@@ -1457,252 +1483,53 @@ export function App() {
                     <button
                       key={item.id}
                       onClick={() => handleRequestTab(item.id)}
-                      className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-bold transition ${
-                        active
-                          ? 'bg-[#0A4DFF] text-white shadow-xs'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-bold transition ${
+                        active ? 'bg-[#0A4DFF] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
-                      <span className="flex items-center gap-3">
-                        <Icon
-                          className={`h-4 w-4 ${
-                            active
-                              ? 'text-white'
-                              : item.highlight
-                                ? 'text-[#0A4DFF]'
-                                : 'text-slate-400'
-                          }`}
-                        />
-                        <span className="truncate">{item.label}</span>
-                      </span>
-
-                      {isVendorLocked &&
-                      item.id !== 'pos' &&
-                      item.id !== 'storefront' ? (
-                        <Lock className="h-3.5 w-3.5 text-amber-500" />
-                      ) : (
-                        item.badge !== undefined && (
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold tabular-nums ${
-                              active
-                                ? 'bg-white/20 text-white'
-                                : item.id === 'ai'
-                                  ? 'bg-[#0A4DFF] text-white'
-                                  : 'bg-slate-100 text-slate-700'
-                            }`}
-                          >
-                            {item.badge}
-                          </span>
-                        )
-                      )}
+                      <Icon className={`h-5 w-5 ${active ? 'text-white' : 'text-slate-400'}`} />
+                      <span className="truncate">{item.label}</span>
                     </button>
                   );
                 })}
               </nav>
             </div>
 
-            <div className="mt-4 space-y-2.5 rounded-2xl border border-slate-200 bg-slate-50 p-3.5 text-xs">
-              <div className="flex items-center justify-between gap-1.5">
-                <select
-                  aria-label="Langue"
-                  value={settings.language}
-                  onChange={(e) =>
-                    setSettings((s) => ({
-                      ...s,
-                      language: e.target.value as AppLanguage,
-                    }))
-                  }
-                  className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-extrabold text-slate-800"
-                >
-                  {LANGUAGE_OPTIONS.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.flag} {l.nativeLabel}
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  onClick={() =>
-                    setSettings((s) => ({
-                      ...s,
-                      currency: s.currency === 'FC' ? 'USD' : 'FC',
-                    }))
-                  }
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-extrabold text-slate-800"
-                >
-                  <Coins className="h-3 w-3 text-emerald-600" />
-                  <span>{settings.currency}</span>
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleRequestTab('expenses')}
-                className="flex w-full items-center gap-2.5 border-t border-slate-200/80 pt-2.5 text-left"
-              >
-                {settings.shopLogo ? (
-                  <img
-                    src={settings.shopLogo}
-                    alt={settings.shopName}
-                    className="h-9 w-9 shrink-0 rounded-full border border-slate-300 object-cover"
-                  />
-                ) : (
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0A4DFF] text-[11px] font-black text-white">
-                    {settings.shopName.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <p className="truncate font-bold text-slate-900">
-                    {settings.shopName}
-                  </p>
-                  <p className="truncate text-[10px] font-semibold text-[#0A4DFF]">
-                    Thème, logo & paramètres →
-                  </p>
-                </div>
-              </button>
-
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700">
-                <Wifi className="h-3 w-3" />
-                <span>{t.offlineReady}</span>
-              </div>
-            </div>
-          </aside>
-        )}
+        </aside>
 
         {/* Main Content */}
-        <div
-          className={`@container flex flex-1 flex-col ${
-            isPhoneFrame ? 'overflow-y-auto' : 'min-w-0'
-          }`}
-        >
+        <div className="@container flex min-w-0 flex-1 flex-col">
           {/* Sticky Mobile Header */}
           <header
-            className={`relative z-30 border-b border-slate-200 bg-white/95 backdrop-blur-xs ${
-              isPhoneFrame ? 'sf-safe-top block' : 'sf-safe-top lg:hidden'
-            }`}
+            className="relative z-30 border-b border-slate-200 bg-white/95 backdrop-blur-xs sf-safe-top lg:hidden"
           >
             <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-2.5">
               <div className="flex min-w-0 items-center gap-2">
-                <img
-                  src={SHOPFLOW_APP_LOGO}
-                  alt="ShopFlow"
-                  className="h-9 w-9 shrink-0 rounded-xl object-contain ring-1 ring-slate-200/80"
-                />
+                <img src={SHOPFLOW_APP_LOGO} alt="ShopFlow" className="h-9 w-9 shrink-0 rounded-xl object-contain ring-1 ring-slate-200/80" />
                 <div className="min-w-0">
-                  <span className="text-sm font-black tracking-tight text-slate-900">
-                    Shop<span className="text-[#0A4DFF]">Flow</span>
-                  </span>
-                  <p className="max-w-[100px] truncate text-[10px] font-semibold text-slate-500">
-                    {settings.shopName}
-                  </p>
+                  <span className="text-sm font-black tracking-tight text-slate-900">Shop<span className="text-[#0A4DFF]">Flow</span></span>
+                  <p className="max-w-[180px] truncate text-[10px] font-semibold text-slate-500">{settings.shopName}</p>
                 </div>
               </div>
-
-              <div className="flex shrink-0 items-center gap-1">
-                <select
-                  aria-label="Langue"
-                  value={settings.language}
-                  onChange={(e) =>
-                    setSettings((s) => ({
-                      ...s,
-                      language: e.target.value as AppLanguage,
-                    }))
-                  }
-                  className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-extrabold text-slate-800"
-                >
-                  {LANGUAGE_OPTIONS.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.flag} {l.code.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  onClick={() =>
-                    setSettings((s) => ({
-                      ...s,
-                      currency: s.currency === 'FC' ? 'USD' : 'FC',
-                    }))
-                  }
-                  className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-800"
-                >
-                  <Coins className="h-3 w-3 text-emerald-600" />
-                  <span>{settings.currency}</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5 border-t border-slate-100 px-3 py-2 text-[11px]">
-              <button
-                onClick={() => {
-                  setScreenMode('landing');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="shrink-0 rounded-full bg-[#0A4DFF] px-3 py-1 font-bold text-white"
-              >
-                🌐 Site Vitrine
+              {renderLanguageSelector('ml-auto max-w-[70px]')}
+              <button type="button" onClick={toggleCurrency} title={currencyToggleLabel} aria-label={currencyToggleLabel} className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-extrabold text-slate-700 hover:border-blue-200 hover:bg-blue-50">
+                <Coins className="h-3.5 w-3.5 text-[#0A4DFF]" />{settings.currency}
               </button>
-              {isInstalledApp && trialEndsAtMs === null && (
-                <button
-                  onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })}
-                  className="shrink-0 rounded-full bg-emerald-600 px-3 py-1 font-bold text-white"
-                >
-                  ＋ Créer ma boutique
-                </button>
+              {isInstalledApp && !activeShop && (
+                <button type="button" onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'pro_ai' })} className="shrink-0 rounded-xl bg-[#0A4DFF] px-3 py-2 text-xs font-extrabold text-white">Créer ma boutique</button>
               )}
-              <button
-                onClick={() => setIsScannerOpen(true)}
-                className="shrink-0 rounded-full bg-emerald-600 px-3 py-1 font-bold text-white"
-              >
-                📷 Scanner Photo
-              </button>
-              <button
-                onClick={() =>
-                  isVendorLocked
-                    ? setShowPinUnlockModal(true)
-                    : handleActivateVendorMode()
-                }
-                className={`shrink-0 rounded-full px-3 py-1 font-bold text-white ${
-                  isVendorLocked ? 'bg-amber-600' : 'bg-slate-700'
-                }`}
-              >
-                {isVendorLocked ? '🔓 Déverrouiller Patron' : '🔒 Mode Vendeur'}
-              </button>
-              {[
-                { id: 'storefront' as NavTab, label: '🌐 Boutique' },
-                {
-                  id: 'credits' as NavTab,
-                  label: `📒 Crédits (${unpaidCreditsCount})`,
-                },
-                { id: 'subscription' as NavTab, label: '👑 Abonnement' },
-              ].map((pill) => (
-                <button
-                  key={pill.id}
-                  onClick={() => handleRequestTab(pill.id)}
-                  className={`shrink-0 rounded-full px-3 py-1 font-bold transition ${
-                    activeTab === pill.id
-                      ? 'bg-[#0A4DFF] text-white'
-                      : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {pill.label}
-                </button>
-              ))}
             </div>
           </header>
 
           {/* Main View Container */}
-          <main
-            className={`sf-app-main mx-auto max-w-7xl flex-1 p-4 @md:p-6 ${
-              isPhoneFrame ? 'pb-24' : 'pb-24 lg:pb-8'
-            }`}
-          >
-            {trialEndsAtMs !== null && !settings.planPaid && !isTrialExpired && (
+          <main className="sf-app-main mx-auto max-w-7xl flex-1 p-4 pb-24 @md:p-6 lg:pb-8">
+            {!BILLING_TEST_MODE && trialEndsAtMs !== null && !settings.planPaid && !isTrialExpired && (
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-950" role="status">
                 <span>Essai gratuit : {trialDaysRemaining} jour{trialDaysRemaining === 1 ? '' : 's'} restant{trialDaysRemaining === 1 ? '' : 's'} · débute à la création de la boutique.</span>
                 <button type="button" onClick={() => handleRequestTab('subscription')} className="font-extrabold text-blue-800 underline">Voir les formules</button>
               </div>
             )}
+            <Suspense fallback={<div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500" role="status">Chargement de ShopFlow…</div>}>
             {activeTab === 'dashboard' && (
               <DashboardView
                 settings={settings}
@@ -1711,13 +1538,11 @@ export function App() {
                 expenses={expenses}
                 credits={credits}
                 onNavigate={(targetTab) => handleRequestTab(targetTab)}
-                onQuickSellProduct={(p) => handleDirectSellQuantity(p, 1)}
+                onQuickSellProduct={openQuickSale}
                 onRestockProduct={(prod) => {
                   setRestockTarget(prod);
                   setRestockQtyInput('10');
                 }}
-                onOpenDailyWhatsApp={handleOpenDailyWhatsApp}
-                onOpenScanner={() => setIsScannerOpen(true)}
               />
             )}
 
@@ -1726,7 +1551,7 @@ export function App() {
                 settings={settings}
                 products={localizedProducts}
                 sales={localizedSales}
-                onQuickSellProduct={(p) => handleDirectSellQuantity(p, 1)}
+                onQuickSellProduct={openQuickSale}
                 onCompleteCartSale={handleCompleteCartSale}
                 onUndoSale={handleUndoSale}
                 onOpenVisualReceipt={(payload) => setVisualReceipt(payload)}
@@ -1741,15 +1566,49 @@ export function App() {
                 products={localizedProducts}
                 sales={localizedSales}
                 onSaveProduct={handleSaveProduct}
+                onDeleteProduct={handleDeleteProduct}
                 onRestockProduct={(prod) => {
                   setRestockTarget(prod);
                   setRestockQtyInput('10');
                 }}
-                onQuickSellProduct={(p) => handleDirectSellQuantity(p, 1)}
+                onQuickSellProduct={openQuickSale}
               />
             )}
 
+            {activeTab === 'more' && (
+              <section className="space-y-5">
+                <div>
+                  <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{moreCopy.title}</h1>
+                  <p className="mt-1 text-sm text-slate-600">{moreCopy.subtitle}</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {moreItems.filter((item) => !isVendorLocked || item.id === 'storefront').map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button key={item.id} type="button" onClick={() => handleRequestTab(item.id)} className="group flex min-h-28 items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/40">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#0A4DFF]"><Icon className="h-5 w-5" /></span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-extrabold text-slate-900">{item.title}</span>
+                          <span className="mt-1 block text-xs leading-relaxed text-slate-600">{item.description}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
+                  <button type="button" onClick={() => { setScreenMode('landing'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                    <ExternalLink className="h-4 w-4" /> {moreCopy.site}
+                  </button>
+                  <button type="button" onClick={() => isVendorLocked ? setShowPinUnlockModal(true) : handleActivateVendorMode()} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                    {isVendorLocked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                    {isVendorLocked ? moreCopy.patron : moreCopy.vendor}
+                  </button>
+                </div>
+              </section>
+            )}
+
             {activeTab === 'ai' && (
+              <Suspense fallback={<div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500" role="status">Chargement de l’assistant…</div>}>
               <AiAssistantView
                 settings={settings}
                 products={localizedProducts}
@@ -1761,6 +1620,7 @@ export function App() {
                   setSettings((prev) => ({ ...prev, autoSpeakAi: autoSpeak }))
                 }
               />
+              </Suspense>
             )}
 
             {activeTab === 'storefront' && (
@@ -1809,15 +1669,57 @@ export function App() {
             )}
 
             {activeTab === 'subscription' && (
-              <SubscriptionView
-                settings={settings}
-                onActivatePlan={handleActivatePlan}
-              />
+              <Suspense fallback={<div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500" role="status">Chargement des formules…</div>}>
+              <SubscriptionView settings={settings} />
+              </Suspense>
             )}
 
             {activeTab === 'expenses' && (
-              <ExpensesSettingsView
-                settings={settings}
+              <>
+                {authUser && activeShop && (
+                  <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                    <div className="mb-4">
+                      <h2 className="text-base font-extrabold text-slate-900">Compte et boutique</h2>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-500">Gérez ici votre compte connecté et la boutique ouverte dans ShopFlow.</p>
+                    </div>
+                    <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-end">
+                      <div className="min-w-0">
+                        <p className="mb-1.5 text-xs font-bold text-slate-600">E-mail du compte</p>
+                        <p className="break-all rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-800">{authUser.email || 'Compte ShopFlow'}</p>
+                      </div>
+                      <div className="min-w-0">
+                        <label className="mb-1.5 block text-xs font-bold text-slate-600" htmlFor="active-shop-picker">Boutique active</label>
+                        <select
+                          id="active-shop-picker"
+                          value={activeShop.id}
+                          onChange={(event) => { void handleSelectAccountShop(event.target.value); }}
+                          className="w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-extrabold text-slate-800"
+                        >
+                          {accountShops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      {billingAccount?.plan_id === 'business' && (
+                        <button type="button" onClick={() => setAuthModalConfig({ mode: 'signup', plan: 'business' })} className="inline-flex items-center gap-1.5 rounded-xl bg-[#0A4DFF] px-3 py-2.5 text-xs font-extrabold text-white">
+                          <Store className="h-3.5 w-3.5" /> Ajouter une boutique
+                        </button>
+                      )}
+                      <button type="button" onClick={() => { void handleSignOut(); }} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-extrabold text-slate-700">
+                        <LogOut className="h-3.5 w-3.5" /> Déconnexion
+                      </button>
+                      {!shopDataReady && <span className="text-xs text-slate-500">Chargement de la boutique…</span>}
+                      {shopDataReady && cloudSyncStatus !== 'idle' && (
+                        <span role="status" aria-live="polite" className={`text-xs ${cloudSyncStatus === 'error' ? 'text-amber-700' : 'text-slate-500'}`}>
+                          {i18nText(`sync.${cloudSyncStatus}`)}
+                        </span>
+                      )}
+                    </div>
+                    {accountLoadError && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-2 text-xs font-semibold text-red-800">{accountLoadError}</p>}
+                  </section>
+                )}
+                <ExpensesSettingsView
+                  settings={settings}
                 expenses={expenses}
                 onAddExpense={(exp) => {
                   setExpenses((prev) => [exp, ...prev]);
@@ -1827,23 +1729,19 @@ export function App() {
                   setExpenses((prev) => prev.filter((e) => e.id !== id));
                   showToast('Dépense retirée');
                 }}
-                onUpdateSettings={setSettings}
+                onUpdateSettings={handleUpdateSettings}
                 onExportBackup={handleExportBackup}
                 onImportBackup={handleImportBackup}
                 onResetDemo={handleResetDemo}
                 onActivateVendorLock={handleActivateVendorMode}
-              />
+                />
+              </>
             )}
+            </Suspense>
           </main>
 
           {/* Bottom Navigation Bar */}
-          <nav
-            className={`${
-              isPhoneFrame
-                ? 'sticky bottom-0 flex'
-                : 'fixed right-0 bottom-0 left-0 flex lg:hidden'
-            } sf-safe-bottom z-30 items-center justify-around border-t border-slate-200 bg-white px-1 pt-2 shadow-lg`}
-          >
+          <nav className="fixed right-0 bottom-0 left-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white px-1 pt-2 shadow-lg sf-safe-bottom lg:hidden">
             {mobileBottomItems.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.id;
@@ -1868,23 +1766,10 @@ export function App() {
         </div>
       </div>
 
-      {/* Floating Quick AI Button on Desktop */}
-      {activeTab !== 'ai' && !isPhoneFrame && (
-        <button
-          type="button"
-          onClick={() => handleRequestTab('ai')}
-          className="fixed right-6 bottom-6 z-40 hidden items-center gap-2 rounded-full bg-[#0A4DFF] px-5 py-3 text-xs font-extrabold text-white shadow-xl transition hover:scale-105 lg:flex"
-        >
-          <Bot className="h-4 w-4" />
-          <span>{t.askAiBtn}</span>
-        </button>
-      )}
-        </>
-      )}
-
       {/* Auth / Signup / Login / Install App Modal */}
       {authModalConfig && (
         <AuthModal
+          billingTestMode={BILLING_TEST_MODE}
           initialMode={authModalConfig.mode}
           preselectedPlan={authModalConfig.plan}
           defaultCurrency={settings.currency}
@@ -1928,57 +1813,84 @@ export function App() {
 
       {/* Visual Receipt Modal */}
       {visualReceipt && (
+        <Suspense fallback={<div className="sr-only" role="status">Préparation du reçu…</div>}>
         <VisualReceiptModal
           settings={settings}
           receipt={visualReceipt}
           onClose={() => setVisualReceipt(null)}
         />
+        </Suspense>
       )}
 
-      {/* Repaired Photo + Live Camera Barcode Scanner Modal */}
       {isScannerOpen && (
+        <Suspense fallback={<div role="status" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 text-sm font-bold text-white">Ouverture du scanner…</div>}>
         <BarcodeScannerModal
           settings={settings}
           products={localizedProducts}
           onScanAction={(product, mode) => {
             if (mode === 'instant_sell') {
-              handleDirectSellQuantity(product, 1, 'cash', 'Scan Photo/Caméra');
+              handleDirectSellQuantity(product, 1, 'cash', 'Scan photo/caméra');
             } else {
               setActiveTab('pos');
               setScannedCartTrigger({ product, nonce: Date.now() });
               showToast(`${product.name} ajouté à la facture !`);
             }
           }}
-          onBindBarcodeOrCreateProduct={(prod, isNew, mode) => {
-            handleSaveProduct(prod, isNew);
+          onBindBarcodeOrCreateProduct={(product, isNew, mode) => {
+            handleSaveProduct(product, isNew);
             if (mode === 'instant_sell') {
-              setTimeout(() => {
-                setSales((prev) => [
-                  {
-                    id: `sale-${Date.now()}`,
-                    productId: prod.id,
-                    productName: prod.name,
-                    productImage: prod.image,
-                    quantity: 1,
-                    unitPurchasePriceFC: prod.purchasePriceFC,
-                    unitSellingPriceFC: prod.sellingPriceFC,
-                    totalRevenueFC: prod.sellingPriceFC,
-                    totalCostFC: prod.purchasePriceFC,
-                    netProfitFC: prod.sellingPriceFC - prod.purchasePriceFC,
-                    paymentMethod: 'cash',
-                    customerName: 'Scan Photo',
-                    timestamp: new Date().toISOString(),
-                  },
-                  ...prev,
-                ]);
-              }, 50);
+              handleDirectSellQuantity(product, 1, 'cash', 'Scan photo/caméra');
             } else {
               setActiveTab('pos');
-              setScannedCartTrigger({ product: prod, nonce: Date.now() });
+              setScannedCartTrigger({ product, nonce: Date.now() });
             }
           }}
           onClose={() => setIsScannerOpen(false)}
         />
+        </Suspense>
+      )}
+
+      {/* Quick Sale Delivery Choice */}
+      {quickSaleTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+          <section role="dialog" aria-modal="true" aria-labelledby="quick-sale-title" className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">Vente rapide</p>
+                <h2 id="quick-sale-title" className="mt-1 text-base font-extrabold text-slate-900">Confirmer la vente</h2>
+              </div>
+              <button type="button" onClick={() => setQuickSaleTarget(null)} aria-label="Fermer" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="mt-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+              <img src={quickSaleTarget.image} alt="" className="h-12 w-12 rounded-xl object-cover" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-900">{quickSaleTarget.name}</p>
+                <p className="text-xs text-slate-500">1 × {fmt(quickSaleTarget.sellingPriceFC)}</p>
+              </div>
+            </div>
+            <fieldset className="mt-4 space-y-2">
+              <legend className="mb-2 text-xs font-extrabold text-slate-800">Frais de livraison</legend>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" aria-pressed={!quickSaleWithDelivery} onClick={() => setQuickSaleWithDelivery(false)} className={`rounded-xl border px-3 py-2.5 text-xs font-bold ${!quickSaleWithDelivery ? 'border-[#0A4DFF] bg-blue-50 text-[#0A4DFF]' : 'border-slate-200 bg-white text-slate-600'}`}>Sans frais</button>
+                <button type="button" aria-pressed={quickSaleWithDelivery} onClick={() => setQuickSaleWithDelivery(true)} className={`rounded-xl border px-3 py-2.5 text-xs font-bold ${quickSaleWithDelivery ? 'border-[#0A4DFF] bg-blue-50 text-[#0A4DFF]' : 'border-slate-200 bg-white text-slate-600'}`}>Avec frais</button>
+              </div>
+              {quickSaleWithDelivery && (
+                <label className="block text-xs font-semibold text-slate-600">
+                  Montant de la livraison ({settings.currency})
+                  <input type="number" min="0" step={settings.currency === 'USD' ? '0.01' : '1'} value={quickSaleDeliveryInput} onChange={(event) => setQuickSaleDeliveryInput(event.target.value)} placeholder={String(toDisplayAmount(settings.defaultDeliveryFeeFC, settings.currency, settings.usdRateFC))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-900" />
+                </label>
+              )}
+            </fieldset>
+            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
+              <span className="font-semibold text-slate-600">Total à facturer</span>
+              <strong className="text-base font-black text-slate-900 tabular-nums">{fmt(quickSaleTarget.sellingPriceFC + (quickSaleWithDelivery ? fromDisplayAmount(Number(quickSaleDeliveryInput) || 0, settings.currency, settings.usdRateFC) : 0))}</strong>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setQuickSaleTarget(null)} className="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-700">Annuler</button>
+              <button type="button" onClick={confirmQuickSale} className="rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700">Confirmer la vente</button>
+            </div>
+          </section>
+        </div>
       )}
 
       {/* Quick Restock Modal */}
@@ -2077,8 +1989,11 @@ export function App() {
 
       {screenMode === 'app' && showFirstRunTour && !showStartupSplash && (
         <FirstRunOnboarding
-          step={onboardingStep}
-          onStepChange={setOnboardingStep}
+          language={settings.language}
+          onStart={() => {
+            finishFirstRunTour();
+            handleRequestTab('inventory');
+          }}
           onFinish={finishFirstRunTour}
         />
       )}
@@ -2149,6 +2064,8 @@ export function App() {
             </form>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

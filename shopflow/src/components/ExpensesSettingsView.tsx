@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Bot,
   Check,
@@ -89,6 +90,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
   onResetDemo,
   onActivateVendorLock,
 }) => {
+  const { t: i18nText } = useTranslation();
   const [section, setSection] = useState<
     'theme' | 'branding' | 'lang_currency' | 'ai_voice' | 'expenses'
   >('theme');
@@ -717,7 +719,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
       )}
 
       {/* =========================================================
-          TAB 3: TRADUCTION INTÉGRALE 5 LANGUES + DEVISE
+          TAB 3: LANGUES DISPONIBLES + DEVISE
          ========================================================= */}
       {section === 'lang_currency' && (
         <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2">
@@ -726,10 +728,10 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               <Globe2 className="h-5 w-5 text-[#0A4DFF]" />
               <div>
                 <h2 className="text-base font-extrabold text-slate-900">
-                  Traduction Intégrale de toute l’Application (IA Active)
+                  {i18nText('settings.language.title')}
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Traduit immédiatement tous les menus, boutons, produits, tableaux, reçus et l’IA.
+                  {i18nText('settings.language.description')}
                 </p>
               </div>
             </div>
@@ -746,7 +748,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                         ...settings,
                         language: lang.code as AppLanguage,
                       });
-                      notifySaved(`Application traduite : ${lang.nativeLabel}`);
+                      notifySaved('Langue mise à jour.');
                     }}
                     className={`flex items-center justify-between rounded-2xl border p-4 text-left transition ${
                       isSelected
@@ -761,7 +763,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                           {lang.nativeLabel}
                         </p>
                         <p className="text-[11px] text-slate-500">
-                          {lang.label}
+                          {i18nText(`language.${lang.code}`)}
                         </p>
                       </div>
                     </div>
@@ -824,7 +826,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({
                       ...settings,
-                      usdRateFC: Math.max(100, Number(e.target.value) || 2850),
+                      usdRateFC: Math.max(100, Number(e.target.value) || 2400),
                     })
                   }
                   className="w-36 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-black text-slate-900 tabular-nums"

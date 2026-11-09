@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   ArrowRight,
@@ -6,10 +7,8 @@ import {
   Calculator,
   Crown,
   Globe,
-  MessageCircle,
   PackagePlus,
   Receipt,
-  ScanBarcode,
   ShoppingBag,
   TrendingUp,
   Wallet,
@@ -24,7 +23,6 @@ import {
   ShopSettings,
 } from '../types';
 import { parseSaleDate, formatSaleTime } from '../utils/saleDate';
-import { TRANSLATIONS } from '../i18n/translations';
 import { formatMoney } from '../utils/currency';
 
 interface DashboardViewProps {
@@ -36,8 +34,6 @@ interface DashboardViewProps {
   onNavigate: (tab: NavTab) => void;
   onQuickSellProduct: (product: Product) => void;
   onRestockProduct: (product: Product) => void;
-  onOpenDailyWhatsApp: () => void;
-  onOpenScanner: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -49,9 +45,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigate,
   onQuickSellProduct,
   onRestockProduct,
-  onOpenDailyWhatsApp,
-  onOpenScanner,
 }) => {
+  const { t: i18nText } = useTranslation();
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(6); // Today by default
 
   const today = new Date();
@@ -73,6 +68,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   );
 
   const lowStockProducts = products.filter((p) => p.stock <= p.minStockAlert);
+  const locale = ({ fr: 'fr-CD', en: 'en-US', ln: 'ln-CD', sw: 'sw-CD', zh: 'zh-CN' } as const)[settings.language];
 
   const chartDays = Array.from({ length: 7 }, (_, idx) => {
     const date = new Date();
@@ -88,7 +84,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       );
     });
     return {
-      day: idx === 6 ? 'Auj.' : new Intl.DateTimeFormat('fr-CD', { weekday: 'short' }).format(date).replace('.', ''),
+      day: idx === 6 ? i18nText('calendar.todayShort') : new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date).replace('.', ''),
       caFC: daySales.reduce((sum, sale) => sum + sale.totalRevenueFC, 0),
       // SaleRecord.netProfitFC is the margin after purchase cost; it does not include dated expenses.
       netProfitFC: daySales.reduce((sum, sale) => sum + sale.netProfitFC, 0),
@@ -103,66 +99,83 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const profitRatio = Math.max(0, 100 - costRatio - expenseRatio);
 
   const fmt = (val: number) => formatMoney(val, settings.currency, settings.usdRateFC);
-  const t = TRANSLATIONS[settings.language] || TRANSLATIONS.fr;
+  const t = {
+    tagline: i18nText('app.tagline'), helloShop: i18nText('app.hello'),
+    dashboardSubtitle: i18nText('app.dashboardSubtitle'), askAiBtn: i18nText('action.askAI'),
+    onlineStoreTitle: i18nText('store.title'), subscriptionTitle: i18nText('subscription.title'),
+    kpiCA: i18nText('kpi.revenue'), kpiCost: i18nText('kpi.cost'),
+    kpiExpenses: i18nText('kpi.expenses'), kpiNetProfit: i18nText('kpi.netProfit'),
+  };
+  const guideCopy = settings.language === 'en' ? {
+    startTitle: 'Start here', startSubtitle: 'Just two steps to get going.', addTitle: 'Add your items', addHint: 'Enter the item name, price and quantity.', addDone: (count: number) => `${count} item${count === 1 ? '' : 's'} added.`, addButton: 'Open stock', editItems: 'Manage items', sellTitle: 'Record a sale', sellHint: 'Choose the items and confirm the payment.', sellLocked: 'Add an item first to open the register.', sellButton: 'Open register', today: 'Today:', revenue: 'Sales', net: 'Net', details: 'See detailed activity',
+  } : settings.language === 'ln' ? {
+    startTitle: 'Bandá awa', startSubtitle: 'Etape mibale kaka mpo na kobanda.', addTitle: 'Bakisa biloko na yo', addHint: 'Koma kombo, motuya mpe motango ya biloko.', addDone: (count: number) => `Biloko ${count} ebakisami.`, addButton: 'Fungola stock', editItems: 'Talá biloko', sellTitle: 'Komá moteki', sellHint: 'Poná biloko mpe ndima kofuta.', sellLocked: 'Bakisa eloko liboso ya kofungola caisse.', sellButton: 'Fungola caisse', today: 'Lelo:', revenue: 'Moteki', net: 'Litomba', details: 'Talá makambo nyonso',
+  } : settings.language === 'sw' ? {
+    startTitle: 'Anza hapa', startSubtitle: 'Hatua mbili tu za kuanza.', addTitle: 'Ongeza bidhaa zako', addHint: 'Weka jina la bidhaa, bei na kiasi.', addDone: (count: number) => `Bidhaa ${count} zimeongezwa.`, addButton: 'Fungua stoo', editItems: 'Simamia bidhaa', sellTitle: 'Rekodi mauzo', sellHint: 'Chagua bidhaa na uthibitishe malipo.', sellLocked: 'Ongeza bidhaa kwanza ili kufungua kaunta.', sellButton: 'Fungua kaunta', today: 'Leo:', revenue: 'Mauzo', net: 'Faida halisi', details: 'Ona shughuli kwa undani',
+  } : settings.language === 'zh' ? {
+    startTitle: '从这里开始', startSubtitle: '只需两步即可开始。', addTitle: '添加商品', addHint: '输入商品名称、价格和数量。', addDone: (count: number) => `已添加 ${count} 件商品。`, addButton: '打开库存', editItems: '管理商品', sellTitle: '记录销售', sellHint: '选择商品并确认付款。', sellLocked: '请先添加商品，再打开收银台。', sellButton: '打开收银台', today: '今日：', revenue: '销售额', net: '净利润', details: '查看详细记录',
+  } : {
+    startTitle: 'Commencez ici', startSubtitle: 'Deux étapes simples pour démarrer.', addTitle: 'Ajoutez vos articles', addHint: 'Saisissez le nom, le prix et la quantité.', addDone: (count: number) => `${count} article${count === 1 ? '' : 's'} ajouté${count === 1 ? '' : 's'}.`, addButton: 'Ouvrir le stock', editItems: 'Gérer mes articles', sellTitle: 'Enregistrez une vente', sellHint: 'Choisissez les articles et confirmez le paiement.', sellLocked: 'Ajoutez d’abord un article pour ouvrir la caisse.', sellButton: 'Ouvrir la caisse', today: 'Aujourd’hui :', revenue: 'Ventes', net: 'Bénéfice net', details: 'Voir le suivi détaillé',
+  };
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Top Greeting & Fast Actions */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 @lg:flex-row @lg:items-center @lg:justify-between">
-        <div className="flex items-center gap-3.5">
-          {settings.shopLogo && (
-            <img
-              src={settings.shopLogo}
-              alt={settings.shopName}
-              className="h-14 w-14 shrink-0 rounded-full border-2 border-slate-900 object-cover shadow-xs"
-            />
-          )}
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                {t.tagline}
-              </span>
-              <span className="text-xs font-medium text-slate-400">
-                {settings.city}
-              </span>
-            </div>
-            <h1 className="mt-1 text-xl font-extrabold tracking-tight text-slate-900 @md:text-2xl">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          {settings.shopLogo && <img src={settings.shopLogo} alt="" className="h-12 w-12 rounded-2xl object-cover" />}
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-slate-500">{t.tagline}</p>
+            <h1 className="mt-1 truncate text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
               {t.helloShop}, {settings.shopName}
             </h1>
-            <p className="mt-0.5 text-sm text-slate-500">
-              {t.dashboardSubtitle}
-            </p>
           </div>
         </div>
+        <p className="mt-3 text-sm leading-relaxed text-slate-600">{t.dashboardSubtitle}</p>
+      </section>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={onOpenScanner}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#081844] px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800"
-          >
-            <ScanBarcode className="h-4 w-4 text-sky-400" />
-            <span>{t.scannerBtn}</span>
-          </button>
-
-          <button
-            onClick={onOpenDailyWhatsApp}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-800"
-          >
-            <MessageCircle className="h-4 w-4 text-emerald-600" />
-            <span>{t.whatsappSummaryBtn}</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate('pos')}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700"
-          >
-            <Zap className="h-4 w-4" />
-            <span>{t.quickSaleBtn}</span>
-          </button>
+      <section className="rounded-3xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/70 p-5 sm:p-6">
+        <div className="mb-4">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-[#0A4DFF]">{guideCopy.startTitle}</p>
+          <p className="mt-1 text-sm text-slate-600">{guideCopy.startSubtitle}</p>
         </div>
-      </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <article className={`rounded-2xl border p-4 ${products.length ? 'border-emerald-200 bg-emerald-50/70' : 'border-blue-200 bg-white'}`}>
+            <div className="flex items-start gap-3">
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${products.length ? 'bg-emerald-600 text-white' : 'bg-blue-100 text-blue-800'}`}>{products.length ? '✓' : '1'}</span>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-extrabold text-slate-900">{guideCopy.addTitle}</h2>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">{products.length ? guideCopy.addDone(products.length) : guideCopy.addHint}</p>
+                <button type="button" onClick={() => onNavigate('inventory')} className="mt-3 rounded-xl bg-[#0A4DFF] px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-blue-700">
+                  {products.length ? guideCopy.editItems : guideCopy.addButton}
+                </button>
+              </div>
+            </div>
+          </article>
+          <article className={`rounded-2xl border p-4 ${todaySales.length ? 'border-emerald-200 bg-emerald-50/70' : products.length ? 'border-blue-200 bg-white' : 'border-slate-200 bg-slate-50'}`}>
+            <div className="flex items-start gap-3">
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${todaySales.length ? 'bg-emerald-600 text-white' : products.length ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-500'}`}>{todaySales.length ? '✓' : '2'}</span>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-extrabold text-slate-900">{guideCopy.sellTitle}</h2>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">{products.length ? guideCopy.sellHint : guideCopy.sellLocked}</p>
+                <button type="button" disabled={!products.length} onClick={() => onNavigate('pos')} className="mt-3 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300">
+                  {guideCopy.sellButton}
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+        {todaySales.length > 0 && (
+          <p className="mt-4 rounded-xl bg-white/80 px-4 py-3 text-xs font-semibold text-slate-700">
+            {guideCopy.today} {todaySales.length} · {guideCopy.revenue} {fmt(totalCA)} · {guideCopy.net} {fmt(realNetRevenue)}
+          </p>
+        )}
+      </section>
 
+      <details className="group rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+        <summary className="cursor-pointer list-none text-sm font-extrabold text-slate-800 marker:hidden">
+          <span className="inline-flex items-center gap-2">{guideCopy.details}<ArrowRight className="h-4 w-4 transition-transform group-open:rotate-90" /></span>
+        </summary>
+        <div className="mt-5 space-y-6">
       {/* Pro Features Quick Access Strip (AI, Online WhatsApp Store, Subscription) */}
       <div className="grid grid-cols-1 gap-3 @md:grid-cols-3">
         <button
@@ -200,7 +213,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {t.onlineStoreTitle}
               </p>
               <p className="text-[11px] text-slate-500">
-                Lien catalogue à partager aux clients
+                Demandes clients via WhatsApp, sans paiement en ligne
               </p>
             </div>
           </div>
@@ -221,7 +234,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {t.subscriptionTitle}
               </p>
               <p className="text-[11px] text-slate-600">
-                Essai de 7 jours à la création · paiement réel non connecté
+                Formules mensuelles · aucun paiement obligatoire pendant les tests
               </p>
             </div>
           </div>
@@ -663,7 +676,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </table>
           </div>
         </div>
-      </div>
+        </div>
+        </div>
+      </details>
     </div>
   );
 };

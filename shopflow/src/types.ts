@@ -34,6 +34,7 @@ export type NavTab =
   | 'dashboard'
   | 'pos'
   | 'inventory'
+  | 'more'
   | 'ai'
   | 'storefront'
   | 'credits'
@@ -41,8 +42,6 @@ export type NavTab =
   | 'expenses';
 
 export type SubscriptionPlanId = 'starter' | 'pro_ai' | 'business';
-
-export type PreviewViewport = 'hybrid' | 'mobile';
 
 export interface Product {
   id: string;

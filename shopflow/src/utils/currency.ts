@@ -10,7 +10,7 @@ export function formatMoney(
   usdRateFC: number
 ): string {
   if (currency === 'USD') {
-    const usd = amountFC / (usdRateFC || 2850);
+    const usd = amountFC / (usdRateFC || 2400);
     return `${usd.toLocaleString('fr-FR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -30,7 +30,7 @@ export function toDisplayAmount(
   usdRateFC: number
 ): number {
   if (currency === 'USD') {
-    return Number((amountFC / (usdRateFC || 2850)).toFixed(2));
+    return Number((amountFC / (usdRateFC || 2400)).toFixed(2));
   }
   return Math.round(amountFC);
 }
@@ -45,7 +45,7 @@ export function fromDisplayAmount(
 ): number {
   if (!Number.isFinite(inputAmount) || inputAmount < 0) return 0;
   if (currency === 'USD') {
-    return Math.round(inputAmount * (usdRateFC || 2850));
+    return Math.round(inputAmount * (usdRateFC || 2400));
   }
   return Math.round(inputAmount);
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -21,10 +21,7 @@ import {
   WifiOff,
   X,
 } from 'lucide-react';
-import {
-  LANDING_HERO_PHOTO,
-  SHOPFLOW_APP_LOGO,
-} from '../data/initialData';
+import { SHOPFLOW_APP_LOGO } from '../data/initialData';
 import { LANGUAGE_OPTIONS } from '../i18n/translations';
 import {
   AppLanguage,
@@ -32,19 +29,16 @@ import {
   SubscriptionPlanId,
 } from '../types';
 import { AuthModalMode } from './AuthModal';
+import { ANNUAL_SAVING_MONTHS, formatPlanPrice, planPriceUSD } from '../utils/pricing';
 import {
-  AnimatedCounter,
-  ParallaxPhoneStage,
   RevealOnScroll,
   ScrollProgressBar,
   StaggerGroup,
   StaggerItem,
 } from './showcase/MotionPrimitives';
-import {
-  PhoneScreenCapture,
-  ScreenshotsGuidePage,
-} from './showcase/ScreenshotsGuidePage';
-import { VideosTutorialsPage } from './showcase/VideosTutorialsPage';
+const PhoneScreenCapture = lazy(() => import('./showcase/ScreenshotsGuidePage').then((module) => ({ default: module.PhoneScreenCapture })));
+const ScreenshotsGuidePage = lazy(() => import('./showcase/ScreenshotsGuidePage').then((module) => ({ default: module.ScreenshotsGuidePage })));
+const VideosTutorialsPage = lazy(() => import('./showcase/VideosTutorialsPage').then((module) => ({ default: module.VideosTutorialsPage })));
 
 export type ShowcaseSubPage =
   | 'home'
@@ -56,7 +50,7 @@ export type ShowcaseSubPage =
 interface LandingPageViewProps {
   language: AppLanguage;
   currency: CurrencyCode;
-  usdRateFC: number;
+  billingTestMode: boolean;
   onChangeLanguage: (lang: AppLanguage) => void;
   onChangeCurrency: (curr: CurrencyCode) => void;
   onOpenAuthModal: (
@@ -67,8 +61,6 @@ interface LandingPageViewProps {
 
 const MARQUEE_ITEMS = [
   'Tarifs mensuels en USD',
-  'Essai de 7 jours dès la création de la boutique',
-  'Paiement réel non connecté dans cette version',
   'Gestion locale disponible hors connexion',
   'Assistant IA en ligne selon connexion et disponibilité',
   'Reçus partageables sur WhatsApp',
@@ -80,34 +72,44 @@ const MARQUEE_ITEMS = [
 const FAQ_LIST = [
   {
     q: 'Est-ce que ShopFlow fonctionne quand Internet coupe ?',
-    a: 'Les fonctions de gestion et les données déjà enregistrées sur l’appareil restent accessibles hors connexion. Les réponses IA en ligne nécessitent Internet. Les données ne sont pas synchronisées automatiquement dans le Cloud : exportez une sauvegarde avant de changer d’appareil.',
+    a: 'La gestion et les données déjà enregistrées restent accessibles hors connexion. Les données restent enregistrées sur cet appareil; exportez régulièrement une sauvegarde avant de changer d’appareil.',
   },
   {
     q: 'Que se passe-t-il si je perds, casse ou change mon téléphone ?',
-    a: 'Les données ShopFlow sont conservées sur l’appareil et ne se transfèrent pas automatiquement. Exportez régulièrement une sauvegarde depuis les paramètres et conservez-la avant de changer de téléphone.',
+    a: 'Les données restent enregistrées séparément sur chaque appareil et ne se synchronisent pas automatiquement. Exportez une sauvegarde et conservez-la avant de changer de téléphone.',
   },
   {
     q: 'Mon vendeur peut-il utiliser la caisse sans voir mon bénéfice net ?',
     a: 'Oui. Activez le Mode Vendeur : votre employé peut encaisser les clients et préparer des reçus à partager sur WhatsApp, tandis que les bénéfices nets, prix d’achat et réglages sont réservés au patron et protégés par son code PIN.',
   },
   {
-    q: 'Que se passe-t-il après les 7 jours d’essai ?',
-    a: 'L’essai commence à la création de la boutique. Cette version peut montrer une sélection de formule en simulation locale, mais aucun paiement réel ni validation sécurisée d’abonnement n’est connecté. Ne saisissez pas de carte, de PIN ou de secret Mobile Money.',
+    q: 'Dois-je payer pour continuer pendant les tests ?',
+    a: 'Non. Pendant la phase de test actuelle, l’accès à ShopFlow reste ouvert sans échéance et aucun paiement n’est obligatoire. Les tarifs affichés sont fournis à titre indicatif. ShopFlow ne demande jamais de PIN Mobile Money ni de données de carte.'
   },
 ];
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
   language,
   currency,
-  usdRateFC,
   onChangeLanguage,
   onChangeCurrency,
   onOpenAuthModal,
+  billingTestMode,
 }) => {
   const [subPage, setSubPage] = useState<ShowcaseSubPage>('home');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [scrolledHeader, setScrolledHeader] = useState(false);
+  const [annualPricing, setAnnualPricing] = useState(false);
+  const marqueeItems = [
+    'Tarifs mensuels en USD',
+    billingTestMode ? 'Accès sans échéance pendant les tests' : 'Essai de 7 jours dès la création de la boutique',
+    billingTestMode ? 'Aucun paiement obligatoire pendant les tests' : 'Un paiement ne s’active qu’après confirmation serveur',
+    ...MARQUEE_ITEMS.slice(1),
+  ];
+  const faqItems = FAQ_LIST.map((item) => item.q === 'Dois-je payer pour continuer pendant les tests ?' && !billingTestMode
+    ? { ...item, q: 'Que se passe-t-il après les 7 jours d’essai ?', a: 'Après l’essai, l’accès dépendra de la formule choisie et du paiement confirmé par le prestataire. Ne saisissez jamais de PIN Mobile Money ou de données de carte dans ShopFlow.' }
+    : item);
 
   useEffect(() => {
     const onScroll = () => setScrolledHeader(window.scrollY > 24);
@@ -129,11 +131,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const fmtPlanPrice = (usd: number) => {
-    if (currency === 'USD') return `${usd} $`;
-    const fc = Math.round((usd * usdRateFC) / 500) * 500;
-    return `${fc.toLocaleString('fr-FR')} FC`;
-  };
+  const fmtPlanPrice = (usd: number) => formatPlanPrice(usd, currency);
 
   const navMenuOptions: {
     id: ShowcaseSubPage;
@@ -154,8 +152,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       id: 'screenshots',
       label: 'Fonctionnement en Captures',
       shortLabel: 'Captures',
-      subtitle: 'Les 8 écrans de l’application expliqués pas à pas',
-      badge: '8 écrans',
+      subtitle: 'Les 7 écrans essentiels expliqués pas à pas',
+      badge: '7 écrans',
       icon: Images,
     },
     {
@@ -170,7 +168,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       id: 'pricing',
       label: 'Tarifs & Formules',
       shortLabel: 'Tarifs',
-      subtitle: 'Formules mensuelles confirmées • paiement réel non connecté',
+      subtitle: billingTestMode ? 'Formules mensuelles • accès de test sans paiement obligatoire' : 'Formules mensuelles confirmées',
       icon: CreditCard,
     },
     {
@@ -181,6 +179,19 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       icon: HelpCircle,
     },
   ];
+
+  const homeCopyByLanguage = {
+    fr: {
+      eyebrow: 'Une gestion claire pour votre boutique', titleA: 'Votre boutique,', titleB: 'plus simple à gérer.', lead: 'Enregistrez les ventes, gardez un œil sur le stock et retrouvez vos reçus, crédits et demandes clients au même endroit.', open: 'Ouvrir ShopFlow', guides: 'Voir les guides', location: 'La création de votre boutique se fait dans l’application, pas sur ce site.', test: 'Accès de test ouvert · sans échéance ni paiement obligatoire', stepsLabel: 'POUR BIEN DÉMARRER', stepsTitle: 'Trois étapes, dans le bon ordre.', stepsLead: 'Ouvrez ShopFlow et avancez à votre rythme. Vous pouvez lire les explications avant d’enregistrer quoi que ce soit.', step1: 'Créez votre boutique', step1Body: 'Suivez les étapes de création dans l’application. La vitrine ne crée pas de boutique.', step2: 'Ajoutez vos articles', step2Body: 'Ajoutez les noms, prix et quantités de vos produits. Votre catalogue commence vide.', step3: 'Enregistrez une vente', step3Body: 'Choisissez les articles dans la caisse et partagez un reçu si vous le souhaitez.', toolsLabel: 'LES OUTILS ESSENTIELS', toolsTitle: 'Chaque chose à sa place.', sales: 'Ventes et reçus', salesBody: 'Retrouvez l’historique et partagez les reçus par WhatsApp.', stock: 'Articles et stock', stockBody: 'Consultez les quantités et repérez les articles à réapprovisionner.', credits: 'Crédits clients', creditsBody: 'Notez les avances et soldes, puis envoyez un rappel utile.', catalog: 'Catalogue à partager', catalogBody: 'Les clients envoient une demande à votre WhatsApp. Ce n’est ni une vente ni un paiement.', guideTitle: 'Comprendre avant d’agir.', guideBody: 'Les guides présentent des gestes simulés et n’enregistrent aucune vente réelle.', showGuides: 'Découvrir les guides', offline: 'Hors connexion', offlineBody: 'Les données déjà enregistrées restent accessibles sur cet appareil. Gardez une sauvegarde exportée avant d’en changer.', preview: 'APERÇU DE L’APPLICATION', previewTitle: 'Commencez ici', previewBody: 'Deux étapes pour prendre vos repères.', previewAdd: 'Ajouter vos articles', previewAddBody: 'Nom, prix et quantité', previewSell: 'Enregistrer une vente', previewSellBody: 'La caisse s’ouvre après l’ajout d’un article', previewNote: 'Les détails restent disponibles quand vous en avez besoin.', previewCaption: 'Aperçu illustratif — aucune transaction réelle.'
+    },
+    en: {
+      eyebrow: 'Clear shop management, every day', titleA: 'Your shop,', titleB: 'easier to manage.', lead: 'Record sales, keep an eye on stock, and find receipts, customer credits, and requests in one place.', open: 'Open ShopFlow', guides: 'View guides', location: 'Create your shop in the app, not on this website.', test: 'Test access · no deadline or payment required', stepsLabel: 'GETTING STARTED', stepsTitle: 'Three steps, in the right order.', stepsLead: 'Open ShopFlow and move at your own pace. Read the guides before recording anything.', step1: 'Create your shop', step1Body: 'Follow the setup steps in the app. This website does not create shops.', step2: 'Add your products', step2Body: 'Enter product names, prices, and quantities. Your catalogue starts empty.', step3: 'Record a sale', step3Body: 'Choose products at checkout and share a receipt if you wish.', toolsLabel: 'ESSENTIAL TOOLS', toolsTitle: 'Everything has its place.', sales: 'Sales and receipts', salesBody: 'Review sales history and share receipts through WhatsApp.', stock: 'Products and stock', stockBody: 'Check quantities and spot products that need restocking.', credits: 'Customer credit', creditsBody: 'Record advances and balances, then send a helpful reminder.', catalog: 'Shareable catalogue', catalogBody: 'Customers send a request to your WhatsApp. It is not a sale or a payment.', guideTitle: 'Understand before you act.', guideBody: 'Guides show simulated steps and do not record real sales.', showGuides: 'Explore guides', offline: 'Offline access', offlineBody: 'Data already saved stays available on this device. Keep an exported backup before switching devices.', preview: 'APP PREVIEW', previewTitle: 'Start here', previewBody: 'Two steps to get familiar.', previewAdd: 'Add your products', previewAddBody: 'Name, price, and quantity', previewSell: 'Record a sale', previewSellBody: 'Checkout opens after adding a product', previewNote: 'Detailed figures are there when you need them.', previewCaption: 'Illustrative preview — no real transaction.'
+    },
+    ln: {
+      eyebrow: 'Boyangeli ya polele mpo na magazini na yo', titleA: 'Magazini na yo,', titleB: 'mpasi mingi te.', lead: 'Komá boteki, landa biloko oyo etikali mpe zwa lisusu ba reçu, nyongo ya bakiliya mpe masengi na esika moko.', open: 'Fungola ShopFlow', guides: 'Tala ndenge ya kosalela', location: 'Sala magazini na yo na kati ya appli, kasi te na site oyo.', test: 'Komeka ezali polele · kofuta ezali te', stepsLabel: 'NDENGE YA KOBANDA', stepsTitle: 'Makambo misato, na molongo malamu.', stepsLead: 'Fungola ShopFlow mpe kende mokemoke. Okoki kotanga malako liboso ya kokoma eloko.', step1: 'Sala magazini na yo', step1Body: 'Landa matambe ya kosala magazini na appli. Site oyo esalaka magazini te.', step2: 'Bakisa biloko na yo', step2Body: 'Komá bankombo, ntalo mpe motango ya biloko. Catalogue ebandaka mpamba.', step3: 'Komá boteki', step3Body: 'Pona biloko na caisse mpe tinda reçu soki olingi.', toolsLabel: 'BISALISALI YA NTINA', toolsTitle: 'Eloko nyonso na esika na yango.', sales: 'Boteki mpe ba reçu', salesBody: 'Tala boteki mpe tinda reçu na WhatsApp.', stock: 'Biloko mpe stock', stockBody: 'Tala motango mpe biloko oyo esengeli kobakisa.', credits: 'Nyongo ya bakiliya', creditsBody: 'Komá avance mpe nyongo, bongo tinda rappel.', catalog: 'Catalogue ya kokabola', catalogBody: 'Bakiliya batindaka motuna na WhatsApp. Ezali boteki te mpe kofuta te.', guideTitle: 'Yeba liboso ya kosala.', guideBody: 'Malako ezali ndakisa kaka; ekomaka boteki ya solo te.', showGuides: 'Tala malako', offline: 'Soki Internet ezali te', offlineBody: 'Makambo oyo ekomami na telefone etikalaka kuna. Bomba kopi liboso ya kobongola telefone.', preview: 'NDakisa YA APPLI', previewTitle: 'Bandela awa', previewBody: 'Matambe mibale mpo na koyeba.', previewAdd: 'Bakisa biloko na yo', previewAddBody: 'Kombo, ntalo mpe motango', previewSell: 'Komá boteki', previewSellBody: 'Caisse ekofungwama soki obakisi eloko', previewNote: 'Mituya ezali wana ntango osengeli na yango.', previewCaption: 'Ndakisa kaka — boteki ya solo ezali te.'
+    }
+  };
+  const homeCopy = homeCopyByLanguage[language as keyof typeof homeCopyByLanguage] ?? homeCopyByLanguage.fr;
 
   return (
     <div className="sf-studio-site min-h-screen bg-[#F7F9FC] text-slate-900 selection:bg-[#0A4DFF] selection:text-white">
@@ -193,8 +204,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       <header
         className={`sticky top-0 z-40 transition-all duration-300 ${
           scrolledHeader
-            ? 'border-b border-white/10 bg-[#050B1C]/92 text-white shadow-xl backdrop-blur-xl'
-            : 'border-b border-white/10 bg-[#050B1C] text-white'
+            ? 'border-b border-slate-200 bg-white/95 text-slate-900 shadow-sm backdrop-blur-xl'
+            : 'border-b border-slate-200 bg-white text-slate-900'
         }`}
       >
         <div className="mx-auto flex min-h-20 max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
@@ -208,15 +219,15 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             <img
               src={SHOPFLOW_APP_LOGO}
               alt="Logo officiel de l’application ShopFlow"
-              className="h-14 w-14 rounded-2xl bg-white p-0.5 object-contain shadow-md sm:h-16 sm:w-16"
+              className="h-10 w-10 rounded-xl bg-white object-contain sm:h-11 sm:w-11"
             />
-            <span className="sf-display-heading text-lg font-bold tracking-tight text-white sm:text-xl">
+            <span className="sf-display-heading text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
               Shop<span className="text-sky-400">Flow</span>
             </span>
           </button>
 
           {/* Desktop Quick Page Switcher Pills */}
-          <nav className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 lg:flex">
+          <nav className="hidden items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1 lg:flex">
             {navMenuOptions.map((item) => {
               const active = subPage === item.id;
               return (
@@ -227,7 +238,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   className={`relative rounded-full px-4 py-1.5 text-xs font-bold transition ${
                     active
                       ? 'bg-[#0A4DFF] text-white shadow-md shadow-blue-600/30'
-                      : 'text-slate-300 hover:text-white'
+                      : 'text-slate-600 hover:text-slate-950'
                   }`}
                 >
                   {item.shortLabel}
@@ -243,19 +254,19 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               onClick={() => onOpenAuthModal('install')}
               className="hidden rounded-full bg-[#0A4DFF] px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/30 transition hover:bg-blue-500 sm:inline-flex"
             >
-              Télécharger l’app
+              Ouvrir / installer
             </button>
 
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
               aria-label="Ouvrir le menu déroulant"
-              className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-white/20"
+              className="inline-flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
             >
               <span className="flex flex-col gap-1">
-                <span className="h-0.5 w-4 rounded-full bg-white" />
-                <span className="h-0.5 w-3 rounded-full bg-sky-400" />
-                <span className="h-0.5 w-4 rounded-full bg-white" />
+                <span className="h-0.5 w-4 rounded-full bg-slate-700" />
+                <span className="h-0.5 w-3 rounded-full bg-blue-600" />
+                <span className="h-0.5 w-4 rounded-full bg-slate-700" />
               </span>
               <span>Menu</span>
             </button>
@@ -445,337 +456,111 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               PAGE 1: HOME — DYNAMIC SCROLL-ANIMATED SHOWCASE
              =============================================================== */}
           {subPage === 'home' && (
-            <div>
-              {/* DARK OBSIDIAN LUXURY HERO WITH 3D SCROLL PARALLAX */}
-              <section className="relative overflow-hidden bg-[#050B1C] pt-16 pb-24 text-white sm:pt-24 sm:pb-32">
-                {/* Atmospheric Mesh Glows */}
-                <div className="pointer-events-none absolute -top-28 -left-20 h-96 w-96 rounded-full bg-[#0A4DFF]/30 blur-3xl" />
-                <div className="pointer-events-none absolute right-0 bottom-0 h-80 w-80 rounded-full bg-emerald-500/15 blur-3xl" />
-
-                <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-                  <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-12">
-                    {/* Animated Left Copy */}
-                    <div className="space-y-9 lg:col-span-6">
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.96, y: 12 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        transition={{ duration: 0.55 }}
-                        className="flex items-center gap-4"
-                      >
-                        <img
-                          src={SHOPFLOW_APP_LOGO}
-                          alt="Logo officiel de ShopFlow — Gérez, Calculez, Faites grandir"
-                          className="h-20 w-20 shrink-0 rounded-3xl bg-white p-1 shadow-2xl ring-1 ring-white/20 sm:h-24 sm:w-24"
-                        />
-                        <div>
-                          <p className="sf-display-heading text-xl font-extrabold tracking-tight text-white sm:text-2xl">
-                            Shop<span className="text-sky-400">Flow</span>
-                          </p>
-                          <p className="mt-1 max-w-[15rem] text-xs leading-5 text-slate-400 sm:text-sm">
-                            La gestion de votre commerce, pensée pour vos réalités.
-                          </p>
-                        </div>
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, y: 18 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="inline-flex items-center gap-2 rounded-full border border-sky-400/25 bg-sky-400/10 px-4 py-1.5 text-xs font-bold text-sky-300"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>Nouvelle génération de gestion commerciale</span>
-                      </motion.div>
-
-                      <motion.h1
-                        initial={{ opacity: 0, y: 26 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.65, delay: 0.08 }}
-                        className="sf-display-heading text-4xl leading-[1.08] font-extrabold text-white sm:text-5xl lg:text-[56px]"
-                      >
-                        Pilotez vos ventes.{' '}
-                        <span className="bg-gradient-to-r from-sky-400 to-emerald-400 bg-clip-text text-transparent">
-                          Voyez votre vrai bénéfice.
-                        </span>
-                      </motion.h1>
-
-                      <motion.p
-                        initial={{ opacity: 0, y: 22 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.65, delay: 0.16 }}
-                        className="max-w-lg text-base leading-relaxed text-slate-300 sm:text-lg"
-                      >
-                        Enregistrez les ventes, suivez le stock et préparez des
-                        reçus à partager sur WhatsApp. La gestion locale reste
-                        accessible hors connexion; les fonctions IA en ligne
-                        nécessitent Internet.
-                      </motion.p>
-
-                      {/* Primary Buttons */}
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.24 }}
-                        className="flex flex-col gap-4 pt-3 sm:flex-row"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => onOpenAuthModal('install')}
-                          className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0A4DFF] px-7 py-4 text-sm font-bold text-white shadow-xl shadow-blue-600/35 transition hover:scale-[1.02] hover:bg-blue-500"
-                        >
-                          <Download className="h-4 w-4" />
-                          <span>Télécharger / installer l’application</span>
-                          <ArrowRight className="h-4 w-4" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => navigateToSubPage('videos')}
-                          className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-4 text-sm font-bold text-white backdrop-blur-xs transition hover:bg-white/20"
-                        >
-                          <Play className="h-4 w-4 fill-current text-emerald-400" />
-                          <span>Voir en vidéo</span>
-                        </button>
-                      </motion.div>
-                      <p className="max-w-lg text-xs leading-6 text-slate-400 sm:text-sm">
-                        Le site sert à découvrir ShopFlow. La création de votre boutique se fait uniquement dans l’application, après installation.
-                      </p>
+            <div className="pb-16">
+              <section className="relative overflow-hidden bg-white">
+                <div className="pointer-events-none absolute -top-24 right-[-8rem] h-96 w-96 rounded-full bg-blue-100/70 blur-3xl" />
+                <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:py-24">
+                  <div className="max-w-xl">
+                    <p className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-3.5 py-2 text-xs font-bold text-blue-800">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      {homeCopy.eyebrow}
+                    </p>
+                    <h1 className="sf-display-heading mt-6 text-4xl leading-[1.08] font-extrabold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+                      {homeCopy.titleA}<br /><span className="text-[#2456D8]">{homeCopy.titleB}</span>
+                    </h1>
+                    <p className="mt-5 max-w-lg text-base leading-7 text-slate-600 sm:text-lg">{homeCopy.lead}</p>
+                    <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                      <button type="button" onClick={() => onOpenAuthModal('install')} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#2456D8] px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-blue-900/10 transition hover:bg-blue-700">
+                        <Download className="h-4 w-4" />{homeCopy.open}<ArrowRight className="h-4 w-4" />
+                      </button>
+                      <button type="button" onClick={() => navigateToSubPage('screenshots')} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                        <Images className="h-4 w-4 text-blue-700" />{homeCopy.guides}
+                      </button>
                     </div>
+                    <p className="mt-5 text-xs leading-5 text-slate-500">{homeCopy.location}</p>
+                    {billingTestMode && <p role="status" className="mt-3 inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">{homeCopy.test}</p>}
+                  </div>
 
-                    {/* Right 3D Parallax Phone + Floating Animated Badges */}
-                    <div className="relative lg:col-span-6">
-                      <ParallaxPhoneStage>
-                        <div className="relative mx-auto max-w-md">
-                          <PhoneScreenCapture captureId="cap-dashboard" />
-
-                          {/* Floating Animated Badge Left */}
-                          <motion.div
-                            animate={{ y: [0, -8, 0] }}
-                            transition={{
-                              repeat: Infinity,
-                              duration: 3.6,
-                              ease: 'easeInOut',
-                            }}
-                            className="mt-4 rounded-2xl border border-white/15 bg-slate-900/90 p-3.5 text-xs shadow-2xl backdrop-blur-md sm:absolute sm:top-10 sm:-left-10 sm:mt-0 sm:w-56"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
-                                <ReceiptText className="h-4 w-4" />
-                              </div>
-                              <div>
-                                <p className="font-bold text-white">
-                                  Reçu à partager sur WhatsApp
-                                </p>
-                                <p className="text-[11px] text-emerald-300">
-                                  Exemple présenté en capture
-                                </p>
-                              </div>
-                            </div>
-                          </motion.div>
-
-                          {/* Floating Animated Badge Right */}
-                          <motion.div
-                            animate={{ y: [0, 8, 0] }}
-                            transition={{
-                              repeat: Infinity,
-                              duration: 4.2,
-                              ease: 'easeInOut',
-                            }}
-                            className="hidden rounded-2xl border border-white/15 bg-slate-900/90 p-3.5 text-xs shadow-2xl backdrop-blur-md sm:absolute sm:-right-8 sm:bottom-12 sm:block sm:w-52"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-300">
-                                <Lock className="h-4 w-4" />
-                              </div>
-                              <div>
-                                <p className="font-bold text-white">
-                                  Mode Vendeur Actif
-                                </p>
-                                <p className="text-[11px] text-slate-400">
-                                  Bénéfices protégés par PIN
-                                </p>
-                              </div>
-                            </div>
-                          </motion.div>
+                  <div className="mx-auto w-full max-w-[470px] rounded-[26px] border border-slate-200 bg-slate-50 p-3 shadow-[0_28px_70px_-38px_rgba(25,45,83,0.36)] sm:p-4" aria-label={homeCopy.preview}>
+                    <div className="overflow-hidden rounded-[18px] border border-slate-200 bg-white">
+                      <div className="flex min-h-14 items-center justify-between border-b border-slate-100 px-4 sm:px-5">
+                        <div className="flex items-center gap-2.5">
+                          <img src={SHOPFLOW_APP_LOGO} alt="" className="h-8 w-8 rounded-lg object-contain" />
+                          <span className="sf-display-heading text-sm font-extrabold text-slate-900">Shop<span className="text-[#2456D8]">Flow</span></span>
                         </div>
-                      </ParallaxPhoneStage>
+                        <span className="text-[9px] font-extrabold tracking-[0.12em] text-slate-400">{homeCopy.preview}</span>
+                      </div>
+                      <div className="p-5 sm:p-7">
+                        <p className="text-[10px] font-extrabold tracking-[0.14em] text-slate-400">SHOPFLOW</p>
+                        <h2 className="sf-display-heading mt-2 text-2xl font-extrabold tracking-tight text-slate-900">{homeCopy.previewTitle}</h2>
+                        <p className="mt-1 text-xs text-slate-500">{homeCopy.previewBody}</p>
+                        <div className="mt-5 space-y-2.5">
+                          <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3.5">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-100 text-sm font-extrabold text-blue-700">1</span>
+                            <span className="min-w-0"><strong className="block text-xs text-slate-800">{homeCopy.previewAdd}</strong><small className="mt-1 block text-[11px] text-slate-500">{homeCopy.previewAddBody}</small></span>
+                            <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-blue-600" />
+                          </div>
+                          <div className="flex items-center gap-3 rounded-xl border border-slate-200 p-3.5">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-100 text-sm font-extrabold text-slate-500">2</span>
+                            <span className="min-w-0"><strong className="block text-xs text-slate-800">{homeCopy.previewSell}</strong><small className="mt-1 block text-[11px] leading-4 text-slate-500">{homeCopy.previewSellBody}</small></span>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-slate-50 p-3 text-[11px] leading-5 text-slate-500">
+                          <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />{homeCopy.previewNote}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 border-t border-slate-100 px-2 py-3 text-center text-[10px] font-bold text-slate-500"><span className="text-blue-700">Accueil</span><span>Vendre</span><span>Stock</span><span>Plus</span></div>
                     </div>
+                    <p className="mt-2.5 text-center text-[10px] text-slate-400">{homeCopy.previewCaption}</p>
                   </div>
                 </div>
               </section>
 
-              {/* SMOOTH INFINITE ECOSYSTEM MARQUEE */}
-              <div className="overflow-hidden border-y border-slate-200 bg-white py-4">
-                <div className="sf-marquee-track flex items-center gap-8 text-xs font-extrabold tracking-wide text-slate-600 uppercase">
-                  {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, idx) => (
-                    <span key={idx} className="flex items-center gap-8">
-                      <span>{item}</span>
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#0A4DFF]" />
-                    </span>
+              <section id="sf-start-steps" className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
+                <div className="max-w-2xl">
+                  <p className="text-[11px] font-extrabold tracking-[0.14em] text-blue-700">{homeCopy.stepsLabel}</p>
+                  <h2 className="sf-display-heading mt-3 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">{homeCopy.stepsTitle}</h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">{homeCopy.stepsLead}</p>
+                </div>
+                <div className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-4">
+                  {[[homeCopy.step1, homeCopy.step1Body], [homeCopy.step2, homeCopy.step2Body], [homeCopy.step3, homeCopy.step3Body]].map(([title, body], index) => (
+                    <article key={title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                      <span className="text-xs font-extrabold tracking-widest text-blue-700">0{index + 1}</span>
+                      <h3 className="sf-display-heading mt-4 text-base font-extrabold text-slate-900">{title}</h3>
+                      <p className="mt-2 text-xs leading-6 text-slate-600">{body}</p>
+                    </article>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              {/* SCROLL-TRIGGERED ANIMATED COUNTERS */}
-              <section className="py-16 sm:py-20">
+              <section className="border-y border-slate-200 bg-white py-14 sm:py-20">
                 <div className="mx-auto max-w-6xl px-4 sm:px-6">
-                  <StaggerGroup className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    {[
-                      {
-                        val: 2400,
-                        prefix: '+',
-                        suffix: '',
-                        label: 'Commerces & boutiques équipés',
-                      },
-                      {
-                        val: 100,
-                        prefix: '',
-                        suffix: ' %',
-                        label: 'Fonctionne même sans Internet',
-                      },
-                      {
-                        val: 2,
-                        prefix: '< ',
-                        suffix: ' s',
-                        label: 'Pour encaisser & éditer un reçu',
-                      },
-                      {
-                        val: 5,
-                        prefix: '',
-                        suffix: ' langues',
-                        label: 'Français, Anglais, Lingala, Swahili, Chinois',
-                      },
-                    ].map((stat, idx) => (
-                      <StaggerItem key={idx}>
-                        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 text-center shadow-xs">
-                          <p className="sf-display-heading text-3xl font-extrabold text-[#0A4DFF] sm:text-4xl">
-                            <AnimatedCounter
-                              target={stat.val}
-                              prefix={stat.prefix}
-                              suffix={stat.suffix}
-                            />
-                          </p>
-                          <p className="mt-2 text-xs font-semibold text-slate-600">
-                            {stat.label}
-                          </p>
-                        </div>
-                      </StaggerItem>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div><p className="text-[11px] font-extrabold tracking-[0.14em] text-blue-700">{homeCopy.toolsLabel}</p><h2 className="sf-display-heading mt-3 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">{homeCopy.toolsTitle}</h2></div>
+                    <button type="button" onClick={() => navigateToSubPage('screenshots')} className="inline-flex items-center gap-2 self-start text-xs font-extrabold text-blue-700 hover:text-blue-900 sm:self-auto">{homeCopy.guides}<ArrowRight className="h-4 w-4" /></button>
+                  </div>
+                  <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {[[ReceiptText, homeCopy.sales, homeCopy.salesBody], [Smartphone, homeCopy.stock, homeCopy.stockBody], [Coins, homeCopy.credits, homeCopy.creditsBody], [Images, homeCopy.catalog, homeCopy.catalogBody]].map(([Icon, title, body]) => (
+                      <article key={title as string} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+                        <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icon className="h-5 w-5" /></div>
+                        <h3 className="sf-display-heading mt-4 text-sm font-extrabold text-slate-900">{title as string}</h3>
+                        <p className="mt-2 text-xs leading-6 text-slate-600">{body as string}</p>
+                      </article>
                     ))}
-                  </StaggerGroup>
+                  </div>
                 </div>
               </section>
 
-              {/* PROGRESSIVE SCROLL STORYTELLING BLOCKS */}
-              <section className="space-y-24 py-8 sm:py-14">
-                <div className="mx-auto max-w-6xl space-y-24 px-4 sm:px-6">
-                  {/* Block A: Lifestyle + Instant Profit */}
-                  <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
-                    <RevealOnScroll direction="left" className="lg:col-span-6">
-                      <div className="overflow-hidden rounded-3xl shadow-2xl ring-1 ring-slate-900/10">
-                        <img
-                          src={LANDING_HERO_PHOTO}
-                          alt="Commerçante avec ShopFlow"
-                          className="aspect-[4/3] w-full object-cover transition duration-700 hover:scale-105"
-                        />
-                      </div>
-                    </RevealOnScroll>
-
-                    <RevealOnScroll
-                      direction="right"
-                      delay={0.12}
-                      className="space-y-5 lg:col-span-6"
-                    >
-                      <span className="inline-block rounded-full bg-blue-50 px-3.5 py-1 text-xs font-extrabold text-[#0A4DFF]">
-                         Zéro calcul compliqué
-                      </span>
-                      <h2 className="sf-display-heading text-3xl font-extrabold text-slate-950 sm:text-4xl">
-                        Ne confondez plus jamais l’argent en caisse et votre vrai bénéfice.
-                      </h2>
-                      <p className="text-base leading-relaxed text-slate-600">
-                        À chaque vente, ShopFlow soustrait tout seul le prix
-                        d’achat fournisseur et vos dépenses de la journée
-                        (transport, courant, sachets) pour afficher ce que vous
-                        avez réellement gagné.
-                      </p>
-                      <div className="flex flex-wrap gap-3 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => navigateToSubPage('screenshots')}
-                          className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-xs font-bold text-white transition hover:bg-[#0A4DFF]"
-                        >
-                          <Images className="h-4 w-4" />
-                          <span>Voir les captures expliquées</span>
-                          <ArrowRight className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </RevealOnScroll>
-                  </div>
-
-                  {/* Block B: Interactive Gateways to the Dedicated Captures & Videos Pages! */}
-                  <RevealOnScroll direction="up">
-                    <div className="rounded-3xl bg-[#050B1C] p-8 text-white shadow-2xl sm:p-12">
-                      <div className="mx-auto max-w-2xl text-center">
-                        <span className="text-xs font-extrabold tracking-widest text-sky-400 uppercase">
-                          Découvrez tout avant même de vous inscrire
-                        </span>
-                        <h2 className="sf-display-heading mt-2 text-2xl font-extrabold sm:text-4xl">
-                          Explorez ShopFlow en captures ou en vidéos
-                        </h2>
-                        <p className="mt-3 text-sm text-slate-300">
-                          Nous avons préparé deux guides dédiés pour voir chaque
-                          écran et chaque fonctionnalité en action.
-                        </p>
-                      </div>
-
-                      <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
-                        {/* Gateway Card 1 -> Screenshots Page */}
-                        <motion.div
-                          whileHover={{ y: -6 }}
-                          onClick={() => navigateToSubPage('screenshots')}
-                          className="cursor-pointer rounded-3xl border border-white/15 bg-white/[0.06] p-7 transition hover:border-sky-400/60 hover:bg-white/[0.1]"
-                        >
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0A4DFF] text-white">
-                            <Images className="h-6 w-6" />
-                          </div>
-                          <h3 className="sf-display-heading mt-5 text-xl font-bold">
-                            📸 Guide par Captures d’écran (8 écrans)
-                          </h3>
-                          <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                            Parcourez toutes les captures annotées ① ② ③ :
-                            Tableau de bord, Caisse rapide, Reçu WhatsApp,
-                            Stock, Scanner photo, IA et Cadenas vendeur.
-                          </p>
-                          <span className="mt-5 inline-flex items-center gap-2 text-xs font-extrabold text-sky-400">
-                            <span>Ouvrir la page des captures</span>
-                            <ArrowRight className="h-4 w-4" />
-                          </span>
-                        </motion.div>
-
-                        {/* Gateway Card 2 -> Videos Page */}
-                        <motion.div
-                          whileHover={{ y: -6 }}
-                          onClick={() => navigateToSubPage('videos')}
-                          className="cursor-pointer rounded-3xl border border-white/15 bg-white/[0.06] p-7 transition hover:border-emerald-400/60 hover:bg-white/[0.1]"
-                        >
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-                            <Film className="h-6 w-6" />
-                          </div>
-                          <h3 className="sf-display-heading mt-5 text-xl font-bold">
-                            🎬 Vidéos Explicatives par Partie (7 vidéos)
-                          </h3>
-                          <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                            Regardez 7 courtes vidéos animées avec sous-titres
-                            et voix explicative pour comprendre chaque module en
-                            15 secondes.
-                          </p>
-                          <span className="mt-5 inline-flex items-center gap-2 text-xs font-extrabold text-emerald-400">
-                            <span>Ouvrir la vidéothèque</span>
-                            <ArrowRight className="h-4 w-4" />
-                          </span>
-                        </motion.div>
-                      </div>
-                    </div>
-                  </RevealOnScroll>
-                </div>
+              <section className="mx-auto grid max-w-6xl gap-4 px-4 py-14 sm:px-6 sm:py-20 md:grid-cols-2">
+                <article className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700"><WifiOff className="h-5 w-5" /></div>
+                  <h2 className="sf-display-heading mt-4 text-lg font-extrabold text-slate-900">{homeCopy.offline}</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{homeCopy.offlineBody}</p>
+                </article>
+                <article className="flex flex-col justify-between rounded-2xl bg-[#14264C] p-6 text-white sm:p-8">
+                  <div><p className="text-[11px] font-extrabold tracking-[0.14em] text-blue-200">GUIDES SHOPFLOW</p><h2 className="sf-display-heading mt-3 text-2xl font-extrabold tracking-tight">{homeCopy.guideTitle}</h2><p className="mt-3 max-w-md text-sm leading-6 text-slate-300">{homeCopy.guideBody}</p></div>
+                  <button type="button" onClick={() => navigateToSubPage('videos')} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-xl bg-white px-4 py-2.5 text-xs font-extrabold text-slate-900 transition hover:bg-blue-50">{homeCopy.showGuides}<ArrowRight className="h-4 w-4" /></button>
+                </article>
               </section>
             </div>
           )}
@@ -784,16 +569,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               PAGE 2: DEDICATED SCREENSHOTS WALKTHROUGH PAGE
              =============================================================== */}
           {subPage === 'screenshots' && (
-            <ScreenshotsGuidePage
-              onSwitchToVideosPage={() => navigateToSubPage('videos')}
-            />
+            <Suspense fallback={<div className="mx-auto min-h-[50vh] max-w-6xl px-4 py-12 text-sm text-slate-500" role="status">Chargement des captures…</div>}>
+              <ScreenshotsGuidePage onSwitchToVideosPage={() => navigateToSubPage('videos')} />
+            </Suspense>
           )}
 
           {/* ===============================================================
               PAGE 3: DEDICATED MODULE VIDEOS PAGE
              =============================================================== */}
           {subPage === 'videos' && (
-            <VideosTutorialsPage language={language} />
+            <Suspense fallback={<div className="mx-auto min-h-[50vh] max-w-6xl px-4 py-12 text-sm text-slate-500" role="status">Chargement des tutoriels…</div>}>
+              <VideosTutorialsPage language={language} />
+            </Suspense>
           )}
 
           {/* ===============================================================
@@ -810,7 +597,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     Des tarifs clairs, à activer dans l’application
                   </h1>
                   <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-                    Installez d’abord ShopFlow. Vous créerez votre boutique et choisirez votre formule depuis l’application. L’essai gratuit de 7 jours commence à la création de la boutique. Le paiement réel n’est pas encore connecté.
+                    {billingTestMode
+                      ? 'Installez ShopFlow et créez votre boutique dans l’application. Pendant les tests, l’accès n’expire pas et aucun paiement n’est obligatoire. Les formules mensuelles restent affichées à titre indicatif.'
+                      : 'Installez ShopFlow et créez votre boutique dans l’application. L’essai de 7 jours commence à sa création; toute formule payante nécessite une confirmation serveur du prestataire.'}
                   </p>
 
                   <div className="mt-7 inline-flex rounded-full border border-white/15 bg-white/10 p-1 text-xs font-bold">
@@ -837,6 +626,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       Francs (FC)
                     </button>
                   </div>
+                  <div className="mt-3 inline-flex rounded-full border border-white/15 bg-white/10 p-1 text-xs font-bold">
+                    <button type="button" onClick={() => setAnnualPricing(false)} aria-pressed={!annualPricing} className={`rounded-full px-4 py-2 transition ${!annualPricing ? 'bg-white text-slate-950' : 'text-slate-300'}`}>Mensuel</button>
+                    <button type="button" onClick={() => setAnnualPricing(true)} aria-pressed={annualPricing} className={`rounded-full px-4 py-2 transition ${annualPricing ? 'bg-white text-slate-950' : 'text-slate-300'}`}>Annuel · 2 mois offerts</button>
+                  </div>
                 </div>
               </section>
 
@@ -850,11 +643,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       usd: 5,
                       highlight: false,
                       perks: [
-                        'Jusqu’à 50 marchandises avec photos',
+                        'Gestion des marchandises avec photos',
                         'Vente rapide « +1 Vendu » et panier client',
                         'Calcul automatique du chiffre d’affaires et du revenu net',
                         'Mode hors ligne',
-                        'Résumé journalier partageable sur WhatsApp',
                       ],
                     },
                     {
@@ -864,12 +656,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       usd: 12,
                       highlight: true,
                       perks: [
-                        'Marchandises et ventes sans plafond annoncé',
+                        'Gestion des marchandises, ventes et dépenses',
                         'Assistant IA Coach et caisse vocale, selon disponibilité et limites du service',
-                        'Scanner de code-barres avec la caméra',
-                        'Mini-boutique en ligne avec commandes WhatsApp',
+                        'Catalogue partageable avec demandes par WhatsApp, sans paiement intégré',
                         'Carnet de crédits clients et outils de relance',
-                        'Support prioritaire WhatsApp, 7 j/7',
                       ],
                     },
                     {
@@ -880,10 +670,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                       highlight: false,
                       perks: [
                         'Gestion de plusieurs boutiques ou dépôts',
-                        'Comptes vendeurs et gérants séparés',
-                        'Assistant IA pour le suivi des stocks multi-boutiques',
-                        'Export comptable PDF et Excel',
-                        'Accompagnement dédié à Kinshasa et Lubumbashi',
+                        'Données et réglages séparés pour chaque boutique',
                       ],
                     },
                   ].map((plan) => (
@@ -900,23 +687,23 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                             <h3 className="sf-display-heading text-xl font-bold text-slate-950">
                               {plan.name}
                             </h3>
-                            {plan.highlight && (
-                              <span className="rounded-full bg-[#0A4DFF] px-3 py-1 text-[10px] font-black text-white">
-                                POPULAIRE
-                              </span>
-                            )}
                           </div>
                           <p className="mt-1 text-xs text-slate-500">
                             {plan.desc}
                           </p>
                           <div className="mt-6 flex items-baseline gap-1.5">
                             <span className="sf-display-heading text-4xl font-extrabold text-slate-950 tabular-nums">
-                              {fmtPlanPrice(plan.usd)}
+                              {fmtPlanPrice(annualPricing ? planPriceUSD(plan.id, true) : plan.usd)}
                             </span>
                             <span className="text-xs font-semibold text-slate-500">
-                              / mois
+                              / {annualPricing ? 'an' : 'mois'}
                             </span>
                           </div>
+                          {annualPricing && (
+                            <p className="mt-1 text-xs font-semibold text-emerald-700">
+                              Équivaut à {fmtPlanPrice(planPriceUSD(plan.id, true) / 12)} / mois · {ANNUAL_SAVING_MONTHS} mois offerts
+                            </p>
+                          )}
 
                           <ul className="mt-6 space-y-3 border-t border-slate-100 pt-6 text-sm text-slate-700">
                             {plan.perks.map((p, i) => (
@@ -937,7 +724,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                               : 'bg-slate-950 hover:bg-slate-800'
                           }`}
                         >
-                          Installer puis choisir dans l’app
+                          {billingTestMode ? 'Installer et commencer les tests' : 'Installer puis choisir dans l’app'}
                         </button>
                       </div>
                     </StaggerItem>
@@ -955,7 +742,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <section className="bg-[#050B1C] py-16 text-center text-white sm:py-22">
                 <div className="mx-auto max-w-3xl px-4 sm:px-6">
                   <span className="inline-block rounded-full border border-emerald-400/30 bg-emerald-500/15 px-4 py-1 text-xs font-bold text-emerald-300">
-                    📲 Données locales & fonctionnement hors connexion
+                    📲 Accès hors connexion & sauvegarde
                   </span>
                   <h1 className="sf-display-heading mt-5 text-3xl leading-tight font-extrabold sm:text-5xl">
                     Installez ShopFlow. Créez votre boutique dans l’application.
@@ -992,7 +779,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     {
                       icon: ShieldCheck,
                       title: 'Sauvegarde locale',
-                      desc: 'Les données restent sur cet appareil. Exportez une sauvegarde avant tout changement de téléphone ou de navigateur.',
+                      desc: 'Les données restent enregistrées sur l’appareil utilisé. Exportez une sauvegarde séparée et conservez-la avant de changer de téléphone.',
                     },
                     {
                       icon: Smartphone,
@@ -1021,7 +808,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
                 {/* FAQ Accordion */}
                 <div className="mt-14 divide-y divide-slate-200 rounded-3xl border border-slate-200 bg-white px-6 shadow-xs">
-                  {FAQ_LIST.map((item, idx) => {
+                  {faqItems.map((item, idx) => {
                     const open = openFaq === idx;
                     return (
                       <div key={idx} className="py-5">
@@ -1086,7 +873,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               onClick={() => navigateToSubPage('screenshots')}
               className="hover:text-sky-400"
             >
-              Captures (8)
+              Captures (7)
             </button>
             <button
               type="button"

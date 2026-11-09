@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Check, ImageOff, ShoppingBag, Store } from 'lucide-react';
 import { AppLanguage } from '../types';
 import { formatMoney } from '../utils/currency';
@@ -14,7 +15,7 @@ interface BasketLine {
   quantity: number;
 }
 
-const COPY: Record<AppLanguage, Record<string, string>> = {
+const COPY: Partial<Record<AppLanguage, Record<string, string>>> = {
   fr: {
     catalog: 'Catalogue', available: 'disponible(s)', soldOut: 'Épuisé', add: 'Ajouter',
     basket: 'Ma sélection', empty: 'Choisissez un ou plusieurs articles pour commencer.',
@@ -96,72 +97,23 @@ const COPY: Record<AppLanguage, Record<string, string>> = {
     linkPrivacy: 'Lien ezali na makambo na yo mpe biloko oyo oponi. Moto nyonso oyo azali na yango akoki kotala demande; tinda yango kaka na boutique.',
     linkTooLong: 'Lien eleki molai mpo na kotinda. Kitisa motango ya biloko mpe meka lisusu.',
   },
-  sw: {
-    catalog: 'Katalogi', available: 'inapatikana', soldOut: 'Imeisha', add: 'Ongeza',
-    basket: 'Chaguo langu', empty: 'Chagua bidhaa moja au zaidi ili kuanza.',
-    continue: 'Endelea', details: 'Maelezo yako', name: 'Jina kamili', phone: 'Nambari yako ya WhatsApp',
-    address: 'Mji, mtaa na maelekezo', back: 'Rudi', preview: 'Tengeneza risiti ya ombi',
-    review: 'Kagua risiti ya ombi', reference: 'Nambari ya ombi', item: 'Bidhaa', quantity: 'Idadi',
-    subtotal: 'Jumla ndogo', delivery: 'Makadirio ya usafirishaji', total: 'Makadirio ya jumla',
-    send: 'Fungua WhatsApp ili kutuma', edit: 'Badilisha chaguo langu',
-    notPaid: 'Ombi halijalipwa — duka litathibitisha bidhaa, ada na jumla.',
-    snapshot: 'Ilisasishwa tarehe', snapshotNote: 'Katalogi hii husasishwa kiotomatiki. Thibitisha muhtasari na duka kabla ya kulipa.',
-    deliveryNote: 'Ada ya usafirishaji ni makadirio; duka litathibitisha.',
-    chooser: 'Ikiwa una WhatsApp zaidi ya moja, chagua programu inayoonyeshwa na simu yako. Kagua ujumbe kwenye WhatsApp kisha uguse Tuma.',
-    privacy: 'ShopFlow haihifadhi maelezo yako. Kiungo cha agizo kitakuwa nayo: kitumie kwa duka pekee; mtu yeyote mwenye kiungo anaweza kuona ombi.',
-    noContact: 'Duka halijaweka nambari ya WhatsApp.',
-    unavailable: 'Katalogi hii si sahihi au haipatikani tena.',
-    emptyCatalog: 'Hakuna bidhaa zilizowekwa kwa sasa.',
-    selectError: 'Ongeza bidhaa angalau moja na ujaze jina, nambari na anwani yako.',
-    waError: 'WhatsApp haikufunguka. Hakikisha programu au WhatsApp Web inapatikana.',
-    city: 'Mji',
-    createLink: 'Tengeneza kiungo cha ombi', shareTitle: 'Tuma ombi lako',
-    linkPrompt: 'Nakili kiungo hiki na umtumie mwenye duka. Anaweza kukifungua ili kuona agizo lako.',
-    orderLink: 'Kiungo cha ombi', copyLink: 'Nakili kiungo', sendLink: 'Mtumie mwenye duka kupitia WhatsApp',
-    copied: 'Kiungo kimenakiliwa. Bandika kwenye WhatsApp kwa mwenye duka.',
-    copyManual: 'Kunakili kiotomatiki hakupatikani. Gusa kiungo, kichague kisha ukinakili.',
-    linkPrivacy: 'Kiungo kina maelezo yako ya mawasiliano na bidhaa ulizochagua. Mtu yeyote mwenye kiungo anaweza kuona ombi; mtumie duka pekee.',
-    linkTooLong: 'Kiungo ni kirefu sana kushiriki. Punguza bidhaa ulizochagua kisha ujaribu tena.',
-  },
-  zh: {
-    catalog: '商品目录', available: '件可售', soldOut: '缺货', add: '加入',
-    basket: '我的选择', empty: '请选择一个或多个商品开始。',
-    continue: '继续', details: '您的信息', name: '姓名', phone: '您的 WhatsApp 号码',
-    address: '城市、街区和位置说明', back: '返回', preview: '生成临时订单收据',
-    review: '请核对订单请求收据', reference: '订单请求编号', item: '商品', quantity: '数量',
-    subtotal: '小计', delivery: '预计配送费', total: '预计总计',
-    send: '打开 WhatsApp 发送', edit: '修改我的选择',
-    notPaid: '订单尚未付款 — 商家需确认库存、费用和总额。',
-    snapshot: '更新时间', snapshotNote: '此目录会自动更新。付款前请与商家确认摘要。',
-    deliveryNote: '配送费为估算值，需由商家确认。',
-    chooser: '如果安装了多个 WhatsApp 应用，请在手机提示时选择。请在 WhatsApp 中核对消息并点击发送。',
-    privacy: 'ShopFlow 不会保存您的信息。订单链接会包含这些信息：请只发送给商家，任何拥有链接的人都可以查看请求。',
-    noContact: '商家尚未填写 WhatsApp 号码。',
-    unavailable: '此目录无效或已不可用。',
-    emptyCatalog: '目前没有商品。',
-    selectError: '请至少添加一件商品，并填写姓名、电话和地址。',
-    waError: '无法打开 WhatsApp。请检查应用或 WhatsApp 网页版是否可用。',
-    city: '城市',
-    createLink: '创建请求链接', shareTitle: '发送您的请求',
-    linkPrompt: '复制此链接并发送给商家。商家可以打开链接查看您的订单请求。',
-    orderLink: '请求链接', copyLink: '复制链接', sendLink: '通过 WhatsApp 发送给商家',
-    copied: '链接已复制。请粘贴到 WhatsApp 并发送给商家。',
-    copyManual: '无法自动复制。点击链接，选中后复制。',
-    linkPrivacy: '链接包含您的联系方式和选择内容。任何拥有链接的人都能查看请求，请只发送给商家。',
-    linkTooLong: '链接太长，无法分享。请减少所选商品后重试。',
-  },
 };
 
 function detectLanguage(): AppLanguage {
+  try {
+    const stored = localStorage.getItem('shopflow_language_v1');
+    if (stored && ['fr', 'en', 'ln', 'sw', 'zh'].includes(stored)) return stored as AppLanguage;
+  } catch { /* Use the browser language as the fallback. */ }
   const browserLang = typeof navigator === 'undefined' ? 'fr' : navigator.language.toLowerCase();
   if (browserLang.startsWith('en')) return 'en';
-  if (browserLang.startsWith('sw')) return 'sw';
   if (browserLang.startsWith('ln')) return 'ln';
+  if (browserLang.startsWith('sw')) return 'sw';
   if (browserLang.startsWith('zh')) return 'zh';
   return 'fr';
 }
 
 export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) => {
+  const { i18n, t: i18nText } = useTranslation();
   const [snapshot, setSnapshot] = useState<PublicCatalogSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState<AppLanguage>(detectLanguage);
@@ -196,14 +148,13 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
   }, [token]);
 
   if (loading) {
-    return <MessagePage message={language === 'fr' ? 'Chargement du catalogue…' : 'Loading catalog…'} />;
+    return <MessagePage message={i18nText('catalog.loading')} />;
   }
 
+  const text = COPY[language] || COPY.fr!;
   if (!snapshot) {
-    return <MessagePage message={COPY[language].unavailable} />;
+    return <MessagePage message={text.unavailable} />;
   }
-
-  const text = COPY[language];
   const shopLogo = snapshot.shop.logo && !shopLogoFailed ? snapshot.shop.logo : null;
   const fmt = (amount: number) =>
     formatMoney(amount, snapshot.shop.currency, snapshot.shop.usdRateFC);
@@ -330,7 +281,7 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
   };
 
   const publishedDate = snapshot.publishedAt
-    ? new Date(snapshot.publishedAt).toLocaleDateString(language === 'zh' ? 'zh-CN' : language === 'en' ? 'en' : language === 'sw' ? 'sw' : 'fr-FR')
+    ? new Date(snapshot.publishedAt).toLocaleDateString(({ fr: 'fr-FR', en: 'en-US', ln: 'ln-CD', sw: 'sw-CD', zh: 'zh-CN' } as const)[language])
     : '';
 
   return (
@@ -358,14 +309,18 @@ export const PublicCatalogPage: React.FC<PublicCatalogPageProps> = ({ token }) =
           <select
             aria-label="Language"
             value={language}
-            onChange={(event) => setLanguage(event.target.value as AppLanguage)}
+            onChange={(event) => {
+              const selectedLanguage = event.target.value as AppLanguage;
+              setLanguage(selectedLanguage);
+              void i18n.changeLanguage(selectedLanguage);
+            }}
             className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold"
           >
-            <option value="fr">Français</option>
-            <option value="en">English</option>
-            <option value="ln">Lingála</option>
-            <option value="sw">Kiswahili</option>
-            <option value="zh">中文</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="ln">🇨🇩 Lingala</option>
+            <option value="sw">🇹🇿 Kiswahili</option>
+            <option value="zh">🇨🇳 简体中文</option>
           </select>
         </div>
       </header>
