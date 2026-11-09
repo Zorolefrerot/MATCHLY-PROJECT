@@ -256,6 +256,10 @@ export function App() {
   const [accountLoadError, setAccountLoadError] = useState<string | null>(null);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
   const [cloudSyncRetryEpoch, setCloudSyncRetryEpoch] = useState(0);
+  const cloudSyncPendingRef = useRef<{ shopId: string; snapshot: ShopDataSnapshot; revision: number } | null>(null);
+  const cloudSyncRunningRef = useRef(false);
+  const cloudSyncRevisionRef = useRef(0);
+  const cloudSyncDrainRef = useRef<() => Promise<void>>(async () => {});
   const authUserRef = useRef<User | null>(null);
   const authProcessingRef = useRef(false);
   const accountLoadedUserRef = useRef<string | null>(null);
@@ -438,51 +442,105 @@ export function App() {
     };
   }, [authUser, activeShop?.id, shopDataReady]);
 
-  // Save each authenticated shop snapshot to Supabase after local edits; the device cache
-  // remains the fast/offline copy, while this push preserves sales across sessions/devices.
+  // Keep one ordered cloud writer per active app instance. Local storage is updated
+  // immediately above; this queue coalesces rapid edits, retries failures, and prevents
+  // an older request from overwriting a newer snapshot when the network is slow.
+  cloudSyncDrainRef.current = async () => {
+    if (cloudSyncRunningRef.current) return;
+    cloudSyncRunningRef.current = true;
+    try {
+      while (cloudSyncPendingRef.current) {
+        const job = cloudSyncPendingRef.current;
+        cloudSyncPendingRef.current = null;
+        setCloudSyncStatus('syncing');
+        try {
+          const saved = await saveShopSnapshot(job.shopId, job.snapshot);
+          const isLatest = !cloudSyncPendingRef.current && job.revision === cloudSyncRevisionRef.current;
+          if (isLatest) {
+            const sourceProducts = new Map(job.snapshot.products.map((product) => [product.id, product]));
+            const sourceSales = new Map(job.snapshot.sales.map((sale) => [sale.id, sale]));
+            const savedProducts = new Map(saved.products.map((product) => [product.id, product]));
+            const savedSales = new Map(saved.sales.map((sale) => [sale.id, sale]));
+            setProducts((current) => current.map((product) => {
+              const source = sourceProducts.get(product.id);
+              const persisted = savedProducts.get(product.id);
+              return source && persisted && source.image === product.image &&
+                (persisted.cloudImagePath !== product.cloudImagePath || persisted.cloudImageHash !== product.cloudImageHash)
+                ? { ...product, cloudImagePath: persisted.cloudImagePath, cloudImageHash: persisted.cloudImageHash }
+                : product;
+            }));
+            setSales((current) => current.map((sale) => {
+              const source = sourceSales.get(sale.id);
+              const persisted = savedSales.get(sale.id);
+              return source && persisted && source.productImage === sale.productImage &&
+                (persisted.cloudImagePath !== sale.cloudImagePath || persisted.cloudImageHash !== sale.cloudImageHash)
+                ? { ...sale, cloudImagePath: persisted.cloudImagePath, cloudImageHash: persisted.cloudImageHash }
+                : sale;
+            }));
+            setCloudSyncStatus('synced');
+          }
+        } catch {
+          // Preserve the failed snapshot in memory; local storage is already the durable
+          // offline copy, and online/foreground/periodic retries will flush this queue.
+          if (!cloudSyncPendingRef.current) {
+            cloudSyncPendingRef.current = job;
+            setCloudSyncStatus('error');
+            break;
+          }
+          // A newer snapshot arrived while this request was in flight; try that latest
+          // version rather than letting a stale failure block fresh data.
+
+        }
+      }
+    } finally {
+      cloudSyncRunningRef.current = false;
+    }
+  };
+
   useEffect(() => {
     if (!authUser || !activeShop || !shopDataReady || isImportingLocal || legacyImportPending) return;
-    let cancelled = false;
-    const shopId = activeShop.id;
-    const snapshot: ShopDataSnapshot = { settings, products, sales, credits, expenses };
-    const timer = window.setTimeout(async () => {
-      setCloudSyncStatus('syncing');
-      try {
-        const saved = await saveShopSnapshot(shopId, snapshot);
-        if (cancelled) return;
-        const savedProducts = new Map(saved.products.map((product) => [product.id, product]));
-        const savedSales = new Map(saved.sales.map((sale) => [sale.id, sale]));
-        setProducts((current) => current.map((product) => {
-          const persisted = savedProducts.get(product.id);
-          return persisted && (persisted.cloudImagePath !== product.cloudImagePath || persisted.cloudImageHash !== product.cloudImageHash)
-            ? { ...product, cloudImagePath: persisted.cloudImagePath, cloudImageHash: persisted.cloudImageHash }
-            : product;
-        }));
-        setSales((current) => current.map((sale) => {
-          const persisted = savedSales.get(sale.id);
-          return persisted && (persisted.cloudImagePath !== sale.cloudImagePath || persisted.cloudImageHash !== sale.cloudImageHash)
-            ? { ...sale, cloudImagePath: persisted.cloudImagePath, cloudImageHash: persisted.cloudImageHash }
-            : sale;
-        }));
-        setCloudSyncStatus('synced');
-      } catch {
-        if (!cancelled) setCloudSyncStatus('error');
-      }
-    }, 500);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
+    const job = {
+      shopId: activeShop.id,
+      snapshot: { settings, products, sales, credits, expenses } as ShopDataSnapshot,
+      revision: ++cloudSyncRevisionRef.current,
     };
+    cloudSyncPendingRef.current = job;
+    const timer = window.setTimeout(() => { void cloudSyncDrainRef.current(); }, 500);
+    return () => window.clearTimeout(timer);
   }, [authUser, activeShop?.id, shopDataReady, isImportingLocal, legacyImportPending, cloudSyncRetryEpoch, settings, products, sales, credits, expenses]);
 
   useEffect(() => {
-    const retryCatalogSync = () => {
-      setCatalogNetworkEpoch((current) => current + 1);
-      setCloudSyncRetryEpoch((current) => current + 1);
+    const retryCloudSync = () => {
+      if (navigator.onLine) setCloudSyncRetryEpoch((current) => current + 1);
     };
+    const retryOnForeground = () => {
+      if (document.visibilityState === 'visible') retryCloudSync();
+      else void cloudSyncDrainRef.current();
+    };
+    const retryOnPageShow = () => retryCloudSync();
+    const flushOnPageHide = () => { void cloudSyncDrainRef.current(); };
+    const retryCatalogSync = () => setCatalogNetworkEpoch((current) => current + 1);
+    window.addEventListener('online', retryCloudSync);
     window.addEventListener('online', retryCatalogSync);
-    return () => window.removeEventListener('online', retryCatalogSync);
+    window.addEventListener('pageshow', retryOnPageShow);
+    window.addEventListener('pagehide', flushOnPageHide);
+    document.addEventListener('visibilitychange', retryOnForeground);
+    return () => {
+      window.removeEventListener('online', retryCloudSync);
+      window.removeEventListener('online', retryCatalogSync);
+      window.removeEventListener('pageshow', retryOnPageShow);
+      window.removeEventListener('pagehide', flushOnPageHide);
+      document.removeEventListener('visibilitychange', retryOnForeground);
+    };
   }, []);
+
+  useEffect(() => {
+    if (cloudSyncStatus !== 'error' || !authUser || !activeShop) return;
+    const timer = window.setInterval(() => {
+      if (navigator.onLine) setCloudSyncRetryEpoch((current) => current + 1);
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [cloudSyncStatus, authUser, activeShop?.id]);
 
   useEffect(() => {
     const { publicCatalogId, publicCatalogToken } = settings;
