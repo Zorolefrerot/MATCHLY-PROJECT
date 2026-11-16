@@ -1005,15 +1005,14 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
           TAB 5: DÉPENSES DE LA JOURNÉE
          ========================================================= */}
       {section === 'expenses' && (
-        <div className="space-y-4">
-          <section className="flex min-w-0 flex-col gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 @sm:flex-row @sm:items-center @sm:justify-between">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
+          <div className="mb-4 flex min-w-0 flex-col gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 @sm:flex-row @sm:items-center @sm:justify-between">
             <div className="min-w-0">
               <h2 className="text-sm font-extrabold text-slate-900">{i18nText('capital.cashOnHandTitle')}</h2>
               <p className="mt-1 text-xs leading-relaxed text-slate-600">{i18nText('capital.cashOnHandHint')}</p>
             </div>
             <p className="max-w-full break-words text-xl font-black text-emerald-800 tabular-nums">{fmt(availableCashFC)}</p>
-          </section>
-          <div className="rounded-3xl border border-slate-200 bg-white p-6">
+          </div>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-base font-extrabold text-slate-900">
@@ -1162,7 +1161,6 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               </div>
             ))}
             {!expenses.length && <p className="py-5 text-center text-xs text-slate-400">{i18nText('expenses.empty')}</p>}
-          </div>
           </div>
         </div>
       )}
