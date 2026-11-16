@@ -16,4 +16,18 @@ export default defineConfig({
     port: 5173,
     allowedHosts: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('/node_modules/')) return undefined;
+          if (/\/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'vendor-react';
+          if (id.includes('/node_modules/@supabase/')) return 'vendor-supabase';
+          if (id.includes('/node_modules/@capacitor/')) return 'vendor-capacitor';
+          if (id.includes('/node_modules/framer-motion/')) return 'vendor-motion';
+          return undefined;
+        },
+      },
+    },
+  },
 });

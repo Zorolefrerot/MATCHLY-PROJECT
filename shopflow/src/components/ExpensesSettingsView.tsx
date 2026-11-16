@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Bot,
   Check,
@@ -10,6 +11,7 @@ import {
   Lock,
   Moon,
   Palette,
+  Pencil,
   Plus,
   Receipt,
   RefreshCw,
@@ -29,22 +31,33 @@ import {
   CurrencyCode,
   ExpenseEntry,
   FontStyleChoice,
+  Product,
   LayoutDensity,
   ShopSettings,
 } from '../types';
-import { formatMoney, fromDisplayAmount } from '../utils/currency';
+import { formatMoney, fromDisplayAmount, toDisplayAmount } from '../utils/currency';
 import { formatSaleTime } from '../utils/saleDate';
 
 interface ExpensesSettingsViewProps {
   settings: ShopSettings;
   expenses: ExpenseEntry[];
+  products: Product[];
+  availableCashFC: number;
   onAddExpense: (expense: ExpenseEntry) => void;
+  onUpdateExpense: (expense: ExpenseEntry) => void;
   onDeleteExpense: (id: string) => void;
   onUpdateSettings: (next: ShopSettings) => void;
   onExportBackup: () => void;
   onImportBackup: (file: File) => void;
   onResetDemo: () => void;
   onActivateVendorLock?: () => void;
+}
+
+function toLocalDateTimeInput(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
 }
 
 function resizeLogoImage(file: File): Promise<string> {
@@ -81,7 +94,10 @@ function resizeLogoImage(file: File): Promise<string> {
 export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
   settings,
   expenses,
+  products,
+  availableCashFC,
   onAddExpense,
+  onUpdateExpense,
   onDeleteExpense,
   onUpdateSettings,
   onExportBackup,
@@ -89,6 +105,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
   onResetDemo,
   onActivateVendorLock,
 }) => {
+  const { t: i18nText } = useTranslation();
   const [section, setSection] = useState<
     'theme' | 'branding' | 'lang_currency' | 'ai_voice' | 'expenses'
   >('theme');
@@ -97,11 +114,17 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
   const [category, setCategory] =
     useState<ExpenseEntry['category']>('Transport');
   const [amountInput, setAmountInput] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [editingExpense, setEditingExpense] = useState<ExpenseEntry | null>(null);
+  const [timestampInput, setTimestampInput] = useState(() => toLocalDateTimeInput(new Date().toISOString()));
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
   const fmt = (val: number) =>
     formatMoney(val, settings.currency, settings.usdRateFC);
 
   const totalExpensesFC = expenses.reduce((sum, e) => sum + e.amountFC, 0);
+  const previewExpenseFC = fromDisplayAmount(parseFloat(amountInput) || 0, settings.currency, settings.usdRateFC);
+  const cashBeforeCurrentExpenseFC = availableCashFC + (editingExpense?.amountFC || 0);
+  const cashAfterCurrentExpenseFC = cashBeforeCurrentExpenseFC - previewExpenseFC;
 
   const notifySaved = (msg = 'Modifications appliquées !') => {
     setSavedNotice(msg);
@@ -136,25 +159,50 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
 
 
 
-  const handleCreateExpense = (e: React.FormEvent) => {
+  const resetExpenseForm = () => {
+    setEditingExpense(null);
+    setLabel('');
+    setCategory('Transport');
+    setAmountInput('');
+    setSelectedProductId('');
+    setTimestampInput(toLocalDateTimeInput(new Date().toISOString()));
+  };
+
+  const startEditingExpense = (expense: ExpenseEntry) => {
+    setEditingExpense(expense);
+    setLabel(expense.label);
+    setCategory(expense.category);
+    setAmountInput(String(toDisplayAmount(expense.amountFC, settings.currency, settings.usdRateFC)));
+    setSelectedProductId(expense.productId || '');
+    setTimestampInput(toLocalDateTimeInput(expense.timestamp));
+  };
+
+  const handleSubmitExpense = (e: React.FormEvent) => {
     e.preventDefault();
     const amountFC = fromDisplayAmount(
       parseFloat(amountInput) || 0,
       settings.currency,
       settings.usdRateFC
     );
-    if (!label.trim() || amountFC <= 0) return;
+    const selectedProduct = products.find((product) => product.id === selectedProductId);
+    const keptHistoricalProduct = editingExpense?.productId === selectedProductId;
+    const productId = selectedProduct?.id || (keptHistoricalProduct ? editingExpense?.productId : undefined);
+    const productName = selectedProduct?.name || (keptHistoricalProduct ? editingExpense?.productName : undefined);
+    const parsedTimestamp = new Date(timestampInput);
+    if (!label.trim() || amountFC <= 0 || !productId || !productName || !Number.isFinite(parsedTimestamp.getTime())) return;
 
-    onAddExpense({
-      id: `exp-${Date.now()}`,
+    const expense: ExpenseEntry = {
+      id: editingExpense?.id || `exp-${Date.now()}`,
       label: label.trim(),
       category,
       amountFC,
-      timestamp: new Date().toISOString(),
-    });
-
-    setLabel('');
-    setAmountInput('');
+      timestamp: parsedTimestamp.toISOString(),
+      productId,
+      productName,
+    };
+    if (editingExpense) onUpdateExpense(expense);
+    else onAddExpense(expense);
+    resetExpenseForm();
   };
 
 
@@ -717,7 +765,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
       )}
 
       {/* =========================================================
-          TAB 3: TRADUCTION INTÉGRALE 5 LANGUES + DEVISE
+          TAB 3: LANGUES DISPONIBLES + DEVISE
          ========================================================= */}
       {section === 'lang_currency' && (
         <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2">
@@ -726,10 +774,10 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               <Globe2 className="h-5 w-5 text-[#0A4DFF]" />
               <div>
                 <h2 className="text-base font-extrabold text-slate-900">
-                  Traduction Intégrale de toute l’Application (IA Active)
+                  {i18nText('settings.language.title')}
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Traduit immédiatement tous les menus, boutons, produits, tableaux, reçus et l’IA.
+                  {i18nText('settings.language.description')}
                 </p>
               </div>
             </div>
@@ -746,7 +794,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                         ...settings,
                         language: lang.code as AppLanguage,
                       });
-                      notifySaved(`Application traduite : ${lang.nativeLabel}`);
+                      notifySaved('Langue mise à jour.');
                     }}
                     className={`flex items-center justify-between rounded-2xl border p-4 text-left transition ${
                       isSelected
@@ -761,7 +809,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                           {lang.nativeLabel}
                         </p>
                         <p className="text-[11px] text-slate-500">
-                          {lang.label}
+                          {i18nText(`language.${lang.code}`)}
                         </p>
                       </div>
                     </div>
@@ -824,7 +872,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({
                       ...settings,
-                      usdRateFC: Math.max(100, Number(e.target.value) || 2850),
+                      usdRateFC: Math.max(100, Number(e.target.value) || 2400),
                     })
                   }
                   className="w-36 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-black text-slate-900 tabular-nums"
@@ -973,7 +1021,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
           </div>
 
           <form
-            onSubmit={handleCreateExpense}
+            onSubmit={handleSubmitExpense}
             className="mt-5 grid grid-cols-1 gap-3 rounded-2xl bg-slate-50 p-4 @sm:grid-cols-12"
           >
             <input
@@ -981,15 +1029,35 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               required
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Ex: Course moto livraison, sachets, groupe..."
-              className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 @sm:col-span-5"
+              placeholder={i18nText('expenses.labelPlaceholder')}
+              aria-label={i18nText('expenses.labelAria')}
+              className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 @sm:col-span-3"
             />
             <select
+              required
+              value={selectedProductId}
+              onChange={(e) => setSelectedProductId(e.target.value)}
+              aria-label={i18nText('expenses.itemAria')}
+              disabled={!products.length && !editingExpense?.productId}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 disabled:bg-slate-100 @sm:col-span-3"
+            >
+              <option value="">{i18nText('expenses.itemPlaceholder')}</option>
+              {editingExpense?.productId && !products.some((product) => product.id === editingExpense.productId) && (
+                <option value={editingExpense.productId}>
+                  {editingExpense.productName || 'Article supprimé du stock'}
+                </option>
+              )}
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name} · {i18nText('expenses.stockCount', { count: product.stock })}
+                </option>
+              ))}
+            </select>
+            <select
               value={category}
-              onChange={(e) =>
-                setCategory(e.target.value as ExpenseEntry['category'])
-              }
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 @sm:col-span-3"
+              onChange={(e) => setCategory(e.target.value as ExpenseEntry['category'])}
+              aria-label={i18nText('expenses.categoryAria')}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 @sm:col-span-2"
             >
               <option value="Transport">Transport</option>
               <option value="Emballage">Emballage</option>
@@ -1004,16 +1072,50 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               value={amountInput}
               onChange={(e) => setAmountInput(e.target.value)}
               placeholder={`Montant (${settings.currency})`}
+              aria-label={i18nText('expenses.amountAria')}
               className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-900 tabular-nums @sm:col-span-2"
             />
-            <button
-              type="submit"
-              className="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white @sm:col-span-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Ajouter</span>
-            </button>
+            {editingExpense && (
+              <input
+                type="datetime-local"
+                required
+                value={timestampInput}
+                onChange={(e) => setTimestampInput(e.target.value)}
+                aria-label={i18nText('expenses.dateAria')}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 @sm:col-span-3"
+              />
+            )}
+            <div className="flex gap-2 @sm:col-span-2">
+              <button
+                type="submit"
+                disabled={!products.length && !editingExpense?.productId}
+                className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {editingExpense ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                <span>{i18nText(editingExpense ? 'expenses.save' : 'expenses.add')}</span>
+              </button>
+              {editingExpense && (
+                <button
+                  type="button"
+                  onClick={resetExpenseForm}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600"
+                >{i18nText('expenses.cancel')}</button>
+              )}
+            </div>
           </form>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-100 bg-amber-50/70 px-3.5 py-3 text-xs">
+            <span className="text-amber-900">
+              {selectedProductId
+                ? i18nText('finance.expenseWithItem', { name: products.find((product) => product.id === selectedProductId)?.name || editingExpense?.productName || '' })
+                : i18nText('finance.selectItem')}
+            </span>
+            <strong className="tabular-nums text-amber-900">
+              {i18nText('finance.equation', { before: fmt(cashBeforeCurrentExpenseFC), expense: fmt(previewExpenseFC), after: fmt(cashAfterCurrentExpenseFC) })}
+            </strong>
+          </div>
+          {!products.length && (
+            <p className="mt-2 text-xs text-amber-700">{i18nText('expenses.noProducts')}</p>
+          )}
 
           <div className="mt-4 divide-y divide-slate-100">
             {expenses.map((exp) => (
@@ -1021,18 +1123,29 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                 key={exp.id}
                 className="flex items-center justify-between gap-3 py-3 text-xs"
               >
-                <div>
-                  <p className="font-bold text-slate-900">{exp.label}</p>
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-slate-900">{exp.label}</p>
                   <p className="text-[11px] text-slate-400">
                     {formatSaleTime(exp.timestamp)} · {exp.category}
+                    {(exp.productName || products.find((product) => product.id === exp.productId)?.name) && (
+                      <> · {i18nText('expenses.itemLabel', { name: exp.productName || products.find((product) => product.id === exp.productId)?.name || '' })}</>
+                    )}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-amber-800 tabular-nums">
-                    − {fmt(exp.amountFC)}
-                  </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="font-bold text-amber-800 tabular-nums">− {fmt(exp.amountFC)}</span>
                   <button
+                    type="button"
+                    onClick={() => startEditingExpense(exp)}
+                    aria-label={i18nText('expenses.editAria', { label: exp.label })}
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-700"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => onDeleteExpense(exp.id)}
+                    aria-label={i18nText('expenses.deleteAria', { label: exp.label })}
                     className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -1040,6 +1153,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
                 </div>
               </div>
             ))}
+            {!expenses.length && <p className="py-5 text-center text-xs text-slate-400">{i18nText('expenses.empty')}</p>}
           </div>
         </div>
       )}
