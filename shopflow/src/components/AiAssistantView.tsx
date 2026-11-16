@@ -477,11 +477,13 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       recognition.lang =
         settings.language === 'en'
           ? 'en-US'
-          : settings.language === 'zh'
-            ? 'zh-CN'
+          : settings.language === 'ln'
+            ? 'ln-CD'
             : settings.language === 'sw'
               ? 'sw-KE'
-              : 'fr-FR';
+              : settings.language === 'zh'
+                ? 'zh-CN'
+                : 'fr-FR';
       recognition.interimResults = false;
       setIsListening(true);
 

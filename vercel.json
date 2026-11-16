@@ -10,19 +10,22 @@
       "permanent": true
     }
   ],
+  "rewrites": [
+    {
+      "source": "/downloads/ShopFlow-Android.apk",
+      "destination": "https://shopflow-drc.onrender.com/downloads/ShopFlow-Android.apk"
+    },
+    {
+      "source": "/downloads/ShopFlow-Windows.exe",
+      "destination": "https://shopflow-drc.onrender.com/downloads/ShopFlow-Windows.exe"
+    }
+  ],
   "headers": [
     {
       "source": "/app/sw.js",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
         { "key": "Service-Worker-Allowed", "value": "/app/" }
-      ]
-    },
-    {
-      "source": "/downloads/ShopFlow-Android.apk",
-      "headers": [
-        { "key": "Content-Type", "value": "application/vnd.android.package-archive" },
-        { "key": "Content-Disposition", "value": "attachment; filename=ShopFlow-Android.apk" }
       ]
     }
   ]

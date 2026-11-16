@@ -5,4 +5,7 @@
 /shopflow/.env
 /shopflow/.env.*
 !/shopflow/.env.example
+/desktop/node_modules/
+/desktop/release/
+/desktop/assets/shopflow.ico
 *.tsbuildinfo

@@ -30,7 +30,7 @@ export interface ShopSummary {
 export interface BillingAccountSummary {
   owner_user_id: string;
   plan_id: SubscriptionPlanId;
-  status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired';
+  status: 'testing' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired';
   trial_started_at: string | null;
   trial_ends_at: string | null;
   current_period_ends_at: string | null;

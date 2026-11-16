@@ -21,7 +21,7 @@ C'est une build de test signée avec la clé debug Android, pas un paquet Play S
 
 ## Fonctions natives
 
-- Autorisations caméra et microphone déclarées pour le scanner photo/code-barres et la dictée vocale.
+- Autorisation microphone déclarée uniquement pour la dictée vocale; les images d’articles se choisissent dans la photothèque.
 - Ressources d'icône et de splash construites à partir de l'identité visuelle ShopFlow.
 - Les chemins d'assets Vite sont relatifs pour fonctionner depuis les assets locaux Capacitor.
 - L'application démarre directement sur l'espace app dans Android natif.
