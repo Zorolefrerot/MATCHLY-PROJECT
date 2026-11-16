@@ -42,6 +42,7 @@ interface ExpensesSettingsViewProps {
   settings: ShopSettings;
   expenses: ExpenseEntry[];
   products: Product[];
+  availableCashFC: number;
   onAddExpense: (expense: ExpenseEntry) => void;
   onUpdateExpense: (expense: ExpenseEntry) => void;
   onDeleteExpense: (id: string) => void;
@@ -94,6 +95,7 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
   settings,
   expenses,
   products,
+  availableCashFC,
   onAddExpense,
   onUpdateExpense,
   onDeleteExpense,
@@ -120,6 +122,9 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
     formatMoney(val, settings.currency, settings.usdRateFC);
 
   const totalExpensesFC = expenses.reduce((sum, e) => sum + e.amountFC, 0);
+  const previewExpenseFC = fromDisplayAmount(parseFloat(amountInput) || 0, settings.currency, settings.usdRateFC);
+  const cashBeforeCurrentExpenseFC = availableCashFC + (editingExpense?.amountFC || 0);
+  const cashAfterCurrentExpenseFC = cashBeforeCurrentExpenseFC - previewExpenseFC;
 
   const notifySaved = (msg = 'Modifications appliquées !') => {
     setSavedNotice(msg);
@@ -1098,6 +1103,16 @@ export const ExpensesSettingsView: React.FC<ExpensesSettingsViewProps> = ({
               )}
             </div>
           </form>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-100 bg-amber-50/70 px-3.5 py-3 text-xs">
+            <span className="text-amber-900">
+              {selectedProductId
+                ? i18nText('finance.expenseWithItem', { name: products.find((product) => product.id === selectedProductId)?.name || editingExpense?.productName || '' })
+                : i18nText('finance.selectItem')}
+            </span>
+            <strong className="tabular-nums text-amber-900">
+              {i18nText('finance.equation', { before: fmt(cashBeforeCurrentExpenseFC), expense: fmt(previewExpenseFC), after: fmt(cashAfterCurrentExpenseFC) })}
+            </strong>
+          </div>
           {!products.length && (
             <p className="mt-2 text-xs text-amber-700">{i18nText('expenses.noProducts')}</p>
           )}

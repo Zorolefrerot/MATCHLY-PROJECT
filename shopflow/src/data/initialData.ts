@@ -141,6 +141,7 @@ export const INITIAL_SETTINGS: ShopSettings = {
   activePlan: 'pro_ai',
   planPaid: false,
   trialStartedAt: '',
+  capitalGoalFC: 0,
 };
 
 export const INITIAL_PRODUCTS: Product[] = [

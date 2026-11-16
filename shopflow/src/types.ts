@@ -73,6 +73,11 @@ export interface Product {
   minStockAlert: number;
   purchasePriceFC: number;
   sellingPriceFC: number;
+  /** Internal grouping metadata; public catalog continues to publish individual products only. */
+  collectionId?: string;
+  collectionName?: string;
+  /** Full collection purchase outflow copied to items and counted once per collection. */
+  collectionPurchaseTotalFC?: number;
 }
 
 export interface SaleRecord {
@@ -169,6 +174,8 @@ export interface ShopSettings {
   activePlan: SubscriptionPlanId;
   planPaid: boolean;
   trialStartedAt: string;
+  /** Optional target for the shop's estimated cash plus current inventory capital. */
+  capitalGoalFC?: number;
   /** Private local credentials for syncing this shop's public catalog. Never publish the token. */
   publicCatalogId?: string;
   publicCatalogToken?: string;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -23,7 +23,8 @@ import {
   ShopSettings,
 } from '../types';
 import { parseSaleDate, formatSaleTime } from '../utils/saleDate';
-import { formatMoney } from '../utils/currency';
+import { formatMoney, fromDisplayAmount, toDisplayAmount } from '../utils/currency';
+import { summarizeShopFinances } from '../utils/finance';
 
 interface DashboardViewProps {
   settings: ShopSettings;
@@ -31,6 +32,7 @@ interface DashboardViewProps {
   sales: SaleRecord[];
   expenses: ExpenseEntry[];
   credits: CreditEntry[];
+  onUpdateSettings: (next: ShopSettings) => void;
   onNavigate: (tab: NavTab) => void;
   onQuickSellProduct: (product: Product) => void;
   onRestockProduct: (product: Product) => void;
@@ -42,12 +44,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   sales,
   expenses,
   credits,
+  onUpdateSettings,
   onNavigate,
   onQuickSellProduct,
   onRestockProduct,
 }) => {
   const { t: i18nText } = useTranslation();
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(6); // Today by default
+  const [capitalGoalDraft, setCapitalGoalDraft] = useState(() => String(toDisplayAmount(settings.capitalGoalFC || 0, settings.currency, settings.usdRateFC)));
+  const financeSummary = summarizeShopFinances(products, sales, credits, expenses);
+  const capitalGoalFC = Math.max(0, settings.capitalGoalFC || 0);
+  const capitalGoalProgress = capitalGoalFC > 0 ? Math.min(100, Math.max(0, (financeSummary.totalCapitalFC / capitalGoalFC) * 100)) : 0;
+
+  useEffect(() => {
+    setCapitalGoalDraft(String(toDisplayAmount(settings.capitalGoalFC || 0, settings.currency, settings.usdRateFC)));
+  }, [settings.capitalGoalFC, settings.currency, settings.usdRateFC]);
+
+  const saveCapitalGoal = (event: React.FormEvent) => {
+    event.preventDefault();
+    const amountFC = Math.max(0, fromDisplayAmount(parseFloat(capitalGoalDraft) || 0, settings.currency, settings.usdRateFC));
+    onUpdateSettings({ ...settings, capitalGoalFC: amountFC });
+  };
 
   const today = new Date();
   const isToday = (timestamp: string) => {
@@ -320,6 +337,38 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
         </div>
       </div>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Wallet className="h-5 w-5" /></div>
+          <div>
+            <h2 className="text-base font-extrabold text-slate-900">{i18nText('capital.title')}</h2>
+            <p className="mt-1 text-xs text-slate-500">{i18nText('capital.description')}</p>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 @xl:grid-cols-4">
+          <div className="rounded-xl bg-blue-50 p-3"><p className="text-[11px] font-semibold text-blue-800">{i18nText('capital.cash')}</p><p className="mt-1 text-base font-extrabold text-blue-950 tabular-nums">{fmt(financeSummary.availableCashFC)}</p></div>
+          <div className="rounded-xl bg-emerald-50 p-3"><p className="text-[11px] font-semibold text-emerald-800">{i18nText('capital.profit')}</p><p className="mt-1 text-base font-extrabold text-emerald-950 tabular-nums">{fmt(financeSummary.currentProfitFC)}</p></div>
+          <div className="rounded-xl bg-slate-50 p-3"><p className="text-[11px] font-semibold text-slate-600">{i18nText('capital.stock')}</p><p className="mt-1 text-base font-extrabold text-slate-900 tabular-nums">{fmt(financeSummary.stockCapitalFC)}</p></div>
+          <div className="rounded-xl bg-amber-50 p-3"><p className="text-[11px] font-semibold text-amber-800">{i18nText('capital.total')}</p><p className="mt-1 text-base font-extrabold text-amber-950 tabular-nums">{fmt(financeSummary.totalCapitalFC)}</p></div>
+        </div>
+        <form onSubmit={saveCapitalGoal} className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+          <div className="flex flex-col gap-3 @md:flex-row @md:items-end @md:justify-between">
+            <label className="flex-1 text-xs font-bold text-slate-700">
+              {i18nText('capital.goal')} ({settings.currency})
+              <input type="number" min="0" step={settings.currency === 'USD' ? '0.01' : '1'} value={capitalGoalDraft} onChange={(event) => setCapitalGoalDraft(event.target.value)} placeholder={i18nText('capital.goalPlaceholder')} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold tabular-nums @md:max-w-xs" />
+            </label>
+            <button type="submit" className="rounded-xl bg-[#0A4DFF] px-4 py-2.5 text-xs font-extrabold text-white">{i18nText('capital.save')}</button>
+          </div>
+          {capitalGoalFC > 0 ? (
+            <div className="mt-3">
+              <div className="mb-1.5 flex flex-wrap justify-between gap-2 text-xs"><span className="font-bold text-slate-700">{i18nText('capital.progress', { current: fmt(financeSummary.totalCapitalFC), goal: fmt(capitalGoalFC) })}</span><strong className="text-blue-700">{financeSummary.totalCapitalFC >= capitalGoalFC ? i18nText('capital.achieved', { amount: fmt(financeSummary.totalCapitalFC - capitalGoalFC) }) : i18nText('capital.missing', { amount: fmt(capitalGoalFC - financeSummary.totalCapitalFC) })}</strong></div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${capitalGoalProgress}%` }} /></div>
+            </div>
+          ) : <p className="mt-2 text-xs text-slate-500">{i18nText('capital.setGoal')}</p>}
+          <p className="mt-2 text-[10px] leading-relaxed text-slate-400">{i18nText('capital.disclaimer')}</p>
+        </form>
+      </section>
 
       {/* Automatic Formula Visual Breakdown — Simple for every merchant */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5">

@@ -67,6 +67,7 @@ import {
 import { formatMoney, fromDisplayAmount, toDisplayAmount } from './utils/currency';
 import { getPublicCatalogAppBase, makePublicCatalogSnapshot, updateLivePublicCatalog } from './utils/publicCatalog';
 import { parseSaleDate } from './utils/saleDate';
+import { summarizeShopFinances } from './utils/finance';
 import {
   authRedirectUrl,
   isOAuthProviderEnabled,
@@ -137,6 +138,7 @@ const sanitizeLegacySettings = (saved: Partial<ShopSettings>): ShopSettings => {
   };
   // Normalize legacy or malformed locale values while preserving the five supported languages.
   if (!['fr', 'en', 'ln', 'sw', 'zh'].includes(merged.language)) merged.language = 'fr';
+  if (!Number.isFinite(merged.capitalGoalFC) || (merged.capitalGoalFC || 0) < 0) merged.capitalGoalFC = 0;
   const oldExampleValues: Partial<ShopSettings> = {
     shopName: 'Alimentation Maman Grâce',
     ownerName: 'Grâce Kabongo',
@@ -1046,6 +1048,7 @@ export function App() {
 
   const fmt = (val: number) =>
     formatMoney(val, settings.currency, settings.usdRateFC);
+  const financialSummary = summarizeShopFinances(products, sales, credits, expenses);
   const nextCurrency = settings.currency === 'FC' ? 'USD' : 'FC';
   const currencyToggleLabel = i18nText('currency.change', { currency: nextCurrency });
   const toggleCurrency = () => setSettings((previous) => ({
@@ -1272,6 +1275,13 @@ export function App() {
       );
       showToast(`« ${product.name} » mis à jour !`);
     }
+  };
+
+  const handleCreateCollection = (collectionProducts: Product[]) => {
+    if (!collectionProducts.length) return;
+    setProducts((prev) => [...collectionProducts, ...prev]);
+    const collectionName = collectionProducts[0].collectionName || i18nText('collection.title');
+    showToast(i18nText('collection.addedToast', { count: collectionProducts.length, name: collectionName }));
   };
 
   const handleDeleteProduct = (product: Product) => {
@@ -1595,6 +1605,7 @@ export function App() {
                 sales={localizedSales}
                 expenses={expenses}
                 credits={credits}
+                onUpdateSettings={handleUpdateSettings}
                 onNavigate={(targetTab) => handleRequestTab(targetTab)}
                 onQuickSellProduct={openQuickSale}
                 onRestockProduct={(prod) => {
@@ -1623,7 +1634,9 @@ export function App() {
                 settings={settings}
                 products={localizedProducts}
                 sales={localizedSales}
+                expenses={expenses}
                 onSaveProduct={handleSaveProduct}
+                onCreateCollection={handleCreateCollection}
                 onDeleteProduct={handleDeleteProduct}
                 onRestockProduct={(prod) => {
                   setRestockTarget(prod);
@@ -1780,6 +1793,7 @@ export function App() {
                   settings={settings}
                   expenses={expenses}
                   products={products}
+                  availableCashFC={financialSummary.availableCashFC}
                   onAddExpense={(exp) => {
                     setExpenses((prev) => [exp, ...prev]);
                     showToast(`Dépense ajoutée (${fmt(exp.amountFC)})`);
