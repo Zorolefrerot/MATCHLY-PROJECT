@@ -36,7 +36,7 @@ function formatReceiptCurrency(
   usdRateFC: number
 ): string {
   if (currency === 'USD') {
-    const val = amountFC / (usdRateFC || 2850);
+    const val = amountFC / (usdRateFC || 2400);
     return `${val.toLocaleString('fr-FR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,

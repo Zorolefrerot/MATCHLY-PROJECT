@@ -17,8 +17,16 @@ Les photos de produits importées depuis le téléphone sont compressées puis t
 
 Pour un APK/PWA construit avec une API hébergée sur un autre domaine, configurez `VITE_CATALOG_API_URL` à l’URL HTTPS de cette API lors du build. Par défaut, le navigateur utilise son origine actuelle et les versions natives utilisent `https://shopflow.cd`.
 
+## Mode test temporaire sans paiement obligatoire
+
+L’interface reste en accès test sans expiration et sans paiement; aucun statut payé n’est créé par le navigateur. Pour la synchronisation multi-appareils, la migration additive `20261119233521_shopflow_realtime_delta.sql` ajoute uniquement la fonction de synchronisation par changements et inscrit `shopflow_records` à la publication Realtime. Elle ne modifie ni les comptes, boutiques ou données existantes. La migration `shopflow_testing_access.sql` n’est pas appliquée automatiquement. Aucun paramètre de prestataire de paiement n’est requis.
+
+## Paiements d’abonnement
+
+Aucun prestataire de paiement n’est intégré actuellement. Les formules affichées sont informatives; aucun checkout ni activation payante n’est disponible. Le choix du prochain prestataire sera confirmé avant toute intégration. Les clés et les données Supabase, les profils, boutiques, membres et données vendeurs ne sont pas modifiés par ce retrait. Aucun objet SQL ni enregistrement distant n’est supprimé.
+
 ## Comptes et boutiques
 
-Le schéma multi-boutique initial est dans `supabase/20261026_shop_accounts.sql`; le bucket privé par boutique et l’import transactionnel non-écrasant sont définis dans `supabase/20261026_shop_import_assets.sql`. Ces migrations sont déjà appliquées au projet ShopFlow. RLS couvre profils, abonnements, boutiques, membres, enregistrements et photos. `shopflow_create_shop` contrôle le forfait côté serveur : Starter/Pro restent mono-boutique, Business autorise plusieurs boutiques, sans plafond numérique inventé. Les tables du catalogue public restent distinctes.
+Le projet Supabase ShopFlow conserve ses profils, abonnements, boutiques, membres, enregistrements, photos et règles RLS. `shopflow_create_shop` contrôle les droits côté serveur : Starter/Pro restent mono-boutique, Business autorise plusieurs boutiques, sans plafond numérique inventé. Les tables du catalogue public restent distinctes.
 
-Les écrans d’authentification, de sélection de boutique et d’import sont raccordés au SDK Supabase; ils restent désactivés dans tout build sans configuration publique. La synchronisation continue après import n’est pas encore activée. Consulter `docs/supabase-auth-setup.md` pour les prérequis du domaine, SMTP, Google OAuth et les tests à effectuer. Les clés privées restent uniquement côté serveur; le navigateur reçoit seulement une clé publishable.
+Les réglages, articles, ventes, crédits et dépenses sont synchronisés par changements de lignes (`shopflow_apply_shop_changes`) : ajouts, modifications et suppressions logiques (`deleted_at`). Les appareils connectés à la même boutique écoutent Realtime sur `shopflow_records`; un rafraîchissement de secours reprend les changements à la reconnexion et au retour au premier plan. Le client fusionne les changements locaux en attente avec les données reçues et n’écrase pas les autres lignes de la boutique; la copie locale reste disponible hors ligne. Une sauvegarde cloud n’est confirmée que lorsque l’état indique la synchronisation réussie; en cas d’échec, la copie locale est conservée et les tentatives reprennent automatiquement. Consulter `docs/supabase-auth-setup.md` pour les prérequis du domaine, SMTP, OAuth et les tests à effectuer. Les clés privées restent uniquement côté serveur; le navigateur reçoit seulement une clé publishable.

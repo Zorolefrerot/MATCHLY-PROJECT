@@ -126,7 +126,9 @@ function recordPayload<T extends Record<string, unknown>>(
   imageKey?: 'image' | 'productImage',
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = { ...source };
-  if (imageKey && privateImage(payload[imageKey])) payload[imageKey] = '';
+  if (imageKey && (privateImage(payload[imageKey]) || typeof payload.cloudImagePath === 'string')) {
+    payload[imageKey] = '';
+  }
   return payload;
 }
 
@@ -205,6 +207,105 @@ export async function importLocalSnapshotToShop(
     products: normalizedProducts,
     sales: normalizedSales,
   };
+}
+
+const stableJson = (value: unknown): string => {
+  const normalize = (item: unknown): unknown => {
+    if (Array.isArray(item)) return item.map(normalize);
+    if (!item || typeof item !== 'object') return item;
+    return Object.fromEntries(Object.entries(item as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, child]) => [key, normalize(child)]));
+  };
+  return JSON.stringify(normalize(value));
+};
+
+function recordsForSnapshot(
+  snapshot: ShopDataSnapshot,
+  products: Product[] = snapshot.products,
+  sales: SaleRecord[] = snapshot.sales,
+): CloudRecordInput[] {
+  return [
+    { record_type: 'settings', record_id: 'current', payload: settingsForCloud(snapshot.settings) },
+    ...products.map((product) => ({
+      record_type: 'product' as const,
+      record_id: product.id,
+      payload: recordPayload(product as unknown as Record<string, unknown>, 'image'),
+    })),
+    ...sales.map((sale) => ({
+      record_type: 'sale' as const,
+      record_id: sale.id,
+      payload: recordPayload(sale as unknown as Record<string, unknown>, 'productImage'),
+    })),
+    ...snapshot.credits.map((credit) => ({
+      record_type: 'credit' as const,
+      record_id: credit.id,
+      payload: { ...credit } as unknown as Record<string, unknown>,
+    })),
+    ...snapshot.expenses.map((expense) => ({
+      record_type: 'expense' as const,
+      record_id: expense.id,
+      payload: { ...expense } as unknown as Record<string, unknown>,
+    })),
+  ];
+}
+
+/** Persist only changed rows, with explicit tombstones, so an older device cannot erase newer cloud rows. */
+export async function saveShopSnapshot(
+  shopId: string,
+  snapshot: ShopDataSnapshot,
+  baseline: ShopDataSnapshot | null = null,
+): Promise<ShopDataSnapshot> {
+  validateLocalSnapshot(snapshot);
+  const normalizedProducts = await Promise.all(
+    snapshot.products.map((product) => normalizeProduct(shopId, product)),
+  );
+  const productsById = new Map(normalizedProducts.map((product) => [product.id, product]));
+  const normalizedSales = await Promise.all(
+    snapshot.sales.map((sale) => normalizeSale(shopId, sale, productsById.get(sale.productId))),
+  );
+  const currentSnapshot = { ...snapshot, products: normalizedProducts, sales: normalizedSales };
+  const currentRecords = recordsForSnapshot(currentSnapshot);
+  const baselineRecords = baseline ? recordsForSnapshot(baseline) : [];
+  const recordKey = (record: Pick<CloudRecordInput, 'record_type' | 'record_id'>) => `${record.record_type}\u0000${record.record_id}`;
+  const previousByKey = new Map(baselineRecords.map((record) => [recordKey(record), record]));
+  const currentByKey = new Map(currentRecords.map((record) => [recordKey(record), record]));
+  const upserts = currentRecords.filter((record) => {
+    const previous = previousByKey.get(recordKey(record));
+    return !previous || stableJson(previous.payload) !== stableJson(record.payload);
+  });
+  const deletes = baselineRecords
+    .filter((record) => !currentByKey.has(recordKey(record)) && record.record_type !== 'settings')
+    .map(({ record_type, record_id }) => ({ record_type, record_id }));
+
+  const { data, error } = await requireSupabase().rpc('shopflow_apply_shop_changes', {
+    p_shop_id: shopId,
+    p_upserts: upserts,
+    p_deletes: deletes,
+  });
+  if (error) throw error;
+  if (typeof data !== 'number') throw new Error('SYNC_VERIFY_FAILED');
+
+  return currentSnapshot;
+}
+
+/** Subscribe to committed row changes for one authorized shop. */
+export function subscribeToShopRecords(
+  shopId: string,
+  onChange: () => void,
+  onStatus?: (status: string) => void,
+): () => void {
+  const client = requireSupabase();
+  const channel = client
+    .channel(`shopflow-records-${shopId}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'shopflow_records',
+      filter: `shop_id=eq.${shopId}`,
+    }, () => onChange())
+    .subscribe((status) => onStatus?.(status));
+  return () => { void client.removeChannel(channel); };
 }
 
 async function signedImageUrl(path: string): Promise<string> {

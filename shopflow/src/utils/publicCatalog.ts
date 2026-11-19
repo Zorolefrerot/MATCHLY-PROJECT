@@ -411,7 +411,7 @@ function writeImageCache(key: string, value: { hash: string; url: string }): voi
   }
 }
 
-async function compressProductImage(source: string): Promise<string> {
+export async function compressProductImage(source: string, maxBytes = 1_500_000, maxAttempts = 5): Promise<string> {
   const image = new Image();
   image.src = source;
   try {
@@ -421,7 +421,7 @@ async function compressProductImage(source: string): Promise<string> {
   }
   const maxSide = 1280;
   let scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
-  for (let attempt = 0; attempt < 5; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -431,7 +431,7 @@ async function compressProductImage(source: string): Promise<string> {
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     const compressed = canvas.toDataURL('image/jpeg', Math.max(0.55, 0.82 - attempt * 0.07));
-    if (Math.floor((compressed.length - compressed.indexOf(',') - 1) * 0.75) <= 1_500_000) {
+    if (Math.floor((compressed.length - compressed.indexOf(',') - 1) * 0.75) <= maxBytes) {
       return compressed;
     }
     scale *= 0.78;
