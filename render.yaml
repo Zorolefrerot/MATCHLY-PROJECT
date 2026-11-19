@@ -2,9 +2,9 @@ services:
   - type: web
     name: shopflow-site
     runtime: node
-    branch: arena/0b9f89cc-matchly-project
+    branch: arena/cd1aec74-matchly-project
     plan: free
-    buildCommand: npm --prefix shopflow ci && npm run build:hosted
+    buildCommand: npm --prefix shopflow ci && SHOPFLOW_REQUIRE_DOWNLOADS=1 npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
@@ -15,6 +15,8 @@ services:
         sync: false
       - key: SUPABASE_SECRET_KEY
         sync: false
+      - key: PUBLIC_SITE_ORIGIN
+        value: https://shopflow-drc.onrender.com
       - key: VITE_SUPABASE_URL
         value: https://sgiyuxpzqyyquvvznomn.supabase.co
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
@@ -22,8 +24,8 @@ services:
       - key: VITE_SUPABASE_AUTH_REDIRECT_URL
         value: https://shopflow-drc.onrender.com/app/
       - key: VITE_SHOPFLOW_GOOGLE_OAUTH_ENABLED
-        value: "false"
+        value: "true"
       - key: VITE_SHOPFLOW_GITHUB_OAUTH_ENABLED
-        value: "false"
+        value: "true"
       - key: VITE_SHOPFLOW_FACEBOOK_OAUTH_ENABLED
         value: "false"

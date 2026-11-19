@@ -419,3 +419,101 @@ body {
     font-size: 0.875rem;
   }
 }
+
+/* Theme contrast and iPhone-safe layout refinements. */
+#shopflow-theme-root[data-mode="dark"] {
+  color-scheme: dark;
+  background-color: #0B1120;
+  color: #E5EAF2;
+}
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) :is(.bg-slate-200, .bg-slate-300, .bg-gray-100, .bg-gray-200) {
+  background-color: #273449 !important;
+}
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) :is(.bg-white\/80, .bg-white\/70, .bg-white\/60, .bg-white\/50, .bg-slate-200\/70, .bg-slate-200\/80, .bg-slate-50\/70, .bg-slate-50\/80) {
+  background-color: #162033 !important;
+}
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) :is(.bg-blue-50\/40, .bg-blue-50\/60, .bg-blue-50\/70, .bg-blue-50\/80, .bg-emerald-50\/30, .bg-emerald-50\/40, .bg-emerald-50\/50, .bg-emerald-50\/70, .bg-emerald-50\/80, .bg-amber-50\/50, .bg-amber-50\/60, .bg-amber-50\/70, .bg-red-50\/50) {
+  background-color: #1E293B !important;
+}
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) :is(.bg-gradient-to-r, .bg-gradient-to-br, .bg-gradient-to-b) {
+  background-image: none !important;
+  background-color: #111827 !important;
+}
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) :is(.text-blue-950, .text-emerald-950, .text-amber-950, .text-rose-950) {
+  color: #E2EAF5 !important;
+}
+#shopflow-theme-root[data-mode="warm"],
+#shopflow-theme-root[data-mode="warm"] .bg-slate-50,
+#shopflow-theme-root[data-mode="warm"] :not(#receipt-paper-sheet) .bg-slate-50\/70,
+#shopflow-theme-root[data-mode="warm"] :not(#receipt-paper-sheet) .bg-slate-50\/80 {
+  background-color: #FAF6EE !important;
+}
+#shopflow-theme-root[data-mode="warm"] :not(#receipt-paper-sheet) :is(.bg-slate-100, .bg-slate-200) {
+  background-color: #F1EBDD !important;
+}
+#shopflow-theme-root[data-mode="warm"] :not(#receipt-paper-sheet) :is(.bg-white\/80, .bg-white\/70) {
+  background-color: #FFFDF8 !important;
+}
+#shopflow-theme-root[data-mode="warm"] :not(#receipt-paper-sheet) :is(.border-slate-100, .border-slate-200) {
+  border-color: #E7DFD0 !important;
+}
+#shopflow-theme-root[data-mode="dark"] :not(#receipt-paper-sheet) .border-blue-200 {
+  border-color: #334155 !important;
+}
+
+.sf-mobile-modal {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  overscroll-behavior: contain;
+}
+.sf-mobile-modal-panel {
+  max-height: calc(100vh - 1.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  max-height: calc(100dvh - 1.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 639px) {
+  .sf-app-main {
+    overflow-x: clip;
+    padding-bottom: calc(6.25rem + env(safe-area-inset-bottom, 0px));
+  }
+  .sf-app-main :is(input, select, textarea, button) {
+    max-width: 100%;
+  }
+  .sf-mobile-modal-panel {
+    border-radius: 1rem !important;
+  }
+}
+
+/* Apply the merchant's chosen primary color consistently to common blue controls. */
+#shopflow-theme-root .bg-blue-600 {
+  background-color: var(--sf-primary) !important;
+}
+#shopflow-theme-root .bg-blue-700,
+#shopflow-theme-root .hover\:bg-blue-700:hover {
+  background-color: var(--sf-primary-dark) !important;
+}
+#shopflow-theme-root:not([data-mode="dark"]) .text-blue-600,
+#shopflow-theme-root:not([data-mode="dark"]) .text-blue-700 {
+  color: var(--sf-primary) !important;
+}
+#shopflow-theme-root:not([data-mode="dark"]) .border-blue-200 {
+  border-color: color-mix(in srgb, var(--sf-primary) 24%, white) !important;
+}
+#shopflow-theme-root[data-font="modern"] {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+@media (max-width: 639px) {
+  #shopflow-theme-root .fixed.inset-0.flex.items-center.justify-center {
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  }
+  #shopflow-theme-root .fixed.inset-0.flex.items-center.justify-center > :first-child {
+    max-height: calc(100dvh - 1.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}

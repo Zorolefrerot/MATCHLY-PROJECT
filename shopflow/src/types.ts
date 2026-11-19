@@ -34,6 +34,7 @@ export type NavTab =
   | 'dashboard'
   | 'pos'
   | 'inventory'
+  | 'more'
   | 'ai'
   | 'storefront'
   | 'credits'
@@ -41,8 +42,6 @@ export type NavTab =
   | 'expenses';
 
 export type SubscriptionPlanId = 'starter' | 'pro_ai' | 'business';
-
-export type PreviewViewport = 'hybrid' | 'mobile';
 
 export interface Product {
   id: string;
@@ -59,7 +58,12 @@ export interface Product {
     | 'Boissons'
     | 'Hygiène'
     | 'Mode & Accessoires'
-    | 'Huiles & Lait';
+    | 'Huiles & Lait'
+    | 'Parfum'
+    | 'Santé'
+    | 'Cosmétiques'
+    | 'Électronique'
+    | 'Autre';
   unit: string;
   image: string;
   /** Private Supabase Storage asset reference used by authenticated shop sync. */
@@ -69,6 +73,11 @@ export interface Product {
   minStockAlert: number;
   purchasePriceFC: number;
   sellingPriceFC: number;
+  /** Internal grouping metadata; public catalog continues to publish individual products only. */
+  collectionId?: string;
+  collectionName?: string;
+  /** Full collection purchase outflow copied to items and counted once per collection. */
+  collectionPurchaseTotalFC?: number;
 }
 
 export interface SaleRecord {
@@ -110,6 +119,9 @@ export interface ExpenseEntry {
   category: 'Transport' | 'Emballage' | 'Énergie / Courant' | 'Autre';
   amountFC: number;
   timestamp: string;
+  /** Optional for legacy/general expenses; new expenses are linked to an inventory item. */
+  productId?: string;
+  productName?: string;
 }
 
 export interface ReceiptLineItem {
@@ -162,6 +174,8 @@ export interface ShopSettings {
   activePlan: SubscriptionPlanId;
   planPaid: boolean;
   trialStartedAt: string;
+  /** Optional target for the shop's estimated cash plus current inventory capital. */
+  capitalGoalFC?: number;
   /** Private local credentials for syncing this shop's public catalog. Never publish the token. */
   publicCatalogId?: string;
   publicCatalogToken?: string;

@@ -216,15 +216,14 @@ function drawPhone(x, y, w, h, time, type = 'android') {
   return { sx, sy: sy + (safari ? 114 : 47), sw, sh: sh - (safari ? 181 : 67) };
 }
 
-function drawAppHeader(screen) {
+function drawAppHeader(screen, section = 'Accueil') {
   const { sx, sy, sw } = screen;
   roundRect(sx + 17, sy + 13, 37, 37, 11, '#e7f2ff');
   if (icon.complete && icon.naturalWidth) ctx.drawImage(icon, sx + 21, sy + 17, 29, 29);
   drawText('ShopFlow', sx + 66, sy + 39, 21, '#173451', 850);
-  roundRect(sx + sw - 56, sy + 12, 39, 39, 13, '#eef5fa');
-  drawText('•••', sx + sw - 36, sy + 38, 15, '#4a6b87', 800, 'center');
-  drawText('Bonjour !', sx + 20, sy + 92, 17, '#718397', 600);
-  drawText('Votre activité', sx + 20, sy + 126, 25, '#17314a', 850);
+  roundRect(sx + sw - 70, sy + 12, 53, 39, 13, '#eef5fa');
+  drawText('FC ⇄', sx + sw - 43, sy + 38, 12, '#4a6b87', 800, 'center');
+  drawText(section, sx + 20, sy + 126, 25, '#17314a', 850);
   return sy + 148;
 }
 
@@ -279,81 +278,68 @@ function drawDefinition(time) {
 
 function drawAndroidSale(time) {
   drawBackground(time, 'ice');
-  drawHeading('Exemple 1 · Android', 'Une vente,', 'Du panier au reçu : sélectionner des bijoux et enregistrer la vente.', time, true);
-  drawPill('APERÇU ILLUSTRATIF', 84, 452, 280, '#e6f1fb', '#2876b6', 42);
+  drawHeading('Exemple 1 · Caisse', 'Préparer un ticket', 'Choisir les articles, le mode de paiement et l’option de livraison — sans enregistrer de vente.', time, true);
+  drawPill('SIMULATION · AUCUNE VENTE', 84, 452, 330, '#e6f1fb', '#2876b6', 42);
   const screen = drawPhone(74, 555, 526, 1220, time, 'android');
-  const appY = drawAppHeader(screen);
-  drawText('Nouvelle vente', screen.sx + 20, appY + 27, 18, '#6a7e91', 700);
-  drawText('Choisir des articles', screen.sx + 20, appY + 66, 23, '#1a334d', 850);
+  const appY = drawAppHeader(screen, 'Caisse & Vente Rapide');
+  drawText('Ajouter des articles au ticket', screen.sx + 20, appY + 27, 16, '#6a7e91', 700);
   const items = [
     { name: 'Collier doré', sub: 'Bijoux · Pièce', color: '#b68128', tint: '#fff4dc' },
     { name: 'Bracelet perlé', sub: 'Bijoux · Pièce', color: '#197c70', tint: '#e5f7f1' },
-    { name: 'Boucles d’oreilles', sub: 'Bijoux · Paire', color: '#7354aa', tint: '#f2edff' },
   ];
-  const rowY = appY + 94;
+  const rowY = appY + 44;
   items.forEach((item, i) => {
-    const q = easeOut((time - .2 - i * .23) / .36); const yy = rowY + i * 100;
-    ctx.save(); ctx.globalAlpha = q; ctx.translate((1 - q) * -46, 0);
-    roundRect(screen.sx + 13, yy, screen.sw - 26, 82, 17, '#ffffff', '#e6edf3');
-    roundRect(screen.sx + 24, yy + 14, 54, 54, 15, item.tint);
-    drawText('✦', screen.sx + 51, yy + 51, 25, item.color, 850, 'center');
-    drawText(item.name, screen.sx + 91, yy + 34, 17, '#20384f', 800);
-    drawText(item.sub, screen.sx + 91, yy + 58, 12, '#8797a6', 500);
-    roundRect(screen.sx + screen.sw - 64, yy + 22, 38, 38, 13, '#edf5fc');
-    drawText('+', screen.sx + screen.sw - 45, yy + 49, 23, '#1872c2', 800, 'center');
+    const q = easeOut((time - .2 - i * .23) / .36); const yy = rowY + i * 91;
+    ctx.save(); ctx.globalAlpha = q; ctx.translate((1 - q) * -36, 0);
+    roundRect(screen.sx + 13, yy, screen.sw - 26, 76, 17, '#ffffff', '#e6edf3');
+    roundRect(screen.sx + 24, yy + 12, 50, 50, 15, item.tint);
+    drawText('✦', screen.sx + 49, yy + 46, 22, item.color, 850, 'center');
+    drawText(item.name, screen.sx + 84, yy + 32, 16, '#20384f', 800);
+    drawText(item.sub, screen.sx + 84, yy + 55, 12, '#8797a6', 500);
+    drawPill('Facture +', screen.sx + screen.sw - 118, yy + 19, 92, '#edf5fc', '#1872c2', 38);
     ctx.restore();
   });
-  const cartY = rowY + 314; const cart = easeOut((time - 1.05) / .5); ctx.globalAlpha = cart;
-  roundRect(screen.sx + 14, cartY, screen.sw - 28, 174, 21, '#edf5fc');
-  drawText('PANIER', screen.sx + 33, cartY + 35, 13, '#52718e', 850);
-  drawText('Collier + bracelet', screen.sx + 33, cartY + 70, 18, '#18334d', 800);
-  drawText('Total calculé à la validation', screen.sx + 33, cartY + 98, 12, '#76889a', 550);
-  roundRect(screen.sx + 23, cartY + 116, screen.sw - 46, 44, 14, '#126fd0');
-  drawText('ENREGISTRER LA VENTE', screen.sx + screen.sw / 2, cartY + 144, 13, '#ffffff', 850, 'center');
-  drawTap(screen.sx + screen.sw / 2, cartY + 137, time, 2.15);
-  const receipt = easeOut((time - 3.1) / .45); ctx.save(); ctx.globalAlpha = receipt; ctx.translate(0, (1 - receipt) * 75);
-  ctx.shadowColor = '#071b2d50'; ctx.shadowBlur = 25; ctx.shadowOffsetY = 12;
-  roundRect(618, 1290, 390, 228, 25, '#ffffff', '#dce8f2', 2); ctx.shadowColor = 'transparent';
-  roundRect(646, 1320, 56, 56, 17, '#e7f8ee'); drawText('✓', 674, 1359, 34, '#168255', 900, 'center');
-  drawText('Vente enregistrée', 720, 1348, 21, '#17334d', 850);
-  drawText('Reçu disponible dans l’historique.', 648, 1417, 15, '#75899d', 600);
-  drawPill('REÇU PRÊT', 648, 1450, 165, '#edf5fc', '#2575b6', 38); ctx.restore();
+  const cartY = rowY + 194; const cart = easeOut((time - .7) / .5); ctx.globalAlpha = cart;
+  roundRect(screen.sx + 14, cartY, screen.sw - 28, 300, 21, '#edf5fc');
+  drawText('TICKET · EXEMPLE', screen.sx + 33, cartY + 34, 13, '#52718e', 850);
+  drawText('Collier + bracelet · Qté 1', screen.sx + 33, cartY + 69, 16, '#18334d', 800);
+  drawText('Paiement : Cash · Mobile Money · Carte · Crédit', screen.sx + 33, cartY + 101, 11, '#526d82', 650);
+  drawText('Livraison', screen.sx + 33, cartY + 138, 13, '#18334d', 800);
+  drawPill('Sans frais', screen.sx + 29, cartY + 151, 120, '#dff4e9', '#1d744f', 39);
+  drawPill('Avec frais', screen.sx + 160, cartY + 151, 120, '#ffffff', '#466780', 39);
+  drawText('Le montant éventuel s’ajoute au total.', screen.sx + 33, cartY + 225, 12, '#526d82', 600);
+  roundRect(screen.sx + 23, cartY + 244, screen.sw - 46, 42, 14, '#dce7f0');
+  drawText('DÉMO ARRÊTÉE AVANT VALIDATION', screen.sx + screen.sw / 2, cartY + 271, 10, '#47637b', 850, 'center');
+  ctx.globalAlpha = 1;
   drawStickman(850, 1780, 1.06, 'point', time, .98);
-  drawSpeech('Exemple : vous vendez un collier et un bracelet. Le reçu reste accessible dans l’historique.', 620, 785, 389, time - .7, { size: 24, height: 208 });
+  drawSpeech('Les frais de livraison sont facultatifs. Cette maquette s’arrête avant la confirmation : aucune vente ni encaissement n’est enregistré.', 620, 785, 389, time - .7, { size: 23, height: 216 });
 }
 
 function drawStock(time) {
   drawBackground(time, 'mint');
-  drawHeading('Exemple 2 · Articles & stock', 'Repérer ce qui', 'Est à vérifier : bijoux, accessoires, vêtements, chaussures et e-books.', time);
-  drawPill('APERÇU ILLUSTRATIF', 84, 452, 280, '#114b4c', '#8ae3bd', 42);
-  const screen = drawPhone(444, 565, 530, 1210, time, 'android'); const appY = drawAppHeader(screen);
-  drawText('Marchandises & stock', screen.sx + 20, appY + 28, 20, '#17334c', 850);
-  drawText('Catalogue', screen.sx + 20, appY + 64, 14, '#718598', 600);
+  drawHeading('Exemple 2 · Articles & stock', 'Consulter le catalogue', 'Rechercher un article, vérifier sa quantité et ouvrir les actions disponibles.', time);
+  drawPill('SIMULATION · DONNÉES FICTIVES', 84, 452, 360, '#114b4c', '#8ae3bd', 42);
+  const screen = drawPhone(444, 565, 530, 1210, time, 'android'); const appY = drawAppHeader(screen, 'Mes Marchandises & Stock');
+  roundRect(screen.sx + 16, appY + 5, screen.sw - 32, 43, 12, '#ffffff', '#e7edf2');
+  drawText('Filtrer vos marchandises…', screen.sx + 31, appY + 32, 13, '#8495a3', 550);
   const items = [
-    { name: 'Bracelet perlé', cat: 'Bijoux', color: '#b68128', fill: '#fff4dc', bar: .78 },
-    { name: 'Sac à main', cat: 'Accessoires', color: '#16885d', fill: '#e8f5ee', bar: .55 },
-    { name: 'E-book pratique', cat: 'E-books', color: '#7054aa', fill: '#f2edff', bar: .23 },
+    { name: 'Collier doré', cat: 'Bijoux · Quantité : 12', color: '#b68128', fill: '#fff4dc' },
+    { name: 'Sac à main', cat: 'Accessoires · Quantité : 4', color: '#16885d', fill: '#e8f5ee' },
+    { name: 'E-book pratique', cat: 'E-books · Quantité : 18', color: '#7054aa', fill: '#f2edff' },
   ];
   items.forEach((item, i) => {
-    const q = easeOut((time - i * .21) / .4); const yy = appY + 89 + i * 142 - Math.sin(clamp((time - .8) / 4) * Math.PI) * 15;
-    ctx.save(); ctx.globalAlpha = q; ctx.translate(0, (1 - q) * 30);
-    roundRect(screen.sx + 14, yy, screen.sw - 28, 123, 17, '#ffffff', '#e4eee8');
-    roundRect(screen.sx + 26, yy + 17, 46, 46, 14, item.fill); drawText('✦', screen.sx + 49, yy + 48, 20, item.color, 850, 'center');
-    drawText(item.name, screen.sx + 86, yy + 40, 16, '#18364a', 800);
-    drawText(item.cat, screen.sx + 86, yy + 65, 13, i === 2 ? '#bd7626' : '#829496', 600);
-    roundRect(screen.sx + 27, yy + 91, screen.sw - 54, 9, 5, '#e8efeb');
-    const amount = i === 2 ? mix(item.bar, .56, easeOut((time - 3.1) / 1.2)) : item.bar;
-    roundRect(screen.sx + 27, yy + 91, (screen.sw - 54) * amount, 9, 5, item.color); ctx.restore();
+    const q = easeOut((time - i * .2) / .4); const yy = appY + 63 + i * 140;
+    ctx.save(); ctx.globalAlpha = q; ctx.translate(0, (1 - q) * 22);
+    roundRect(screen.sx + 14, yy, screen.sw - 28, 124, 17, '#ffffff', '#e4eee8');
+    roundRect(screen.sx + 25, yy + 13, 44, 44, 13, item.fill); drawText('✦', screen.sx + 47, yy + 42, 20, item.color, 850, 'center');
+    drawText(item.name, screen.sx + 81, yy + 32, 15, '#18364a', 800);
+    drawText(item.cat, screen.sx + 81, yy + 53, 10, '#829496', 600);
+    drawPill('+ Stock', screen.sx + 25, yy + 73, 103, '#edf5fc', '#2575b6', 35);
+    drawPill('+1 Vente', screen.sx + 137, yy + 73, 106, '#e9f8ef', '#19704e', 35);
+    ctx.restore();
   });
-  const alert = easeOut((time - .8) / .55); ctx.save(); ctx.globalAlpha = alert; ctx.translate((1 - alert) * -175, 0);
-  ctx.shadowColor = '#00171540'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 13;
-  roundRect(72, 790, 390, 290, 29, '#ffffff'); ctx.shadowColor = 'transparent';
-  roundRect(101, 820, 60, 60, 18, '#fff2de'); drawText('!', 131, 863, 34, '#c77b23', 900, 'center');
-  drawText('À surveiller', 180, 845, 24, '#17364a', 850);
-  drawText('Un article approche du seuil choisi.', 101, 929, 17, '#738799', 600);
-  roundRect(101, 971, 330, 72, 18, '#eaf8f0'); drawText('Vérifier la quantité', 266, 1016, 16, '#19704e', 800, 'center'); ctx.restore();
   drawStickman(265, 1790, 1.14, 'walk', time, .97);
-  drawSpeech('Avant un réassort, vérifiez les quantités visibles dans le catalogue.', 76, 1132, 400, time - 1.05, { size: 24, height: 188 });
+  drawSpeech('Les boutons illustrés ouvrent les actions de stock et de vente. Le tutoriel n’enregistre aucune modification.', 76, 1132, 400, time - 1.05, { size: 24, height: 188 });
 }
 
 function drawIphone(time) {
@@ -363,10 +349,10 @@ function drawIphone(time) {
   const screen = drawPhone(251, 565, 578, 1215, time, 'iphone'); const appY = drawAppHeader(screen);
   drawText('Vue d’ensemble', screen.sx + 20, appY + 63, 22, '#18334d', 850);
   const cards = [
-    { x: screen.sx + 15, name: 'VENTES', color: '#2378bc', fill: '#e9f3ff', glyph: '↗' },
-    { x: screen.sx + screen.sw / 2 + 4, name: 'DÉPENSES', color: '#27815a', fill: '#eaf8f0', glyph: '−' },
-    { x: screen.sx + 15, name: 'STOCK', color: '#aa7029', fill: '#fff2e1', glyph: '▤' },
-    { x: screen.sx + screen.sw / 2 + 4, name: 'CRÉDITS', color: '#7157b3', fill: '#f2edff', glyph: '◷' },
+    { x: screen.sx + 15, name: 'CHIFFRE D’AFFAIRES', color: '#2378bc', fill: '#e9f3ff', glyph: '↗' },
+    { x: screen.sx + screen.sw / 2 + 4, name: 'COÛT D’ACHAT', color: '#27815a', fill: '#eaf8f0', glyph: '−' },
+    { x: screen.sx + 15, name: 'DÉPENSES', color: '#aa7029', fill: '#fff2e1', glyph: '−' },
+    { x: screen.sx + screen.sw / 2 + 4, name: 'BÉNÉFICE NET', color: '#7157b3', fill: '#f2edff', glyph: '↗' },
   ];
   cards.forEach((card, i) => {
     const q = easeOut((time - i * .14) / .4); const yy = appY + 89 + Math.floor(i / 2) * 145;
@@ -390,35 +376,25 @@ function drawIphone(time) {
 
 function drawActivity(time) {
   drawBackground(time, 'violet');
-  drawHeading('Dernier exemple · suivi', 'Faire le point', 'Sur son activité : retrouver les ventes, dépenses et crédits saisis.', time);
-  const x = 82, y = 548, w = 916, h = 1050; const p = easeOut(time / .65);
-  ctx.save(); ctx.globalAlpha = p; ctx.translate((1 - p) * 58, 0);
-  ctx.shadowColor = '#02051056'; ctx.shadowBlur = 38; ctx.shadowOffsetY = 18;
-  roundRect(x, y, w, h, 34, '#ffffff'); ctx.shadowColor = 'transparent';
-  drawText('SHOPFLOW  /  VUE D’ENSEMBLE', x + 42, y + 70, 17, '#71869b', 850);
-  drawText('Repères du commerce', x + 42, y + 136, 38, '#17334d', 850);
-  const blocks = [
-    { x: x + 38, title: 'Ventes', label: 'Enregistrées', color: '#1476c5', tint: '#eaf4ff' },
-    { x: x + 326, title: 'Dépenses', label: 'Saisies', color: '#258259', tint: '#ebf8f0' },
-    { x: x + 614, title: 'Crédits', label: 'À suivre', color: '#7153b3', tint: '#f2efff' },
-  ];
-  blocks.forEach((b, i) => {
-    const q = easeOut((time - i * .17) / .45); ctx.save(); ctx.globalAlpha = q;
-    roundRect(b.x, y + 177, 252, 160, 22, b.tint); drawText(b.title.toUpperCase(), b.x + 20, y + 222, 15, b.color, 850);
-    drawText(b.label, b.x + 20, y + 275, 23, '#203a52', 800); drawText(i === 0 ? '↗' : i === 1 ? '−' : '◷', b.x + 216, y + 222, 29, b.color, 850, 'center'); ctx.restore();
-  });
-  drawText('ILLUSTRATION D’UNE TENDANCE', x + 44, y + 408, 16, '#72859a', 850);
-  const chartX = x + 60, chartY = y + 840, chartW = 770, chartH = 340;
-  ctx.strokeStyle = '#e8edf2'; ctx.lineWidth = 2;
-  for (let i = 0; i < 4; i += 1) { const gy = chartY - i * 82; ctx.beginPath(); ctx.moveTo(chartX, gy); ctx.lineTo(chartX + chartW, gy); ctx.stroke(); }
-  [.28,.5,.4,.72,.55,.84,.65,.94].forEach((value, i) => {
-    const q = easeOut((time - .3 - i * .12) / .48); const barH = chartH * value * q; const bx = chartX + i * 94;
-    const color = i > 5 ? '#57d6a6' : '#1685e0'; const gr = ctx.createLinearGradient(0, chartY - barH, 0, chartY);
-    gr.addColorStop(0, color); gr.addColorStop(1, i > 5 ? '#b0f1d2' : '#96d5ff'); roundRect(bx, chartY - barH, 42, barH, 18, gr);
-  });
-  ctx.restore();
-  drawStickman(850, 1780, .98, 'wave', time, .98);
-  drawSpeech('Chaque chiffre présenté doit venir de vos propres données saisies.', 570, 1535, 410, time - .7, { size: 24, height: 145 });
+  drawHeading('Accès rapide · devise', 'Basculer FC / USD', 'Le bouton placé dans l’en-tête change rapidement la devise affichée.', time);
+  const screen = drawPhone(270, 520, 540, 1240, time, 'android');
+  const appY = drawAppHeader(screen, 'Accueil');
+  drawText('Affichage des montants', screen.sx + 22, appY + 31, 15, '#72859a', 700);
+  const p = easeInOut((time - .3) / 2.2);
+  const current = p < .5 ? 'FC' : 'USD';
+  const next = p < .5 ? 'USD' : 'FC';
+  roundRect(screen.sx + 18, appY + 57, screen.sw - 36, 210, 22, '#ffffff', '#e8edf2');
+  drawText('Devise actuelle', screen.sx + screen.sw / 2, appY + 97, 14, '#7b8d9e', 650, 'center');
+  drawPill(current, screen.sx + screen.sw / 2 - 72, appY + 115, 144, '#eaf4ff', '#176fc4', 62);
+  drawPill(`Changer en ${next}`, screen.sx + screen.sw / 2 - 122, appY + 190, 244, '#eef5fa', '#49677f', 44);
+  roundRect(82, 1180, 916, 220, 29, '#ffffff', '#dce7f0', 2);
+  drawText('CONVERSION INDICATIVE', 120, 1234, 16, '#72859a', 850);
+  drawText('12 000 FC', 270, 1320, 36, '#17334d', 850, 'center');
+  drawText('=', 540, 1320, 32, '#8295a6', 800, 'center');
+  drawText('5 USD', 805, 1320, 36, '#176fc4', 850, 'center');
+  drawText('Taux initial : 1 USD = 2 400 FC · aucun paiement n’est effectué.', 540, 1368, 16, '#75899d', 600, 'center');
+  drawStickman(880, 1780, 1.0, 'point', time, .98);
+  drawSpeech('Touchez FC ou USD dans l’en-tête. Le changement concerne l’affichage et ne déclenche aucun paiement.', 80, 1508, 500, time - .7, { size: 23, height: 170 });
 }
 
 function drawEnd(time) {
@@ -443,7 +419,7 @@ const scenes = [
   { start: 10, end: 17, label: 'Exemple · Android et vente', draw: drawAndroidSale },
   { start: 17, end: 23, label: 'Exemple · articles et stock', draw: drawStock },
   { start: 23, end: 29, label: 'Exemple · iPhone dans Safari', draw: drawIphone },
-  { start: 29, end: 34, label: 'Suivi d’activité', draw: drawActivity },
+  { start: 29, end: 34, label: 'Accès rapide · devise FC / USD', draw: drawActivity },
   { start: 34, end: 38, label: 'Conclusion', draw: drawEnd },
 ];
 
