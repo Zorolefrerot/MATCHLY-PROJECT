@@ -535,7 +535,7 @@ export const VisualReceiptModal: React.FC<VisualReceiptModalProps> = ({
                 <span>{receipt.paymentMethodLabel}</span>
               </div>
               <p className="text-slate-800">
-                <span className="text-slate-600">Référence : </span>
+                <span className="text-slate-600">Référence du reçu : </span>
                 <span className="font-mono font-medium">
                   {receipt.paymentReference}
                 </span>

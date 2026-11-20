@@ -934,5 +934,11 @@
   "plans.billing.equivalent": "Équivaut à",
   "plans.priceNote": "Prix indicatifs · taux utilisé : 1 USD = 2 400 FC",
   "plans.annualNote": "L’annuel correspond à 10 mois payés sur 12.",
-  ". Les offres et tarifs restent indicatifs pendant les tests.": ". Les offres et tarifs restent indicatifs pendant les tests."
+  ". Les offres et tarifs restent indicatifs pendant les tests.": ". Les offres et tarifs restent indicatifs pendant les tests.",
+  "Marge": "Marge",
+  "Gain/u :": "Gain/u :",
+  "Référence du reçu :": "Référence du reçu :",
+  "Historique des ventes (": "Historique des ventes (",
+  "CA du jour :": "CA du jour :",
+  "Gain du jour :": "Gain du jour :"
 }

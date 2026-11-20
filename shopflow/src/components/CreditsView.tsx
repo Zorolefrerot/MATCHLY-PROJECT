@@ -9,7 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import { CreditEntry, ShopSettings } from '../types';
-import { formatMoney, fromDisplayAmount } from '../utils/currency';
+import { formatMoney, fromDisplayAmount, toDisplayAmount } from '../utils/currency';
 
 interface CreditsViewProps {
   settings: ShopSettings;
@@ -214,8 +214,9 @@ export const CreditsView: React.FC<CreditsViewProps> = ({
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
-                        step="any"
-                        min="0"
+                        step={settings.currency === 'USD' ? '0.01' : '1'}
+                        min={settings.currency === 'USD' ? '0.01' : '1'}
+                        max={toDisplayAmount(remainingFC, settings.currency, settings.usdRateFC)}
                         value={paymentInput}
                         onChange={(e) => setPaymentInput(e.target.value)}
                         placeholder={`Montant reçu (${settings.currency})`}

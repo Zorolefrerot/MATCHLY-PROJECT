@@ -23,7 +23,7 @@ import {
   ShopSettings,
 } from '../types';
 import { parseSaleDate, formatSaleTime } from '../utils/saleDate';
-import { formatMoney, fromDisplayAmount, toDisplayAmount } from '../utils/currency';
+import { formatMoney, formatSignedMoney, fromDisplayAmount, toDisplayAmount } from '../utils/currency';
 import { summarizeShopFinances } from '../utils/finance';
 
 interface DashboardViewProps {
@@ -116,6 +116,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const profitRatio = Math.max(0, 100 - costRatio - expenseRatio);
 
   const fmt = (val: number) => formatMoney(val, settings.currency, settings.usdRateFC);
+  const fmtSigned = (val: number) => formatSignedMoney(val, settings.currency, settings.usdRateFC);
   const t = {
     tagline: i18nText('app.tagline'), helloShop: i18nText('app.hello'),
     dashboardSubtitle: i18nText('app.dashboardSubtitle'), askAiBtn: i18nText('action.askAI'),
@@ -470,7 +471,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
               <span className="mx-1.5 text-slate-300">|</span>
               <span className="font-bold text-emerald-600 tabular-nums">
-                Marge +{fmt(activeDay.netProfitFC)}
+                Marge {fmtSigned(activeDay.netProfitFC)}
               </span>
             </div>
           </div>
@@ -483,9 +484,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
           <div className="mt-6 grid h-48 grid-cols-7 items-end gap-2.5 pt-4">
             {chartDays.map((item, idx) => {
-              const caHeightPct = hasWeekSales ? Math.max(14, Math.round((item.caFC / maxCA) * 100)) : 0;
-              const profitHeightPct = hasWeekSales
-                ? Math.max(8, Math.round((item.netProfitFC / maxCA) * 100))
+              const caHeightPct = hasWeekSales && item.caFC > 0
+                ? Math.max(14, Math.round((item.caFC / maxCA) * 100))
+                : 0;
+              const profitHeightPct = hasWeekSales && item.netProfitFC !== 0
+                ? Math.max(8, Math.round((Math.abs(item.netProfitFC) / maxCA) * 100))
                 : 0;
               const isSelected = idx === selectedDayIdx;
               const isToday = idx === chartDays.length - 1;
@@ -509,7 +512,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <div
                       style={{ height: `${profitHeightPct}%` }}
                       className={`w-1/2 rounded-t-md transition-all ${
-                        isSelected ? 'bg-emerald-600' : 'bg-emerald-400 group-hover:bg-emerald-500'
+                        item.netProfitFC < 0
+                          ? (isSelected ? 'bg-red-600' : 'bg-red-400 group-hover:bg-red-500')
+                          : (isSelected ? 'bg-emerald-600' : 'bg-emerald-400 group-hover:bg-emerald-500')
                       }`}
                     />
                   </div>
@@ -656,7 +661,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <p className="text-[11px] text-slate-500 tabular-nums">
                         {fmt(prod.sellingPriceFC)} ·{' '}
                         <span className="font-semibold text-emerald-700">
-                          Gain +{fmt(unitProfit)}
+                          Gain {fmtSigned(unitProfit)}
                         </span>
                       </p>
                     </div>
@@ -737,7 +742,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       {fmt(sale.totalRevenueFC)}
                     </td>
                     <td className="py-2.5 text-right font-bold text-emerald-700 tabular-nums">
-                      +{fmt(sale.netProfitFC)}
+                      {fmtSigned(sale.netProfitFC)}
                     </td>
                   </tr>
                 ))}

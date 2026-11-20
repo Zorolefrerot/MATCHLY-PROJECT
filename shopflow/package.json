@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "tsc -b && vite build",
+    "test:finance": "node --test scripts/finance.test.mjs",
     "i18n:audit": "node scripts/audit-translations.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 5173",
     "android:sync": "npm run build && cap sync android",

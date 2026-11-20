@@ -64,7 +64,7 @@ import {
   SubscriptionPlanId,
   VisualReceiptPayload,
 } from './types';
-import { formatMoney, fromDisplayAmount, toDisplayAmount } from './utils/currency';
+import { formatMoney, formatSignedMoney, fromDisplayAmount, toDisplayAmount } from './utils/currency';
 import { getPublicCatalogAppBase, makePublicCatalogSnapshot, updateLivePublicCatalog } from './utils/publicCatalog';
 import { parseSaleDate } from './utils/saleDate';
 import { summarizeShopFinances } from './utils/finance';
@@ -1263,6 +1263,8 @@ export function App() {
 
   const fmt = (val: number) =>
     formatMoney(val, settings.currency, settings.usdRateFC);
+  const fmtSigned = (val: number) =>
+    formatSignedMoney(val, settings.currency, settings.usdRateFC);
   const financialSummary = summarizeShopFinances(products, sales, credits, expenses);
   const nextCurrency = settings.currency === 'FC' ? 'USD' : 'FC';
   const currencyToggleLabel = i18nText('currency.change', { currency: nextCurrency });
@@ -1290,6 +1292,7 @@ export function App() {
     if (rawProduct.stock < qty || qty <= 0) return;
 
     const unitProfit = rawProduct.sellingPriceFC - rawProduct.purchasePriceFC;
+    const invoiceNumber = `#${new Date().getFullYear()}-${String(Date.now()).slice(-8)}`;
 
     setProducts((prev) =>
       prev.map((p) =>
@@ -1299,6 +1302,7 @@ export function App() {
 
     const newSale: SaleRecord = {
       id: `sale-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      invoiceNumber,
       productId: rawProduct.id,
       productName: rawProduct.name,
       productImage: rawProduct.image,
@@ -1316,7 +1320,7 @@ export function App() {
 
     setSales((prev) => [newSale, ...prev]);
     showToast(
-      `+${qty} ${product.name} → +${fmt(unitProfit * qty)}`
+      `+${qty} ${product.name} → ${fmtSigned(unitProfit * qty)}`
     );
   };
 
@@ -1402,11 +1406,16 @@ export function App() {
     customerName: string,
     customerPhone: string,
     customerAddress: string,
-    deliveryFeeFC: number
+    deliveryFeeFC: number,
+    invoiceNumber: string
   ) => {
     const time = nowTime();
+    const transactionId = `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const creditId = paymentMethod === 'credit' ? `cred-${transactionId}` : undefined;
     const newSales: SaleRecord[] = items.map(({ product, quantity }, idx) => ({
-      id: `sale-${Date.now()}-${idx}`,
+      id: `${transactionId}-${idx}`,
+      transactionId,
+      invoiceNumber,
       productId: product.id,
       productName: product.name,
       productImage: product.image,
@@ -1448,7 +1457,8 @@ export function App() {
 
       setCredits((prev) => [
         {
-          id: `cred-${Date.now()}`,
+          id: creditId!,
+          transactionId,
           customerName: customerName || 'Client Comptoir',
           phone: customerPhone || '+243 81 000 00 00',
           itemsSummary: summary,
@@ -1462,21 +1472,49 @@ export function App() {
     }
 
     const totalGain = newSales.reduce((s, r) => s + r.netProfitFC, 0);
-    showToast(`Vente validée ! +${fmt(totalGain)}`);
+    showToast(`Vente validée ! ${fmtSigned(totalGain)}`);
   };
 
   const handleUndoSale = (saleId: string) => {
     const target = sales.find((s) => s.id === saleId);
     if (!target) return;
 
-    setSales((prev) => prev.filter((s) => s.id !== saleId));
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === target.productId
-          ? { ...p, stock: p.stock + target.quantity }
-          : p
-      )
-    );
+    if (target.paymentMethod === 'credit') {
+      const linkedCredit = target.transactionId
+        ? credits.find((credit) => credit.transactionId === target.transactionId)
+        : undefined;
+      if (!linkedCredit) {
+        showToast('Cette ancienne vente à crédit n’est pas liée à son carnet; annulation bloquée pour protéger le solde.');
+        return;
+      }
+      if (linkedCredit.paidAmountFC > 0) {
+        showToast('Annulation bloquée : ce crédit a déjà reçu un paiement. Corrigez le crédit manuellement après remboursement.');
+        return;
+      }
+
+      const transactionSales = sales.filter((sale) => sale.transactionId === target.transactionId);
+      const remainingSales = transactionSales.filter((sale) => sale.id !== saleId);
+      if (remainingSales.length === 0) {
+        setCredits((previous) => previous.filter((credit) => credit.id !== linkedCredit.id));
+      } else {
+        const remainingItemsFC = remainingSales.reduce((sum, sale) => sum + sale.totalRevenueFC, 0);
+        const deliveryFeeFC = Math.max(0, ...remainingSales.map((sale) => sale.deliveryFeeFC || 0));
+        const itemsSummary = [
+          ...remainingSales.map((sale) => `${sale.quantity}x ${sale.productName}`),
+          ...(deliveryFeeFC > 0 ? [`Livraison : ${fmt(deliveryFeeFC)}`] : []),
+        ].join(', ');
+        setCredits((previous) => previous.map((credit) => credit.id === linkedCredit.id
+          ? { ...credit, totalAmountFC: remainingItemsFC + deliveryFeeFC, itemsSummary }
+          : credit));
+      }
+    }
+
+    setSales((previous) => previous.filter((sale) => sale.id !== saleId));
+    setProducts((previous) => previous.map((product) =>
+      product.id === target.productId
+        ? { ...product, stock: product.stock + target.quantity }
+        : product,
+    ));
     showToast(`${target.quantity}x ${target.productName} remis en stock`);
   };
 
@@ -1923,20 +1961,17 @@ export function App() {
                 settings={settings}
                 credits={credits}
                 onRecordCreditPayment={(creditId, amountFC) => {
-                  setCredits((prev) =>
-                    prev.map((c) =>
-                      c.id === creditId
-                        ? {
-                            ...c,
-                            paidAmountFC: Math.min(
-                              c.totalAmountFC,
-                              c.paidAmountFC + amountFC
-                            ),
-                          }
-                        : c
-                    )
-                  );
-                  showToast(`Avance de ${fmt(amountFC)} enregistrée !`);
+                  const credit = credits.find((item) => item.id === creditId);
+                  if (!credit || !Number.isFinite(amountFC) || amountFC <= 0) return;
+                  const remainingFC = Math.max(0, credit.totalAmountFC - credit.paidAmountFC);
+                  const acceptedFC = Math.min(remainingFC, Math.round(amountFC));
+                  if (acceptedFC <= 0) return;
+                  setCredits((prev) => prev.map((item) => item.id === creditId
+                    ? { ...item, paidAmountFC: Math.min(item.totalAmountFC, item.paidAmountFC + acceptedFC) }
+                    : item));
+                  showToast(acceptedFC < amountFC
+                    ? `Paiement limité au solde restant : ${fmt(acceptedFC)} enregistré.`
+                    : `Avance de ${fmt(acceptedFC)} enregistrée !`);
                 }}
                 onAddCreditEntry={(entry) => {
                   setCredits((prev) => [entry, ...prev]);

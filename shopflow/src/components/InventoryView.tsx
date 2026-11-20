@@ -19,10 +19,12 @@ import { PRESET_PRODUCT_PHOTOS } from '../data/initialData';
 import { ExpenseEntry, Product, SaleRecord, ShopSettings } from '../types';
 import {
   formatMoney,
+  formatSignedMoney,
   fromDisplayAmount,
   toDisplayAmount,
 } from '../utils/currency';
 import { formatSaleTime, parseSaleDate } from '../utils/saleDate';
+import { grossMarginPercent } from '../utils/finance';
 import { compressProductImage } from '../utils/publicCatalog';
 
 interface CollectionDraftLine {
@@ -102,6 +104,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const [sellingInput, setSellingInput] = useState('');
 
   const fmt = (val: number) => formatMoney(val, settings.currency, settings.usdRateFC);
+  const fmtSigned = (val: number) => formatSignedMoney(val, settings.currency, settings.usdRateFC);
 
   const openCreateModal = () => {
     setEditingProduct(null);
@@ -190,10 +193,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   );
   const parsedQty = Math.max(0, parseInt(stockInput, 10) || 0);
   const liveUnitProfitFC = parsedSellingFC - parsedPurchaseFC;
-  const liveMarginPct =
-    parsedPurchaseFC > 0
-      ? Math.round((liveUnitProfitFC / parsedPurchaseFC) * 100)
-      : 0;
+  const liveMarginPct = grossMarginPercent(parsedSellingFC, parsedPurchaseFC);
   const liveTotalPotentialProfitFC = liveUnitProfitFC * parsedQty;
 
   const handleSubmitProduct = (e: React.FormEvent) => {
@@ -285,7 +285,8 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
       sales: productSales,
       expenses: productExpenses,
       unitsSold: productSales.reduce((sum, sale) => sum + sale.quantity, 0),
-      revenueFC: productSales.reduce((sum, sale) => sum + sale.totalRevenueFC + (sale.deliveryFeeFC || 0), 0),
+      // Delivery fees belong to the order, not to the individual product's sales revenue.
+      revenueFC: productSales.reduce((sum, sale) => sum + sale.totalRevenueFC, 0),
       profitFC: productSales.reduce((sum, sale) => sum + sale.netProfitFC, 0),
       expensesFC: productExpenses.reduce((sum, expense) => sum + expense.amountFC, 0),
     };
@@ -391,7 +392,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
             Revenu futur caché dans le stock
           </span>
           <div className="mt-1.5 text-xl font-extrabold text-emerald-700 tabular-nums">
-            +{fmt(totalPotentialProfitFC)}
+            {fmtSigned(totalPotentialProfitFC)}
           </div>
         </div>
       </div>
@@ -507,7 +508,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                       </td>
 
                       <td className="px-3 py-3 text-right font-bold text-emerald-700 tabular-nums">
-                        +{fmt(unitGain)}
+{fmtSigned(unitGain)}
                       </td>
 
                       <td className="px-3 py-3 text-center font-bold text-slate-800 tabular-nums">
@@ -519,7 +520,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                       </td>
 
                       <td className="px-3 py-3 text-right font-extrabold text-emerald-700 tabular-nums">
-                        +{fmt(stats.profitFC)}
+                        {fmtSigned(stats.profitFC)}
                       </td>
 
                       <td className="px-4 py-3 text-right">
@@ -638,7 +639,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                         Ventes jour : <strong>{stats.qtySold}</strong>
                       </span>
                       <span className="font-bold text-emerald-700 tabular-nums">
-                        Gain/u : +{fmt(unitGain)}
+                        Gain/u : {fmtSigned(unitGain)}
                       </span>
                     </div>
                   </div>
@@ -987,7 +988,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                       Revenu total ({parsedQty} en stock)
                     </span>
                     <p className="mt-0.5 text-sm font-extrabold text-emerald-700 tabular-nums">
-                      +{fmt(liveTotalPotentialProfitFC)}
+                      {fmtSigned(liveTotalPotentialProfitFC)}
                     </p>
                   </div>
                 </div>
@@ -1039,7 +1040,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                   <div className="mt-2 overflow-x-auto rounded-xl border border-slate-200">
                     <table className="w-full min-w-[480px] text-left text-xs">
                       <thead className="bg-slate-50 text-[11px] text-slate-500"><tr><th className="px-3 py-2.5">Date</th><th className="px-3 py-2.5 text-right">Qté</th><th className="px-3 py-2.5 text-right">Vente</th><th className="px-3 py-2.5 text-right">Gain</th></tr></thead>
-                      <tbody className="divide-y divide-slate-100">{selectedProductStats.sales.slice(0, 20).map((sale) => <tr key={sale.id}><td className="px-3 py-2.5">{formatSaleTime(sale.timestamp)}</td><td className="px-3 py-2.5 text-right">{sale.quantity}</td><td className="px-3 py-2.5 text-right tabular-nums">{fmt(sale.totalRevenueFC + (sale.deliveryFeeFC || 0))}</td><td className="px-3 py-2.5 text-right font-bold text-emerald-700 tabular-nums">{fmt(sale.netProfitFC)}</td></tr>)}</tbody>
+                      <tbody className="divide-y divide-slate-100">{selectedProductStats.sales.slice(0, 20).map((sale) => <tr key={sale.id}><td className="px-3 py-2.5">{formatSaleTime(sale.timestamp)}</td><td className="px-3 py-2.5 text-right">{sale.quantity}</td><td className="px-3 py-2.5 text-right tabular-nums">{fmt(sale.totalRevenueFC)}</td><td className="px-3 py-2.5 text-right font-bold text-emerald-700 tabular-nums">{fmt(sale.netProfitFC)}</td></tr>)}</tbody>
                     </table>
                   </div>
                 ) : <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">{i18nText('product.noSales')}</p>}

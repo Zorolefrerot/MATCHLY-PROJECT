@@ -19,8 +19,8 @@ import {
   ShopSettings,
   VisualReceiptPayload,
 } from '../types';
-import { formatMoney, fromDisplayAmount } from '../utils/currency';
-import { formatSaleDateTime, formatSaleTime } from '../utils/saleDate';
+import { formatMoney, formatSignedMoney, fromDisplayAmount } from '../utils/currency';
+import { formatSaleDateTime, formatSaleTime, parseSaleDate } from '../utils/saleDate';
 
 interface PosSalesViewProps {
   settings: ShopSettings;
@@ -33,7 +33,8 @@ interface PosSalesViewProps {
     customerName: string,
     customerPhone: string,
     customerAddress: string,
-    deliveryFeeFC: number
+    deliveryFeeFC: number,
+    invoiceNumber: string
   ) => void;
   onUndoSale: (saleId: string) => void;
   onOpenVisualReceipt: (payload: VisualReceiptPayload) => void;
@@ -81,6 +82,8 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
 
   const fmt = (val: number) =>
     formatMoney(val, settings.currency, settings.usdRateFC);
+  const fmtSigned = (val: number) =>
+    formatSignedMoney(val, settings.currency, settings.usdRateFC);
 
   const addToCart = (product: Product) => {
     if (product.stock <= 0) return;
@@ -170,14 +173,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
       now.getHours()
     ).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-    const invoiceNum = `#2026-0${Math.floor(100 + Math.random() * 899)}`;
-    const randomRef = `${Math.random()
-      .toString(36)
-      .substring(2, 6)
-      .toUpperCase()}-${Math.random()
-      .toString(36)
-      .substring(2, 6)
-      .toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const invoiceNum = `#${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const methodText =
       paymentMethod === 'mobile_money'
@@ -195,7 +191,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
       customerPhone: finalPhone,
       customerAddress: finalAddress,
       paymentMethodLabel: methodText,
-      paymentReference: randomRef,
+      paymentReference: invoiceNum.slice(1),
       isPaid: paymentMethod !== 'credit',
       items: cart.map(({ product, quantity }, idx) => ({
         id: product.id,
@@ -215,7 +211,8 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
       finalClient,
       finalPhone,
       finalAddress,
-      deliveryFeeFC
+      deliveryFeeFC,
+      invoiceNum
     );
     setCart([]);
     setCustomerName('');
@@ -231,9 +228,14 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
   };
 
   const openReceiptFromSingleSale = (s: SaleRecord) => {
-    const now = new Date();
+    const transactionSales = s.transactionId
+      ? sales.filter((sale) => sale.transactionId === s.transactionId)
+      : [s];
+    const saleYear = parseSaleDate(s.timestamp)?.getFullYear() || new Date().getFullYear();
+    const invoiceNumber = s.invoiceNumber || `#${saleYear}-${s.id.replace(/\D/g, '').slice(-4).padStart(4, '0')}`;
+    const deliveryFeeFC = Math.max(0, ...transactionSales.map((sale) => sale.deliveryFeeFC || 0));
     onOpenVisualReceipt({
-      invoiceNumber: `#2026-${s.id.slice(-4)}`,
+      invoiceNumber,
       dateTime: formatSaleDateTime(s.timestamp),
       customerName: s.customerName || 'Client Comptoir',
       customerPhone: s.customerPhone || '',
@@ -244,25 +246,29 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
           : s.paymentMethod === 'credit'
             ? 'À Crédit (Bon Client)'
             : 'Espèces (Cash)',
-      paymentReference: '8F7A-3D9B-6C1E',
+      paymentReference: invoiceNumber.replace(/^#/, ''),
       isPaid: s.paymentMethod !== 'credit',
-      items: [
-        {
-          id: s.productId,
-          refCode: 'SF-001',
-          name: s.productName,
-          subtitle: 'Article Boutique',
-          image: s.productImage,
-          quantity: s.quantity,
-          unitPriceFC: s.unitSellingPriceFC,
-        },
-      ],
-      deliveryFeeFC: s.deliveryFeeFC ?? 0,
+      items: transactionSales.map((sale) => ({
+        id: sale.productId,
+        refCode: sale.productId,
+        name: sale.productName,
+        subtitle: 'Article Boutique',
+        image: sale.productImage,
+        quantity: sale.quantity,
+        unitPriceFC: sale.unitSellingPriceFC,
+      })),
+      deliveryFeeFC,
     });
   };
 
-  const totalSalesTodayCA = sales.reduce((s, r) => s + r.totalRevenueFC, 0);
-  const totalSalesTodayProfit = sales.reduce((s, r) => s + r.netProfitFC, 0);
+  const today = new Date();
+  const todaySales = sales.filter((sale) => {
+    const saleDate = parseSaleDate(sale.timestamp);
+    return Boolean(saleDate && saleDate.getFullYear() === today.getFullYear()
+      && saleDate.getMonth() === today.getMonth() && saleDate.getDate() === today.getDate());
+  });
+  const totalSalesTodayCA = todaySales.reduce((sum, sale) => sum + sale.totalRevenueFC, 0);
+  const totalSalesTodayProfit = todaySales.reduce((sum, sale) => sum + sale.netProfitFC, 0);
 
   return (
     <div className="space-y-5 pb-8">
@@ -289,22 +295,22 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
             }`}
           >
             <History className="h-4 w-4 text-[#0A4DFF]" />
-            <span>Ventes du jour ({sales.length})</span>
+            <span>Historique des ventes ({sales.length})</span>
           </button>
         </div>
 
         <div className="flex items-center justify-between gap-4 rounded-xl bg-emerald-50/80 px-4 py-2 text-xs @md:justify-end">
           <div>
-            <span className="text-slate-600">CA Ventes : </span>
+            <span className="text-slate-600">CA du jour : </span>
             <strong className="font-extrabold text-slate-900 tabular-nums">
               {fmt(totalSalesTodayCA)}
             </strong>
           </div>
           <span className="text-emerald-300">|</span>
           <div>
-            <span className="text-emerald-800">Gain : </span>
+            <span className="text-emerald-800">Gain du jour : </span>
             <strong className="font-extrabold text-emerald-700 tabular-nums">
-              +{fmt(totalSalesTodayProfit)}
+              {fmtSigned(totalSalesTodayProfit)}
             </strong>
           </div>
         </div>
@@ -399,7 +405,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                             {fmt(product.sellingPriceFC)}
                           </span>
                           <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 tabular-nums">
-                            +{fmt(profitPerUnit)}
+                            {fmtSigned(profitPerUnit)}
                           </span>
                         </div>
                       </div>
@@ -609,7 +615,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                     <div className="flex justify-between">
                       <span className="text-emerald-700">Bénéfice net</span>
                       <span className="font-bold text-emerald-700 tabular-nums">
-                        +{fmt(cartTotalProfit)}
+                        {fmtSigned(cartTotalProfit)}
                       </span>
                     </div>
                   </div>
@@ -690,7 +696,7 @@ export const PosSalesView: React.FC<PosSalesViewProps> = ({
                       {fmt(s.totalRevenueFC)}
                     </td>
                     <td className="py-3 text-right font-extrabold text-emerald-700 tabular-nums">
-                      +{fmt(s.netProfitFC)}
+                      {fmtSigned(s.netProfitFC)}
                     </td>
                     <td className="py-3 text-right">
                       <div className="inline-flex items-center gap-1.5">

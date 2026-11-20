@@ -99,6 +99,9 @@ export interface SaleRecord {
   customerPhone?: string;
   customerAddress?: string;
   deliveryFeeFC?: number;
+  /** Shared identifier for line items that were checked out in one cart. */
+  transactionId?: string;
+  invoiceNumber?: string;
   timestamp: string;
 }
 
@@ -109,6 +112,8 @@ export interface CreditEntry {
   itemsSummary: string;
   totalAmountFC: number;
   paidAmountFC: number;
+  /** Links a credit ledger entry to the cart sale that created it. */
+  transactionId?: string;
   createdAt: string;
   dueDate: string;
 }
