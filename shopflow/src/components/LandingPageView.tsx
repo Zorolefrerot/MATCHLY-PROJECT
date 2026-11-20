@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -29,7 +30,8 @@ import {
   SubscriptionPlanId,
 } from '../types';
 import { AuthModalMode } from './AuthModal';
-import { ANNUAL_SAVING_MONTHS, formatPlanPrice, planPriceUSD } from '../utils/pricing';
+import { formatPlanPrice, PLAN_MONTHLY_USD, planPriceUSD } from '../utils/pricing';
+import { PLAN_PRESENTATIONS } from '../utils/planCatalog';
 import {
   RevealOnScroll,
   ScrollProgressBar,
@@ -96,6 +98,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onOpenAuthModal,
   billingTestMode,
 }) => {
+  const { t: tPlan } = useTranslation();
   const [subPage, setSubPage] = useState<ShowcaseSubPage>('home');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -627,57 +630,19 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                     </button>
                   </div>
                   <div className="mt-3 inline-flex rounded-full border border-white/15 bg-white/10 p-1 text-xs font-bold">
-                    <button type="button" onClick={() => setAnnualPricing(false)} aria-pressed={!annualPricing} className={`rounded-full px-4 py-2 transition ${!annualPricing ? 'bg-white text-slate-950' : 'text-slate-300'}`}>Mensuel</button>
-                    <button type="button" onClick={() => setAnnualPricing(true)} aria-pressed={annualPricing} className={`rounded-full px-4 py-2 transition ${annualPricing ? 'bg-white text-slate-950' : 'text-slate-300'}`}>Annuel · 2 mois offerts</button>
+                    <button type="button" onClick={() => setAnnualPricing(false)} aria-pressed={!annualPricing} className={`rounded-full px-4 py-2 transition ${!annualPricing ? 'bg-white text-slate-950' : 'text-slate-300'}`}>{tPlan('plans.billing.monthly')}</button>
+                    <button type="button" onClick={() => setAnnualPricing(true)} aria-pressed={annualPricing} className={`rounded-full px-4 py-2 transition ${annualPricing ? 'bg-white text-slate-950' : 'text-slate-300'}`}>{tPlan('plans.billing.annual')}</button>
                   </div>
                 </div>
               </section>
 
               <div className="mx-auto -mt-10 max-w-6xl px-4 sm:px-6">
                 <StaggerGroup className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  {[
-                    {
-                      id: 'starter' as SubscriptionPlanId,
-                      name: 'Starter Boutique',
-                      desc: 'Pour démarrer avec les outils essentiels.',
-                      usd: 5,
-                      highlight: false,
-                      perks: [
-                        'Gestion des marchandises avec photos',
-                        'Vente rapide « +1 Vendu » et panier client',
-                        'Calcul automatique du chiffre d’affaires et du revenu net',
-                        'Mode hors ligne',
-                      ],
-                    },
-                    {
-                      id: 'pro_ai' as SubscriptionPlanId,
-                      name: 'Pro IA & Croissance',
-                      desc: 'Gestion élargie et assistant IA.',
-                      usd: 12,
-                      highlight: true,
-                      perks: [
-                        'Gestion des marchandises, ventes et dépenses',
-                        'Assistant IA Coach et caisse vocale, selon disponibilité et limites du service',
-                        'Catalogue partageable avec demandes par WhatsApp, sans paiement intégré',
-                        'Carnet de crédits clients et outils de relance',
-                      ],
-                    },
-                    {
-                      id: 'business' as SubscriptionPlanId,
-                      name: 'Business Multi-Boutiques',
-                      desc: 'Pour les propriétaires de plusieurs boutiques ou dépôts.',
-                      usd: 25,
-                      highlight: false,
-                      perks: [
-                        'Gestion de plusieurs boutiques ou dépôts',
-                        'Données et réglages séparés pour chaque boutique',
-                      ],
-                    },
-                  ].map((plan) => (
+                  {PLAN_PRESENTATIONS.map((plan) => (
                     <StaggerItem key={plan.id}>
                       <div
                         className={`flex h-full flex-col justify-between rounded-3xl bg-white p-8 shadow-lg ${
-                          plan.highlight
+                          plan.id === 'pro_ai'
                             ? 'border-2 border-[#0A4DFF] ring-4 ring-blue-600/10'
                             : 'border border-slate-200'
                         }`}
@@ -685,51 +650,68 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                         <div>
                           <div className="flex items-center justify-between">
                             <h3 className="sf-display-heading text-xl font-bold text-slate-950">
-                              {plan.name}
+                              {tPlan(plan.nameKey)}
                             </h3>
                           </div>
                           <p className="mt-1 text-xs text-slate-500">
-                            {plan.desc}
+                            {tPlan(plan.descriptionKey)}
                           </p>
                           <div className="mt-6 flex items-baseline gap-1.5">
                             <span className="sf-display-heading text-4xl font-extrabold text-slate-950 tabular-nums">
-                              {fmtPlanPrice(annualPricing ? planPriceUSD(plan.id, true) : plan.usd)}
+                              {fmtPlanPrice(annualPricing ? planPriceUSD(plan.id, true) : PLAN_MONTHLY_USD[plan.id])}
                             </span>
                             <span className="text-xs font-semibold text-slate-500">
-                              / {annualPricing ? 'an' : 'mois'}
+                              / {tPlan(annualPricing ? 'plans.billing.year' : 'plans.billing.month')}
                             </span>
                           </div>
                           {annualPricing && (
                             <p className="mt-1 text-xs font-semibold text-emerald-700">
-                              Équivaut à {fmtPlanPrice(planPriceUSD(plan.id, true) / 12)} / mois · {ANNUAL_SAVING_MONTHS} mois offerts
+                              {tPlan('plans.billing.equivalent')} {fmtPlanPrice(planPriceUSD(plan.id, true) / 12)} / {tPlan('plans.billing.month')}
                             </p>
                           )}
 
-                          <ul className="mt-6 space-y-3 border-t border-slate-100 pt-6 text-sm text-slate-700">
-                            {plan.perks.map((p, i) => (
-                              <li key={i} className="flex items-start gap-2.5">
-                                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0A4DFF]" />
-                                <span>{p}</span>
-                              </li>
-                            ))}
-                          </ul>
+                          <div className="mt-6 border-t border-slate-100 pt-5">
+                            <p className="mb-3 text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{tPlan('plans.included')}</p>
+                            <ul className="space-y-3 text-sm text-slate-700">
+                              {plan.featureKeys.map((featureKey) => (
+                                <li key={featureKey} className="flex items-start gap-2.5">
+                                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0A4DFF]" />
+                                  <span>{tPlan(featureKey)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                            <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50/70 p-3.5">
+                              <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wide text-amber-900">{tPlan('plans.planned')}</p>
+                              <ul className="space-y-2 text-xs leading-relaxed text-amber-950">
+                                {plan.plannedFeatureKeys.map((featureKey) => (
+                                  <li key={featureKey} className="flex items-start gap-2">
+                                    <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600" />
+                                    <span>{tPlan(featureKey)}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
                         </div>
 
                         <button
                           type="button"
                           onClick={() => onOpenAuthModal('install')}
                           className={`mt-8 w-full rounded-full py-3.5 text-sm font-bold text-white transition ${
-                            plan.highlight
+                            plan.id === 'pro_ai'
                               ? 'bg-[#0A4DFF] hover:bg-blue-700'
                               : 'bg-slate-950 hover:bg-slate-800'
                           }`}
                         >
-                          {billingTestMode ? 'Installer et commencer les tests' : 'Installer puis choisir dans l’app'}
+                          {billingTestMode ? tPlan('plans.testButton') : 'Installer puis choisir dans l’app'}
                         </button>
                       </div>
                     </StaggerItem>
                   ))}
                 </StaggerGroup>
+                <p role="note" className="mx-auto mt-6 max-w-4xl rounded-2xl border border-slate-200 bg-white px-5 py-4 text-xs leading-relaxed text-slate-600">
+                  {tPlan('plans.testNote')}
+                </p>
               </div>
             </div>
           )}
