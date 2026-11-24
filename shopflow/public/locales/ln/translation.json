@@ -419,5 +419,10 @@
   "plans.billing.year": "mbula",
   "plans.billing.equivalent": "Ekokani na",
   "plans.priceNote": "Ntalo ya ndakisa · taux: 1 USD = 2 400 FC",
-  "plans.annualNote": "Na mbula mobimba, ofutaka kaka sanza 10 na 12."
+  "plans.annualNote": "Na mbula mobimba, ofutaka kaka sanza 10 na 12.",
+  "account.shopSyncTitle": "Compte mpe boutique oyo ezali kosalelama",
+  "account.chooseActiveShop": "Pona boutique oyo ezali kosalelama",
+  "account.loadingShopData": "Bazali kokɔtisa makambo ya boutique…",
+  "account.refreshCloudData": "Meka lisusu to aktualize makambo ya cloud",
+  "account.refresh": "Aktualize"
 }

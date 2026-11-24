@@ -170,6 +170,7 @@ const sanitizeLegacySettings = (saved: Partial<ShopSettings>): ShopSettings => {
 
 const shopStorageKey = (shopId: string) => `shopflow_account_shop_v1_${shopId}`;
 const shopCloudBaselineKey = (shopId: string) => `shopflow_cloud_baseline_v1_${shopId}`;
+const activeShopPreferenceKey = (userId: string) => `shopflow_active_shop_v1_${userId}`;
 const accountLegacyBackupKey = (userId: string) => `shopflow_legacy_backup_v1_${userId}`;
 const legacyImportMarkerKey = (userId: string) => `shopflow_legacy_imported_by_${userId}`;
 
@@ -692,6 +693,25 @@ export function App() {
         cloudBaselineShopIdRef.current = shopId;
         writeCloudBaseline(shopId, remote);
 
+        // Signed photo URLs are deliberately excluded from snapshot equality because they
+        // rotate. Still apply fresh URLs during a pull, even when no business record changed.
+        const mergedProductsById = new Map(merged.products.map((item) => [item.id, item]));
+        const mergedSalesById = new Map(merged.sales.map((item) => [item.id, item]));
+        setProducts((current) => current.map((product) => {
+          const fresh = mergedProductsById.get(product.id);
+          return product.cloudImagePath && fresh?.cloudImagePath === product.cloudImagePath &&
+            fresh.image && !product.image.startsWith('data:') && fresh.image !== product.image
+            ? { ...product, image: fresh.image }
+            : product;
+        }));
+        setSales((current) => current.map((sale) => {
+          const fresh = mergedSalesById.get(sale.id);
+          return sale.cloudImagePath && fresh?.cloudImagePath === sale.cloudImagePath &&
+            fresh.productImage && !sale.productImage.startsWith('data:') && fresh.productImage !== sale.productImage
+            ? { ...sale, productImage: fresh.productImage }
+            : sale;
+        }));
+
         if (local && !cloudSnapshotsEqual(local, merged)) {
           setSettings(merged.settings);
           setProducts(merged.products);
@@ -946,7 +966,9 @@ export function App() {
         }
         setAccountShops(shops);
         setBillingAccount(billing);
-        const selected = shops[0];
+        let preferredShopId = '';
+        try { preferredShopId = localStorage.getItem(activeShopPreferenceKey(user.id)) || ''; } catch { /* Default to the first shop if storage is unavailable. */ }
+        const selected = shops.find((shop) => shop.id === preferredShopId) || shops[0];
         await activateAccountShop(selected, shops, billing);
         if (createdFromPendingSetup && pendingOwnerPin) {
           setSettings((previous) => ({ ...previous, ownerPin: pendingOwnerPin! }));
@@ -1247,6 +1269,9 @@ export function App() {
   const handleSelectAccountShop = async (shopId: string) => {
     const shop = accountShops.find((candidate) => candidate.id === shopId);
     if (!shop || !billingAccount) return;
+    if (authUserRef.current) {
+      try { localStorage.setItem(activeShopPreferenceKey(authUserRef.current.id), shop.id); } catch { /* Shop selection still works for this session. */ }
+    }
     await activateAccountShop(shop, accountShops, billingAccount);
     setActiveTab('dashboard');
   };
@@ -1844,6 +1869,41 @@ export function App() {
 
           {/* Main View Container */}
           <main className="sf-app-main mx-auto max-w-7xl flex-1 p-4 pb-24 @md:p-6 lg:pb-8">
+            {authUser && activeShop && (
+              <section className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-white px-4 py-3 shadow-sm" aria-label={i18nText('account.shopSyncTitle')}>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{i18nText('account.shopSyncTitle')}</p>
+                  <p className="truncate text-xs font-semibold text-slate-700">{authUser.email || 'ShopFlow'}</p>
+                </div>
+                <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
+                  <label className="sr-only" htmlFor="global-active-shop-picker">{i18nText('account.chooseActiveShop')}</label>
+                  <select
+                    id="global-active-shop-picker"
+                    value={activeShop.id}
+                    disabled={!shopDataReady}
+                    onChange={(event) => { void handleSelectAccountShop(event.target.value); }}
+                    className="min-w-0 max-w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-extrabold text-slate-800 disabled:opacity-60"
+                  >
+                    {accountShops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}
+                  </select>
+                  {!shopDataReady ? (
+                    <span className="text-xs text-slate-500" role="status">{i18nText('account.loadingShopData')}</span>
+                  ) : cloudSyncStatus !== 'idle' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (cloudSyncStatus === 'error') setCloudSyncRetryEpoch((current) => current + 1);
+                        else void cloudRefreshRef.current();
+                      }}
+                      title={i18nText('account.refreshCloudData')}
+                      className={`rounded-lg px-2 py-1 text-xs font-semibold ${cloudSyncStatus === 'error' ? 'bg-amber-50 text-amber-800' : 'bg-emerald-50 text-emerald-800'}`}
+                    >
+                      {i18nText(`sync.${cloudSyncStatus}`)} · {i18nText('account.refresh')}
+                    </button>
+                  )}
+                </div>
+              </section>
+            )}
             {!BILLING_TEST_MODE && trialEndsAtMs !== null && !settings.planPaid && !isTrialExpired && (
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-950" role="status">
                 <span>Essai gratuit : {trialDaysRemaining} jour{trialDaysRemaining === 1 ? '' : 's'} restant{trialDaysRemaining === 1 ? '' : 's'} · débute à la création de la boutique.</span>

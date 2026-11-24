@@ -940,5 +940,10 @@
   "Référence du reçu :": "Référence du reçu :",
   "Historique des ventes (": "Historique des ventes (",
   "CA du jour :": "CA du jour :",
-  "Gain du jour :": "Gain du jour :"
+  "Gain du jour :": "Gain du jour :",
+  "account.shopSyncTitle": "Compte et boutique actifs",
+  "account.chooseActiveShop": "Choisir la boutique active",
+  "account.loadingShopData": "Chargement des données…",
+  "account.refreshCloudData": "Réessayer ou actualiser les données du cloud",
+  "account.refresh": "Actualiser"
 }

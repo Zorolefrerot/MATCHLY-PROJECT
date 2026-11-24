@@ -419,5 +419,10 @@
   "plans.billing.year": "年",
   "plans.billing.equivalent": "折合",
   "plans.priceNote": "参考价格 · 汇率：1 美元 = 2,400 FC",
-  "plans.annualNote": "年付按 12 个月中的 10 个月计费。"
+  "plans.annualNote": "年付按 12 个月中的 10 个月计费。",
+  "account.shopSyncTitle": "当前账户与店铺",
+  "account.chooseActiveShop": "选择当前店铺",
+  "account.loadingShopData": "正在加载店铺数据…",
+  "account.refreshCloudData": "重试或刷新云端数据",
+  "account.refresh": "刷新"
 }

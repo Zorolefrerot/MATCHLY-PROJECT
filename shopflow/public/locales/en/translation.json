@@ -419,5 +419,10 @@
   "plans.billing.year": "year",
   "plans.billing.equivalent": "Equivalent to",
   "plans.priceNote": "Indicative prices · exchange rate used: 1 USD = 2,400 FC",
-  "plans.annualNote": "Annual billing charges 10 months out of 12."
+  "plans.annualNote": "Annual billing charges 10 months out of 12.",
+  "account.shopSyncTitle": "Active account and shop",
+  "account.chooseActiveShop": "Choose active shop",
+  "account.loadingShopData": "Loading shop data…",
+  "account.refreshCloudData": "Retry or refresh cloud data",
+  "account.refresh": "Refresh"
 }

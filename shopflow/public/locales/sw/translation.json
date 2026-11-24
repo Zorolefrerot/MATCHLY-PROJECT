@@ -419,5 +419,10 @@
   "plans.billing.year": "mwaka",
   "plans.billing.equivalent": "Sawa na",
   "plans.priceNote": "Bei za makadirio · kiwango: 1 USD = 2,400 FC",
-  "plans.annualNote": "Malipo ya mwaka ni sawa na kulipa miezi 10 kati ya 12."
+  "plans.annualNote": "Malipo ya mwaka ni sawa na kulipa miezi 10 kati ya 12.",
+  "account.shopSyncTitle": "Akaunti na duka linalotumika",
+  "account.chooseActiveShop": "Chagua duka linalotumika",
+  "account.loadingShopData": "Inapakia data za duka…",
+  "account.refreshCloudData": "Jaribu tena au onyesha upya data za cloud",
+  "account.refresh": "Onyesha upya"
 }
