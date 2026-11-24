@@ -42,6 +42,7 @@ import {
   SignupPayload,
 } from './components/AuthModal';
 import { WhatsAppModal } from './components/WhatsAppModal';
+import { PushNotificationsControl } from './components/PushNotificationsControl';
 import {
   INITIAL_SETTINGS,
   PRESET_PRODUCT_PHOTOS,
@@ -334,6 +335,38 @@ const snapshotHasMerchantData = (snapshot: ShopDataSnapshot | null): boolean => 
   );
 };
 
+async function notifyForCloudChanges(
+  shopId: string,
+  baseline: ShopDataSnapshot | null,
+  snapshot: ShopDataSnapshot,
+) {
+  if (!supabase || !baseline) return;
+  const previousSaleIds = new Set(baseline.sales.map((sale) => sale.id));
+  const events: Array<{ eventType: 'new_sale' | 'low_stock'; recordId: string }> = [
+    ...snapshot.sales
+      .filter((sale) => !previousSaleIds.has(sale.id))
+      .map((sale) => ({ eventType: 'new_sale' as const, recordId: sale.id })),
+  ];
+  if (snapshot.settings.lowStockNotifications) {
+    const previousProducts = new Map(baseline.products.map((product) => [product.id, product]));
+    for (const product of snapshot.products) {
+      const previous = previousProducts.get(product.id);
+      if (previous && previous.stock > product.minStockAlert && product.stock <= product.minStockAlert) {
+        events.push({ eventType: 'low_stock', recordId: product.id });
+      }
+    }
+  }
+  for (const event of events) {
+    try {
+      await supabase.functions.invoke('shopflow-push', {
+        body: { action: 'event', shopId, ...event },
+      });
+    } catch {
+      // Push is optional: never block the cloud save or damage its local retry queue.
+    }
+  }
+}
+
 export function App() {
   const appRootRef = useRef<HTMLDivElement | null>(null);
   const { t: i18nText } = useTranslation();
@@ -581,6 +614,7 @@ export function App() {
             cloudBaselineRef.current = saved;
             writeCloudBaseline(job.shopId, saved);
           }
+          void notifyForCloudChanges(job.shopId, baseline, job.snapshot);
           const isLatest = !cloudSyncPendingRef.current && job.revision === cloudSyncRevisionRef.current;
           if (isLatest) {
             const sourceProducts = new Map(job.snapshot.products.map((product) => [product.id, product]));
@@ -684,9 +718,9 @@ export function App() {
       }
       pulling = true;
       try {
-        const remote = await loadShopSnapshot(shopId);
-        if (!remote || disposed || activeShopRef.current?.id !== shopId) return;
         const local = currentShopSnapshotRef.current;
+        const remote = await loadShopSnapshot(shopId, local);
+        if (!remote || disposed || activeShopRef.current?.id !== shopId) return;
         const baseline = cloudBaselineShopIdRef.current === shopId ? cloudBaselineRef.current : null;
         const merged = mergeSnapshotChanges(baseline, local, remote);
         cloudBaselineRef.current = remote;
@@ -1886,6 +1920,7 @@ export function App() {
                   >
                     {accountShops.map((shop) => <option key={shop.id} value={shop.id}>{shop.name}</option>)}
                   </select>
+                  {shopDataReady && <PushNotificationsControl userId={authUser.id} shopId={activeShop.id} />}
                   {!shopDataReady ? (
                     <span className="text-xs text-slate-500" role="status">{i18nText('account.loadingShopData')}</span>
                   ) : cloudSyncStatus !== 'idle' && (

@@ -424,5 +424,14 @@
   "account.chooseActiveShop": "Choose active shop",
   "account.loadingShopData": "Loading shop data…",
   "account.refreshCloudData": "Retry or refresh cloud data",
-  "account.refresh": "Refresh"
+  "account.refresh": "Refresh",
+  "push.enable": "Enable notifications",
+  "push.checking": "Checking…",
+  "push.enabled": "Notifications enabled",
+  "push.test": "Test",
+  "push.disable": "Disable notifications",
+  "push.unsupported": "Push notifications are unavailable here. On iPhone/iPad, install ShopFlow on the Home Screen.",
+  "push.permissionDenied": "Permission denied. Enable notifications in your browser settings.",
+  "push.setupFailed": "Notification setup failed. Try again later.",
+  "push.tryAgain": "Connection unavailable. Try again when online."
 }

@@ -316,6 +316,20 @@ async function signedImageUrl(path: string): Promise<string> {
   return data.signedUrl;
 }
 
+function signedImageUrlIsUsable(value: string): boolean {
+  if (value.startsWith('data:')) return true;
+  try {
+    const token = new URL(value).searchParams.get('token');
+    const payload = token?.split('.')[1];
+    if (!payload) return false;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='))) as { exp?: unknown };
+    return typeof claims.exp === 'number' && claims.exp > Date.now() / 1000 + 5 * 60;
+  } catch {
+    return false;
+  }
+}
+
 export async function refreshCachedSnapshotImages(
   snapshot: ShopDataSnapshot,
 ): Promise<ShopDataSnapshot> {
@@ -347,7 +361,10 @@ export async function refreshCachedSnapshotImages(
   };
 }
 
-export async function loadShopSnapshot(shopId: string): Promise<ShopDataSnapshot | null> {
+export async function loadShopSnapshot(
+  shopId: string,
+  existingSnapshot: ShopDataSnapshot | null = null,
+): Promise<ShopDataSnapshot | null> {
   const client = requireSupabase();
   const rows: Array<{ record_type: string; record_id: string; payload: unknown }> = [];
   const pageSize = 1000;
@@ -371,22 +388,39 @@ export async function loadShopSnapshot(shopId: string): Promise<ShopDataSnapshot
   const credits = rows.filter((row) => row.record_type === 'credit').map((row) => asObject(row.payload) as unknown as CreditEntry);
   const expenses = rows.filter((row) => row.record_type === 'expense').map((row) => asObject(row.payload) as unknown as ExpenseEntry);
 
+  // Realtime and the one-minute fallback poll often return the same cloud image.
+  // Keep its current URL instead of minting a new signed URL on every refresh, which
+  // would make the browser reload visible product photos over and over.
+  const existingImagesByPath = new Map<string, string>();
+  for (const product of existingSnapshot?.products || []) {
+    if (product.cloudImagePath && product.image && signedImageUrlIsUsable(product.image)) {
+      existingImagesByPath.set(product.cloudImagePath, product.image);
+    }
+  }
+  for (const sale of existingSnapshot?.sales || []) {
+    if (sale.cloudImagePath && sale.productImage && signedImageUrlIsUsable(sale.productImage)) {
+      existingImagesByPath.set(sale.cloudImagePath, sale.productImage);
+    }
+  }
+
   const paths = new Set<string>();
   for (const record of [...products, ...sales]) {
-    if (record.cloudImagePath) paths.add(record.cloudImagePath);
+    if (record.cloudImagePath && !existingImagesByPath.has(record.cloudImagePath)) paths.add(record.cloudImagePath);
   }
   const signedUrls = new Map<string, string>();
   await Promise.all([...paths].map(async (path) => {
     try { signedUrls.set(path, await signedImageUrl(path)); } catch { /* photo is optional */ }
   }));
+  const imageForPath = (path: string | undefined, fallback: string | undefined) =>
+    path ? existingImagesByPath.get(path) || signedUrls.get(path) || fallback || '' : fallback || '';
 
   const signedProducts = products.map((product) => ({
     ...product,
-    image: product.cloudImagePath ? signedUrls.get(product.cloudImagePath) || '' : product.image || '',
+    image: imageForPath(product.cloudImagePath, product.image),
   }));
   const signedSales = sales.map((sale) => ({
     ...sale,
-    productImage: sale.cloudImagePath ? signedUrls.get(sale.cloudImagePath) || '' : sale.productImage || '',
+    productImage: imageForPath(sale.cloudImagePath, sale.productImage),
   }));
 
   return {

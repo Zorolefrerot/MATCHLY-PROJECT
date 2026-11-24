@@ -424,5 +424,14 @@
   "account.chooseActiveShop": "选择当前店铺",
   "account.loadingShopData": "正在加载店铺数据…",
   "account.refreshCloudData": "重试或刷新云端数据",
-  "account.refresh": "刷新"
+  "account.refresh": "刷新",
+  "push.enable": "开启通知",
+  "push.checking": "正在检查…",
+  "push.enabled": "通知已开启",
+  "push.test": "测试",
+  "push.disable": "关闭通知",
+  "push.unsupported": "此处不支持推送通知。在 iPhone/iPad 上，请将 ShopFlow 添加到主屏幕。",
+  "push.permissionDenied": "通知权限被拒绝。请在浏览器设置中启用通知。",
+  "push.setupFailed": "通知设置失败，请稍后重试。",
+  "push.tryAgain": "网络不可用，请联网后重试。"
 }

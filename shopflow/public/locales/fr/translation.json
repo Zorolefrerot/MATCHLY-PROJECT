@@ -945,5 +945,14 @@
   "account.chooseActiveShop": "Choisir la boutique active",
   "account.loadingShopData": "Chargement des données…",
   "account.refreshCloudData": "Réessayer ou actualiser les données du cloud",
-  "account.refresh": "Actualiser"
+  "account.refresh": "Actualiser",
+  "push.enable": "Activer les notifications",
+  "push.checking": "Vérification…",
+  "push.enabled": "Notifications activées",
+  "push.test": "Tester",
+  "push.disable": "Désactiver les notifications",
+  "push.unsupported": "Notifications push indisponibles ici. Sur iPhone/iPad, installe ShopFlow sur l’écran d’accueil.",
+  "push.permissionDenied": "Autorisation refusée. Active les notifications dans les réglages du navigateur.",
+  "push.setupFailed": "La configuration des notifications a échoué. Réessaie plus tard.",
+  "push.tryAgain": "Connexion indisponible. Réessaie lorsque Internet sera accessible."
 }

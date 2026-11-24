@@ -424,5 +424,14 @@
   "account.chooseActiveShop": "Pona boutique oyo ezali kosalelama",
   "account.loadingShopData": "Bazali kokɔtisa makambo ya boutique…",
   "account.refreshCloudData": "Meka lisusu to aktualize makambo ya cloud",
-  "account.refresh": "Aktualize"
+  "account.refresh": "Aktualize",
+  "push.enable": "Fungola mayebisi",
+  "push.checking": "Kotala…",
+  "push.enabled": "Mayebisi efungwami",
+  "push.test": "Meka",
+  "push.disable": "Kanga mayebisi",
+  "push.unsupported": "Mayebisi ya push ezali te awa. Na iPhone/iPad, tia ShopFlow na écran d’accueil.",
+  "push.permissionDenied": "Ndima ya mayebisi eboyami. Fungola yango na paramètres ya navigateur.",
+  "push.setupFailed": "Kobongisa mayebisi elongi te. Meka lisusu na sima.",
+  "push.tryAgain": "Connexion ezali te. Meka lisusu ntango Internet ekozala."
 }

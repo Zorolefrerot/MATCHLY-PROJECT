@@ -424,5 +424,14 @@
   "account.chooseActiveShop": "Chagua duka linalotumika",
   "account.loadingShopData": "Inapakia data za duka…",
   "account.refreshCloudData": "Jaribu tena au onyesha upya data za cloud",
-  "account.refresh": "Onyesha upya"
+  "account.refresh": "Onyesha upya",
+  "push.enable": "Washa arifa",
+  "push.checking": "Inakagua…",
+  "push.enabled": "Arifa zimewashwa",
+  "push.test": "Jaribu",
+  "push.disable": "Zima arifa",
+  "push.unsupported": "Arifa za push hazipatikani hapa. Kwenye iPhone/iPad, sakinisha ShopFlow kwenye Skrini ya Mwanzo.",
+  "push.permissionDenied": "Ruhusa imekataliwa. Washa arifa kwenye mipangilio ya kivinjari.",
+  "push.setupFailed": "Imeshindwa kusanidi arifa. Jaribu tena baadaye.",
+  "push.tryAgain": "Muunganisho haupatikani. Jaribu tena ukiwa mtandaoni."
 }

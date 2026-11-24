@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shopflow-pwa-v16';
+const CACHE_NAME = 'shopflow-pwa-v17';
 const scopeUrl = self.registration.scope;
 const shellUrls = [
   scopeUrl,
@@ -6,7 +6,7 @@ const shellUrls = [
   new URL('manifest.json', scopeUrl).href,
   new URL('shopflow-logo.png', scopeUrl).href,
   ...['fr', 'en', 'ln', 'sw', 'zh'].map((lang) =>
-    new URL(`locales/${lang}/translation.json?v=5`, scopeUrl).href
+      new URL(`locales/${lang}/translation.json?v=6`, scopeUrl).href
   ),
 ];
 
@@ -22,6 +22,39 @@ self.addEventListener('activate', (event) => {
       .then((keys) => Promise.all(keys.filter((key) => key.startsWith('shopflow-pwa-') && key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch { /* Show a safe fallback for malformed payloads. */ }
+  const title = typeof payload.title === 'string' && payload.title.trim() ? payload.title : 'ShopFlow';
+  const body = typeof payload.body === 'string' ? payload.body : '';
+  const data = payload.data && typeof payload.data === 'object' ? payload.data : {};
+  const icon = new URL('shopflow-logo.png', scopeUrl).href;
+  event.waitUntil(self.registration.showNotification(title, {
+    body,
+    icon,
+    badge: icon,
+    tag: typeof data.recordId === 'string' ? `shopflow-${data.recordId}` : 'shopflow-notification',
+    data: { ...data, url: typeof data.url === 'string' ? data.url : scopeUrl },
+    renotify: false,
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const destination = new URL(event.notification.data?.url || scopeUrl, scopeUrl).href;
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if ('focus' in client) {
+        if (client.url !== destination && 'navigate' in client) await client.navigate(destination);
+        await client.focus();
+        return;
+      }
+    }
+    await self.clients.openWindow(destination);
+  })());
 });
 
 self.addEventListener('fetch', (event) => {
