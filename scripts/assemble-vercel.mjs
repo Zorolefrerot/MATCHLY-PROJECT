@@ -18,6 +18,7 @@ await mkdir(resolve(output, 'app'), { recursive: true });
 await Promise.all([
   cp(resolve(root, 'index.html'), resolve(output, 'index.html')),
   cp(resolve(root, 'site.css'), resolve(output, 'site.css')),
+  cp(resolve(root, 'kartgo'), resolve(output, 'kartgo'), { recursive: true }),
   cp(resolve(root, 'motion'), resolve(output, 'motion'), { recursive: true }),
   cp(resolve(root, 'tutoriels'), resolve(output, 'tutoriels'), { recursive: true }),
   cp(resolve(root, 'shopflow/public/landing-hero-merchant.jpg'), resolve(assets, 'shopflow-hero.jpg')),
