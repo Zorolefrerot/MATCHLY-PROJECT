@@ -735,6 +735,8 @@ export const App: React.FC = () => {
   const activeTeam = getTeamById(profile.favorite_team_id);
   const nextLockedTeam = EURO_TEAMS.find((t) => !profile.unlocked_teams.includes(t.id));
   const claimableCount = countClaimableObjectives(profile);
+  const menuLevel = 1 + Math.floor((profile.wins + profile.trophies) / 4);
+  const menuXp = ((profile.wins + profile.trophies) % 4) / 4;
   const star = COVER_STARS[starIdx];
   const enterApp = (tab: NavTab) => {
     sfx.uiClick();
@@ -747,6 +749,11 @@ export const App: React.FC = () => {
       {/* FC 27 Main Menu — user artwork with clickable hotspots (same design as title screen) */}
       {showMainMenu && (
         <MainMenu
+          playerName={profile.display_name || profile.username}
+          level={menuLevel}
+          xpProgress={menuXp}
+          coins={profile.coins}
+          gems={profile.trophies}
           claimableCount={claimableCount}
           onProfile={() => { sfx.uiClick(); setShowAccount(true); }}
           onShop={() => { sfx.uiClick(); setShowObjectives(true); }}
@@ -760,6 +767,7 @@ export const App: React.FC = () => {
           onChampionsLeague={() => enterApp('cups')}
           onEvents={() => { sfx.uiClick(); setShowChallenges(true); }}
           onMyTeam={() => enterApp('locker')}
+          onNotifications={() => { sfx.uiClick(); setShowObjectives(true); }}
         />
       )}
 
