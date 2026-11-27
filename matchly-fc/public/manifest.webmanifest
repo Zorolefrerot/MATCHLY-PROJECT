@@ -1,0 +1,36 @@
+{
+  "name": "MATCHLY FC 27 — Football Tactique en Ligne",
+  "short_name": "Matchly FC",
+  "description": "101 équipes, carrière, championnats, coupes, défis et matchs en ligne.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050B2E",
+  "theme_color": "#050B2E",
+  "categories": [
+    "games",
+    "sports"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
