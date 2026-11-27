@@ -83,7 +83,8 @@ export function createInitialBoard(
   const playH = PITCH.BOTTOM - PITCH.TOP;
 
   const hCoords = FORMATIONS[hostFormation]?.homeCoords || FORMATIONS['1-2-2'].homeCoords;
-  hostLineup.slice(0, 5).forEach((playerIndex, idx) => {
+  hostLineup.slice(0, 5).forEach((rawIndex, idx) => {
+    const playerIndex = hostTeam.players[rawIndex] ? rawIndex : idx;
     const p = hostTeam.players[playerIndex] || hostTeam.players[idx];
     const c = hCoords[idx];
     const isGk = idx === 0;
@@ -104,7 +105,8 @@ export function createInitialBoard(
   });
 
   const gCoords = FORMATIONS[guestFormation]?.homeCoords || FORMATIONS['1-2-2'].homeCoords;
-  guestLineup.slice(0, 5).forEach((playerIndex, idx) => {
+  guestLineup.slice(0, 5).forEach((rawIndex, idx) => {
+    const playerIndex = guestTeam.players[rawIndex] ? rawIndex : idx;
     const p = guestTeam.players[playerIndex] || guestTeam.players[idx];
     const c = gCoords[idx];
     const isGk = idx === 0;

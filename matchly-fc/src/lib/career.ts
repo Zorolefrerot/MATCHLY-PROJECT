@@ -1,4 +1,4 @@
-import { EuroTeam, SquadPlayer } from '../data/teams';
+import { EuroTeam, SquadPlayer, photoForPlayer } from '../data/teams';
 
 export interface CareerPlayer extends SquadPlayer { value: number; potential: number; nation: string; }
 export interface CareerTableRow { name: string; played: number; wins: number; losses: number; gf: number; ga: number; points: number; }
@@ -10,12 +10,16 @@ export interface CareerSave {
 }
 export const CAREER_DIVISIONS = ['Division 3', 'Division 2', 'Division 1', 'Division Master', 'Division Légende'];
 const KEY = 'matchly_fc27_career_v1';
-const FIRST = ['Adam','Noah','Liam','Enzo','Hugo','Mateo','Ivan','Omar','Yanis','Sacha','Rayan','Kenji','Luka','Stefan','Ethan','Gabriel'];
+// Real existing (lesser-known) players per nation — career squads are randomized from these, DLS-style
 const POOLS: Record<string,string[]> = {
-  'Arabie Saoudite':['Al Harbi','Al Dossari','Al Qahtani','Al Shehri','Al Ghamdi','Al Malki'], 'RD Congo':['Mbemba','Bakambu','Muleka','Kakuta','Masuaku','Pickel'],
-  Croatie:['Modric','Kovacic','Gvardiol','Sutalo','Perisic','Kramaric'], Slovénie:['Sesko','Oblak','Bijol','Stojanovic','Verbic','Lovric'],
-  'États-Unis':['Pulisic','Reyna','Adams','Robinson','Musah','Balogun'], Japon:['Kubo','Mitoma','Endo','Tomiyasu','Ueda','Doan'],
-  Maroc:['Hakimi','Brahim','Ounahi','Amrabat','En-Nesyri','Ezzalzouli'], Sénégal:['Mané','Sarr','Gueye','Koulibaly','Diarra','Jackson'],
+  'Arabie Saoudite':['Mohammed Al Owais','Saleh Al Shehri','Firas Al Brikan','Abdullah Al Hamdan','Musab Al Juwayr','Hassan Kadesh','Ali Al Bulayhi','Abdulellah Al Amri'],
+  'RD Congo':['Lionel Mpasi','Rocky Bushiri','Edo Kayembe','Noah Sadiki','Meschak Elia','Silas Katompa','Théo Bongonda','Aaron Tshibola'],
+  Croatie:['Marco Pašalić','Petar Sučić','Martin Baturina','Martin Erlić','Bruno Petković','Duje Ćaleta-Car','Josip Stanišić','Andrej Kramarić'],
+  Slovénie:['Miha Blažič','Danijel Šturm','Žan Vipotnik','Andraž Šporar','Erik Janža','Adam Gnezda Čerin','Timi Elšnik','Jan Oblak'],
+  'États-Unis':['Matt Turner','Malik Tillman','Haji Wright','Johnny Cardoso','Tim Weah','Miles Robinson','Tyler Adams','Sergiño Dest'],
+  Japon:['Zion Suzuki','Shogo Taniguchi','Ao Tanaka','Koki Ogawa','Yukinari Sugawara','Daizen Maeda','Takefusa Kubo','Kaoru Mitoma'],
+  Maroc:['Chadi Riad','Ismael Saibari','Ayoub El Kaabi','Neil El Aynaoui','Adam Masina','Bilal El Khannouss','Abde Ezzalzouli','Sofyan Amrabat'],
+  Sénégal:['Iliman Ndiaye','Habib Diarra','Lamine Camara','Pape Gueye','Ismaïla Sarr','Nicolas Jackson','Sadio Mané','Pape Matar Sarr'],
 };
 export const CAREER_NATIONS = Object.keys(POOLS);
 export const CAPTAIN_OPTIONS = [
@@ -30,9 +34,9 @@ const rand=(min:number,max:number)=>Math.round(min+Math.random()*(max-min));
 const pick=<T,>(arr:T[])=>arr[Math.floor(Math.random()*arr.length)];
 export function playerValue(stats:{tir:number;phy:number;ctr:number}, potential:number){ const avg=(stats.tir+stats.phy+stats.ctr)/3; return Math.max(25, Math.round((avg-52)*16 + potential*3)); }
 function makePlayer(nation:string,index:number,role:SquadPlayer['role'],captain=false): CareerPlayer {
-  const last = pick(POOLS[nation] || POOLS.Japon); const name = captain ? last : `${pick(FIRST)} ${last}`;
+  const name = pick(POOLS[nation] || POOLS.Japon); const last = name.split(' ').slice(-1)[0];
   const base = captain?0:rand(57,73); const stats = captain?{tir:88,phy:84,ctr:90}:{tir:Math.min(78,base+rand(0,6)),phy:Math.min(78,base+rand(0,6)),ctr:Math.min(78,base+rand(0,6))};
-  const potential=rand(2,12); return { id:`career-${Date.now()}-${index}-${Math.random().toString(36).slice(2,6)}`, name, shortName:last, number:index+1, role, photo:'', stats, potential, nation, value:playerValue(stats,potential) };
+  const potential=rand(2,12); return { id:`career-${Date.now()}-${index}-${Math.random().toString(36).slice(2,6)}`, name, shortName:last, number:index+1, role, photo: photoForPlayer(name), stats, potential, nation, value:playerValue(stats,potential) };
 }
 export function createCareerSquad(captainName:string): CareerPlayer[] {
   const cap = CAPTAIN_OPTIONS.find(c=>c.name===captainName) || CAPTAIN_OPTIONS[0];

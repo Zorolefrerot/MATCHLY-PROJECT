@@ -887,7 +887,7 @@ export const MatchArena: React.FC<Props> = ({
             }
 
             // Power % tag
-            const squadPlayer = (mySide === 'host' ? hostTeam : guestTeam).players[piece.playerIndex ?? piece.slotIndex];
+            const _st = mySide === 'host' ? hostTeam : guestTeam; const squadPlayer = _st.players[piece.playerIndex ?? piece.slotIndex] || _st.players[piece.slotIndex] || _st.players[0];
             ctx.fillStyle = 'rgba(11, 18, 22, 0.88)';
             ctx.beginPath();
             ctx.roundRect(pView.x - 54, pView.y - piece.r - 36, 108, 22, 6);
@@ -932,7 +932,7 @@ export const MatchArena: React.FC<Props> = ({
       for (const p of b.pieces) {
         const vPos = toView(p.x, p.y);
         const team = p.side === 'host' ? hostTeam : guestTeam;
-        const playerInfo = team.players[p.playerIndex ?? p.slotIndex];
+        const playerInfo = team.players[p.playerIndex ?? p.slotIndex] || team.players[p.slotIndex] || team.players[0];
         const isGk = p.slotIndex === 0;
         const isSelectable =
           phaseRef.current === 'aiming' && b.turn === mySide && p.side === mySide;
@@ -1483,7 +1483,7 @@ export const MatchArena: React.FC<Props> = ({
           <div className="subs-column">
             <strong>Titulaires</strong>
             {boardRef.current.pieces.filter((p) => p.side === mySide).sort((a,b)=>a.slotIndex-b.slotIndex).map((piece) => {
-              const pl = myTeamObj.players[piece.playerIndex ?? piece.slotIndex];
+              const pl = myTeamObj.players[piece.playerIndex ?? piece.slotIndex] || myTeamObj.players[piece.slotIndex] || myTeamObj.players[0];
               return <button key={piece.id} type="button" className={selectedSlot===piece.slotIndex?'active':''} onClick={() => setSelectedSlot(piece.slotIndex)}><span>#{pl.number} {pl.name}</span><small>{pl.role} · TIR {pl.stats.tir} PHY {pl.stats.phy} CTR {pl.stats.ctr}</small></button>;
             })}
           </div>

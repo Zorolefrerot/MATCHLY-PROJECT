@@ -1,4 +1,4 @@
-const CACHE_NAME = 'matchly-fc27-v3';
+const CACHE_NAME = 'matchly-fc27-v4';
 const PRECACHE_URLS = [
   '/',
   '/manifest.webmanifest',

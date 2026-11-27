@@ -2977,3 +2977,20 @@ button,input,select{max-width:100%}
 @media (max-width:430px){.mode-home-grid{grid-template-columns:1fr}.captain-grid{grid-template-columns:1fr}.career-hero{flex-direction:column}.qm-side strong{font-size:13px}.seg-choice-grid.three,.seg-choice-grid.four{grid-template-columns:1fr}.team-search{min-width:100%}}
 /* Landscape tablets/PC keep arena inside viewport */
 @media (min-width:761px){.pitch-canvas-frame{margin-inline:auto;height:100%}.subs-panel{max-height:300px}}
+
+/* Real-player avatar fallback (initials) when no headshot exists */
+.mini-avatar-fallback { display:inline-flex; align-items:center; justify-content:center; width:25px; height:25px; border-radius:50%; background:linear-gradient(135deg,#00A8FF,#FF2EA6); color:#fff; font-size:9px; font-weight:800; border:1.5px solid var(--bg-panel,#0a1030); margin-left:-5px; }
+.mini-avatar-fallback:first-child { margin-left:0; }
+
+/* ===== FC 27 Title & Main Menu — user artwork, fully clickable ===== */
+.screen-stage{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:radial-gradient(120% 90% at 50% 0%,#0A1460 0%,#050B2E 55%,#02041A 100%);overflow:hidden}
+.screen-frame{position:relative;padding:0;border:none;background:#02041A;line-height:0;box-shadow:0 30px 80px rgba(0,0,0,.65);animation:screenIn .45s ease;max-height:100dvh}
+.screen-frame img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none}
+@keyframes screenIn{from{opacity:0;transform:scale(1.03)}to{opacity:1;transform:scale(1)}}
+.title-frame{cursor:pointer}
+.press-start-chip{position:absolute;border:2px solid rgba(0,168,255,.95);border-radius:12px;background:rgba(0,168,255,.12);box-shadow:0 0 18px rgba(0,168,255,.75),inset 0 0 14px rgba(0,168,255,.35);animation:pressBlink 1.15s ease-in-out infinite;pointer-events:none}
+@keyframes pressBlink{0%,100%{opacity:1}50%{opacity:.2}}
+.menu-hotspot{position:absolute;padding:0;border:1.5px solid transparent;border-radius:14px;background:transparent;cursor:pointer;transition:border-color .18s ease,background .18s ease,box-shadow .18s ease,transform .12s ease;-webkit-tap-highlight-color:transparent}
+.menu-hotspot:hover,.menu-hotspot:focus-visible{border-color:rgba(0,168,255,.9);background:rgba(0,168,255,.10);box-shadow:0 0 0 2px rgba(0,168,255,.22),0 0 24px rgba(255,46,166,.45);outline:none}
+.menu-hotspot:active{transform:scale(.98);background:rgba(255,46,166,.16)}
+.menu-live-badge{position:absolute;top:-7px;right:-7px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#FF2E4D;color:#fff;font:700 12px/22px var(--font-sans);text-align:center;box-shadow:0 4px 12px rgba(255,46,77,.55)}

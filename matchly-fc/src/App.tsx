@@ -61,6 +61,8 @@ import {
   PwaInstallGate,
 } from './components/PwaInstallGate';
 import { IntroCinematic } from './components/IntroCinematic';
+import { TitleScreen } from './components/TitleScreen';
+import { MainMenu } from './components/MainMenu';
 import { SettingsModal } from './components/SettingsModal';
 import { countClaimableObjectives, ObjectivesModal } from './components/ObjectivesModal';
 import { QuickMatchModal } from './components/QuickMatchModal';
@@ -159,6 +161,10 @@ export const App: React.FC = () => {
       return true;
     }
   });
+
+  // FC 27 Title Screen (blinking PRESS TO START) → Main Menu flow
+  const [showTitle, setShowTitle] = useState(true);
+  const [showMainMenu, setShowMainMenu] = useState(false);
 
   // Cover star rotator
   const [starIdx, setStarIdx] = useState(0);
@@ -275,6 +281,7 @@ export const App: React.FC = () => {
       // If arriving via direct room invite link, skip intro straight to hub so joining is instant
       setPwaBypassed(true);
       setShowIntro(false);
+      setShowTitle(false);
     }
   }, []);
 
@@ -669,6 +676,19 @@ export const App: React.FC = () => {
     );
   }
 
+  // STEP 2B: FC 27 Title Screen — blinking PRESS TO START (user artwork)
+  if (showTitle) {
+    return (
+      <TitleScreen
+        onStart={() => {
+          sfx.uiClick();
+          setShowTitle(false);
+          setShowMainMenu(true);
+        }}
+      />
+    );
+  }
+
   // STEP 3: Live Match Arena (with in-match FC 27 Settings overlay support)
   if (activeMatch) {
     return (
@@ -716,9 +736,33 @@ export const App: React.FC = () => {
   const nextLockedTeam = EURO_TEAMS.find((t) => !profile.unlocked_teams.includes(t.id));
   const claimableCount = countClaimableObjectives(profile);
   const star = COVER_STARS[starIdx];
+  const enterApp = (tab: NavTab) => {
+    sfx.uiClick();
+    setNavTab(tab);
+    setShowMainMenu(false);
+  };
 
   return (
     <div className="app-shell fc27-shell">
+      {/* FC 27 Main Menu — user artwork with clickable hotspots (same design as title screen) */}
+      {showMainMenu && (
+        <MainMenu
+          claimableCount={claimableCount}
+          onProfile={() => { sfx.uiClick(); setShowAccount(true); }}
+          onShop={() => { sfx.uiClick(); setShowObjectives(true); }}
+          onCareer={() => enterApp('career')}
+          onOnline={() => enterApp('play')}
+          onChampionship={() => enterApp('competitions')}
+          onQuickMatch={() => { sfx.uiClick(); setShowQuickMatch(true); }}
+          onModes={() => enterApp('play')}
+          onSettings={() => { sfx.uiClick(); setShowSettings(true); }}
+          onQuit={() => { sfx.uiClick(); setShowMainMenu(false); setShowTitle(true); }}
+          onChampionsLeague={() => enterApp('cups')}
+          onEvents={() => { sfx.uiClick(); setShowChallenges(true); }}
+          onMyTeam={() => enterApp('locker')}
+        />
+      )}
+
       {/* Ambient Floodlit Night Stadium Backdrop */}
       <div
         className="fc27-ambient-stadium"
@@ -731,7 +775,7 @@ export const App: React.FC = () => {
           className="brand-cluster"
           onClick={() => {
             sfx.uiClick();
-            setNavTab('play');
+            setShowMainMenu(true);
           }}
         >
 <img className="brand-logo-img" src="/brand/matchly-fc27-logo-512.png" alt="Matchly FC 27" />

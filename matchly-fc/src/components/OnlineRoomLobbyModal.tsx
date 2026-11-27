@@ -199,7 +199,7 @@ export const OnlineRoomLobbyModal: React.FC<Props> = ({
             </p>
             <div className="mini-avatar-stack center">
               {hostTeam.players.slice(0,5).map((p) => (
-                <img key={p.id} src={p.photo} alt={p.shortName} title={p.name} />
+                p.photo ? <img key={p.id} src={p.photo} alt={p.shortName} title={p.name} /> : <span key={p.id} className="mini-avatar-fallback" title={p.name}>{p.shortName.slice(0,2).toUpperCase()}</span>
               ))}
             </div>
           </div>
@@ -220,7 +220,7 @@ export const OnlineRoomLobbyModal: React.FC<Props> = ({
                 </p>
                 <div className="mini-avatar-stack center">
                   {guestTeam.players.slice(0,5).map((p) => (
-                    <img key={p.id} src={p.photo} alt={p.shortName} title={p.name} />
+                    p.photo ? <img key={p.id} src={p.photo} alt={p.shortName} title={p.name} /> : <span key={p.id} className="mini-avatar-fallback" title={p.name}>{p.shortName.slice(0,2).toUpperCase()}</span>
                   ))}
                 </div>
               </>
