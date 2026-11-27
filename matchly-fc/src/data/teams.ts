@@ -616,6 +616,7 @@ blueLock.players = BLUE_LOCK_NAMES.map(([name,role],i)=>({ id:`blue-lock-${i+1}`
 EURO_TEAMS.push(blueLock);
 
 // ---------- Real players & photos: every named player exists; starters use real headshots ----------
+import { PLAYER_PHOTO_FILES } from './playerPhotos';
 const NEW_PLAYER_PHOTOS: Record<string, string> = {
   "Lionel Messi": "/players/messi.jpg",
   "Neymar": "/players/neymar.jpg",
@@ -749,7 +750,7 @@ const REAL_BENCH: Record<string, string[]> = {
 
 const SQUAD_NUMBERS = [1, 4, 5, 8, 10, 9, 2, 6, 7, 3, 14, 11, 17, 13, 19];
 const ROLE_BY_INDEX: PlayerRole[] = ['GK','DEF','DEF','MIL','MIL','ATT','DEF','MIL','ATT','DEF','MIL','ATT','MIL','DEF','ATT'];
-const normPlayerName = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+const normPlayerName = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ø/g, 'o').replace(/ł/g, 'l').replace(/đ/g, 'd').replace(/ı/g, 'i').replace(/æ/g, 'ae').replace(/œ/g, 'oe').replace(/ß/g, 'ss').replace(/ð/g, 'd').replace(/þ/g, 'th').replace(/[-'’]/g, ' ').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
 const PHOTO_BY_PLAYER = new Map<string, string>();
 for (const [name, photo] of Object.entries(NEW_PLAYER_PHOTOS)) PHOTO_BY_PLAYER.set(normPlayerName(name), photo);
 for (const t of EURO_TEAMS) for (const p of t.players) {
@@ -757,9 +758,24 @@ for (const t of EURO_TEAMS) for (const p of t.players) {
   const full = normPlayerName(p.name); if (!PHOTO_BY_PLAYER.has(full)) PHOTO_BY_PLAYER.set(full, p.photo);
   const surname = full.split(' ').slice(-1)[0]; if (!PHOTO_BY_PLAYER.has(surname)) PHOTO_BY_PLAYER.set(surname, p.photo);
 }
+// Surname index over the photo manifest, kept only when the surname is unique
+// (avoids giving e.g. the wrong "Silva" or "Martínez" to another player).
+const SURNAME_PHOTO_FILES = new Map<string, string>();
+{
+  const counts = new Map<string, number>();
+  for (const key of Object.keys(PLAYER_PHOTO_FILES)) {
+    const sn = key.split(' ').slice(-1)[0];
+    counts.set(sn, (counts.get(sn) || 0) + 1);
+  }
+  for (const [key, file] of Object.entries(PLAYER_PHOTO_FILES)) {
+    const sn = key.split(' ').slice(-1)[0];
+    if (counts.get(sn) === 1 && !SURNAME_PHOTO_FILES.has(sn)) SURNAME_PHOTO_FILES.set(sn, file);
+  }
+}
 export function photoForPlayer(name: string): string {
   const full = normPlayerName(name);
-  return PHOTO_BY_PLAYER.get(full) || PHOTO_BY_PLAYER.get(full.split(' ').slice(-1)[0]) || '';
+  const surname = full.split(' ').slice(-1)[0];
+  return PHOTO_BY_PLAYER.get(full) || PLAYER_PHOTO_FILES[full] || PHOTO_BY_PLAYER.get(surname) || SURNAME_PHOTO_FILES.get(surname) || '';
 }
 for (const team of EURO_TEAMS) {
   const real = REAL_SQUADS[team.id];

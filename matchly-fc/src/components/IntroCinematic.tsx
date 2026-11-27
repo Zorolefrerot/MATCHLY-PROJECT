@@ -5,7 +5,7 @@ import { sfx } from '../engine/audio';
 interface IntroCinematicProps { onFinish: () => void; }
 
 /**
- * Opening video only: a real <video> of Matchly gameplay actions with an Afro stadium track.
+ * Opening video only: a real retrieved highlights edit (Champions League final: goal, saves, trophy lift) with an Afro stadium track.
  * The only visible controls are Skip and Sound, as requested.
  */
 export const IntroCinematic: React.FC<IntroCinematicProps> = ({ onFinish }) => {
