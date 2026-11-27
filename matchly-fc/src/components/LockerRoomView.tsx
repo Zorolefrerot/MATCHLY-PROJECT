@@ -4,11 +4,14 @@ import { EURO_TEAMS, EuroTeam, FormationId, FORMATIONS, SquadPlayer } from '../d
 import { PlayerProfile } from '../lib/supabase';
 import { TeamCrest } from './TeamCrest';
 import { sfx } from '../engine/audio';
+import { SquadManagerModal } from './SquadManagerModal';
 
 interface Props {
   profile: PlayerProfile;
   onSelectTeamAndFormation: (teamId: string, formation: FormationId) => void;
   onRecruitWithCoins?: (teamId: string, coinCost: number) => void;
+  lineups?: Record<string, number[]>;
+  onLineupChange?: (teamId: string, lineup: number[]) => void;
 }
 
 function getPlayStyleBadge(pl: SquadPlayer): { label: string; gold: boolean } {
@@ -29,9 +32,12 @@ export const LockerRoomView: React.FC<Props> = ({
   profile,
   onSelectTeamAndFormation,
   onRecruitWithCoins,
+  lineups = {},
+  onLineupChange,
 }) => {
   const [filter, setFilter] = useState<'all' | 'club' | 'nation' | 'unlocked'>('all');
   const [inspectedId, setInspectedId] = useState<string>(profile.favorite_team_id);
+  const [showSquadManager, setShowSquadManager] = useState(false);
 
   const unlockedSet = new Set(profile.unlocked_teams);
 
@@ -153,7 +159,7 @@ export const LockerRoomView: React.FC<Props> = ({
                 </div>
 
                 <div className="mini-avatar-stack">
-                  {team.players.map((p) => (
+                  {team.players.slice(0, 5).map((p) => (
                     <img
                       key={p.id}
                       src={p.photo}
@@ -260,7 +266,7 @@ export const LockerRoomView: React.FC<Props> = ({
                 <div key={pl.id} className="player-row-card">
                   <div className="fc27-mini-shield">
                     <span className="fc27-card-ovr">{playerOvr}</span>
-                    <img src={pl.photo} alt={pl.name} className="player-portrait-img" />
+                    {pl.photo ? <img src={pl.photo} alt={pl.name} className="player-portrait-img" /> : <span className="player-portrait-img portrait-fallback">{pl.shortName.slice(0,2).toUpperCase()}</span>}
                     <span className="player-num-pill">#{pl.number}</span>
                   </div>
 
@@ -304,6 +310,7 @@ export const LockerRoomView: React.FC<Props> = ({
           </div>
 
           {/* Tactical Formation Picker + Mini Pitch Preview */}
+          <button type="button" className="fc27-volt-btn full-w" onClick={() => setShowSquadManager(true)}>Gérer titulaires & banc · 15 joueurs</button>
           <div className="squad-section-label">FC IQ · DISPOSITIF TACTIQUE ({activeFormation.id})</div>
           <div className="formation-picker-grid">
             {(Object.keys(FORMATIONS) as FormationId[]).map((fid) => {
@@ -333,7 +340,7 @@ export const LockerRoomView: React.FC<Props> = ({
             <div className="mtb-circle" />
             <div className="mtb-box" />
             {activeFormation.homeCoords.map((coord, i) => {
-              const pl = inspectedTeam.players[i];
+              const pl = inspectedTeam.players[(lineups[inspectedTeam.id] || [0,1,2,3,4])[i]] || inspectedTeam.players[i];
               const topPct = ((coord.y - 0.52) / 0.46) * 76 + 10;
               const leftPct = coord.x * 84 + 8;
               return (
@@ -342,7 +349,7 @@ export const LockerRoomView: React.FC<Props> = ({
                   className="mtb-pin"
                   style={{ left: `${leftPct}%`, top: `${topPct}%` }}
                 >
-                  <img src={pl.photo} alt={pl.shortName} />
+                  {pl.photo ? <img src={pl.photo} alt={pl.shortName} /> : <span className="mtb-fallback">{pl.shortName.slice(0,2).toUpperCase()}</span>}
                   <span>{pl.shortName}</span>
                 </div>
               );
@@ -350,6 +357,7 @@ export const LockerRoomView: React.FC<Props> = ({
           </div>
         </div>
       </aside>
+      {showSquadManager && <SquadManagerModal team={inspectedTeam} lineup={lineups[inspectedTeam.id] || [0,1,2,3,4]} onSave={(lineup)=>onLineupChange?.(inspectedTeam.id, lineup)} onClose={()=>setShowSquadManager(false)} />}
     </div>
   );
 };

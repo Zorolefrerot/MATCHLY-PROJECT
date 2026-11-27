@@ -71,6 +71,25 @@ export type RealtimePacket =
       text: string;
     }
   | {
+      type: 'substitution';
+      msgId: string;
+      side: Side;
+      slotIndex: number;
+      playerIndex: number;
+    }
+  | {
+      type: 'pause_request';
+      msgId: string;
+      side: Side;
+      pausesUsed: number;
+      durationSeconds: number;
+    }
+  | {
+      type: 'pause_resume';
+      msgId: string;
+      side: Side;
+    }
+  | {
       type: 'rematch_request';
       msgId: string;
       side: Side;

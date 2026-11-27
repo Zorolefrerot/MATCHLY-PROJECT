@@ -1,4 +1,4 @@
-const CACHE_NAME = 'matchly-fc27-v2';
+const CACHE_NAME = 'matchly-fc27-v3';
 const PRECACHE_URLS = [
   '/',
   '/manifest.webmanifest',
@@ -37,6 +37,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/ws') ||
     url.pathname.startsWith('/__vite') ||
     url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/video/') ||
     url.pathname.startsWith('/node_modules/')
   ) {
     return;

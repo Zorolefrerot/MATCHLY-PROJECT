@@ -272,6 +272,30 @@ class SoundEngine {
     this.syncVolumes();
   }
 
+
+  /** Hard-stop every audible source. Used when the tab/app is hidden or closed. */
+  stopAllAudio() {
+    this.traxAudio?.pause();
+    this.introAudio?.pause();
+    this.crowdAudio?.pause();
+    if (this.ctx && this.ctx.state === 'running') this.ctx.suspend().catch(() => {});
+    this.emitTrack();
+  }
+
+  /** Resume only the menu soundtrack after a user gesture / returning to the visible app. */
+  resumeAfterVisibility() {
+    if (typeof document !== 'undefined' && document.hidden) return;
+    if (this.ctx && this.ctx.state === 'suspended' && this.unlocked) this.ctx.resume().catch(() => {});
+    if (!this.inCinematic && !this.inMatch && this.unlocked) this.ensureTraxPlaying();
+    if (this.inMatch) this.startStadiumAmbience();
+  }
+
+  setIntroVideoMuted(muted: boolean) {
+    this.muted = muted;
+    this.syncVolumes();
+    if (muted) this.introAudio?.pause();
+  }
+
   toggleMute(): boolean {
     this.muted = !this.muted;
     this.syncVolumes();

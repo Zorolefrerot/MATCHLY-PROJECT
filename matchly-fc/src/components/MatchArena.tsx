@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Volume2, VolumeX, Flag, RotateCcw, Sparkles, Shield, Crosshair, SlidersHorizontal } from 'lucide-react';
-import { EuroTeam, FormationId, SquadPlayer } from '../data/teams';
+import { Volume2, VolumeX, Flag, RotateCcw, Sparkles, Shield, Crosshair, SlidersHorizontal, Pause, Play, Repeat2 } from 'lucide-react';
+import { BotDifficulty, EuroTeam, FormationId, SquadPlayer } from '../data/teams';
 import { DEFAULT_SETTINGS, GameSettings, TURF_PALETTES } from '../lib/settings';
 import {
   applyShotToBoard,
+  applySubstitution,
   cloneBoard,
   computeBotShot,
   createInitialBoard,
@@ -37,9 +38,12 @@ interface Props {
   guestFormation: FormationId;
   targetGoals: number;
   turnSeconds: number;
-  botDifficulty?: 'pro' | 'elite' | 'legend';
+  botDifficulty?: BotDifficulty;
+  hostLineup?: number[];
+  guestLineup?: number[];
   cupStageLabel?: string;
   initialBoard?: MatchBoardState;
+  onSubstitutionUsed?: (side: Side, used: number) => void;
   settings?: GameSettings;
   onOpenSettings?: () => void;
   onMatchFinished: (summary: MatchFinishSummary) => void;
@@ -52,6 +56,7 @@ interface GoalBannerInfo {
   team: EuroTeam;
   hostScore: number;
   guestScore: number;
+  ownGoal?: boolean;
 }
 
 interface BallTrailPoint {
@@ -75,10 +80,13 @@ export const MatchArena: React.FC<Props> = ({
   targetGoals,
   turnSeconds,
   botDifficulty = 'pro',
+  hostLineup = [0, 1, 2, 3, 4],
+  guestLineup = [0, 1, 2, 3, 4],
   cupStageLabel,
   initialBoard,
   settings = DEFAULT_SETTINGS,
   onOpenSettings,
+  onSubstitutionUsed,
   onMatchFinished,
   onExitArena,
 }) => {
@@ -89,7 +97,7 @@ export const MatchArena: React.FC<Props> = ({
   const boardRef = useRef<MatchBoardState>(
     initialBoard
       ? cloneBoard(initialBoard)
-      : createInitialBoard(hostTeam, hostFormation, guestTeam, guestFormation, 'host', 0, 0, targetGoals, 1),
+      : createInitialBoard(hostTeam, hostFormation, guestTeam, guestFormation, 'host', 0, 0, targetGoals, 1, hostLineup, guestLineup),
   );
 
   const phaseRef = useRef<'aiming' | 'simulating' | 'goal_pause' | 'finished'>('aiming');
@@ -107,6 +115,14 @@ export const MatchArena: React.FC<Props> = ({
   const [emoteToast, setEmoteToast] = useState<{ side: Side; text: string } | null>(null);
   const [rematchWantedByPeer, setRematchWantedByPeer] = useState(false);
   const [rematchSent, setRematchSent] = useState(false);
+  const [subsUsed, setSubsUsed] = useState<Record<Side, number>>({ host: 0, guest: 0 });
+  const [subsOpen, setSubsOpen] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [pausedBy, setPausedBy] = useState<Side | null>(null);
+  const [pausesUsed, setPausesUsed] = useState<Record<Side, number>>({ host: 0, guest: 0 });
+  const [pauseLeft, setPauseLeft] = useState(15);
+  const pausedRef = useRef(false);
+  const subsUsedRef = useRef<Record<Side, number>>({ host: 0, guest: 0 });
 
   // Drag aiming state (stored in canonical world coords)
   const dragRef = useRef<{
@@ -133,9 +149,38 @@ export const MatchArena: React.FC<Props> = ({
   const toWorld = (vx: number, vy: number) =>
     mySide === 'guest' ? { x: PITCH.W - vx, y: PITCH.H - vy } : { x: vx, y: vy };
 
+  const currentLineup = (side: Side): number[] =>
+    boardRef.current.pieces.filter((p) => p.side === side).sort((a, b) => a.slotIndex - b.slotIndex).map((p) => p.playerIndex ?? p.slotIndex);
+
+  const applyLocalSubstitution = (side: Side, slotIndex: number, playerIndex: number, broadcast = false): boolean => {
+    if (pausedRef.current || phaseRef.current !== 'aiming' || subsUsedRef.current[side] >= 3) return false;
+    const team = side === 'host' ? hostTeam : guestTeam;
+    if (!applySubstitution(boardRef.current, team, side, slotIndex, playerIndex)) return false;
+    const next = { ...subsUsedRef.current, [side]: subsUsedRef.current[side] + 1 };
+    subsUsedRef.current = next; setSubsUsed(next); onSubstitutionUsed?.(side, next[side]);
+    soundEngine.uiClick();
+    if (broadcast && connRef.current) connRef.current.send({ type: 'substitution', msgId: newMsgId(), side, slotIndex, playerIndex });
+    return true;
+  };
+
+  const resumePause = (broadcast = true) => {
+    if (!pausedRef.current) return;
+    pausedRef.current = false; setPausedBy(null); setPauseLeft(15);
+    if (broadcast && mode === 'online_room' && connRef.current) connRef.current.send({ type: 'pause_resume', msgId: newMsgId(), side: mySide });
+  };
+
+  const requestPause = () => {
+    if (pausedRef.current || phaseRef.current === 'finished') return;
+    if (mode === 'online_room' && pausesUsed[mySide] >= 3) return;
+    const next = { ...pausesUsed, [mySide]: pausesUsed[mySide] + 1 };
+    if (mode === 'online_room') setPausesUsed(next);
+    pausedRef.current = true; setPausedBy(mySide); setPauseLeft(15);
+    if (mode === 'online_room' && connRef.current) connRef.current.send({ type: 'pause_request', msgId: newMsgId(), side: mySide, pausesUsed: next[mySide], durationSeconds: 15 });
+  };
+
   // Preload all 10 player portraits
   useEffect(() => {
-    const allPlayers = [...hostTeam.players, ...guestTeam.players];
+    const allPlayers = [...hostTeam.players, ...guestTeam.players].filter((p) => p.photo);
     for (const p of allPlayers) {
       if (!imageCacheRef.current.has(p.photo)) {
         const img = new Image();
@@ -222,6 +267,19 @@ export const MatchArena: React.FC<Props> = ({
             setTurnUi(pkt.board.turn);
             setScoresUi({ host: pkt.board.hostScore, guest: pkt.board.guestScore });
           }
+        } else if (pkt.type === 'substitution') {
+          if (pkt.side !== mySide && phaseRef.current === 'aiming') {
+            const team = pkt.side === 'host' ? hostTeam : guestTeam;
+            if (applySubstitution(boardRef.current, team, pkt.side, pkt.slotIndex, pkt.playerIndex)) {
+              const next = { ...subsUsedRef.current, [pkt.side]: Math.min(3, subsUsedRef.current[pkt.side] + 1) };
+              subsUsedRef.current = next; setSubsUsed(next);
+            }
+          }
+        } else if (pkt.type === 'pause_request') {
+          pausedRef.current = true; setPausedBy(pkt.side); setPauseLeft(Math.min(15, pkt.durationSeconds || 15));
+          setPausesUsed((prev) => ({ ...prev, [pkt.side]: Math.max(prev[pkt.side], pkt.pausesUsed) }));
+        } else if (pkt.type === 'pause_resume') {
+          pausedRef.current = false; setPausedBy(null); setPauseLeft(15);
         } else if (pkt.type === 'emote') {
           setEmoteToast({ side: pkt.side, text: pkt.text });
           setTimeout(() => setEmoteToast(null), 2600);
@@ -268,6 +326,8 @@ export const MatchArena: React.FC<Props> = ({
         0,
         targetGoals,
         1,
+        hostLineup,
+        guestLineup,
       );
       boardRef.current = fresh;
       finishedReportedRef.current = false;
@@ -278,6 +338,7 @@ export const MatchArena: React.FC<Props> = ({
       setTimeLeft(turnSeconds);
       setRematchSent(false);
       setRematchWantedByPeer(false);
+      subsUsedRef.current = { host: 0, guest: 0 }; setSubsUsed({ host: 0, guest: 0 }); setPausesUsed({ host: 0, guest: 0 }); pausedRef.current = false; setPausedBy(null);
       phaseRef.current = 'aiming';
       setPhaseUi('aiming');
       soundEngine.playWhistle(false);
@@ -295,7 +356,7 @@ export const MatchArena: React.FC<Props> = ({
 
   // Turn countdown timer
   useEffect(() => {
-    if (phaseUi !== 'aiming') return;
+    if (phaseUi !== 'aiming' || pausedBy) return;
     setTimeLeft(turnSeconds);
 
     const interval = setInterval(() => {
@@ -328,16 +389,30 @@ export const MatchArena: React.FC<Props> = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [phaseUi, turnUi, turnSeconds, mode, mySide]);
+  }, [phaseUi, turnUi, turnSeconds, mode, mySide, pausedBy]);
 
   // Solo Cup AI turn thinker
   useEffect(() => {
     if (mode !== 'solo_cup') return;
-    if (phaseUi !== 'aiming' || turnUi !== 'guest') return;
+    if (pausedBy || phaseUi !== 'aiming' || turnUi !== 'guest') return;
 
     const delay = 650 + Math.random() * 520;
     const timer = setTimeout(() => {
       if (phaseRef.current !== 'aiming' || boardRef.current.turn !== 'guest') return;
+      // The bot may use one of its 3 changes before shooting, choosing the best bench profile for a weak slot.
+      if (subsUsedRef.current.guest < 3 && boardRef.current.turnNumber >= 7) {
+        const active = new Set(boardRef.current.pieces.filter((p) => p.side === 'guest').map((p) => p.playerIndex));
+        const bench = guestTeam.players.map((p, i) => ({ p, i })).filter(({ i }) => !active.has(i));
+        const weakPiece = boardRef.current.pieces.filter((p) => p.side === 'guest' && p.slotIndex > 0).sort((a, b) => {
+          const pa = guestTeam.players[a.playerIndex]; const pb = guestTeam.players[b.playerIndex];
+          return (pa.stats.tir + pa.stats.ctr) - (pb.stats.tir + pb.stats.ctr);
+        })[0];
+        const bestBench = bench.sort((a, b) => (b.p.stats.tir + b.p.stats.ctr) - (a.p.stats.tir + a.p.stats.ctr))[0];
+        if (weakPiece && bestBench) {
+          const current = guestTeam.players[weakPiece.playerIndex];
+          if (bestBench.p.stats.tir + bestBench.p.stats.ctr > current.stats.tir + current.stats.ctr + 5) applyLocalSubstitution('guest', weakPiece.slotIndex, bestBench.i, false);
+        }
+      }
       const shot = computeBotShot(boardRef.current, botDifficulty);
       peerAimRef.current = { side: 'guest', pieceId: shot.pieceId, power01: 0.8 };
       setTimeout(() => {
@@ -349,6 +424,18 @@ export const MatchArena: React.FC<Props> = ({
     return () => clearTimeout(timer);
   }, [mode, phaseUi, turnUi, botDifficulty]);
 
+  // Online pauses are capped at 3 per side and automatically end after 15 seconds.
+  useEffect(() => {
+    if (!pausedBy) return;
+    const id = setInterval(() => {
+      setPauseLeft((prev) => {
+        if (prev <= 1) { window.setTimeout(() => resumePause(true), 0); return 15; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [pausedBy]);
+
   // Main 60fps Canvas Physics & Rendering Loop
   useEffect(() => {
     let rafId = 0;
@@ -357,7 +444,7 @@ export const MatchArena: React.FC<Props> = ({
     const FIXED_DT = 1 / 60;
     let clackCooldown = 0;
 
-    const handleGoalScored = (scoringSide: Side) => {
+    const handleGoalScored = (scoringSide: Side, ownGoal = false, goalTouch: MatchBoardState['lastTouch'] = null) => {
       phaseRef.current = 'goal_pause';
       setPhaseUi('goal_pause');
       if (settingsRef.current.cameraShake) shakeRef.current = 12;
@@ -371,11 +458,10 @@ export const MatchArena: React.FC<Props> = ({
       const newGuestScore = b.guestScore;
       setScoresUi({ host: newHostScore, guest: newGuestScore });
 
-      const scoringTeam = scoringSide === 'host' ? hostTeam : guestTeam;
-      let scorerIdx = 4; // default striker
-      if (b.lastTouch && b.lastTouch.side === scoringSide) {
-        scorerIdx = b.lastTouch.slotIndex;
-      }
+      const touchSide = goalTouch?.side || scoringSide;
+      const scoringTeam = touchSide === 'host' ? hostTeam : guestTeam;
+      let scorerIdx = 4; // default striker player in the 15-player squad
+      if (goalTouch) scorerIdx = goalTouch.playerIndex;
       const scorer = scoringTeam.players[scorerIdx] || scoringTeam.players[4];
 
       setGoalBanner({
@@ -384,6 +470,7 @@ export const MatchArena: React.FC<Props> = ({
         team: scoringTeam,
         hostScore: newHostScore,
         guestScore: newGuestScore,
+        ownGoal,
       });
 
       const matchWon = newHostScore >= targetGoals || newGuestScore >= targetGoals;
@@ -430,6 +517,8 @@ export const MatchArena: React.FC<Props> = ({
           newGuestScore,
           targetGoals,
           b.turnNumber + 1,
+          currentLineup('host'),
+          currentLineup('guest'),
         );
         boardRef.current = resetBoard;
         trailRef.current = [];
@@ -454,7 +543,7 @@ export const MatchArena: React.FC<Props> = ({
       clackCooldown = Math.max(0, clackCooldown - elapsed);
       postFlashRef.current = Math.max(0, postFlashRef.current - elapsed * 2.5);
 
-      if (phaseRef.current === 'simulating' || phaseRef.current === 'goal_pause') {
+      if (!pausedRef.current && (phaseRef.current === 'simulating' || phaseRef.current === 'goal_pause')) {
         accumulator += elapsed;
         while (accumulator >= FIXED_DT) {
           accumulator -= FIXED_DT;
@@ -485,7 +574,7 @@ export const MatchArena: React.FC<Props> = ({
           }
 
           if (phaseRef.current === 'simulating' && ev.goalScoredBy) {
-            handleGoalScored(ev.goalScoredBy);
+            handleGoalScored(ev.goalScoredBy, ev.ownGoal, ev.goalTouch);
           } else if (phaseRef.current === 'simulating' && isBoardAtRest(boardRef.current)) {
             // Turn finished cleanly — switch turn
             const b = boardRef.current;
@@ -798,7 +887,7 @@ export const MatchArena: React.FC<Props> = ({
             }
 
             // Power % tag
-            const squadPlayer = (mySide === 'host' ? hostTeam : guestTeam).players[piece.slotIndex];
+            const squadPlayer = (mySide === 'host' ? hostTeam : guestTeam).players[piece.playerIndex ?? piece.slotIndex];
             ctx.fillStyle = 'rgba(11, 18, 22, 0.88)';
             ctx.beginPath();
             ctx.roundRect(pView.x - 54, pView.y - piece.r - 36, 108, 22, 6);
@@ -843,7 +932,7 @@ export const MatchArena: React.FC<Props> = ({
       for (const p of b.pieces) {
         const vPos = toView(p.x, p.y);
         const team = p.side === 'host' ? hostTeam : guestTeam;
-        const playerInfo = team.players[p.slotIndex];
+        const playerInfo = team.players[p.playerIndex ?? p.slotIndex];
         const isGk = p.slotIndex === 0;
         const isSelectable =
           phaseRef.current === 'aiming' && b.turn === mySide && p.side === mySide;
@@ -1220,6 +1309,9 @@ export const MatchArena: React.FC<Props> = ({
               <SlidersHorizontal size={15} />
             </button>
           )}
+          <button type="button" className="icon-pill-btn" onClick={requestPause} disabled={Boolean(pausedBy) || (mode === 'online_room' && pausesUsed[mySide] >= 3)} title={mode === 'online_room' ? `Pause (${pausesUsed[mySide]}/3)` : 'Pause'}>
+            <Pause size={15} /><span className="hide-xs">{mode === 'online_room' ? `${pausesUsed[mySide]}/3` : 'Pause'}</span>
+          </button>
           <button
             type="button"
             className="icon-pill-btn"
@@ -1274,13 +1366,9 @@ export const MatchArena: React.FC<Props> = ({
           {goalBanner && (
             <div className="goal-broadcast-overlay">
               <div className="goal-broadcast-card">
-                <div className="goal-wordmark">BUT !</div>
+                <div className="goal-wordmark">{goalBanner.ownGoal ? 'BUT CONTRE SON CAMP !' : 'BUT !'}</div>
                 <div className="goal-scorer-row">
-                  <img
-                    src={goalBanner.scorer.photo}
-                    alt={goalBanner.scorer.name}
-                    className="goal-scorer-avatar"
-                  />
+                  {goalBanner.scorer.photo ? <img src={goalBanner.scorer.photo} alt={goalBanner.scorer.name} className="goal-scorer-avatar" /> : <span className="goal-scorer-avatar goal-avatar-fallback">{goalBanner.scorer.shortName.slice(0, 2).toUpperCase()}</span>}
                   <div className="goal-scorer-info">
                     <span className="goal-team-tag">
                       <TeamCrest team={goalBanner.team} size={20} />
@@ -1368,6 +1456,48 @@ export const MatchArena: React.FC<Props> = ({
           )}
         </div>
       </div>
+
+
+      {/* Pause overlay: online games resume automatically after 15 seconds */}
+      {pausedBy && phaseUi !== 'finished' && (
+        <div className="match-pause-overlay">
+          <div className="match-pause-card">
+            <span className="fc27-skew-tag"><span>PAUSE {mode === 'online_room' ? 'EN LIGNE' : 'MATCH'}</span></span>
+            <h2>{pausedBy === mySide ? 'Votre pause' : `Pause de ${pausedBy === 'host' ? hostName : guestName}`}</h2>
+            <div className="pause-countdown">{pauseLeft}s</div>
+            <p>{mode === 'online_room' ? `Reprise automatique · pauses utilisées : ${pausesUsed[pausedBy]}/3` : 'Le chronomètre et la physique sont figés.'}</p>
+            <button type="button" className="fc27-volt-btn" onClick={() => resumePause(true)}><Play size={16} /> Reprendre maintenant</button>
+          </div>
+        </div>
+      )}
+
+      {/* Substitution bench: 3 changes maximum per team */}
+      <div className="match-tools-bar">
+        <button type="button" className="fc27-ghost-btn" onClick={() => { setSubsOpen((v) => !v); setSelectedSlot(null); }} disabled={phaseUi !== 'aiming' || Boolean(pausedBy)}>
+          <Repeat2 size={16} /> Remplacements · {subsUsed[mySide]}/3
+        </button>
+        <span>{myTeamObj.shortName} : choisissez un titulaire puis un remplaçant du banc (15 joueurs).</span>
+      </div>
+      {subsOpen && (
+        <div className="subs-panel">
+          <div className="subs-column">
+            <strong>Titulaires</strong>
+            {boardRef.current.pieces.filter((p) => p.side === mySide).sort((a,b)=>a.slotIndex-b.slotIndex).map((piece) => {
+              const pl = myTeamObj.players[piece.playerIndex ?? piece.slotIndex];
+              return <button key={piece.id} type="button" className={selectedSlot===piece.slotIndex?'active':''} onClick={() => setSelectedSlot(piece.slotIndex)}><span>#{pl.number} {pl.name}</span><small>{pl.role} · TIR {pl.stats.tir} PHY {pl.stats.phy} CTR {pl.stats.ctr}</small></button>;
+            })}
+          </div>
+          <div className="subs-column">
+            <strong>Banc ({myTeamObj.players.length - 5} joueurs)</strong>
+            {myTeamObj.players.map((pl, idx) => {
+              const active = boardRef.current.pieces.some((p) => p.side === mySide && p.playerIndex === idx);
+              if (active) return null;
+              return <button key={pl.id} type="button" disabled={selectedSlot===null || subsUsed[mySide]>=3 || (selectedSlot===0 && pl.role!=='GK')} onClick={() => { if (selectedSlot!==null && applyLocalSubstitution(mySide, selectedSlot, idx, mode==='online_room')) { setSelectedSlot(null); setSubsOpen(false); } }}><span>#{pl.number} {pl.name}</span><small>{pl.role} · TIR {pl.stats.tir} PHY {pl.stats.phy} CTR {pl.stats.ctr}</small></button>;
+            })}
+          </div>
+          <p className="subs-note">Maximum 3 changements par équipe. Le gardien ne peut être remplacé que par un gardien. En ligne, le changement est synchronisé.</p>
+        </div>
+      )}
 
       {/* Bottom Tactical Quick-Reaction Bar */}
       {mode === 'online_room' && phaseUi !== 'finished' && (

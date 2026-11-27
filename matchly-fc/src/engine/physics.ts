@@ -1,4 +1,4 @@
-import { EuroTeam, FormationId, FORMATIONS } from '../data/teams';
+import { BotDifficulty, EuroTeam, FormationId, FORMATIONS } from '../data/teams';
 
 export type Side = 'host' | 'guest';
 
@@ -23,7 +23,8 @@ export const PITCH = {
 export interface DiscPiece {
   id: string;
   side: Side;
-  slotIndex: number; // 0 = GK, 1..4 = outfield
+  slotIndex: number; // tactical slot: 0 = GK, 1..4 = outfield
+  playerIndex: number; // index in the 15-player squad
   x: number;
   y: number;
   vx: number;
@@ -52,7 +53,7 @@ export interface MatchBoardState {
   hostScore: number;
   guestScore: number;
   targetGoals: number;
-  lastTouch: { side: Side; slotIndex: number } | null;
+  lastTouch: { side: Side; slotIndex: number; playerIndex: number } | null;
 }
 
 export interface StepEvents {
@@ -60,6 +61,8 @@ export interface StepEvents {
   ballKickIntensity: number;
   postHit: boolean;
   goalScoredBy: Side | null;
+  ownGoal: boolean;
+  goalTouch: { side: Side; slotIndex: number; playerIndex: number } | null;
 }
 
 export function createInitialBoard(
@@ -72,19 +75,23 @@ export function createInitialBoard(
   guestScore = 0,
   targetGoals = 3,
   turnNumber = 1,
+  hostLineup: number[] = [0, 1, 2, 3, 4],
+  guestLineup: number[] = [0, 1, 2, 3, 4],
 ): MatchBoardState {
   const pieces: DiscPiece[] = [];
   const playW = PITCH.RIGHT - PITCH.LEFT;
   const playH = PITCH.BOTTOM - PITCH.TOP;
 
   const hCoords = FORMATIONS[hostFormation]?.homeCoords || FORMATIONS['1-2-2'].homeCoords;
-  hostTeam.players.forEach((p, idx) => {
+  hostLineup.slice(0, 5).forEach((playerIndex, idx) => {
+    const p = hostTeam.players[playerIndex] || hostTeam.players[idx];
     const c = hCoords[idx];
     const isGk = idx === 0;
     pieces.push({
       id: `host-${idx}`,
       side: 'host',
       slotIndex: idx,
+      playerIndex,
       x: PITCH.LEFT + c.x * playW,
       y: PITCH.TOP + c.y * playH,
       vx: 0,
@@ -97,7 +104,8 @@ export function createInitialBoard(
   });
 
   const gCoords = FORMATIONS[guestFormation]?.homeCoords || FORMATIONS['1-2-2'].homeCoords;
-  guestTeam.players.forEach((p, idx) => {
+  guestLineup.slice(0, 5).forEach((playerIndex, idx) => {
+    const p = guestTeam.players[playerIndex] || guestTeam.players[idx];
     const c = gCoords[idx];
     const isGk = idx === 0;
     // Mirror vertically & horizontally for away side
@@ -105,6 +113,7 @@ export function createInitialBoard(
       id: `guest-${idx}`,
       side: 'guest',
       slotIndex: idx,
+      playerIndex,
       x: PITCH.LEFT + (1 - c.x) * playW,
       y: PITCH.TOP + (1 - c.y) * playH,
       vx: 0,
@@ -226,12 +235,49 @@ function resolveBevels(
   }
 }
 
+
+export function evacuatePieceFromGoal(piece: DiscPiece): boolean {
+  const insideTop = piece.y < PITCH.TOP + 2 && piece.x > PITCH.GOAL_LEFT - piece.r && piece.x < PITCH.GOAL_RIGHT + piece.r;
+  const insideBottom = piece.y > PITCH.BOTTOM - 2 && piece.x > PITCH.GOAL_LEFT - piece.r && piece.x < PITCH.GOAL_RIGHT + piece.r;
+  if (!insideTop && !insideBottom) return false;
+  const defensiveOffset = piece.r + 24;
+  if (insideTop) {
+    piece.y = PITCH.TOP + defensiveOffset;
+    piece.x = Math.max(PITCH.LEFT + piece.r + 8, Math.min(PITCH.RIGHT - piece.r - 8, piece.x + (piece.x < PITCH.W / 2 ? -18 : 18)));
+    piece.vy = Math.abs(piece.vy) * 0.25;
+  } else {
+    piece.y = PITCH.BOTTOM - defensiveOffset;
+    piece.x = Math.max(PITCH.LEFT + piece.r + 8, Math.min(PITCH.RIGHT - piece.r - 8, piece.x + (piece.x < PITCH.W / 2 ? -18 : 18)));
+    piece.vy = -Math.abs(piece.vy) * 0.25;
+  }
+  piece.vx *= 0.35;
+  return true;
+}
+
+export function applySubstitution(board: MatchBoardState, team: EuroTeam, side: Side, slotIndex: number, playerIndex: number): boolean {
+  const piece = board.pieces.find((p) => p.side === side && p.slotIndex === slotIndex);
+  const player = team.players[playerIndex];
+  if (!piece || !player || piece.playerIndex === playerIndex) return false;
+  if (board.pieces.some((p) => p.side === side && p.playerIndex === playerIndex)) return false;
+  if (slotIndex === 0 && player.role !== 'GK') return false;
+  piece.playerIndex = playerIndex;
+  piece.r = slotIndex === 0 ? PITCH.GK_R : PITCH.CAP_R;
+  piece.mass = (slotIndex === 0 ? 1.18 : 1.02) * (0.85 + player.stats.phy / 280);
+  piece.maxSpeed = 1020 * (0.91 + (player.stats.tir - 75) * 0.0085);
+  piece.aimLength = 138 + (player.stats.ctr - 75) * 3.8;
+  piece.vx = 0; piece.vy = 0;
+  evacuatePieceFromGoal(piece);
+  return true;
+}
+
 export function stepPhysics(board: MatchBoardState, dt: number): StepEvents {
   const events: StepEvents = {
     capHitIntensity: 0,
     ballKickIntensity: 0,
     postHit: false,
     goalScoredBy: null,
+    ownGoal: false,
+    goalTouch: null,
   };
 
   const substeps = 4;
@@ -412,7 +458,7 @@ export function stepPhysics(board: MatchBoardState, dt: number): StepEvents {
           ball.vx += (jImpulse / ball.mass) * nx;
           ball.vy += (jImpulse / ball.mass) * ny;
 
-          board.lastTouch = { side: p.side, slotIndex: p.slotIndex };
+          board.lastTouch = { side: p.side, slotIndex: p.slotIndex, playerIndex: p.playerIndex };
           events.ballKickIntensity = Math.max(
             events.ballKickIntensity,
             Math.min(1, Math.abs(velAlongNormal) / 680),
@@ -421,12 +467,19 @@ export function stepPhysics(board: MatchBoardState, dt: number): StepEvents {
       }
     }
 
+    // 5b. Safety: no player may remain inside a goal cage; slide them to a defensive spot outside.
+    for (const p of board.pieces) evacuatePieceFromGoal(p);
+
     // 6. Goal Line Technology check (whole ball crossed line)
     if (!events.goalScoredBy) {
       if (ball.y < PITCH.TOP - ball.r * 0.55 && inGoalMouthX) {
         events.goalScoredBy = 'host'; // Host attacks upward into top goal
+        events.goalTouch = board.lastTouch ? { ...board.lastTouch } : null;
+        events.ownGoal = Boolean(board.lastTouch && board.lastTouch.side !== 'host');
       } else if (ball.y > PITCH.BOTTOM + ball.r * 0.55 && inGoalMouthX) {
         events.goalScoredBy = 'guest'; // Guest attacks downward into bottom goal
+        events.goalTouch = board.lastTouch ? { ...board.lastTouch } : null;
+        events.ownGoal = Boolean(board.lastTouch && board.lastTouch.side !== 'guest');
       }
     }
   }
@@ -445,7 +498,7 @@ export function isBoardAtRest(board: MatchBoardState): boolean {
 // Tactical AI shot planner for Solo Cups (Guest side: defends TOP goal y=64, attacks BOTTOM goal y=896)
 export function computeBotShot(
   board: MatchBoardState,
-  difficulty: 'pro' | 'elite' | 'legend' = 'pro',
+  difficulty: BotDifficulty = 'pro',
 ): { pieceId: string; vx: number; vy: number } {
   const myPieces = board.pieces.filter((p) => p.side === 'guest');
   const ball = board.ball;
@@ -574,7 +627,7 @@ export function computeBotShot(
 
   // Subtle human jitter depending on AI tier
   const jitterRad =
-    difficulty === 'legend' ? 0.014 : difficulty === 'elite' ? 0.032 : 0.055;
+    difficulty === 'legend' ? 0.012 : difficulty === 'elite' ? 0.03 : difficulty === 'pro' ? 0.055 : 0.105;
   const angle = Math.atan2(chosen.vy, chosen.vx) + (Math.random() * 2 - 1) * jitterRad;
   const mag = Math.hypot(chosen.vx, chosen.vy) * (0.96 + Math.random() * 0.07);
 

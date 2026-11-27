@@ -56,6 +56,10 @@ const MIME = {
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
   '.mp3': 'audio/mpeg',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
   '.wav': 'audio/wav',
   '.ico': 'image/x-icon',
 };

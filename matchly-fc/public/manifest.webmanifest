@@ -1,15 +1,18 @@
 {
   "name": "MATCHLY FC 27 — Football Tactique en Ligne",
   "short_name": "Matchly FC",
-  "description": "Duels de football en ligne par code, 18 clubs et sélections d'Europe, compétitions de comptes et coupes européennes.",
+  "description": "101 équipes, carrière, championnats, coupes, défis et matchs en ligne.",
   "lang": "fr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#060A0E",
-  "theme_color": "#060A0E",
-  "categories": ["games", "sports"],
+  "background_color": "#050B2E",
+  "theme_color": "#050B2E",
+  "categories": [
+    "games",
+    "sports"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",

@@ -1,35 +1,38 @@
-# Matchly FC — EA SPORTS FC 27 Edition
+# Matchly FC 27 — Édition Logo Officiel
 
-Physics-based flick football PWA: slingshot shooting, real-player superstar hub, online rooms, solo cups, locker-room recruitment and a 30-second opening cinematic.
+PWA de football tactique 2D : 5 titulaires choisis dans un effectif de 15, remplacements en match, carrière, championnats, coupes, défis, matchs en ligne et vidéo d'ouverture.
 
-## 📱 Install as an App (Home Screen required)
-The game asks you to install it on your Home Screen for the full FC 27 experience.
+## Logo et thème
+Le logo officiel fourni par le créateur est utilisé dans l'en-tête, l'écran PWA, les icônes et la carrière (`public/brand/matchly-fc27-logo-512.png`, icônes dérivées dans `public/icons/`). Le thème reprend ses couleurs : bleu marine `#050B2E`, bleu électrique `#00A8FF`, magenta `#FF2EA6`, doré `#FFD21F` et blanc argenté.
 
-**Android (Chrome):** open the site → tap **Installer l'App** (or ⋮ menu → *Ajouter à l'écran d'accueil*) → launch **Matchly FC** from your Home Screen.
-**iPhone (Safari):** open the site in Safari → **Partager** (⬆️) → *Sur l'écran d'accueil* → **Ajouter** → launch from Home Screen.
+## Cinématique vidéo
+L'ouverture est une vraie balise `<video>` : `public/video/matchly-fc27-opening.mp4`, 30 secondes d'actions Matchly animées (passes, courses, frappes et buts) avec la piste Afro Stadium intégrée. Aucun texte ni bouton parasite : uniquement **Passer** et **Son**. Les musiques du jeu sont des compositions originales inspirées de l'énergie FC/FIFA/eFootball/DLS ; aucun morceau commercial protégé n'est redistribué.
 
-Once installed it runs standalone (portrait, fullscreen) with its own icon, splash and offline app-shell via `public/manifest.webmanifest` + `public/sw.js`.
+## Règles de match ajoutées
+- Chaque équipe possède **15 joueurs maximum** avec TIR/PHY/CTR : 5 titulaires à classer et 10 remplaçants.
+- **3 remplacements maximum par équipe** pendant le match, synchronisés en ligne ; le gardien ne peut être remplacé que par un gardien.
+- En ligne : **3 pauses maximum par joueur**, chaque pause dure **15 secondes** puis reprise automatique.
+- Les **buts contre son camp** sont détectés grâce à la dernière touche et affichés comme tels.
+- Un joueur poussé dans une cage est automatiquement replacé à l'extérieur, en position défensive.
+- Match amical : bot en **4 niveaux** — Débutant, Professionnel, Élite, Légende.
+- Statistiques des joueurs existants légèrement revalorisées (+1/+2, plafonnées).
 
-## ✨ FC 27 Features
-- **30s opening cinematic** — 9 scenes of real-player photography synced to `/audio/fc27-intro-30s.mp3`, Ken Burns, lower-thirds, live ticker (skippable).
-- **EA Trax jukebox** — embedded MP3 playlist with toast + skipper; stadium crowd ambience loop in matches.
-- **Settings (4 tabs)** — Audio, Gameplay (slingshot/direct aim, guide, sensitivity, shake, particles), Visual (turf palettes, nameplates), Data.
-- **Modes** — Quick Match exhibition, Online Rooms (WebSocket), Competitions, Solo Cups, Objectives/Season Pass, Locker Room recruitment with Crédits FC & PlayStyles+.
-- **PWA** — manifest, maskable icons, service worker, safe-area portrait polish.
+## Équipes et déblocages
+Base de **50 clubs, 50 sélections nationales et Blue Lock XI** (101 équipes), chacune avec 15 joueurs. Quelques équipes sont disponibles au départ ; les autres se débloquent par trophées, coupes, championnat, défis quotidiens, défis en ligne et défis spéciaux (dont le projet Blue Lock).
 
-## 🛠 Develop
+## Mode Carrière & Championnat
+Créez votre club : nom, coach, **logo importé**, capitaine star au choix. Vous recevez ensuite un effectif aléatoire de jeunes joueurs peu connus (Arabie Saoudite, RD Congo, Croatie, Slovénie, États-Unis, Japon, etc.) : deux carrières ne se ressemblent pas, avec quelques joueurs parfois communs. Parcours en 5 divisions — Division 3, Division 2, Division 1, Division Master, Division Légende — avec classement, calendrier, marché des transferts, entraînement/évolution et revente pour gagner des Crédits FC.
+
+## Responsive
+Interface fluide et espacée pensée mobile-first : aucun dépassement horizontal sur smartphone, tablette ou PC (`overflow-x` verrouillé, grilles adaptatives, zones tactiles et safe-areas). Le son se coupe automatiquement dès que l'onglet/l'application passe en arrière-plan ou se ferme.
+
+## Installation PWA
+Android Chrome : menu ⋮ → *Ajouter à l'écran d'accueil*. iPhone Safari : Partager → *Sur l'écran d'accueil*. L'application se lance ensuite en plein écran depuis l'icône Matchly FC 27.
+
+## Développement et déploiement
 ```bash
 npm ci
-npm run dev      # or: npm start (serves dist/ on 0.0.0.0:5173)
 npm run typecheck && npm run build
+npm start # sert dist/ sur 0.0.0.0:5173
 ```
-
-## 🚀 Deploy on Render
-Blueprint included (`render.yaml`):
-- **Root Directory:** `matchly-fc`
-- **Build Command:** `npm ci && npm run build`
-- **Start Command:** `npm start`
-- **Health Check:** `/api/health`
-- Optional env vars: `PORT` (Render sets it), Supabase keys already defaulted in the client.
-
-Or connect the repo in Render → *New → Blueprint* and it picks up `matchly-fc/render.yaml` automatically.
+Render : Blueprint `render.yaml` (Root Directory `matchly-fc`, Build `npm ci && npm run build`, Start `npm start`, Health `/api/health`).

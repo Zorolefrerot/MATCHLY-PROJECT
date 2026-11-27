@@ -198,7 +198,7 @@ export const OnlineRoomLobbyModal: React.FC<Props> = ({
               {room.host_name} · <span>{room.host_formation}</span>
             </p>
             <div className="mini-avatar-stack center">
-              {hostTeam.players.map((p) => (
+              {hostTeam.players.slice(0,5).map((p) => (
                 <img key={p.id} src={p.photo} alt={p.shortName} title={p.name} />
               ))}
             </div>
@@ -219,7 +219,7 @@ export const OnlineRoomLobbyModal: React.FC<Props> = ({
                   {room.guest_name} · <span>{room.guest_formation}</span>
                 </p>
                 <div className="mini-avatar-stack center">
-                  {guestTeam.players.map((p) => (
+                  {guestTeam.players.slice(0,5).map((p) => (
                     <img key={p.id} src={p.photo} alt={p.shortName} title={p.name} />
                   ))}
                 </div>

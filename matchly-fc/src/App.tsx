@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import {
   EURO_TEAMS,
+  BotDifficulty,
   EuroTeam,
   FormationId,
   getTeamById,
@@ -63,8 +64,12 @@ import { IntroCinematic } from './components/IntroCinematic';
 import { SettingsModal } from './components/SettingsModal';
 import { countClaimableObjectives, ObjectivesModal } from './components/ObjectivesModal';
 import { QuickMatchModal } from './components/QuickMatchModal';
+import { CareerView } from './components/CareerView';
+import { ChallengesModal } from './components/ChallengesModal';
+import { CAREER_DIVISIONS, CareerSave, careerOpponent, careerToTeam, loadCareer, makeSeason, saveCareer } from './lib/career';
+import { ChallengeDef, ChallengeProgress, loadChallenges, recordChallengeMatch, saveChallenges } from './lib/challenges';
 
-type NavTab = 'play' | 'competitions' | 'cups' | 'locker';
+type NavTab = 'play' | 'competitions' | 'cups' | 'locker' | 'career';
 
 interface ActiveMatchSession {
   mode: 'online_room' | 'solo_cup';
@@ -79,7 +84,10 @@ interface ActiveMatchSession {
   guestFormation: FormationId;
   targetGoals: number;
   turnSeconds: number;
-  botDifficulty?: 'pro' | 'elite' | 'legend';
+  botDifficulty?: BotDifficulty;
+  hostLineup?: number[];
+  guestLineup?: number[];
+  careerFixtureIndex?: number;
   cupRun?: ActiveCupRun;
   cupStageLabel?: string;
   competition?: OnlineCompetition;
@@ -129,6 +137,10 @@ export const App: React.FC = () => {
   const [profile, setProfile] = useState<PlayerProfile>(() => getDefaultGuestProfile());
   const [settings, setSettings] = useState<GameSettings>(() => loadGameSettings());
   const [navTab, setNavTab] = useState<NavTab>('play');
+  const [lineups, setLineups] = useState<Record<string, number[]>>(() => { try { return JSON.parse(localStorage.getItem('matchly_fc27_lineups_v1') || '{}'); } catch { return {}; } });
+  const [careerSave, setCareerSave] = useState<CareerSave | null>(() => loadCareer());
+  const [challengeProgress, setChallengeProgress] = useState<ChallengeProgress>(() => loadChallenges());
+  const [showChallenges, setShowChallenges] = useState(false);
 
   // PWA & 30-second Cinematic state
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -228,6 +240,17 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // The soundtrack must cut as soon as the player leaves/quits the game tab.
+  useEffect(() => {
+    const onVisibility = () => { if (document.hidden) sfx.stopAllAudio(); else sfx.resumeAfterVisibility(); };
+    const onPageHide = () => sfx.stopAllAudio();
+    const onBlur = () => sfx.stopAllAudio();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('blur', onBlur);
+    return () => { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('pagehide', onPageHide); window.removeEventListener('blur', onBlur); };
+  }, []);
+
   // Rotate superstar hero every 5.5s
   useEffect(() => {
     const id = setInterval(() => {
@@ -260,6 +283,31 @@ export const App: React.FC = () => {
     saveGameSettings(next);
     sfx.applySettings(next);
     setMuted(sfx.muted);
+  };
+
+  const updateLineup = (teamId: string, lineup: number[]) => {
+    setLineups((prev) => { const next = { ...prev, [teamId]: lineup }; try { localStorage.setItem('matchly_fc27_lineups_v1', JSON.stringify(next)); } catch {} return next; });
+  };
+  const updateCareer = (next: CareerSave | null) => { setCareerSave(next); saveCareer(next); };
+  const applyCoinsDelta = (delta: number): boolean => {
+    if (profile.coins + delta < 0) return false;
+    const updated = { ...profile, coins: profile.coins + delta };
+    setProfile(updated); persistProfileUpdate(updated).then(setProfile).catch(() => {});
+    return true;
+  };
+  const handleChallengeClaim = async (challenge: ChallengeDef) => {
+    if (challengeProgress.claimed.includes(challenge.id)) return;
+    const nextProgress = { ...challengeProgress, claimed: [...challengeProgress.claimed, challenge.id] };
+    setChallengeProgress(nextProgress); saveChallenges(nextProgress);
+    const unlocks = challenge.unlockTeamId && !profile.unlocked_teams.includes(challenge.unlockTeamId) ? [...profile.unlocked_teams, challenge.unlockTeamId] : profile.unlocked_teams;
+    const updated = await persistProfileUpdate({ ...profile, coins: profile.coins + challenge.coins, trophies: profile.trophies + challenge.trophies, unlocked_teams: unlocks });
+    setProfile(updated);
+    if (challenge.unlockTeamId) setUnlockedToastTeams([getTeamById(challenge.unlockTeamId)]);
+  };
+  const handleStartCareerMatch = (save: CareerSave, fixtureIndex: number) => {
+    const fixture = save.fixtures[fixtureIndex]; if (!fixture || fixture.played) return;
+    const difficulty: BotDifficulty = save.division >= 4 ? 'legend' : save.division >= 2 ? 'elite' : save.division === 1 ? 'pro' : 'rookie';
+    setActiveMatch({ mode:'solo_cup', mySide:'host', hostName:save.coachName, hostTeam:careerToTeam(save), hostFormation:profile.selected_formation, guestName:fixture.opponent, guestTeam:careerOpponent(save, fixture), guestFormation:'1-2-2', targetGoals:3, turnSeconds:20, botDifficulty:difficulty, cupStageLabel:`${CAREER_DIVISIONS[save.division]} · ${save.clubName}`, hostLineup:lineups['career-custom'] || [0,1,2,3,4], guestLineup:[0,1,2,3,4], careerFixtureIndex:fixtureIndex });
   };
 
   const handleTriggerPwaInstall = async (): Promise<boolean> => {
@@ -408,6 +456,8 @@ export const App: React.FC = () => {
       guestFormation: room.guest_formation || '1-2-2',
       targetGoals: room.target_goals || 3,
       turnSeconds: room.turn_seconds || 18,
+      hostLineup: lineups[hTeam.id] || [0,1,2,3,4],
+      guestLineup: lineups[gTeam.id] || [0,1,2,3,4],
       competition,
     });
   };
@@ -438,38 +488,17 @@ export const App: React.FC = () => {
       turnSeconds: 20,
       botDifficulty: cup.difficulty,
       cupRun: run,
+      hostLineup: lineups[myTeam.id] || [0,1,2,3,4],
+      guestLineup: [0,1,2,3,4],
       cupStageLabel: `${cup.title} · ${STAGE_LABELS[stageIndex]}`,
     });
   };
 
-  const handleStartQuickExhibition = (cfg: {
-    myTeamId: string;
-    myFormation: FormationId;
-    aiTeamId: string;
-    aiSkill: number;
-    targetGoals: number;
-  }) => {
+  const handleStartQuickExhibition = (cfg: { myTeamId: string; myFormation: FormationId; aiTeamId: string; botDifficulty: BotDifficulty; targetGoals: number; lineup: number[] }) => {
     setShowQuickMatch(false);
-    const myTeam = getTeamById(cfg.myTeamId);
-    const oppTeam = getTeamById(cfg.aiTeamId);
-    const diff: 'pro' | 'elite' | 'legend' =
-      cfg.aiSkill > 0.8 ? 'legend' : cfg.aiSkill > 0.55 ? 'elite' : 'pro';
-
-    setActiveMatch({
-      mode: 'solo_cup',
-      isQuickExhibition: true,
-      mySide: 'host',
-      hostName: profile.display_name,
-      hostTeam: myTeam,
-      hostFormation: cfg.myFormation,
-      guestName: `IA · ${oppTeam.shortName}`,
-      guestTeam: oppTeam,
-      guestFormation: '1-2-2',
-      targetGoals: cfg.targetGoals,
-      turnSeconds: 20,
-      botDifficulty: diff,
-      cupStageLabel: 'COUP D’ENVOI EXHIBITION FC 27',
-    });
+    const myTeam = getTeamById(cfg.myTeamId); const oppTeam = getTeamById(cfg.aiTeamId);
+    updateLineup(cfg.myTeamId, cfg.lineup);
+    setActiveMatch({ mode:'solo_cup', isQuickExhibition:true, mySide:'host', hostName:profile.display_name, hostTeam:myTeam, hostFormation:cfg.myFormation, guestName:`Bot ${cfg.botDifficulty} · ${oppTeam.shortName}`, guestTeam:oppTeam, guestFormation:'1-2-2', targetGoals:cfg.targetGoals, turnSeconds:20, botDifficulty:cfg.botDifficulty, hostLineup:cfg.lineup, guestLineup:[0,1,2,3,4], cupStageLabel:'MATCH AMICAL · MODE NORMAL' });
   };
 
   const handleMatchFinished = async (summary: MatchFinishSummary) => {
@@ -478,6 +507,53 @@ export const App: React.FC = () => {
     const myGoals = activeMatch.mySide === 'host' ? summary.hostScore : summary.guestScore;
     const oppGoals = activeMatch.mySide === 'host' ? summary.guestScore : summary.hostScore;
 
+    setChallengeProgress((prev) => recordChallengeMatch(prev, activeMatch.mode === 'online_room', didWin, myGoals));
+    if (activeMatch.careerFixtureIndex !== undefined && careerSave) {
+      const fixtureIndex = activeMatch.careerFixtureIndex;
+      const fixture = careerSave.fixtures[fixtureIndex];
+      if (fixture && !fixture.played) {
+        const table = careerSave.table.map((row) => ({ ...row }));
+        const mine = table.find((r) => r.name === careerSave.clubName); const theirs = table.find((r) => r.name === fixture.opponent);
+        if (mine && theirs) { mine.played++; theirs.played++; mine.gf += myGoals; mine.ga += oppGoals; theirs.gf += oppGoals; theirs.ga += myGoals; if (didWin) { mine.wins++; mine.points += 3; theirs.losses++; } else { mine.losses++; theirs.wins++; theirs.points += 3; } }
+        table.filter((r) => r.name !== careerSave.clubName && r.name !== fixture.opponent).forEach((row) => { if (Math.random() > 0.45) { row.played++; const gf = Math.floor(Math.random()*4); const ga = Math.floor(Math.random()*4); row.gf += gf; row.ga += ga; if (gf >= ga) { row.wins++; row.points += 3; } else row.losses++; } });
+        const fixtures = careerSave.fixtures.map((f, i) => i === fixtureIndex ? { ...f, played:true, result:`${careerSave.clubName} ${myGoals}-${oppGoals} ${f.opponent}` } : f);
+        let nextSave: CareerSave = { ...careerSave, table, fixtures, message: didWin ? 'Victoire de championnat : votre club progresse au classement.' : 'Défaite de championnat : entraînez ou recrutez pour repartir.' };
+        if (fixtures.every((f) => f.played)) {
+          const ranking = table.slice().sort((a,b)=>b.points-a.points || (b.gf-b.ga)-(a.gf-a.ga)); const rank = ranking.findIndex((r)=>r.name===careerSave.clubName)+1;
+          const promoted = rank <= 2 && careerSave.division < CAREER_DIVISIONS.length-1; const division = promoted ? careerSave.division+1 : careerSave.division;
+          const season = careerSave.season + 1;
+          const freshSeason = makeSeason(division, careerSave.clubName);
+          nextSave = { ...nextSave, division, season, table: freshSeason.table, fixtures: freshSeason.fixtures, message: promoted ? `Promotion ! Vous montez en ${CAREER_DIVISIONS[division]}.` : `Saison terminée à la ${rank}e place. Nouvelle saison en ${CAREER_DIVISIONS[division]}.` };
+        }
+        updateCareer(nextSave);
+      }
+    }
+    setChallengeProgress((prev) => recordChallengeMatch(prev, activeMatch.mode === 'online_room', didWin, myGoals));
+    if (activeMatch.careerFixtureIndex !== undefined && careerSave) {
+      const fixtureIndex = activeMatch.careerFixtureIndex;
+      const fixture = careerSave.fixtures[fixtureIndex];
+      if (fixture && !fixture.played) {
+        const table = careerSave.table.map((row) => ({ ...row }));
+        const mine = table.find((r) => r.name === careerSave.clubName); const theirs = table.find((r) => r.name === fixture.opponent);
+        if (mine && theirs) { mine.played++; theirs.played++; mine.gf += myGoals; mine.ga += oppGoals; theirs.gf += oppGoals; theirs.ga += myGoals; if (didWin) { mine.wins++; mine.points += 3; theirs.losses++; } else { mine.losses++; theirs.wins++; theirs.points += 3; } }
+        table.filter((r) => r.name !== careerSave.clubName && r.name !== fixture.opponent).forEach((row) => { if (Math.random() > 0.45) { row.played++; const gf = Math.floor(Math.random()*4); const ga = Math.floor(Math.random()*4); row.gf += gf; row.ga += ga; if (gf >= ga) { row.wins++; row.points += 3; } else row.losses++; } });
+        const fixtures = careerSave.fixtures.map((f, i) => i === fixtureIndex ? { ...f, played:true, result:`${careerSave.clubName} ${myGoals}-${oppGoals} ${f.opponent}` } : f);
+        let nextSave: CareerSave = { ...careerSave, table, fixtures, message: didWin ? 'Victoire de championnat : votre club progresse au classement.' : 'Défaite de championnat : entraînez ou recrutez pour repartir.' };
+        if (fixtures.every((f) => f.played)) {
+          const ranking = table.slice().sort((a,b)=>b.points-a.points || (b.gf-b.ga)-(a.gf-a.ga)); const rank = ranking.findIndex((r)=>r.name===careerSave.clubName)+1;
+          const promoted = rank <= 2 && careerSave.division < CAREER_DIVISIONS.length-1; const division = promoted ? careerSave.division+1 : careerSave.division;
+          const season = careerSave.season + 1;
+          const generated = division === careerSave.division ? { table: table.map(r=>({...r,played:0,wins:0,losses:0,gf:0,ga:0,points:0})), fixtures: careerSave.fixtures.map(f=>({...f,played:false,result:undefined})) } : { table: [careerSave.clubName].map(name=>({name,played:0,wins:0,losses:0,gf:0,ga:0,points:0})), fixtures: [] };
+          nextSave = { ...nextSave, division, season, table: generated.table, fixtures: generated.fixtures, message: promoted ? `Promotion ! Vous montez en ${CAREER_DIVISIONS[division]}.` : `Saison terminée à la ${rank}e place. Nouvelle saison en ${CAREER_DIVISIONS[division]}.` };
+          if (promoted) {
+            // New division opponents are generated on demand from the career database at match launch; store a fresh fixture list names safely.
+            const names = ['Nouvel adversaire 1','Nouvel adversaire 2','Nouvel adversaire 3','Nouvel adversaire 4','Nouvel adversaire 5','Nouvel adversaire 6','Nouvel adversaire 7'];
+            nextSave.table = [careerSave.clubName,...names].map(name=>({name,played:0,wins:0,losses:0,gf:0,ga:0,points:0})); nextSave.fixtures = names.map((opponent,i)=>({opponent,rating:66+division*6+i,played:false}));
+          }
+        }
+        updateCareer(nextSave);
+      }
+    }
     const beforeUnlocks = new Set(profile.unlocked_teams);
     let gainedTrophies = 0;
     let gainedCoins = 0;
@@ -509,6 +585,8 @@ export const App: React.FC = () => {
     } else if (activeMatch.isQuickExhibition) {
       gainedTrophies = didWin ? 25 : summary.forfeited ? 0 : 5;
       gainedCoins = didWin ? 45 : 12;
+    } else if (activeMatch.careerFixtureIndex !== undefined) {
+      gainedTrophies = didWin ? 30 : 6; gainedCoins = didWin ? 70 : 20;
     } else if (activeMatch.mode === 'solo_cup' && activeMatch.cupRun) {
       const cup = SOLO_CUPS.find((c) => c.id === activeMatch.cupRun!.cupId);
       if (didWin && cup) {
@@ -608,6 +686,8 @@ export const App: React.FC = () => {
           targetGoals={activeMatch.targetGoals}
           turnSeconds={activeMatch.turnSeconds}
           botDifficulty={activeMatch.botDifficulty}
+          hostLineup={activeMatch.hostLineup}
+          guestLineup={activeMatch.guestLineup}
           cupStageLabel={activeMatch.cupStageLabel}
           initialBoard={activeMatch.room?.state_json?.board}
           settings={settings}
@@ -654,10 +734,7 @@ export const App: React.FC = () => {
             setNavTab('play');
           }}
         >
-          <div className="brand-emblem fc27-emblem">
-            <span>FC</span>
-            <small>27</small>
-          </div>
+<img className="brand-logo-img" src="/brand/matchly-fc27-logo-512.png" alt="Matchly FC 27" />
           <div className="brand-titles">
             <h1>MATCHLY FC</h1>
             <span>HYPERMOTION 2D · EUROPE</span>
@@ -694,6 +771,9 @@ export const App: React.FC = () => {
             }}
           >
             <Trophy size={15} /> Coupes UEFA
+          </button>
+          <button type="button" className={navTab === 'career' ? 'active' : ''} onClick={() => { sfx.uiClick(); setNavTab('career'); }}>
+            <Crown size={15} /> Carrière
           </button>
           <button
             type="button"
@@ -793,7 +873,13 @@ export const App: React.FC = () => {
 
       {/* Main Content Stage */}
       <main className="main-stage">
-        {navTab === 'play' && (
+        {navTab === 'play' && (<>
+          <section className="mode-home-grid" aria-label="Modes principaux">
+            <button type="button" onClick={() => setShowQuickMatch(true)}><Zap size={22}/><strong>Match amical</strong><span>Clubs, nations, Blue Lock · bot 4 niveaux</span></button>
+            <button type="button" onClick={() => setNavTab('career')}><Crown size={22}/><strong>Carrière & Championnat</strong><span>Division 3 → Légende · transferts</span></button>
+            <button type="button" onClick={() => setNavTab('cups')}><Trophy size={22}/><strong>Coupes</strong><span>Quarts, demies, finales</span></button>
+            <button type="button" onClick={() => setShowChallenges(true)}><Target size={22}/><strong>Défis</strong><span>Quotidiens, en ligne & Blue Lock</span></button>
+          </section>
           <div className="home-hub-grid">
             {/* Primary Column: FC 27 Superstar Hero + Online Room Multiplayer */}
             <section className="hub-primary-card fc27-hero-card">
@@ -977,10 +1063,10 @@ export const App: React.FC = () => {
                 </div>
 
                 <div className="asw-five-players">
-                  {activeTeam.players.map((p) => (
+                  {(lineups[activeTeam.id] || [0,1,2,3,4]).map((idx) => activeTeam.players[idx]).filter(Boolean).map((p) => (
                     <div key={p.id} className="asw-player-chip">
                       <div className="asw-avatar-ring" style={{ borderColor: activeTeam.kitPrimary }}>
-                        <img src={p.photo} alt={p.name} />
+                        {p.photo ? <img src={p.photo} alt={p.name} /> : <span className="avatar-initials">{p.shortName.slice(0,2).toUpperCase()}</span>}
                         <b>{p.number}</b>
                       </div>
                       <span>{p.shortName}</span>
@@ -1078,7 +1164,10 @@ export const App: React.FC = () => {
               </div>
             </aside>
           </div>
-        )}
+        </>)}
+
+
+        {navTab === 'career' && <CareerView save={careerSave} coins={profile.coins} lineup={lineups['career-custom'] || [0,1,2,3,4]} onSave={updateCareer} onLineupChange={(lineup)=>updateLineup('career-custom', lineup)} onSpendCoins={(amount)=>applyCoinsDelta(-amount)} onEarnCoins={(amount)=>applyCoinsDelta(amount)} onPlay={handleStartCareerMatch} />}
 
         {navTab === 'competitions' && (
           <CompetitionsView
@@ -1103,6 +1192,8 @@ export const App: React.FC = () => {
             profile={profile}
             onSelectTeamAndFormation={handleSelectTeamAndFormation}
             onRecruitWithCoins={handleRecruitWithCoins}
+            lineups={lineups}
+            onLineupChange={updateLineup}
           />
         )}
       </main>
@@ -1233,10 +1324,14 @@ export const App: React.FC = () => {
           myTeamId={profile.favorite_team_id}
           myFormation={profile.selected_formation}
           unlockedTeams={profile.unlocked_teams}
+          lineups={lineups}
+          onLineupChange={updateLineup}
           onStartQuickMatch={handleStartQuickExhibition}
           onClose={() => setShowQuickMatch(false)}
         />
       )}
+
+      {showChallenges && <ChallengesModal profile={profile} progress={challengeProgress} onClaim={handleChallengeClaim} onClose={() => setShowChallenges(false)} />}
 
       {/* Account Login/Register Modal */}
       {showAccount && (
@@ -1267,9 +1362,7 @@ export const App: React.FC = () => {
                   {team.league} · Note globale {team.rating}
                 </p>
                 <div className="mini-avatar-stack center large">
-                  {team.players.map((p) => (
-                    <img key={p.id} src={p.photo} alt={p.name} title={p.name} />
-                  ))}
+                  {team.players.slice(0,5).map((p) => p.photo ? <img key={p.id} src={p.photo} alt={p.name} title={p.name} /> : <span key={p.id} className="avatar-initials">{p.shortName.slice(0,2).toUpperCase()}</span>)}
                 </div>
               </div>
             ))}

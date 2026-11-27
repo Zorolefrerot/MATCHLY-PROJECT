@@ -8,6 +8,7 @@ interface Props {
 }
 
 export const TeamCrest: React.FC<Props> = ({ team, size = 44, className = '' }) => {
+  if (team.logoUrl) return <img src={team.logoUrl} alt={team.name} width={size} height={size} className={className} style={{ width:size, height:size, objectFit:'contain', borderRadius:12, flexShrink:0 }} />;
   const uid = `crest-${team.id}-${Math.round(size)}`;
   const isLightPrimary =
     team.kitPrimary.toUpperCase() === '#FFFFFF' ||
