@@ -2977,3 +2977,7 @@ button,input,select{max-width:100%}
 @media (max-width:430px){.mode-home-grid{grid-template-columns:1fr}.captain-grid{grid-template-columns:1fr}.career-hero{flex-direction:column}.qm-side strong{font-size:13px}.seg-choice-grid.three,.seg-choice-grid.four{grid-template-columns:1fr}.team-search{min-width:100%}}
 /* Landscape tablets/PC keep arena inside viewport */
 @media (min-width:761px){.pitch-canvas-frame{margin-inline:auto;height:100%}.subs-panel{max-height:300px}}
+
+/* Real-player avatar fallback (initials) when no headshot exists */
+.mini-avatar-fallback { display:inline-flex; align-items:center; justify-content:center; width:25px; height:25px; border-radius:50%; background:linear-gradient(135deg,#00A8FF,#FF2EA6); color:#fff; font-size:9px; font-weight:800; border:1.5px solid var(--bg-panel,#0a1030); margin-left:-5px; }
+.mini-avatar-fallback:first-child { margin-left:0; }
